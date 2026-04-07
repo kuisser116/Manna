@@ -49,7 +49,7 @@ Para que la aplicación sea un éxito global, nadie debe sentir que está usando
 ### A. La Entrada (Registro Mágico)
 *   **Lo que hace el usuario:** Descarga la app y se registra simplemente con su cuenta de Google o Apple. No hay contraseñas raras ni "llaves digitales" que guardar.
 *   **La magia detrás:** Al registrarse, el sistema le crea automáticamente una "caja fuerte digital" gratuita y segura (su billetera de Stellar).
-*   **El Regalo de Bienvenida:** Para que el usuario empiece a jugar, el sistema le otorga un pequeño saldo inicial que servirá como su primer **Depósito de Confianza**.
+*   **El Regalo de Bienvenida:** Para que el usuario empiece a jugar, el sistema le otorga un saldo inicial muy pequeño. Ese saldo funciona como una garantía reembolsable de buena conducta, no como un cobro.
 
 ### B. El Feed Principal (Contenido que Suma)
 Al abrir Manná, ves un flujo de contenido equilibrado que te nutre en tres áreas:
@@ -71,12 +71,17 @@ Al abrir Manná, ves un flujo de contenido equilibrado que te nutre en tres áre
 
 ## 🛡️ Las Reglas del Juego: Depósito de Confianza
 
-Internet hoy es un lugar donde cualquiera puede crear un perfil falso para insultar. Manná soluciona esto con el **"Depósito de Confianza"**.
+Internet hoy es un lugar donde cualquiera puede crear un perfil falso para insultar. Manná protege la calidad del feed con un pequeño **"Depósito de Confianza"** que es totalmente reembolsable.
 
-*   Para comentar o publicar, el usuario deja una "canica" de valor bloqueada en un escrow.
-*   Si se comporta con decencia, recupera su depósito íntegramente.
-*   Si el contenido es detectado como tóxico, plagiado o spam por los **filtros de IA** del sistema, o es reportado por usuarios, el depósito se confisca.
-*   **Resultado:** Ser tóxico en Manná cuesta dinero real. Manná no censura manualmente; la IA hace que el odio sea un mal negocio.
+*   Para publicar o comentar, el usuario bloquea una garantía mínima de **0.01 MXNe** (≈ 0.01 MXN).
+*   No es un pago ni una tarifa fija: es un bloqueo temporal muy pequeño que se devuelve si no hay reporte ni mal comportamiento.
+*   Si el contenido no recibe reportes válidos y cumple las normas, el depósito se devuelve íntegramente.
+*   Solo si el contenido es detectado como tóxico, spam, plagiado o claramente abusivo, el depósito se retiene.
+*   El propósito es disuadir el mal comportamiento de forma proporcional y proteger la experiencia de los demás usuarios.
+
+> **Nota importante:** El monto del depósito (actualmente 0.01 MXNe) puede ajustarse en el futuro basado en factores como la reputación del usuario, el comportamiento general de la plataforma o mejoras en la moderación. Siempre será mínimo, proporcional y claramente comunicado antes de cualquier cambio.
+
+> Resumen: para el usuario debe quedar claro que esto es una garantía mínima y reembolsable, no un cobro permanente.
 
 ---
 
@@ -467,7 +472,7 @@ Manná utiliza **Stellar clásico** (Operations) para todos los pagos y transfer
 |---|---|
 | **Distribución de anuncios** | Backend calcula y envía pagos directos con `sendPayment()` |
 | **Fondo Regional** | Base de datos Supabase + pagos subsidiados |
-| **Depósito de Confianza** | Pendiente - usará escrow simple cuando se implemente |
+| **Depósito de Confianza** | Garantía mínima reembolsable de 0.01 MXNe / MXN, retenida solo por reportes válidos |
 | **Registro de contenido** | `manageData` de Stellar (ya funciona) |
 
 > **Nota:** Si en el futuro los comercios o usuarios exigen "transparencia inmutable", podemos migrar a Soroban. Por ahora, Stellar clásico es más que suficiente.
@@ -506,7 +511,7 @@ Manná utiliza **Stellar clásico** (Operations) para todos los pagos y transfer
 |---------|------------|
 | **Stellar** | Red blockchain rápida, barata y ecológica |
 | **MXNe** | Peso Mexicano Digital en Stellar (1 MXNe = $1 MXN) |
-| **Depósito de Confianza** | "Canica" bloqueada al publicar (seguro de buena conducta) |
+| **Depósito de Confianza** | Garantía mínima reembolsable de 0.01 MXNe / MXN, retenida solo por reportes válidos |
 | **Apoyos** | Micro-pagos de centavos entre usuarios (0% comisión) |
 | **Fondo Regional** | Pozo de dinero por estado para subsidiar descuentos del 5% |
 | **Distribución 50/20/15/15** | 50% creador / 20% usuario / 15% infra / 15% fondo (con creador) |
