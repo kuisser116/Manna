@@ -1,0 +1,71 @@
+/* ── Sidebar — Minimalist, Modern, Centered ── */
+.nav {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Centrado vertical en la pantalla */
+  padding: 2rem 0;
+  background: transparent;
+  border-right: none;
+  overflow-y: auto;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collapsed {
+  width: 72px;
+}
+
+.expanded {
+  width: 220px;
+}
+
+.hidden {
+  display: none;
+}
+
+.itemsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  /* Espaciado amplio y minimalista */
+  width: 100%;
+}
+
+.iconBtn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text, #1a1a1a);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover: Rosa Mexicano (#e11d48) profundo sutil */
+.iconBtn:hover {
+  background: rgba(225, 29, 72, 0.15);
+  /* Fondo rosa mexicano transparente */
+  color: var(--color-accent, #e11d48);
+  /* Mexican accent */
+  transform: scale(1.1);
+}
+
+
+@media (max-width: 768px) {
+  .nav {
+    display: none;
+  }
+}

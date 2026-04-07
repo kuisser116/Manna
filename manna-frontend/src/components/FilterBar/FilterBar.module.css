@@ -1,0 +1,173 @@
+/* ── FilterBar — Soft Brutalist ── */
+
+@keyframes fadeDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.wrapper {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    z-index: 998;
+    padding: 0;
+    transition: left 0.4s ease;
+    animation: fadeDown 0.35s ease both;
+}
+
+.container {
+    position: relative;
+    width: min(100%, 1320px);
+    height: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 1.25rem;
+}
+
+.track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 0 8px;
+    width: 100%;
+    /* ocultar scrollbar visual */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.trackCentered {
+    justify-content: center;
+}
+
+.track::-webkit-scrollbar {
+    display: none;
+}
+
+/* Chips */
+.chip {
+    flex-shrink: 0;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid #e5e5e5;
+    background: #fafafa;
+    color: #6b7280;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+    font-family: inherit;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.chip:hover {
+    background: #fff;
+    border-color: #1a1a1a;
+    color: #1a1a1a;
+    transform: translateY(-1px);
+}
+
+.chipActive {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+    font-weight: 600;
+}
+
+.chipActive:hover {
+    background: #1a1a1a;
+    opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+.arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #1a1a1a;
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.arrowLeft {
+    left: -16px;
+}
+
+.arrowRight {
+    right: -16px;
+}
+
+.arrow:hover {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #fff;
+    transform: translateY(-50%) scale(1.1);
+}
+
+@media (max-width: 900px) {
+    .arrowLeft {
+        left: 4px;
+    }
+    .arrowRight {
+        right: 4px;
+    }
+}
+
+@media (max-width: 700px) {
+    .wrapper {
+        top: 60px;
+    }
+}
+
+@media (max-width: 600px) {
+    .arrow {
+        display: none;
+    }
+
+    .track {
+        padding: 0 8px;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 400px) {
+    .wrapper {
+        height: 40px;
+    }
+
+    .chip {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+
+    .track {
+        gap: 6px;
+        padding: 0 4px;
+    }
+}

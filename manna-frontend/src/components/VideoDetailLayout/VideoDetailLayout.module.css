@@ -1,0 +1,601 @@
+/* ── Contenedor principal de la página ── */
+.page {
+    min-height: 100vh;
+    background: var(--color-bg);
+    padding-bottom: clamp(40px, 8vh, 80px);
+}
+
+.page.theater {
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+}
+
+/* ── Contenedor del player Section ── */
+.playerSection {
+    width: 100%;
+    grid-area: player;
+    margin-bottom: 8px;
+}
+
+.playerSection.theater {
+    grid-column: 1 / -1;
+    background: #000;
+    margin-bottom: 24px;
+    /* Opcional: Breakout para que se vea más ancho que el grid en pantallas grandes */
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    display: flex;
+    justify-content: center;
+}
+
+/* ── Top bar con botón volver ── */
+.topBar {
+    display: flex;
+    align-items: center;
+    padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 56px;
+    background: rgba(15, 15, 15, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 10;
+}
+
+.backBtn {
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    transition: background-color var(--transition);
+}
+
+.backBtn:hover {
+    background: var(--color-surface-2);
+}
+
+/* ── Contenedor de metadata del video ── */
+
+/* ── Grid de dos columnas ── */
+.contentGrid {
+    display: grid;
+    /* La columna lateral ahora es flexible entre 300px y el 25% del total */
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 350px);
+    grid-template-areas: 
+        "player side"
+        "main side";
+    gap: 0 clamp(16px, 3vw, 28px);
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px clamp(12px, 3vw, 20px) 0 clamp(12px, 3vw, 20px);
+    align-items: start;
+}
+
+.contentGrid.theater {
+    grid-template-areas: 
+        "player player"
+        "main side";
+    padding-top: 0;
+}
+
+/* ── Columna principal (player + metadata + comentarios) ── */
+.mainCol {
+    grid-area: main;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ── Player ── */
+.playerWrapper {
+    width: 100%;
+    background: #000;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+}
+
+.theater .playerWrapper {
+    border-radius: 0;
+    max-height: 80vh;
+}
+
+.playerWrapper.theater {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: 85vh;
+    border-radius: 0;
+    margin-bottom: 0;
+}
+
+/* ── Contenedor de metadata del video ── */
+.videoMetadataWrapper {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+/* ── Título del video ── */
+.videoTitle {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.3;
+    margin-bottom: 16px;
+    margin-top: clamp(10px, 2vw, 16px);
+}
+
+/* ── Fila de metadatos: autor + acciones ── */
+.metaRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.authorRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity var(--transition);
+    flex-shrink: 0;
+}
+
+.authorRow:hover {
+    opacity: 0.85;
+}
+
+.avatarMd {
+    width: clamp(36px, 5vw, 42px);
+    height: clamp(36px, 5vw, 42px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--color-text);
+    flex-shrink: 0;
+}
+
+.avatarSm {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--color-text);
+    flex-shrink: 0;
+}
+
+.authorInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.displayName {
+    font-weight: 600;
+    font-size: clamp(14px, 1.5vw, 15px);
+    color: var(--color-text);
+}
+
+.dateText {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+/* ── Botones de acción ── */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: var(--border-radius-full);
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: var(--font-main);
+    white-space: nowrap;
+}
+
+.actionBtn:hover:not(:disabled) {
+    background: var(--color-surface-3);
+    color: var(--color-text);
+}
+
+.likedBtn {
+    color: #e0245e;
+    border-color: rgba(224, 36, 94, 0.3);
+    background: rgba(224, 36, 94, 0.08);
+}
+
+.deleteBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.deleteBtn:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.05);
+}
+
+
+/* ── Vistas + fecha ── */
+.viewsRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.viewsCount {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.viewsIcon {
+    color: var(--color-text-muted);
+}
+
+/* ── Descripción ── */
+.descriptionBox {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: clamp(12px, 2vw, 16px);
+    margin-bottom: 16px;
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.25s ease-out;
+    position: relative;
+}
+
+/* Desactiva la transición en el render inicial para evitar el flash */
+.noTransition {
+    transition: none !important;
+}
+
+.collapsed {
+    max-height: 100px;
+}
+
+.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(transparent, var(--color-surface));
+    pointer-events: none;
+}
+
+.descriptionContent {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.descriptionText {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.showMoreBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-surface); /* Solid background to stay readable over text */
+    border: none;
+    color: var(--color-primary);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 2px 8px; /* Small padding for the floating look */
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.collapsed .showMoreBtn {
+    position: absolute;
+    bottom: 12px;
+    left: 16px;
+    z-index: 100;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5); /* Subtle shadow to detach from text */
+}
+
+.descriptionBox:not(.collapsed) .showMoreBtn {
+    position: relative;
+    margin-top: 8px;
+    padding: 4px 0;
+    background: transparent;
+}
+
+.showMoreBtn:hover {
+    color: var(--color-primary-light);
+}
+
+.divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: clamp(16px, 3vw, 24px) 0;
+}
+
+/* ── Etiquetas ── */
+.tagsBox {
+    margin-bottom: 16px;
+}
+
+.tagsContent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 12px 16px;
+}
+
+.tagsIcon {
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.tagsText {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+/* ── Comentarios ── */
+.commentsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.commentsTitle {
+    font-family: var(--font-display);
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.commentForm {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.commentInput {
+    flex: 1;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    padding: 10px 20px;
+    color: var(--color-text);
+    font-size: 14px;
+    transition: border-color var(--transition);
+}
+
+.commentInput:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.sendBtn {
+    background: var(--color-primary);
+    color: #000;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+
+.sendBtn:hover:not(:disabled) {
+    transform: scale(1.06);
+    background: var(--color-primary-light);
+}
+
+.sendBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+}
+
+.commentsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.emptyComments {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 24px 0;
+}
+
+.commentItem {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.commentContent {
+    flex: 1;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0 14px 14px 14px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.commentName {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-text);
+}
+
+.commentText {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* ── Sidebar de recomendados ── */
+.sideCol {
+    grid-area: side;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: clamp(80px, 12vh, 106px);
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.sideCol.theater {
+    padding-top: 0;
+    border-top: none;
+}
+
+.sideCol::-webkit-scrollbar {
+    display: none;
+}
+
+.sideTitle {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.recommendedList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+    .contentGrid {
+        grid-template-columns: 1fr 300px;
+        /* Reducimos el ancho lateral antes de colapsar */
+    }
+}
+
+@media (max-width: 1000px) {
+    .contentGrid, .contentGrid.theater {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "player"
+            "main"
+            "side";
+        padding: 16px;
+    }
+
+    .playerSection.theater {
+        width: 100%;
+        left: 0;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .sideCol, .sideCol.theater {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
+        border-top: 1px solid var(--color-border);
+        padding-top: 24px;
+        margin-top: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .playerSection.theater {
+        aspect-ratio: 16 / 9;
+    }
+}
+
+@media (max-width: 480px) {
+    .actionBtn {
+        max-width: none;
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+
+    .displayName {
+        font-size: 14px;
+    }
+
+    .videoTitle {
+        font-size: 1.1rem;
+    }
+}

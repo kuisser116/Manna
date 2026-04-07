@@ -1,0 +1,169 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+    background: #121212;
+    width: 90%;
+    max-width: 480px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    overflow: hidden;
+    color: white;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    transition: all 0.2s;
+}
+
+.closeBtn:hover {
+    color: white;
+    background: #222;
+}
+
+.body {
+    padding: 24px;
+}
+
+.infoBox {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.infoIcon {
+    color: #eab308; /* Oro Manná */
+    flex-shrink: 0;
+}
+
+.infoBox p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #bbb;
+    line-height: 1.4;
+}
+
+.label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    color: #eee;
+    font-weight: 500;
+}
+
+.textarea {
+    width: 100%;
+    min-height: 140px;
+    background: #090909;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: none;
+    transition: border-color 0.2s;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: #666;
+}
+
+.hint {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 8px;
+}
+
+.footer {
+    padding: 16px 24px;
+    background: #0a0a0a;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid #222;
+}
+
+.cancelBtn {
+    background: none;
+    border: 1px solid #333;
+    color: #888;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.cancelBtn:hover {
+    background: #222;
+    color: white;
+}
+
+.confirmBtn {
+    background: white;
+    color: black;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.1s;
+}
+
+.confirmBtn:hover:not(:disabled) {
+    transform: scale(1.02);
+    background: #eee;
+}
+
+.confirmBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

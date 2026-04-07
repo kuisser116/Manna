@@ -1,0 +1,533 @@
+.videoContainer {
+    width: 100%;
+    max-height: 600px;
+    min-height: 300px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: #000;
+    position: relative;
+    line-height: 0;
+    font-size: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.videoContainer.theater {
+    max-height: unset;
+    min-height: unset;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+.verticalVideo {
+    height: 600px;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.verticalVideo .videoElement {
+    height: 600px;
+    max-height: 600px;
+    max-width: 500px;
+    object-fit: contain;
+}
+
+.videoElement {
+    width: 100%;
+    height: 100%;
+    display: block;
+    line-height: normal;
+    font-size: initial;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+}
+
+.statusBadge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: var(--color-text);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+}
+
+.processingBanner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--color-primary);
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.errorBanner {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(224, 82, 82, 0.9);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: var(--border-radius);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Click para play/pause en el área del video */
+.videoContainer:active .videoElement {
+    pointer-events: none;
+}
+
+/* ── Mid-roll Ads (Rediseño Estilo YouTube) ── */
+.adOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: normal;
+    font-size: initial;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.adFullscreenContent {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.adTopBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 10;
+}
+
+.adIndicator {
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.alreadyRewardedBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(201, 168, 76, 0.9);
+    color: #000;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(201, 168, 76, 0.3);
+}
+
+.adMediaWrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.adVideoFull, .adImageFull {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    max-height: 100%;
+}
+
+.adBottomBar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    z-index: 10;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    margin: -24px;
+    padding: 40px 24px 24px;
+}
+
+.adBrandInfo {
+    max-width: 60%;
+    text-align: left;
+}
+
+.adBrandTitle {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.adBrandDesc {
+    margin: 4px 0 0;
+    font-size: 1rem;
+    color: #eee;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.adPromoCallout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    background: rgba(201, 168, 76, 0.15);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    width: fit-content;
+    animation: shine 2s infinite;
+}
+
+@keyframes shine {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; filter: brightness(1.2); }
+    100% { opacity: 0.8; }
+}
+
+.promoIcon { font-size: 1.1rem; }
+.promoTextSmall { color: var(--color-primary); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
+
+.ytSkipBtn {
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 140px;
+    justify-content: center;
+    border-right: none;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    position: relative;
+    right: -24px;
+    margin-bottom: 20px;
+}
+
+.ytSkipBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.skipWait {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.skipReady {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.skipReady::after {
+    content: '›';
+    font-size: 1.5rem;
+    margin-top: -2px;
+}
+
+/* ── Modal de Confirmación de Salto ── */
+.confirmOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.confirmBox {
+    background: #1a1a1a;
+    padding: 32px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 400px;
+    width: 85%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
+
+.confirmBox h3 {
+    margin: 0 0 12px;
+    color: #fff;
+    font-size: 1.25rem;
+}
+
+.confirmBox p {
+    color: #aaa;
+    margin: 0 0 24px;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.confirmButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cancelSkipBtn {
+    background: var(--color-primary);
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: transform 0.2s;
+}
+
+.cancelSkipBtn:hover {
+    transform: scale(1.02);
+}
+
+.confirmSkipBtn {
+    background: transparent;
+    color: #ff4757;
+    border: none;
+    padding: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: underline;
+    opacity: 0.8;
+}
+
+.confirmSkipBtn:hover {
+    opacity: 1;
+}
+
+/* ── Success Modal (Ultra-Minimalista y Profesional) ── */
+.couponModalBox {
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(40px) saturate(150%);
+    -webkit-backdrop-filter: blur(40px) saturate(150%);
+    padding: 60px 40px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
+    max-width: 440px;
+    width: 90%;
+    z-index: 110;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.9);
+    animation: modalFadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.rewardTitle { 
+    color: #fff; 
+    font-size: 1.8rem; 
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 8px; 
+    text-transform: uppercase;
+}
+
+.rewardSubtitle { 
+    color: rgba(255, 255, 255, 0.5); 
+    font-size: 1rem;
+    margin-bottom: 40px; 
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
+.promoContainer {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 40px 0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.promoLabel {
+    color: var(--color-primary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    display: block;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.promoText { 
+    color: #fff; 
+    font-size: 1.25rem; 
+    font-weight: 500; 
+    line-height: 1.4;
+    opacity: 0.95;
+}
+
+.codeWrapper {
+    margin-top: 24px;
+}
+
+.codeLabel { 
+    color: rgba(255, 255, 255, 0.3); 
+    font-size: 0.75rem; 
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.codeBox { 
+    background: #000; 
+    padding: 18px; 
+    border-radius: 8px; 
+    font-size: 1.5rem; 
+    font-family: 'Inter', sans-serif; 
+    color: #fff; 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    letter-spacing: 5px;
+    font-weight: 300;
+}
+
+.codeSuccess { 
+    color: #2ecc71; 
+    font-size: 0.85rem; 
+    margin-top: 16px; 
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.claimBtn { 
+    width: 100%; 
+    padding: 20px; 
+    background: #fff;
+    color: #000; 
+    border: none; 
+    border-radius: 8px; 
+    font-size: 1rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    margin-bottom: 16px; 
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.claimBtn:hover:not(:disabled) { 
+    background: var(--color-primary);
+    transform: none;
+}
+
+.resumeBtn { 
+    width: 100%; 
+    padding: 20px; 
+    background: transparent; 
+    color: #fff; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px; 
+    font-size: 1rem; 
+    font-weight: 500; 
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.resumeBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.simpleContinueBtn {
+    background: transparent; 
+    color: rgba(255, 255, 255, 0.2); 
+    border: none; 
+    font-size: 0.8rem; 
+    cursor: pointer; 
+    padding: 12px;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.simpleContinueBtn:hover {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive para videos verticales en pantallas pequeñas */
+@media (max-width: 768px) {
+    .videoContainer {
+        max-height: 100%;
+        min-height: 300px;
+    }
+
+    .verticalVideo {
+        height: auto;
+        min-height: auto;
+    }
+
+    .verticalVideo .videoElement {
+        height: auto;
+        max-height: none;
+        max-width: 100%;
+    }
+}

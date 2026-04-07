@@ -1,0 +1,115 @@
+.page {
+    min-height: 100vh;
+    background-color: var(--color-bg);
+    display: flex;
+    justify-content: center;
+    padding: 60px 20px;
+    font-family: var(--font-main);
+    color: var(--color-text);
+}
+
+.container {
+    margin: auto;
+    max-width: 800px;
+    width: 100%;
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--color-surface-2);
+
+}
+
+.header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--color-surface-2);
+    padding-bottom: 20px;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+    transition: color 0.2s ease;
+}
+
+.backLink:hover {
+    color: var(--color-primary);
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    margin: 0 0 10px 0;
+    line-height: 1.2;
+}
+
+.lastUpdated {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.section h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--color-text);
+    margin: 0 0 16px 0;
+    font-weight: 600;
+}
+
+.section p {
+    color: var(--color-text-muted);
+    line-height: 1.7;
+    margin: 0 0 12px 0;
+    font-size: 1.05rem;
+}
+
+.section ul {
+    color: var(--color-text-muted);
+    line-height: 1.7;
+    margin: 0 0 16px 0;
+    padding-left: 24px;
+    font-size: 1.05rem;
+}
+
+.section li {
+    margin-bottom: 8px;
+}
+
+.highlight {
+    background-color: var(--color-surface-2);
+    padding: 16px 20px;
+    border-left: 4px solid var(--color-danger);
+    border-radius: 4px var(--border-radius) var(--border-radius) 4px;
+    margin-top: 16px !important;
+}
+
+.highlight strong {
+    color: var(--color-text);
+}
+
+@media (max-width: 600px) {
+    .page {
+        padding: 20px 10px;
+    }
+
+    .container {
+        padding: 24px;
+    }
+
+    .title {
+        font-size: 2rem;
+    }
+}

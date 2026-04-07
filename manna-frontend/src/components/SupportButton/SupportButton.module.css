@@ -1,0 +1,118 @@
+.wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--border-radius-full);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    overflow: visible;
+}
+
+.btn:hover:not(:disabled) {
+    background: var(--color-primary-glow);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.supported {
+    background: var(--color-primary-glow);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    cursor: default;
+}
+
+.icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.label {
+    font-size: 13px;
+}
+
+.count {
+    background: var(--color-primary);
+    color: #0A0A0F;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: var(--border-radius-full);
+    padding: 1px 7px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 0 6px var(--color-primary-glow-strong);
+}
+
+.inputWrapper {
+    display: none; /* Ya no se usa afuera */
+}
+
+.modalInputWrapper {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 12px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.balanceInfo {
+    font-size: 13px;
+    color: #ff4a4a; /* Rojo */
+    font-weight: 500;
+}
+
+.balanceValue {
+    font-weight: 700;
+}
+
+.modalInputLabel {
+
+    font-size: 13px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.modalInput {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-full);
+    color: var(--color-text);
+    padding: 10px 14px;
+    font-size: 16px;
+    font-weight: 500;
+    width: 100%;
+    outline: none;
+    transition: all var(--transition);
+}
+
+.modalInput:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-glow);
+}
+

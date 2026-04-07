@@ -1,0 +1,37 @@
+/* ── App Layout — Brutalist B&W ── */
+
+.loadingWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--color-bg, #fff);
+    gap: 16px;
+}
+
+.loadingLogo {
+    height: 100px;
+}
+
+.loadingText {
+    color: var(--color-text-muted, rgba(0, 0, 0, 0.45));
+    font-family: var(--font-family, -apple-system, sans-serif);
+}
+
+/* ── Main Content Area ── */
+.appContent {
+    margin-top: 70px;
+    min-height: calc(100vh - 70px);
+    background: var(--color-bg, #fff);
+    width: 100%;
+    /* Sin margen lateral - la barra superior (topbar) ahora es horizontal arriba */
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .appContent {
+        margin-top: 60px;
+        min-height: calc(100vh - 60px);
+    }
+}

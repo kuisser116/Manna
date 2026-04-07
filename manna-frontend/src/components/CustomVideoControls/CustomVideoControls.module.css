@@ -1,0 +1,307 @@
+.controlsContainer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.7) 15%, rgba(0, 0, 0, 0.55) 30%, rgba(0, 0, 0, 0.4) 45%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0.1) 75%, rgba(0, 0, 0, 0.05) 90%, transparent 100%);
+    padding: 12px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 20;
+}
+
+.controlsContainer.visible {
+    opacity: 1;
+}
+
+.progressBar {
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    transition: height 0.2s ease;
+    z-index: 30;
+}
+
+.progressBar:hover {
+    height: 7px;
+}
+
+.progressFill {
+    height: 100%;
+    background: #fff;
+    border-radius: 3px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: width 0.1s linear;
+}
+
+.progressBar:hover .progressFill {
+    background: var(--color-primary);
+}
+
+.hoverProgress {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 3px;
+    pointer-events: none;
+    transition: left 0.1s linear;
+}
+
+.progressBar:hover .hoverProgress {
+    background: rgba(201, 168, 76, 0.3);
+}
+
+.progressThumb {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s ease, left 0.1s linear;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.progressBar:hover .progressThumb {
+    opacity: 1;
+}
+
+.progressBar:hover .progressThumb {
+    background: var(--color-primary);
+}
+
+.controlsRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.controlsLeft,
+.controlsRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.controlButton {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.9;
+}
+
+.controlButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 1;
+    transform: scale(1.1);
+    color: var(--color-primary);
+}
+
+.controlButton:active {
+    transform: scale(0.95);
+}
+
+.viewModeButton {
+    position: relative;
+}
+
+.viewModeButton.viewModeActive::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    background: var(--color-primary);
+    border-radius: 2px;
+}
+
+.volumeControl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.volumeSlider {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    height: 4px;
+    appearance: none;
+    cursor: pointer;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.volumeSlider::-webkit-slider-thumb:hover {
+    background: var(--color-primary);
+}
+
+.volumeSlider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s ease;
+}
+
+.volumeSlider::-moz-range-thumb:hover {
+    background: var(--color-primary);
+}
+
+.volumeControl:hover .volumeSlider.visible {
+    width: 80px;
+    opacity: 1;
+}
+
+.timeDisplay {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-main);
+    opacity: 0.9;
+}
+
+.speedControl {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.speedButton {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 45px;
+}
+
+.speedMenu {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    background: rgba(10, 10, 15, 0.95);
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 100px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.speedOption {
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: transparent;
+    border: none;
+    text-align: left;
+    font-family: var(--font-main);
+}
+
+.speedOption:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.speedOption.active {
+    background: rgba(201, 168, 76, 0.2);
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .controlsContainer {
+        padding: 8px 12px 12px;
+    }
+
+    .progressBar {
+        height: 4px;
+    }
+
+    .progressBar:hover {
+        height: 4px;
+    }
+
+    .controlsRow {
+        gap: 8px;
+    }
+
+    .controlsLeft,
+    .controlsRight {
+        gap: 8px;
+    }
+
+    .controlButton {
+        padding: 6px;
+    }
+
+    .timeDisplay {
+        font-size: 12px;
+    }
+
+    .volumeControl:hover .volumeSlider.visible {
+        width: 60px;
+    }
+}
+
+@media (max-width: 480px) {
+    .timeDisplay {
+        display: none;
+    }
+
+    .volumeSlider {
+        display: none;
+    }
+}

@@ -1,0 +1,242 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--color-bg);
+}
+
+.main {
+    flex: 1;
+    max-width: 100%;
+    padding: 28px 24px;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.header {
+    margin-bottom: 32px;
+    max-width: 70%;
+    margin: 0 auto;
+}
+
+.titleRow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+/* Fondo acumulado */
+.fundCard {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--border-radius-lg);
+    padding: 24px;
+    text-align: center;
+}
+
+.fundLabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.fundAmount {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--color-primary);
+}
+
+.fundSub {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+/* Sección de descuentos */
+.discountSection {
+    max-width: 70%;
+    margin: 20px auto;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.sectionTitle {
+    font-weight: 700;
+    font-size: 17px;
+}
+
+.discountCard {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.discountIcon {
+    background: var(--color-primary-glow);
+    color: var(--color-primary);
+    padding: 16px;
+    border-radius: var(--border-radius);
+}
+
+.discountContent h4 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.discountContent p {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.discountNote {
+    margin-top: 12px !important;
+    color: var(--color-accent) !important;
+    font-weight: 600;
+}
+
+.examplesSection {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 20px;
+}
+
+.examplesSection h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--color-text-muted);
+}
+
+.examplesList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.examplesList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.exampleDiscount {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+/* Estado vacío */
+.emptyState {
+    max-width: 70%;
+    margin: 40px auto;
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+.emptyState p {
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.howCard {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.howTitle {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.howItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.howIcon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .main {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 400px) {
+    .main {
+        padding: 12px 8px;
+    }
+
+    .header, .discountSection {
+        max-width: 100%;
+    }
+}

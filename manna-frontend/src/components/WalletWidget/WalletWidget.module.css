@@ -1,0 +1,495 @@
+.widget {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    animation: pulse-gold 4s ease-in-out infinite;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.refreshBtn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--color-text-dim);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    transition: color var(--transition);
+}
+
+.refreshBtn:hover {
+    color: var(--color-primary);
+}
+
+.refreshBtn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.iconWrap {
+    width: 32px;
+    height: 32px;
+    background: var(--color-primary-glow);
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Activado por manna:ad-reward — brillo dorado sutil por 3 segundos */
+.iconGlow {
+    background: var(--color-primary);
+    box-shadow: 0 0 14px var(--color-primary);
+    animation: glowFade 3s ease forwards;
+}
+
+@keyframes glowFade {
+    0%   { box-shadow: 0 0 0 var(--color-primary); }
+    20%  { box-shadow: 0 0 16px var(--color-primary); }
+    80%  { box-shadow: 0 0 10px var(--color-primary); }
+    100% { box-shadow: 0 0 0 transparent; }
+}
+
+.label {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.balanceRow {
+    margin-bottom: 8px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+.balance {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--color-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    line-height: 1;
+}
+
+.currency {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.skeleton {
+    width: 120px;
+    height: 36px;
+    background: var(--color-surface-3);
+    animation: pulse 1.5s ease-in-out infinite;
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--border-radius-sm);
+}
+
+.balanceContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 10px 0;
+}
+
+.mainBalance {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-text);
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    line-height: 1.1;
+    word-break: break-word;
+    text-align: center;
+}
+
+.currency {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.subBalance {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+    font-weight: 500;
+    background: var(--color-surface-2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.mxnRow {
+    margin-top: -6px;
+    margin-bottom: 12px;
+}
+
+.mxnValue {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-primary);
+    opacity: 0.9;
+    letter-spacing: 0.5px;
+}
+
+.todayRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.todayText {
+    font-size: 13px;
+    color: var(--color-success);
+    font-weight: 500;
+}
+
+.pubKey {
+    font-size: 11px;
+    color: var(--color-text);
+    font-family: monospace;
+    background: var(--color-surface-2);
+    padding: 6px 10px;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+.historyBtn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all var(--transition);
+    text-decoration: none;
+}
+
+.historyBtn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* Nuevos Estilos para el Progress Bar */
+.progressSection {
+    margin-top: 10px;
+}
+
+.progressTitle {
+    font-size: 13px;
+    color: var(--color-primary);
+    font-weight: 700;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progressSubtitle {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-bottom: 10px;
+}
+
+.questList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+    margin-top: 8px;
+}
+
+.questItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--color-surface-3);
+    border-radius: var(--border-radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.questDone {
+    opacity: 0.5;
+    background: var(--color-surface-2);
+}
+
+.questCircleWrap {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.questSvg {
+    transform: rotate(-90deg);
+}
+
+.questRing {
+    transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.questIcon {
+    position: absolute;
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.questDone .questIcon {
+    color: var(--color-success);
+}
+
+.questDone .questRing {
+    stroke: var(--color-success);
+}
+
+.questLabel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.questLabelText {
+    font-size: 13px;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.questDone .questLabelText {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+}
+
+.progressPct {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-align: right;
+    margin-top: 4px;
+}
+
+.progressBarContainer {
+    width: 100%;
+    height: 12px;
+    background: var(--color-surface-3);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--color-border);
+}
+
+.progressBarFill {
+    height: 100%;
+    /* Gradient dorado a blanco para combinar con el entorno de la app */
+    background: linear-gradient(90deg, #FFFFFF, var(--color-primary));
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Brillo animado de la barra */
+.progressBarFill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.4) 50%,
+            rgba(255, 255, 255, 0) 100%);
+    animation: shimmer 2s infinite;
+    transform: skewX(-20deg);
+}
+
+/* ── Variante Flotante ── */
+.floatingWrapper {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+@media (max-width: 700px) {
+    .floatingWrapper {
+        bottom: 72px; /* Subir para no tapar el Navbar (56px + gap) */
+        right: 16px;
+    }
+
+    .floatingButton {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+}
+
+.floatingButton {
+    background: rgba(28, 28, 40, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-primary);
+    padding: 10px 18px;
+    border-radius: 30px;
+    color: var(--color-text);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 10px var(--color-primary-glow);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.floatingButton.active {
+    background: var(--color-primary);
+    color: #000;
+}
+
+.buttonBalance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 15px;
+}
+
+.btnCurrency {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+.floatingPanel {
+    width: 280px;
+    background: rgba(28, 28, 40, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow-xl);
+}
+
+/* ── Variante Mini ── */
+.miniContainer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--color-surface-3);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.miniIcon {
+    color: var(--color-primary);
+}
+
+.miniBalance {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.miniCurrency {
+    font-size: 9px;
+    opacity: 0.6;
+}
+
+/* Brillo animado genérico */
+.repairLink {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    background: none;
+    border: 1px dashed var(--color-border);
+    color: var(--color-text-dim);
+    font-size: 11px;
+    padding: 8px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: center;
+}
+
+.repairLink:hover {
+    border-color: var(--color-primary-glow);
+    color: var(--color-primary);
+    background: rgba(201, 168, 76, 0.05);
+}
+
+.rampBtn {
+    width: 100%;
+    margin-top: 12px;
+    background: var(--color-primary);
+    color: #000;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(184, 146, 64, 0.2);
+}
+
+.rampBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(184, 146, 64, 0.4);
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) skewX(-20deg); }
+    100% { transform: translateX(200%) skewX(-20deg); }
+}

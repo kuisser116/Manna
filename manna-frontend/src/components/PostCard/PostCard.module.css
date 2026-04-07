@@ -1,0 +1,392 @@
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: 20px;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    animation: fadeUp 0.4s ease both;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    border-color: var(--color-text);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateX(6px);
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: var(--color-primary);
+    transition: width 0.25s ease;
+    z-index: 2;
+}
+
+.card:hover::before {
+    width: 5px;
+}
+
+.likedHeart {
+    color: #e0245e;
+}
+
+.savedBtn {
+    color: var(--color-primary);
+}
+
+.textImageMargin {
+    margin-top: 12px;
+}
+
+.capsule {
+    border-left: 3px solid var(--color-primary);
+    /* Solo un acento dorado izquierdo */
+    border-color: var(--color-border);
+    border-left-color: var(--color-primary);
+}
+
+.capsuleLabel {
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-primary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: var(--border-radius-full);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    animation: fadeUp 0.35s ease both;
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--color-text);
+    flex-shrink: 0;
+}
+
+.meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.avatarLink {
+    display: block;
+    cursor: pointer;
+    transition: opacity var(--transition);
+}
+
+.avatarLink:hover {
+    opacity: 0.85;
+}
+
+.nameLink {
+    display: inline-block;
+    color: inherit;
+    text-decoration: none;
+    transition: color var(--transition);
+}
+
+.nameLink:hover .displayName {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.displayName {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--color-text);
+}
+
+.dateText {
+    font-size: 12px;
+    color: var(--color-text);
+    opacity: 0.5;
+}
+
+.typeBadge {
+    font-size: 11px;
+    color: var(--color-text);
+    opacity: 0.6;
+    background: var(--color-bg);
+    padding: 3px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--color-border);
+}
+
+.body {
+    margin-bottom: 16px;
+    animation: fadeUp 0.4s ease both;
+}
+
+.textContent {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--color-text);
+    opacity: 0.85;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.capsuleText {
+    font-size: 17px;
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text);
+    text-align: center;
+    padding: 8px 0;
+    line-height: 1.8;
+}
+
+.postImage {
+    width: 100%;
+    border-radius: var(--border-radius-sm);
+    /* Contain: image fits entirely, no cropping */
+    object-fit: contain;
+    /* Dark letterbox background for non-square images */
+    background: var(--color-bg);
+    max-height: 420px;
+    display: block;
+}
+
+/* Image in post detail: full height, click opens modal */
+.postImageDetail {
+    width: 100%;
+    border-radius: var(--border-radius-sm);
+    object-fit: contain;
+    background: var(--color-bg);
+    display: block;
+    cursor: zoom-in;
+    transition: opacity var(--transition);
+}
+
+.postImageDetail:hover {
+    opacity: 0.92;
+}
+
+/* Modifier: same look as postImage but cursor signals it's clickable */
+.postImageClickable {
+    cursor: zoom-in;
+    transition: opacity var(--transition);
+}
+
+.postImageClickable:hover {
+    opacity: 0.92;
+}
+
+/* YouTube Style layout for videos */
+.videoCardWrapper {
+    padding: 0;
+    /* Remove padding to let thumbnail bleed */
+    overflow: hidden;
+}
+
+.youtubeThumbnailArea {
+    width: 100%;
+    background: #000;
+}
+
+.youtubeThumbnailArea .videoWrapper {
+    border-radius: 0;
+    /* Bleed to edge */
+}
+
+.youtubeInfoArea {
+    padding: 16px 20px 0 20px;
+}
+
+.youtubeCaptionText {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-text);
+    margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.youtubeDescription {
+    margin-top: 12px;
+}
+
+.showMoreBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    opacity: 0.6;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 0;
+    cursor: pointer;
+    transition: color var(--transition), opacity var(--transition);
+}
+
+.showMoreBtn:hover {
+    color: var(--color-primary);
+}
+
+.videoWrapper {
+    position: relative;
+    width: 100%;
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    background: #000;
+}
+
+.videoContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.postVideo {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    display: block;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+    flex-wrap: wrap;
+    animation: fadeUp 0.45s ease both;
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #9ca3af;
+    font-size: 13px;
+    padding: 7px 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.actionBtn:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-text);
+    transform: scale(1.05);
+}
+
+.saveBtn {
+    margin-left: auto;
+}
+
+.videoCardWrapper .actions {
+    padding: 14px 20px;
+}
+
+@media (max-width: 400px) {
+    .card {
+        padding: 12px;
+    }
+
+    .avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 13px;
+    }
+
+    .header {
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .displayName {
+        font-size: 14px;
+    }
+
+    .dateText {
+        font-size: 11px;
+    }
+
+    .typeBadge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+
+    .body {
+        margin-bottom: 12px;
+    }
+
+    .textContent {
+        font-size: 14px;
+    }
+
+    .postImage {
+        max-height: 300px;
+    }
+
+    .capsuleText {
+        font-size: 15px;
+    }
+
+    .actions {
+        padding-top: 10px;
+        gap: 4px;
+    }
+
+    .actionBtn {
+        padding: 6px 8px;
+        font-size: 12px;
+        gap: 4px;
+    }
+
+    .youtubeCaptionText {
+        font-size: 14px;
+    }
+
+    .youtubeInfoArea {
+        padding: 12px 12px 0 12px;
+    }
+
+    .videoCardWrapper .actions {
+        padding: 12px 12px;
+    }
+}

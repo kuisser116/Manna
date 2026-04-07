@@ -1,0 +1,41 @@
+{
+  "name": "manna-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-oauth/google": "^0.13.4",
+    "@stellar/stellar-sdk": "^14.6.0",
+    "axios": "^1.13.6",
+    "fast-average-color": "^9.5.1",
+    "framer-motion": "^12.35.0",
+    "hls.js": "^1.6.15",
+    "html5-qrcode": "^2.3.8",
+    "i18next": "^26.0.3",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "lucide-react": "^0.577.0",
+    "react": "^19.2.0",
+    "react-confetti": "^6.4.0",
+    "react-dom": "^19.2.0",
+    "react-i18next": "^17.0.2",
+    "react-router-dom": "^7.13.1",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "vite": "^7.3.1"
+  }
+}

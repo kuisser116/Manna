@@ -1,0 +1,88 @@
+.container {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  color: var(--color-text);
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.formGroup {
+  margin-bottom: 24px;
+  background-color: var(--color-surface);
+  padding: 24px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-surface-2);
+}
+
+.label {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.input {
+  width: 100%;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-surface-2);
+  color: var(--color-text);
+  padding: 12px;
+  border-radius: 8px;
+  font-family: var(--font-main);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.toggleContainer {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.toggleBtn {
+  flex: 1;
+  padding: 12px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-surface-2);
+  color: var(--color-text);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggleBtn.active {
+  background-color: var(--color-primary-glow);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.submitBtn {
+  width: 100%;
+  background-color: var(--color-primary);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.submitBtn:hover {
+  opacity: 0.9;
+}

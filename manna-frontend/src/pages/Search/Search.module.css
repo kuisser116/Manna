@@ -1,0 +1,128 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--color-bg);
+}
+
+.main {
+    flex: 1;
+    max-width: 100%;
+    padding: 28px 24px;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.header h2 {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.header p {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.tabs {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition);
+}
+
+.tab:hover {
+    color: var(--color-text);
+}
+
+.tabActive {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.postList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 70%;
+    margin: 0 auto;
+}
+
+.userGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.loadingSpinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top: 3px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 40px auto;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 64px 24px;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+.sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { border-right: none; }
+}
+
+@media (max-width: 700px) {
+    .main { padding: 16px; }
+    .postList { max-width: 100%; }
+    .userGrid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+}

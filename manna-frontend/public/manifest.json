@@ -1,0 +1,16 @@
+{
+  "short_name": "Manná",
+  "name": "Manná: Tu Red Social",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0F0F0F",
+  "background_color": "#0F0F0F"
+}
