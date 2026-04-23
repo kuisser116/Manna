@@ -3,18 +3,17 @@ import { useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {
   UserPlus, UserCheck, Camera, QrCode,
-  Heart, Bookmark, LayoutGrid, Eye, MessageCircle, Share, Flag,
-  Wallet, Settings, ExternalLink, Copy, Check, ImagePlus
+  LayoutGrid, Eye, MessageCircle, Share, Flag,
+  Copy, Check, ImagePlus, CalendarDays, Settings
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../components/ProfileEditModal/ProfileEditModal';
 import useStore from '../store';
-import { getUserPosts, getLikedPosts, getSavedPosts } from '../api/posts.api';
-import { getUserProfile, toggleFollow, updateAvatar, updateProfile, updateCover } from '../api/users.api';
+import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../api/users.api';
+import { getUserPosts } from '../api/posts.api';
+import PostCard from '../components/PostCard/PostCard';
 import styles from '../styles/pages/Profile.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
-import { FastAverageColor } from 'fast-average-color';
-import WalletWidget from '../components/WalletWidget/WalletWidget';
 
 
 const Icons = {
@@ -34,16 +33,13 @@ const Icons = {
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
-  const { user: currentUser, balance, balanceMXN, mxncBalance } = useStore();
+  const { user: currentUser } = useStore();
 
   const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
-  const [copied, setCopied] = useState(false);
   const [coverUrl, setCoverUrl] = useState(null);
   const [coverUploading, setCoverUploading] = useState(false);
-  const [patternColor, setPatternColor] = useState('rgba(225, 29, 72, 0.05)'); // Fallback Rosa Mexicano @ 5%
-  const [solidPatternColor, setSolidPatternColor] = useState('rgb(225, 29, 72)');
   const coverInputRef = useRef(null);
 
   const handleCoverChange = async (e) => {
@@ -58,7 +54,8 @@ export default function Profile() {
         URL.revokeObjectURL(preview);
         setCoverUrl(data.coverUrl);
       }
-    } catch (err) {
+    } catch {
+      // Keep optimistic local preview when upload fails.
     } finally {
       setCoverUploading(false);
     }
@@ -68,9 +65,15 @@ export default function Profile() {
 
   const [profileData, setProfileData] = useState(isOwnProfile ? currentUser : null);
   const [profileLoading, setProfileLoading] = useState(!isOwnProfile);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyWallet = () => {
+    if (!profileData?.stellarPublicKey) return;
+    navigator.clipboard.writeText(profileData.stellarPublicKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -89,10 +92,9 @@ export default function Profile() {
     getUserProfile(targetId)
       .then(({ data }) => {
         setProfileData(prev => ({ ...prev, ...(data.user || data) }));
-        setIsFollowing(data.isFollowing || false);
         if (data.user?.coverUrl) setCoverUrl(data.user.coverUrl);
       })
-      .catch((err) => {
+      .catch(() => {
         setProfileData({
           id: profileId,
           displayName: 'Usuario',
@@ -101,158 +103,105 @@ export default function Profile() {
         });
       })
       .finally(() => setProfileLoading(false));
-  }, [isOwnProfile, profileId, currentUser?.id]);
+  }, [isOwnProfile, profileId, currentUser]);
 
   useEffect(() => {
     const targetId = isOwnProfile ? currentUser?.id : profileId;
     if (!targetId) return;
 
     setPostsLoading(true);
-    setUserPosts([]);
 
-    let fetchPromise;
-    if (activeTab === 'posts') {
-      fetchPromise = getUserPosts(targetId);
-    } else if (activeTab === 'liked') {
-      fetchPromise = getLikedPosts(targetId);
-    } else if (activeTab === 'saved') {
-      fetchPromise = getSavedPosts();
-    }
-
-    fetchPromise
+    getUserPosts(targetId)
       .then(({ data }) => {
-        setUserPosts(data.posts || []);
+        const posts = data.posts || [];
+        const normalizedPosts = posts.map((post) => {
+          const mediaType = post.mediaType || post.media_type || post.type || post.post_type || 'text';
+          return {
+            ...post,
+            mediaType: String(mediaType).toLowerCase(),
+            created_at: post.createdAt || post.created_at
+          };
+        });
+
+        if (activeTab === 'videos') {
+          setUserPosts(normalizedPosts.filter((post) => post.mediaType.includes('video')));
+          return;
+        }
+
+        if (activeTab === 'images') {
+          setUserPosts(normalizedPosts.filter((post) => post.mediaType.includes('image')));
+          return;
+        }
+
+        if (activeTab === 'text') {
+          setUserPosts(normalizedPosts.filter((post) => !post.mediaType.includes('video') && !post.mediaType.includes('image')));
+          return;
+        }
+
+        setUserPosts(normalizedPosts);
       })
       .catch((err) => {
+        console.error('Error fetching user posts:', err);
+        setUserPosts([]);
       })
       .finally(() => setPostsLoading(false));
   }, [isOwnProfile, currentUser?.id, profileId, activeTab]);
 
-  useEffect(() => {
-    if (!coverUrl) {
-      setPatternColor('rgba(225, 29, 72, 0.05)');
-      setSolidPatternColor('rgb(225, 29, 72)');
-      return;
-    }
-
-    const fac = new FastAverageColor();
-    const img = new Image();
-
-    const isBlob = coverUrl.startsWith('blob:');
-
-    if (!isBlob) {
-      img.crossOrigin = 'anonymous';
-      const separator = coverUrl.includes('?') ? '&' : '?';
-      img.src = `${coverUrl}${separator}t=${new Date().getTime()}`;
-    } else {
-      img.src = coverUrl;
-    }
-
-    img.onload = () => {
-      try {
-        const color = fac.getColor(img);
-        const rgba = `rgba(${color.value[0]}, ${color.value[1]}, ${color.value[2]}, 0.05)`;
-        const solid = `rgb(${color.value[0]}, ${color.value[1]}, ${color.value[2]})`;
-        setPatternColor(rgba);
-        setSolidPatternColor(solid);
-      } catch (e) {
-        setPatternColor('rgba(225, 29, 72, 0.05)');
-        setSolidPatternColor('rgb(225, 29, 72)');
-      }
-    };
-
-    img.onerror = () => {
-      setPatternColor('rgba(225, 29, 72, 0.05)');
-      setSolidPatternColor('rgb(225, 29, 72)');
-    };
-
-    return () => {
-      img.onload = null;
-      img.onerror = null;
-      fac.destroy();
-    };
-  }, [coverUrl]);
-
-  const handleFollowToggle = async () => {
-    setFollowLoading(true);
-    const willFollow = !isFollowing;
-    try {
-      setIsFollowing(willFollow);
-      setProfileData(prev => ({
-        ...prev,
-        followersCount: prev.followersCount + (willFollow ? 1 : -1)
-      }));
-
-      await toggleFollow(profileId);
-      window.dispatchEvent(new CustomEvent('manna:quest-refresh'));
-    } catch (err) {
-      setIsFollowing(!willFollow);
-      setProfileData(prev => ({
-        ...prev,
-        followersCount: prev.followersCount - (willFollow ? 1 : -1)
-      }));
-    } finally {
-      setFollowLoading(false);
-    }
-  };
-
   const handleProfileUpdate = async ({ displayName, bio, avatarFile }) => {
-    try {
-      let newAvatarUrl = profileData.avatarUrl;
+    let newAvatarUrl = profileData.avatarUrl;
 
-      if (avatarFile) {
-        const { data } = await updateAvatar(avatarFile);
-        newAvatarUrl = data.avatarUrl;
-      }
+    if (avatarFile) {
+      const { data } = await updateAvatar(avatarFile);
+      newAvatarUrl = data.avatarUrl;
+    }
 
-      if (displayName !== undefined || bio !== undefined) {
-        await updateProfile({ displayName, bio });
-      }
+    if (displayName !== undefined || bio !== undefined) {
+      await updateProfile({ displayName, bio });
+    }
 
-      const newName = displayName !== undefined ? displayName : profileData.displayName;
-      const newBio = bio !== undefined ? bio : profileData.bio;
+    const newName = displayName !== undefined ? displayName : profileData.displayName;
+    const newBio = bio !== undefined ? bio : profileData.bio;
 
-      setProfileData(prev => ({
-        ...prev,
+    setProfileData(prev => ({
+      ...prev,
+      avatarUrl: newAvatarUrl,
+      displayName: newName,
+      bio: newBio
+    }));
+
+    if (isOwnProfile) {
+      const { user } = useStore.getState();
+      useStore.getState().setUser({
+        ...user,
         avatarUrl: newAvatarUrl,
         displayName: newName,
         bio: newBio
-      }));
-
-      if (isOwnProfile) {
-        const { user } = useStore.getState();
-        useStore.getState().setUser({
-          ...user,
-          avatarUrl: newAvatarUrl,
-          displayName: newName,
-          bio: newBio
-        });
-      }
-    } catch (err) {
-      throw err;
+      });
     }
   };
 
-  const copyAddress = () => {
-    if (profileData?.stellarPublicKey) {
-      navigator.clipboard.writeText(profileData.stellarPublicKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const initials = (profileData?.displayName || 'U').slice(0, 2).toUpperCase();
-  const hue = (profileData?.displayName || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-
-  const displayBalance = isOwnProfile
-    ? parseFloat(mxncBalance || balanceMXN || balance || 0).toFixed(2)
-    : '0.00';
+  const memberSinceRaw = profileData?.createdAt || profileData?.created_at;
+  const memberSince = memberSinceRaw ? new Date(memberSinceRaw).toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }) : '21 de marzo de 2026';
 
   const tabs = [
-    { id: 'posts', label: t('profile.posts', 'Publicaciones'), icon: <Icons.Grid /> },
-    { id: 'liked', label: t('profile.likes', 'Me Gusta'), icon: <Icons.Heart /> },
-    { id: 'saved', label: t('profile.saved', 'Guardados'), icon: <Icons.Bookmark /> },
+    { id: 'posts', label: t('profile.tabs.all', 'Todo'), icon: <LayoutGrid size={14} /> },
+    { id: 'videos', label: t('profile.tabs.videos', 'Videos'), icon: <Icons.Heart /> },
+    { id: 'images', label: t('profile.tabs.images', 'Imágenes'), icon: <Icons.Bookmark /> },
+    { id: 'text', label: t('profile.tabs.text', 'Texto'), icon: <LayoutGrid size={14} /> },
   ];
+
+  const emptyStates = {
+    posts: { icon: <Icons.Grid size={24} />, text: t('profile.noPosts', 'Aún no hay publicaciones en este remanso.') },
+    videos: { icon: <Icons.Heart size={24} />, text: t('profile.noVideos', 'Parece que no hay videos por aquí.') },
+    images: { icon: <Icons.Bookmark size={24} />, text: t('profile.noImages', 'No se han compartido imágenes todavía.') },
+    text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'Este espacio de texto está esperando ser llenado.') },
+  };
+
+  const hue = 200; // Valor predeterminado para hue
 
   if (profileLoading) {
     return (
@@ -267,132 +216,87 @@ export default function Profile() {
   }
 
   return (
-    <div className={styles.layout} style={{ '--dynamic-color': solidPatternColor }}>
-      <div
-        className={styles.decorStrip}
-        style={{
-          '--pattern-url': `url(${bgPatternUrl})`,
-          '--pattern-color': patternColor
-        }}
-        aria-hidden="true"
-      />
+    <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <main className={styles.main}>
-        <div
-          className={styles.cover}
-          style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-        >
-          {!coverUrl && (
-            <>
-              <div className={styles.coverGlow} />
-              <div className={styles.coverPattern} />
-            </>
-          )}
-          {isOwnProfile && (
-            <>
-              <button
-                className={`${styles.coverEditBtn} ${coverUploading ? styles.coverEditBtnLoading : ''}`}
-                onClick={() => !coverUploading && coverInputRef.current?.click()}
-                title="Cambiar portada"
-                disabled={coverUploading}
-              >
-                <ImagePlus size={16} strokeWidth={1.5} />
-                <span>{coverUploading ? 'Guardando...' : 'Cambiar portada'}</span>
-              </button>
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleCoverChange}
-              />
-            </>
-          )}
-        </div>
-        <div className={styles.coverLine} />
-
-        <div className={styles.header}>
-          <div className={styles.avatarArea}>
-            <div className={styles.avatarWrapper}>
-              <div className={styles.avatarFrame}>
-                <div
-                  className={`${styles.avatar} ${!profileData?.avatarUrl ? styles.avatarEmpty : ''}`}
-                  style={profileData?.avatarUrl ? {
-                    background: `url(${profileData.avatarUrl}) center/cover`
-                  } : {
-                    background: `hsl(${hue}, 50%, 35%)`
-                  }}
+        <section className={styles.profileCard}>
+          <div
+            className={styles.cover}
+            style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+          >
+            {!coverUrl && <div className={styles.coverGlow} />}
+            {isOwnProfile && (
+              <>
+                <button
+                  className={`${styles.coverEditBtn} ${coverUploading ? styles.coverEditBtnLoading : ''}`}
+                  onClick={() => !coverUploading && coverInputRef.current?.click()}
+                  title="Cambiar portada"
+                  disabled={coverUploading}
                 >
-                  {profileData?.avatarUrl ? null : initials}
+                  <ImagePlus size={16} strokeWidth={1.5} />
+                </button>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleCoverChange}
+                />
+              </>
+            )}
+          </div>
+
+          <div className={styles.header}>
+            <div className={styles.avatarArea}>
+              <div className={styles.avatarWrapper}>
+                <div className={styles.avatarFrame}>
+                  <div className={styles.avatar} style={{ backgroundImage: `url(${profileData?.avatarUrl})` }}>
+                    {!profileData?.avatarUrl && <span className={styles.avatarEmpty}>A</span>}
+                    <div className={styles.avatarOverlay}>
+                      <Camera size={20} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.info}>
+                <div className={styles.nameRow}>
+                  <h1 className={styles.name}>{profileData?.displayName || 'Usuario'}</h1>
                   {isOwnProfile && (
-                    <button
+                    <button 
+                      className={styles.editBtn} 
                       onClick={() => setIsProfileModalOpen(true)}
-                      className={styles.avatarOverlay}
-                      title={t('profile.editProfile')}
                     >
-                      <Camera size={22} strokeWidth={1.5} />
+                      <Settings size={18} />
                     </button>
                   )}
                 </div>
+                <span className={styles.handle}>@{profileData?.email || 'usuario'}</span>
+                {profileData?.bio && <p className={styles.bio}>{profileData.bio}</p>}
+                <div className={styles.metaLine}>
+                  <CalendarDays size={16} /> {t('Miembro desde')} {memberSince}
+                </div>
+                <div className={styles.statsRow}>
+                  <span><b>{profileData?.postsCount || 1}</b> {t('Publicaciones')}</span>
+                  <span><b>{profileData?.followersCount || 1}</b> {t('Seguidores')}</span>
+                  <span><b>{profileData?.followingCount || 1}</b> {t('Siguiendo')}</span>
+                </div>
+                <div className={styles.chips}>
+                  <div className={styles.chip}>
+                    <Icons.Heart />
+                    0.00 MXNe
+                  </div>
+                  <div 
+                    className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress}`}
+                    onClick={handleCopyWallet}
+                    title={t('Copiar dirección')}
+                  >
+                    {profileData?.stellarPublicKey?.slice(0, 10)}...{profileData?.stellarPublicKey?.slice(-7)}
+                    {copied ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div className={styles.info}>
-              <h1 className={styles.name}>{profileData?.displayName || 'Usuario'}</h1>
-              <span className={styles.handle}>@{profileData?.displayName?.toLowerCase().replace(/\s+/g, '_') || 'usuario'}</span>
-
-              {profileData?.bio && (
-                <p className={styles.bio}>{profileData.bio}</p>
-              )}
-
-              {!isOwnProfile && (
-                <div className={styles.actions}>
-                  <button
-                    className={`${styles.followBtn} ${isFollowing ? styles.following : ''}`}
-                    onClick={handleFollowToggle}
-                    disabled={followLoading}
-                  >
-                    {isFollowing ? (
-                      <><UserCheck size={14} /> {t('profile.following')}</>
-                    ) : (
-                      <><UserPlus size={14} /> {t('profile.follow')}</>
-                    )}
-                  </button>
-
-                  <button
-                    className={styles.payBtn}
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent('manna:pay-user', {
-                        detail: {
-                          publicKey: profileData.stellarPublicKey,
-                          name: profileData.displayName
-                        }
-                      }));
-                    }}
-                  >
-                    <QrCode size={14} /> Pagar
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
-        </div>
-
-        <div className={styles.statsGroup}>
-          <div className={styles.statsRow}>
-            <div className={styles.stat}>
-              <span className={styles.statNum}>{profileData?.postsCount || 0}</span>
-              <span className={styles.statLabel}>Posts</span>
-            </div>
-            <div className={styles.stat}>
-              <span className={styles.statNum}>{profileData?.followersCount || 0}</span>
-              <span className={styles.statLabel}>Seguidores</span>
-            </div>
-            <div className={styles.stat}>
-              <span className={styles.statNum}>{profileData?.followingCount || 0}</span>
-              <span className={styles.statLabel}>Siguiendo</span>
-            </div>
-          </div>
-        </div>
+        </section>
 
         <div className={styles.tabsWrap}>
           <div className={styles.tabs}>
@@ -415,67 +319,21 @@ export default function Profile() {
           ) : userPosts.length > 0 ? (
             <div className={styles.postList}>
               {userPosts.map((post) => (
-                <article key={post.id} className={styles.post}>
-                  <div className={styles.postTop}>
-                    <div className={styles.postAvatar} style={{
-                      background: post.author_avatar_url || post.avatarUrl || profileData?.avatarUrl
-                        ? `url(${post.author_avatar_url || post.avatarUrl || profileData?.avatarUrl}) center/cover`
-                        : `hsl(${hue}, 50%, 35%)`
-                    }}>
-                      {(post.author_avatar_url || post.avatarUrl || profileData?.avatarUrl) ? null : (post.display_name || post.author_name || 'U').slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className={styles.postMeta}>
-                      <div className={styles.postAuthor}>{post.display_name || 'Usuario'}</div>
-                      <div className={styles.postDate}>
-                        {new Date(post.created_at || Date.now()).toLocaleDateString('es-MX', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className={styles.postText}>{post.content || 'Publicación'}</p>
-
-                  <div className={styles.postActions}>
-                    <button className={`${styles.actionBtn} ${post.isLiked ? styles.actionBtnActive : ''}`}>
-                      <Icons.Heart filled={post.isLiked} /> {post.likes_count || 0}
-                    </button>
-                    <button className={styles.actionBtn}>
-                      <MessageCircle size={14} /> {post.comments_count || 0}
-                    </button>
-                    <button className={styles.actionBtn}><Share size={14} /></button>
-                    <button className={styles.actionBtn}>
-                      <Eye size={14} /> {post.views_count || 0}
-                    </button>
-                    <button className={`${styles.actionBtn} ${post.isSaved ? styles.actionBtnActive : ''}`}>
-                      <Icons.Bookmark filled={post.isSaved} />
-                    </button>
-                    <button className={styles.actionBtn}><Flag size={14} /></button>
-                  </div>
-                </article>
+                <PostCard key={post.id} post={post} />
               ))}
             </div>
           ) : (
             <div className={styles.empty}>
               <div className={styles.emptyIcon}>
-                {activeTab === 'posts' && <Icons.Grid />}
-                {activeTab === 'liked' && <Icons.Heart />}
-                {activeTab === 'saved' && <Icons.Bookmark />}
+                {emptyStates[activeTab]?.icon || <Icons.Grid />}
               </div>
               <p className={styles.emptyText}>
-                {activeTab === 'posts' && t('profile.noPosts', 'Aún no tienes publicaciones')}
-                {activeTab === 'liked' && t('profile.noLikes', 'Aún no has dado me gusta')}
-                {activeTab === 'saved' && t('profile.noSaved', 'No tienes publicaciones guardadas')}
+                {emptyStates[activeTab]?.text || t('profile.noContent', 'Sin contenido disponible')}
               </p>
             </div>
           )}
         </div>
       </main>
-
-      <WalletWidget variant="floating" />
-
 
       <AnimatePresence>
         {isProfileModalOpen && (

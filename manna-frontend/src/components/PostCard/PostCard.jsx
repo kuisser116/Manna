@@ -71,7 +71,8 @@ export function PostCard({ post, isDetail = false }) {
         setIsSaved(has_saved);
     }, [has_liked, likes_count, has_saved]);
 
-    const handleLike = async () => {
+    const handleLike = async (e) => {
+        if (e) e.stopPropagation();
         if (isLiking) return; // Prevent double-clicking
         setIsLiking(true);
 
@@ -107,7 +108,8 @@ export function PostCard({ post, isDetail = false }) {
         }
     };
 
-    const handleShare = async () => {
+    const handleShare = async (e) => {
+        if (e) e.stopPropagation();
         const postUrl = `${window.location.origin}/`; // En MVP mandamos a la raíz o feed general
         if (navigator.share) {
             try {
@@ -144,7 +146,8 @@ export function PostCard({ post, isDetail = false }) {
         }
     };
 
-    const handleReport = () => {
+    const handleReport = (e) => {
+        if (e) e.stopPropagation();
         setIsReportModalOpen(true);
     };
 
@@ -183,6 +186,12 @@ export function PostCard({ post, isDetail = false }) {
     };
 
     const handleCardClick = (e) => {
+        // Si el modal de reporte está abierto, ignorar clics en la tarjeta
+        if (isReportModalOpen) {
+            e.stopPropagation();
+            return;
+        }
+
         // Prevent generic card click if clicking on a link or button
         if (e.target.closest('a') || e.target.closest('button')) {
             return;

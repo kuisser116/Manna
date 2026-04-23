@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle } from 'lucide-react';
 import styles from './ReportModal.module.css';
 
@@ -24,9 +25,9 @@ export default function ReportModal({ isOpen, onClose, onConfirm, isSubmitting }
         onConfirm(finalReason);
     };
 
-    return (
-        <div className={styles.overlay} onClick={onClose}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+    return createPortal(
+        <div className={styles.overlay} onMouseDown={e => e.stopPropagation()}>
+            <div className={styles.modal} onMouseDown={e => e.stopPropagation()}>
                 <div className={styles.header}>
                     <h3>Reportar</h3>
                     <button className={styles.closeBtn} onClick={onClose}>
@@ -35,6 +36,7 @@ export default function ReportModal({ isOpen, onClose, onConfirm, isSubmitting }
                 </div>
 
                 <div className={styles.body}>
+                    <p className={styles.description}>¿Por qué quieres reportar esta publicación? Tu reporte es anónimo y nos ayuda a mantener Manná seguro.</p>
                     <div className={styles.options}>
                         {REASONS.map(reason => (
                             <button 
@@ -69,6 +71,7 @@ export default function ReportModal({ isOpen, onClose, onConfirm, isSubmitting }
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.getElementById('modal-root')
     );
 }

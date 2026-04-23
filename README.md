@@ -1,10 +1,10 @@
-# Manná — Red Social Descentralizada · Guía Técnica para Desarrollo
+# Kovak — Red Social Descentralizada · Guía Técnica para Desarrollo
 
 > **Propósito de este documento:** Si le mandas este README a una IA (ChatGPT, Claude, Gemini, etc.) antes de pedirle ayuda con esta app, la IA ya sabrá exactamente cómo está estructurado todo y podrá ayudarte sin romper nada ni inventar convenciones nuevas.
 
 ---
 
-## 🧠 ¿Qué es Manná? (La Visión)
+## 🧠 ¿Qué es Kovak? (La Visión)
 
 **Slogan:**
 
@@ -12,9 +12,9 @@ Imagina que agarras lo mejor de Twitter (textos rápidos), Instagram (fotos), Ti
 
 Una plataforma que ayuda a creadores y emprendedores —tanto los que apenas están comenzando como los que ya están establecidos— ofreciendo visibilidad y recompensas no solo dentro de la aplicación, sino fuera de ella en la propia localidad del usuario.
 
-**Para quién es Manná**
+**Para quién es Kovak**
 
-Manná es para todo el mundo, pero especialmente para esa persona que está cansada sin saber bien de qué. Entra a Instagram, TikTok o YouTube, y cuando sale una hora después se siente vacía — siente que lo único que pasó fue que perdió su tiempo. Las redes están llenas de tanto contenido que no la llena en ningún aspecto. Siente que podría hacer algo para aportar al mundo, pero las redes comunes no la apoyan en ello.
+Kovak es para todo el mundo, pero especialmente para esa persona que está cansada sin saber bien de qué. Entra a Instagram, TikTok o YouTube, y cuando sale una hora después se siente vacía — siente que lo único que pasó fue que perdió su tiempo. Las redes están llenas de tanto contenido que no la llena en ningún aspecto. Siente que podría hacer algo para aportar al mundo, pero las redes comunes no la apoyan en ello.
 
 Ese creador de contenido que sube material diferente pero no ve avances en su comunidad, que siente que está trabajando para el algoritmo y no para mejorar realmente la vida de las personas.
 
@@ -147,6 +147,47 @@ Comercio recibe: $800 MXNe completos
 ### Sostenibilidad:
 
 El modelo híbrido con tope de $50 MXNe protege el fondo de compras grandes mientras mantiene el descuento atractivo para el usuario promedio.
+
+---
+
+## 🎨 DNA Visual (Design System: Mexican Modern / Soft Brutalist)
+
+Manná utiliza una estética **"Mexican Modern / Soft Brutalist"**. No es el minimalismo frío de Silicon Valley, sino uno con alma, texturas y contraste de alta energía.
+
+### Principios de Diseño:
+1.  **Sinceridad de Materiales**: Fondos blancos puros (`#ffffff`) sobre superficies con texturas sutiles (patrón de grecas).
+2.  **Contraste de Identidad**: Uso del **Rojo Tequila** (`#e11d48`) como color primario para acciones de alta energía (Likes, Reportes, Botones principales).
+3.  **Tipografía con Carácter**:
+    *   **Plus Jakarta Sans**: Tipografía principal para todo el cuerpo y controles. Geométrica, profesional y cálida.
+    *   **Caesar Dressing**: Utilizada exclusivamente para nombres de perfil y títulos de gran impacto. Aporta el toque ancestral/moderno único de la marca.
+    *   **JetBrains Mono**: Para representaciones de código o datos técnicos (Wallet addresses).
+4.  **Bordes y Formas**: Radios de curvatura generosos (**20px a 32px**) para componentes como modales y tarjetas, combinados con bordes finos de `#e5e5e5`. No usamos sombras pesadas, sino elevaciones sutiles.
+5.  **Patrón Identitario (Grecas)**: 
+    - Uso de un patrón de grecas geométricas de alta definición en el fondo (`mask-image` o `background`).
+    - Color: `#d2d2d2` con opacidad controlada (`0.58`).
+    - Tamaño estándar: `104px x 104px`.
+6.  **Micro-interacciones y Jerarquía Directa**:
+    - **Hover Dinámico**: El contenido se desplaza lateralmente (`translateX(8px)`) o escala suavemente (`scale(1.05)`) para indicar interactividad sin recurrir a colores negros agresivos en los bordes.
+    - **Capas Blur (Expert UX)**: Los modales utilizan `backdrop-filter: blur(12px)` con fondos blancos semitransparentes para mantener la luz y la profundidad de la interfaz, nunca oscureciendo totalmente la pantalla.
+    - **Consistencia de Acción**: Todos los botones de confirmación y reporte deben usar el **Rojo Tequila** del sistema.
+
+### Paleta de Colores:
+```css
+:root {
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-primary: #e11d48; /* Rojo Tequila / Rose */
+  --color-text: #111111;
+  --color-border: #e5e5e5;
+  --color-pattern: rgba(210, 210, 210, 0.58);
+}
+```
+
+### PROHIBIDO:
+- ❌ Usar bordes negros gruesos en hovers (usar desplazamientos o sombras suaves).
+- ❌ Colores tierra o "hueso" apagados (usar blanco puro para modernidad).
+- ❌ Tipografías tipo "Comic Sans" o similares (usar Plus Jakarta Sans).
+- ❌ Modales oscuros que cierran al hacer clic fuera (usar Portals y cierre por "X").
 
 ---
 
@@ -318,107 +359,46 @@ CREATE TABLE discount_transactions (
 
 ---
 
-## 🎨 Regla #5 — Design System (Soft Brutalist)
+## 🎨 Regla #5 — Design System (Mexican Modern / Soft Brutalist)
 
 ### Estilo Visual:
-**Soft Brutalist** — Audaz pero habitable. Mantiene la personalidad minimalista pero reduce la fatiga visual con contrastes suavizados y acentos de color.
+**Mexican Modern / Soft Brutalist** — Modernidad editorial con alto contraste de luz, superficies blancas puras y acentos vibrantes de la identidad mexicana.
 
 ### Características Principales:
-- **Fondo principal:** #fafafa (no blanco puro, reduce fatiga)
-- **Texto:** #1a1a1a (negro suave, no puro)
-- **Bordes:** 1px, color #e5e5e5 (gris claro)
-- **Acento:** #22c55e (verde) para acciones positivas y balance
-- **Tipografía:** Plus Jakarta Sans (primary), system fonts como fallback
-- **Layout:** 2 columnas (Main + Sidebar 380px)
+- **Fondo principal:** #fafafa (Gris ultra-claro para limpieza extrema)
+- **Superficies:** #ffffff (Blanco puro para elevar el contenido)
+- **Texto:** #111111 (Contraste máximo)
+- **Acento principal:** #e11d48 (Rojo Tequila / Rose)
+- **Bordes:** #e5e5e5 (Finos y sutiles)
+- **Tipografía:** 
+    - **Caesar Dressing**: Solo para nombres de perfil y títulos de impacto.
+    - **Plus Jakarta Sans**: Tipografía funcional para toda la interfaz (Plus Jakarta es cálida y moderna).
+- **Patrón de marca:** Greca mexicana geométrica sutil (`opacity: 0.58`) como textura de fondo.
 
-### Paleta de Colores:
+### Paleta de Colores (CSS Variables):
 ```css
 :root {
-  /* Fondos Light */
   --color-bg: #fafafa;
-  --color-surface: #fff;
-  --color-surface-2: #f5f5f5;
-  
-  /* Dark surfaces (wallet, cover) */
-  --color-dark: #1a1a1a;
-  --color-dark-2: #2a2a2a;
-  
-  /* Texto Light */
-  --color-text: #1a1a1a;
-  --color-text-secondary: #4b5563;
-  --color-text-muted: #6b7280;
-  --color-text-light: #9ca3af;
-  
-  /* Texto en dark surfaces */
-  --color-text-dark: #fff;
-  --color-text-dark-muted: rgba(255,255,255,0.5);
-  
-  /* Acentos (Se mantienen en Dark Mode) */
-  --color-primary: #e11d48; /* Rojo tequila */
-  --color-accent: #e11d48;
-  --color-money: #22c55e;
-  
-  --border-color: #e5e5e5;
-}
-
-:root[data-theme='dark'] {
-  /* Fondos Dark */
-  --color-bg: #121212;
-  --color-surface: #1e1e1e;
-  --color-surface-2: #242424;
-  
-  /* Inversión sutil */
+  --color-surface: #ffffff;
   --color-primary: #e11d48;
-  --color-border: #333333;
-  
-  /* Texto Dark */
-  --color-text: #ededed;
-  --color-text-secondary: rgba(255, 255, 255, 0.7);
-  --color-text-muted: rgba(255, 255, 255, 0.55);
+  --color-text: #111111;
+  --color-border: #e5e5e5;
 }
 ```
 
 ### Componentes Clave:
 | Componente | Estilo |
 |------------|--------|
-| **Navbar** | Sticky, 70px, logo "M" en Rosa Mexicano, fondo blanco |
-| **Botones** | 1px border, hover invierte colores, texto uppercase |
-| **Cards/Posts** | Borde sutil, hover con `translateX(8px)` suave (0.45s) + sidebar rosa + shadow sutil |
-| **Avatar** | 108px, borde 2px, marco limpio que se expande en hover, overlay de edición sutil (nunca tapar scan) |
-| **Cover** | 180px height, gradiente dinámico #111 → #242424 con glow rosa o cover pattern geométrico |
-| **Stats** | Grid 3 columnas, borde entre stats, hover con bottom-nav rosa en hover, métricas con countUp |
-| **Wallet** | Panel oscuro (#111), shimmer sutil, balance con glow verde, alineada estáticamente en desktop |
-| **Tabs** | Indicador rosa 2px bottom, texto uppercase |
+| **Modales** | `backdrop-filter: blur(12px)`, fondo blanco semitransparente, radios de 32px |
+| **Tarjetas (Posts)** | Desplazamiento lateral de 8px en hover, sin bordes negros |
+| **Avatar** | Frame circular con escala 1.05 en hover |
+| **Botones** | Radios de 20px, texto Bold y mayúsculas para acciones principales |
 
 ### PROHIBIDO:
-- ❌ Degradados pesados/llamativos (gradientes sutiles permitidos en dark surfaces únicamente)
-- ❌ Border-radius excesivo (usar solo donde sea necesario, máximo 2-4px)
-- ❌ Colores hardcodeados (usar variables CSS)
-- ❌ `alert()` para feedback (usar `useFeedbackModal`)
-- ❌ Sombras pesadas (opacidad máxima 0.06 para elementos comunes, 0.3 para acentos)
-
-### Animaciones Permitidas:
-| Animación | Uso | Timing |
-|-----------|-----|--------|
-| `fadeUp` | Entrada de elementos (0 → opacity, translateY) | 0.4s ease |
-| `slideRight` | Sidebar entrando | 0.4s ease |
-| `pulse` | Indicadores de estado/online | 2s ease-in-out infinite |
-| `breathe` | Balance numérico (sutil scale) | 4s ease-in-out infinite |
-| `shimmer` | Acento en dark surfaces (delay 1s+) | 3s ease-in-out infinite |
-| `countUp` | Stats con stagger (aparición escalonada) | 0.5s ease |
-| `slideIn` | Indicador de tab activo | 0.3s cubic-bezier |
-
-**Regla de animaciones:** Máximo 2 animaciones simultáneas por vista. Preferir `fadeUp` sobre otras.
-
-**Interacciones de hover:** Deben ser progresivas (evitar cambios de golpe). Si un componente usa `transform` para entrada, no reutilizar `transform` en hover sin separar animaciones para evitar conflictos.
-
-### Responsive Breakpoints:
-```css
-@media (max-width: 1200px) { /* Sidebar 340px */ }
-@media (max-width: 1024px) { /* Layout 1 columna, sidebar arriba */ }
-@media (max-width: 768px)  { /* Cover compacto, stats 2x2 */ }
-@media (max-width: 480px)  { /* Stats 1 columna, controles minimizados */ }
-```
+- ❌ Usar bordes negros agresivos en interacción (usar desplazamientos o sombras)
+- ❌ Paletas de colores "hueso" o "tierra" apagadas
+- ❌ Tipografías genéricas o fallback tipo Comic Sans
+- ❌ Modales que se cierran al hacer clic fuera (usar cierre explícito)
 
 ---
 
@@ -573,6 +553,6 @@ PINATA_JWT=
 
 ---
 
-*Documento actualizado el 30 de Marzo 2026 — Design System sincronizado con Profile.jsx*
+*Documento actualizado el 10 de Abril 2026 — Design System sincronizado con Profile.jsx (Minimal Mexicano Editorial)*
 
 *"Tu tiempo vale dinero real." — Manná 2026*
