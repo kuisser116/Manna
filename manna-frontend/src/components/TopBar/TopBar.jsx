@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Bell, Menu, X, ArrowLeft, QrCode, Sun, Moon } from "lucide-react";
+import { Search, Bell, Menu, X, ArrowLeft, QrCode, Sun, Moon, LayoutGrid, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
@@ -23,6 +23,7 @@ export function TopBar({ onToggleSidebar }) {
   const dropdownRef = useRef(null);
   const [suggestions, setSuggestions] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const isProfileRoute = location.pathname.startsWith('/profile');
 
   // Cargar sugerencias
   useEffect(() => {
@@ -73,21 +74,25 @@ export function TopBar({ onToggleSidebar }) {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
   };
 
+  const isProfileMinimal = isProfileRoute;
+
   return (
-    <header className={styles.topbar}>
+    <header className={styles.topbar} data-profile-route={isProfileRoute ? 'true' : 'false'}>
       {/* Izquierda: hamburger + logo */}
       <div className={styles.left}>
-        <button
-          className={styles.hamburger}
-          onClick={onToggleSidebar}
-          aria-label="Toggle sidebar"
-        >
-          <Menu size={22} />
-        </button>
+        {isProfileMinimal ? null : (
+          <button
+            className={styles.hamburger}
+            onClick={onToggleSidebar}
+            aria-label="Toggle sidebar"
+          >
+            <Menu size={22} />
+          </button>
+        )}
         <Link to="/feed" className={styles.logo}>
           M
         </Link>
-        {showBackBtn && (
+        {!isProfileMinimal && showBackBtn && (
           <button
             className={styles.backBtn}
             onClick={() => navigate(-1)}
@@ -99,7 +104,7 @@ export function TopBar({ onToggleSidebar }) {
       </div>
 
       {/* Centro: barra de búsqueda con dropdown */}
-      <div className={styles.searchWrap} ref={dropdownRef}>
+      <div className={`${styles.searchWrap} ${isProfileMinimal ? styles.searchWrapHidden : ''}`} ref={dropdownRef}>
         <form className={styles.searchContainer} onSubmit={handleSearch}>
           <div className={styles.searchBox}>
             <input
@@ -165,96 +170,150 @@ export function TopBar({ onToggleSidebar }) {
 
       {/* Derecha: selector idioma + notificaciones + avatar */}
       <div className={styles.right}>
-        <LanguageSelector />
+        {isProfileMinimal ? (
+          <>
+            <button
+              className={styles.iconBtn}
+              aria-label="Toggle sidebar"
+              onClick={onToggleSidebar}
+            >
+              <LayoutGrid size={20} />
+            </button>
 
-        <button
-          className={styles.iconBtn}
-          aria-label={t('topbar.myQR')}
-          onClick={() => setMyQRModalOpen(true)}
-        >
-          <QrCode size={20} />
-          <span className={styles.btnLabel}>{t('topbar.myQR')}</span>
-        </button>
+            <button
+              className={styles.iconBtn}
+              aria-label="Toggle Theme"
+              onClick={() => setShowUserMenu((v) => !v)}
+            >
+              <Settings size={20} />
+            </button>
 
-        <button
-          className={styles.iconBtn}
-          aria-label="Toggle Theme"
-          onClick={toggleDarkMode}
-        >
-          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+            {showUserMenu && (
+              <div className={styles.userMenu}>
+                <div className={styles.userMenuHeader}>
+                  <Avatar
+                    avatarUrl={user?.avatarUrl}
+                    name={user?.displayName}
+                    size={40}
+                  />
+                  <div>
+                    <p className={styles.userMenuName}>{user?.displayName}</p>
+                    <p className={styles.userMenuEmail}>{user?.email}</p>
+                  </div>
+                </div>
+                <Link
+                  to="/profile"
+                  className={styles.userMenuItem}
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  Mi perfil
+                </Link>
+                <button
+                  className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
+                  onClick={() => {
+                    logout();
+                    setShowUserMenu(false);
+                  }}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <LanguageSelector />
 
-        <NotificationsDropdown />
+            <button
+              className={styles.iconBtn}
+              aria-label={t('topbar.myQR')}
+              onClick={() => setMyQRModalOpen(true)}
+            >
+              <QrCode size={20} />
+              <span className={styles.btnLabel}>{t('topbar.myQR')}</span>
+            </button>
 
-        <div className={styles.userWrap}>
-          <button
-            className={styles.avatarBtn}
-            onClick={() => setShowUserMenu((v) => !v)}
-          >
-            <Avatar
-              avatarUrl={user?.avatarUrl}
-              name={user?.displayName}
-              size={32}
-            />
-          </button>
+            <button
+              className={styles.iconBtn}
+              aria-label="Toggle Theme"
+              onClick={toggleDarkMode}
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
 
-          {showUserMenu && (
-            <div className={styles.userMenu}>
-              <div className={styles.userMenuHeader}>
+            <NotificationsDropdown />
+
+            <div className={styles.userWrap}>
+              <button
+                className={styles.avatarBtn}
+                onClick={() => setShowUserMenu((v) => !v)}
+              >
                 <Avatar
                   avatarUrl={user?.avatarUrl}
                   name={user?.displayName}
-                  size={40}
+                  size={32}
                 />
-                <div>
-                  <p className={styles.userMenuName}>{user?.displayName}</p>
-                  <p className={styles.userMenuEmail}>{user?.email}</p>
-                </div>
-              </div>
-              <Link
-                to="/profile"
-                className={styles.userMenuItem}
-                onClick={() => setShowUserMenu(false)}
-              >
-                Mi perfil
-              </Link>
-              <Link
-                to="/ads-studio"
-                className={styles.userMenuItem}
-                onClick={() => setShowUserMenu(false)}
-              >
-                Ads Studio
-              </Link>
-              {user?.is_admin && (
-                <>
-                  <Link
-                    to="/admin/control-center"
-                    className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    Control
-                  </Link>
-                  <Link
-                    to="/admin/ads"
-                    className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    Validar Anuncios
-                  </Link>
-                </>
-              )}
-              <button
-                className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
-                onClick={() => {
-                  logout();
-                  setShowUserMenu(false);
-                }}
-              >
-                Cerrar sesión
               </button>
+
+              {showUserMenu && (
+                <div className={styles.userMenu}>
+                  <div className={styles.userMenuHeader}>
+                    <Avatar
+                      avatarUrl={user?.avatarUrl}
+                      name={user?.displayName}
+                      size={40}
+                    />
+                    <div>
+                      <p className={styles.userMenuName}>{user?.displayName}</p>
+                      <p className={styles.userMenuEmail}>{user?.email}</p>
+                    </div>
+                  </div>
+                  <Link
+                    to="/profile"
+                    className={styles.userMenuItem}
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Mi perfil
+                  </Link>
+                  <Link
+                    to="/ads-studio"
+                    className={styles.userMenuItem}
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Ads Studio
+                  </Link>
+                  {user?.is_admin && (
+                    <>
+                      <Link
+                        to="/admin/control-center"
+                        className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        Control
+                      </Link>
+                      <Link
+                        to="/admin/ads"
+                        className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        Validar Anuncios
+                      </Link>
+                    </>
+                  )}
+                  <button
+                    className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
+                    onClick={() => {
+                      logout();
+                      setShowUserMenu(false);
+                    }}
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </header>
   );

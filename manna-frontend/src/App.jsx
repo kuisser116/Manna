@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import useStore from './store';
 import logoImg from './assets/personaje_1.12.png';
@@ -51,9 +51,11 @@ function AppLayout({ children }) {
   const [theaterSidebarVisible, setTheaterSidebarVisible] = useState(false);
   const [qrScannerData, setQrScannerData] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
+  const location = useLocation();
 
   const { videoMode, qrScannerOpen, setQrScannerOpen, myQRModalOpen, setMyQRModalOpen } = useStore();
   const isTheaterMode = videoMode === 'theater';
+  const isProfileRoute = location.pathname.startsWith('/profile');
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -113,7 +115,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {isMobile && <WalletWidget variant="floating" />}
+        {isMobile && !isProfileRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <QRScanner
