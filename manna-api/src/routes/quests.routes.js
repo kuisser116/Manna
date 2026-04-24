@@ -4,7 +4,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { checkAndFundQuest } from '../services/quest.service.js';
 
-const router = Router();
+const router = Router({ strict: false });
 
 // POST /quests/heartbeat
 router.post('/heartbeat', authMiddleware, async (req, res) => {

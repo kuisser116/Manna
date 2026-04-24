@@ -5,7 +5,7 @@ import getDB from '../database/db.js';
 import { sendPayment, getBalance, ensureTrustline } from '../services/stellar.service.js';
 import { decrypt } from '../services/crypto.service.js';
 
-const router = Router();
+const router = Router({ strict: false });
 
 function currentMonthYear() {
     return new Date().toISOString().slice(0, 7);
@@ -190,7 +190,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
             toPublicKey,
             amount: userAmount,
             assetCode,
-            memo: isDiscountApplicable ? `Aseria Pay: ${merchant.business_name}` : 'Aseria Transfer'
+            memo: isDiscountApplicable ? `Ehise Pay: ${merchant.business_name}` : 'Ehise Transfer'
         });
 
         // 4. Registrar transacción en DB

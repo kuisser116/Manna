@@ -35,9 +35,9 @@ function ProtectedRoute({ children, authLoading }) {
   if (authLoading) {
     return (
       <div className={styles.loadingWrapper}>
-        <img src={logoImg} alt="Cargando Aseria" className={styles.loadingLogo} />
+        <img src={logoImg} alt="Cargando Ehise" className={styles.loadingLogo} />
         <p className={styles.loadingText}>
-          Cargando Aseria...
+          Cargando Ehise...
         </p>
       </div>
     );
@@ -99,8 +99,8 @@ function AppLayout({ children }) {
       setQrScannerData(e.detail);
       setQrScannerOpen(true);
     };
-    window.addEventListener('manna:pay-user', handlePayUser);
-    return () => window.removeEventListener('manna:pay-user', handlePayUser);
+    window.addEventListener('Ehise:pay-user', handlePayUser);
+    return () => window.removeEventListener('Ehise:pay-user', handlePayUser);
   }, [setQrScannerOpen]);
 
   return (
@@ -127,7 +127,7 @@ function AppLayout({ children }) {
         defaultPublicKey={qrScannerData?.publicKey}
         defaultBusinessName={qrScannerData?.name}
         onPaymentSuccess={() => {
-          window.dispatchEvent(new CustomEvent('manna:ad-reward'));
+          window.dispatchEvent(new CustomEvent('Ehise:ad-reward'));
         }}
       />
       <MyQRModal

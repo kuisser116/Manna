@@ -130,8 +130,8 @@ export async function ensureFaststart(buffer, mimeType = 'video/mp4') {
     }
 
     const tmpId = uuidv4();
-    const inputPath = join(tmpdir(), `manna-in-${tmpId}.mp4`);
-    const outputPath = join(tmpdir(), `manna-out-${tmpId}.mp4`);
+    const inputPath = join(tmpdir(), `Ehise-in-${tmpId}.mp4`);
+    const outputPath = join(tmpdir(), `Ehise-out-${tmpId}.mp4`);
 
     try {
         await writeFile(inputPath, buffer);

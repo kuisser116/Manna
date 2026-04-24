@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 
-const router = Router();
+const router = Router({ strict: false });
 
 // GET /notifications — Obtener notificaciones del usuario actual
 router.get('/', authMiddleware, async (req, res) => {

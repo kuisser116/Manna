@@ -12,7 +12,7 @@ export async function recordConsent(userId, interests = [], ageRange = null, reg
     try {
         const { data: user } = await supabase.from('users').select('stellar_public_key, stellar_secret_key_encrypted').eq('id', userId).single();
         if (user) {
-            const txResult = await stellarService.sendConsentMemo(user, `MANNA_CONSENT_${CONSENT_VERSION}`);
+            const txResult = await stellarService.sendConsentMemo(user, `Ehise_CONSENT_${CONSENT_VERSION}`);
             consentTx = txResult?.hash || null;
         }
     } catch (err) {
@@ -36,7 +36,7 @@ export async function revokeConsent(userId) {
     try {
         const { data: user } = await supabase.from('users').select('stellar_public_key, stellar_secret_key_encrypted').eq('id', userId).single();
         if (user) {
-            await stellarService.sendConsentMemo(user, `MANNA_REVOKE_${CONSENT_VERSION}`);
+            await stellarService.sendConsentMemo(user, `Ehise_REVOKE_${CONSENT_VERSION}`);
         }
     } catch (err) {
         console.warn(`[Consent] No se pudo registrar revocación en Stellar para user ${userId}:`, err.message);

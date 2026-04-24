@@ -9,7 +9,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import { strictLimiter } from '../middleware/rateLimiter.js';
 import { repairWallet } from '../services/quest.service.js';
 
-const router = Router();
+const router = Router({ strict: false });
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 

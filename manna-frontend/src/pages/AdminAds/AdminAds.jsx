@@ -78,11 +78,11 @@ const AdminAds = () => {
                 <div className={styles.headerLeft}>
                     <Link to="/feed" className={styles.backBtn}>
                         <ArrowLeft size={20} />
-                        <span>Volver a Aseria</span>
+                        <span>Volver a Ehise</span>
                     </Link>
                     <div className={styles.divider} />
                     <div className={styles.brand}>
-                        <img src={logoImg} alt="Aseria" className={styles.headerLogo} />
+                        <img src={logoImg} alt="Ehise" className={styles.headerLogo} />
                         <span className={styles.brandName}>Admin Ads</span>
                     </div>
                 </div>

@@ -21,7 +21,7 @@ const resources = {
         "sort": "Ordenar"
       },
       "topbar": {
-        "search": "Buscar en Aseria",
+        "search": "Buscar en Ehise",
         "myQR": "Mi QR"
       },
       "sidebar": {
@@ -40,7 +40,7 @@ const resources = {
         "balance": "Saldo",
         "coupons": "Cupones",
         "personalBalance": "TU BALANCE PERSONAL",
-        "yourWallet": "Tu Billetera Aseria",
+        "yourWallet": "Tu Billetera Ehise",
         "withdrawOxxo": "Retirar en Oxxo / MoneyGram"
       },
       "profile": {
@@ -91,7 +91,7 @@ const resources = {
         "sort": "Sort"
       },
       "topbar": {
-        "search": "Search in Aseria",
+        "search": "Search in Ehise",
         "myQR": "My QR"
       },
       "sidebar": {
@@ -110,7 +110,7 @@ const resources = {
         "balance": "Balance",
         "coupons": "Coupons",
         "personalBalance": "YOUR PERSONAL BALANCE",
-        "yourWallet": "Your Aseria Wallet",
+        "yourWallet": "Your Ehise Wallet",
         "withdrawOxxo": "Withdraw at Oxxo / MoneyGram"
       },
       "profile": {

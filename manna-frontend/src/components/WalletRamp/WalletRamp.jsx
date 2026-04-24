@@ -101,7 +101,7 @@ export default function WalletRamp({ isOpen, onClose, onRefreshBalance }) {
                     {status === 'idle' && (
                         <form onSubmit={handleStartWithdraw} className={styles.form}>
                             <div className={styles.inputBox}>
-                                <label>Monto a retirar (Aseria Pesos)</label>
+                                <label>Monto a retirar (Ehise Pesos)</label>
                                 <div className={styles.inputWrapper}>
                                     <input 
                                         type="number" 

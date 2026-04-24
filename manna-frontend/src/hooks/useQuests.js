@@ -21,10 +21,10 @@ export function useQuests() {
             await refreshQuest();
             
             // Notificar a otros componentes que escuchen eventos (WalletWidget)
-            window.dispatchEvent(new CustomEvent('manna:quest-refresh'));
+            window.dispatchEvent(new CustomEvent('Ehise:quest-refresh'));
 
             if (res.data.missionCompleted) {
-                window.dispatchEvent(new CustomEvent('manna:celebration'));
+                window.dispatchEvent(new CustomEvent('Ehise:celebration'));
             }
         } catch (err) {
             console.warn('Heartbeat failed:', err);
@@ -34,9 +34,9 @@ export function useQuests() {
     // Función universal para cuando un like o follow avisa que se completó
     const verifyCompletion = useCallback((isCompleted) => {
         refreshQuest(); 
-        window.dispatchEvent(new CustomEvent('manna:quest-refresh'));
+        window.dispatchEvent(new CustomEvent('Ehise:quest-refresh'));
         if (isCompleted) {
-            window.dispatchEvent(new CustomEvent('manna:celebration'));
+            window.dispatchEvent(new CustomEvent('Ehise:celebration'));
         }
     }, [refreshQuest]);
 

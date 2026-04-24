@@ -4,7 +4,7 @@ const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://loca
 
 // Interceptor: agrega el JWT automáticamente en cada request
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('manna_token');
+    const token = localStorage.getItem('Ehise_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });

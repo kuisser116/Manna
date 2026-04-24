@@ -55,7 +55,7 @@ export async function analyzeContentWithAI(content, type, textContent = null) {
 }
 
 async function callGroq(apiKey, content, type) {
-    const prompt = `Eres un moderador experto para la red social "Aseria". 
+    const prompt = `Eres un moderador experto para la red social "Ehise". 
     Analiza el siguiente contenido (${type}) y decide si infringe las normas de la comunidad (odio, acoso, sexualidad explícita, estafas/scams o spam).
     
     Responde ÚNICAMENTE con un objeto JSON válido con esta estructura:
@@ -87,7 +87,7 @@ async function callGroq(apiKey, content, type) {
 }
 
 async function callGroqVision(apiKey, imageUrl, type) {
-    const prompt = `Analiza esta ${type === 'video' ? 'miniatura de video' : 'imagen'} para la red social "Aseria". 
+    const prompt = `Analiza esta ${type === 'video' ? 'miniatura de video' : 'imagen'} para la red social "Ehise". 
     Determina si infringe las normas críticas: 
     1. Desnudez o contenido sexual.
     2. Violencia explícita o sangre.

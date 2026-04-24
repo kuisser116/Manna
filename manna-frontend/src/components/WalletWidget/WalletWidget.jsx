@@ -98,11 +98,11 @@ export function WalletWidget({ variant = 'default' }) {
     // Refrescar misiones cuando se dispara el evento desde Profile/PostCard
     useEffect(() => {
         const handleQuestRefresh = () => {
-            console.log('[WalletWidget] Event received: manna:quest-refresh');
+            console.log('[WalletWidget] Event received: Ehise:quest-refresh');
             fetchStatus();
         };
-        window.addEventListener('manna:quest-refresh', handleQuestRefresh);
-        return () => window.removeEventListener('manna:quest-refresh', handleQuestRefresh);
+        window.addEventListener('Ehise:quest-refresh', handleQuestRefresh);
+        return () => window.removeEventListener('Ehise:quest-refresh', handleQuestRefresh);
     }, [fetchStatus]);
 
     // Confetti al completar misiones
@@ -114,8 +114,8 @@ export function WalletWidget({ variant = 'default' }) {
                 fetchBalance();
             }, 6000);
         };
-        window.addEventListener('manna:celebration', handleCelebration);
-        return () => window.removeEventListener('manna:celebration', handleCelebration);
+        window.addEventListener('Ehise:celebration', handleCelebration);
+        return () => window.removeEventListener('Ehise:celebration', handleCelebration);
     }, [fetchBalance]);
 
     // Pulso dorado al recibir recompensa por anuncio
@@ -127,8 +127,8 @@ export function WalletWidget({ variant = 'default' }) {
                 fetchBalance();
             }, 3000);
         };
-        window.addEventListener('manna:ad-reward', handleAdReward);
-        return () => window.removeEventListener('manna:ad-reward', handleAdReward);
+        window.addEventListener('Ehise:ad-reward', handleAdReward);
+        return () => window.removeEventListener('Ehise:ad-reward', handleAdReward);
     }, [fetchBalance]);
 
     const explorerUrl = user?.stellarPublicKey

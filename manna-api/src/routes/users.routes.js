@@ -6,7 +6,7 @@ import { checkAndFundQuest } from '../services/quest.service.js';
 import { uploadToR2, computeCID } from '../services/ipfs.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
-const router = Router();
+const router = Router({ strict: false });
 
 // Multer en memoria para avatares
 const upload = multer({

@@ -7,7 +7,7 @@ import { decrypt } from '../services/crypto.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { repairWallet } from '../services/quest.service.js';
 
-const router = Router();
+const router = Router({ strict: false });
 
 // POST /transactions/support — Micropago: usuario apoya a creador
 router.post('/support', authMiddleware, async (req, res) => {
@@ -40,7 +40,7 @@ router.post('/support', authMiddleware, async (req, res) => {
                 toPublicKey: to,
                 amount,
                 assetCode: 'MXNe',
-                memo: 'Aseria Support',
+                memo: 'Ehise Support',
             });
         } catch (err) {
             if (err.code === 'WALLET_NOT_ACTIVE') {
@@ -54,7 +54,7 @@ router.post('/support', authMiddleware, async (req, res) => {
 
                 return res.status(400).json({ 
                     code: 'WALLET_NOT_ACTIVE', 
-                    message: 'El destinatario aún no tiene su billetera activa en Stellar. Aseria está intentando activarla automáticamente, intenta de nuevo en un momento.' 
+                    message: 'El destinatario aún no tiene su billetera activa en Stellar. Ehise está intentando activarla automáticamente, intenta de nuevo en un momento.' 
                 });
             }
             console.error('Stellar tx failed:', err);

@@ -20,7 +20,7 @@ const AdCard = ({ ad, proofToken, postId, context = 'feed', creatorId = null, on
     const [isEnabled, setIsEnabled] = useState(false);
     const [isMuted, setIsMuted] = useState(true);
     const videoRef = useRef(null);
-    const token = localStorage.getItem('manna_token');
+    const token = localStorage.getItem('Ehise_token');
 
     // Auto-hide payout overlay after a few seconds
     useEffect(() => {
@@ -44,7 +44,7 @@ const AdCard = ({ ad, proofToken, postId, context = 'feed', creatorId = null, on
             
             // Solo marcar como completado si la API respondió OK
             setIsCompleted(true);
-            window.dispatchEvent(new CustomEvent('manna:ad-reward'));
+            window.dispatchEvent(new CustomEvent('Ehise:ad-reward'));
             if (onViewComplete) onViewComplete();
         } catch (err) {
             const msg = err.response?.data?.message || err.message;

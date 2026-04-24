@@ -1,5 +1,5 @@
 /**
- * Servicio de Precios (Aseria)
+ * Servicio de Precios (Ehise)
  * Proporciona tasas de cambio para visualización local.
  */
 

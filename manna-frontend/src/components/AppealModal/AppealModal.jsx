@@ -32,7 +32,7 @@ export default function AppealModal({ isOpen, onClose, onConfirm, postTitle }) {
                         <label className={styles.label}>¿Por qué deberíamos restaurar esta publicación?</label>
                         <textarea 
                             className={styles.textarea}
-                            placeholder="Describe detalladamente por qué consideras que tu contenido cumple con las normas de Aseria..."
+                            placeholder="Describe detalladamente por qué consideras que tu contenido cumple con las normas de Ehise..."
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             required
