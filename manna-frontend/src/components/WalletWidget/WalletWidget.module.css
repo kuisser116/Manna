@@ -60,7 +60,7 @@
     transition: background 0.4s ease, box-shadow 0.4s ease;
 }
 
-/* Activado por manna:ad-reward — brillo dorado sutil por 3 segundos */
+/* Activado por Ehise:ad-reward — brillo dorado sutil por 3 segundos */
 .iconGlow {
     background: var(--color-primary);
     box-shadow: 0 0 14px var(--color-primary);

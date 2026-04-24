@@ -50,7 +50,7 @@ async function simulateReports(postId, numReports = 5) {
     }
 
     console.log('\n✨ Simulación completada.');
-    console.log('👉 Revisa la terminal donde corre el servidor (manna-api) para ver los logs de la IA.');
+    console.log('👉 Revisa la terminal donde corre el servidor (Ehise-api) para ver los logs de la IA.');
 }
 
 const postId = process.argv[2];

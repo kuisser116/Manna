@@ -17,7 +17,7 @@ const MOCK_HTML = (amount, currency) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Retiro Aseria - OXXO</title>
+        <title>Retiro Ehise - OXXO</title>
         <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
             .card { background: #1e1e1e; border-radius: 16px; width: 100%; max-width: 350px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); text-align: center; }
@@ -104,7 +104,7 @@ export async function authenticateSEP10(encryptedSecret) {
 
         // 1. Obtener challenge
         const { data: challengeData } = await axios.get(authEndpoint, {
-            params: { account: userPublicKey, client_domain: 'aseria.network' }
+            params: { account: userPublicKey, client_domain: 'Ehise.network' }
         });
 
         // 2. Firmar challenge

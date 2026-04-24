@@ -58,7 +58,7 @@ export default function CommentModal() {
         if (type === 'image') {
             // Para R2: parts[1] es CID, parts[2] es caption
             const raw = parts[2] || parts[1] || '';
-            return cleanTitle(raw, 'Imagen de Aseria');
+            return cleanTitle(raw, 'Imagen de Ehise');
         }
         
         return rawContent;

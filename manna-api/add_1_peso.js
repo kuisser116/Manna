@@ -3,9 +3,9 @@ import { triggerDistribution } from './src/services/ads.service.js';
 import getDB from './src/database/db.js';
 
 async function main() {
-    const publicKey = process.env.MANNA_DEV_WALLET;
+    const publicKey = process.env.Ehise_DEV_WALLET;
     if (!publicKey) {
-        console.error('❌ No se encontró MANNA_DEV_WALLET en el .env');
+        console.error('❌ No se encontró Ehise_DEV_WALLET en el .env');
         process.exit(1);
     }
 
@@ -25,10 +25,10 @@ async function main() {
     console.log(`🔑 Wallet: ${publicKey}`);
 
     try {
-        // fallback-manna-1 garantiza un payout de 1.0 MXNc según la lógica de ads.service.js
+        // fallback-Ehise-1 garantiza un payout de 1.0 MXNc según la lógica de ads.service.js
         const result = await triggerDistribution(
             user.id, 
-            'fallback-manna-1', 
+            'fallback-Ehise-1', 
             null, 
             15, 
             'manual-debug-token', 

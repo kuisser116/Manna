@@ -8,7 +8,7 @@ import { analyzeContentWithAI } from '../services/moderation.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { deleteFromR2 } from '../services/ipfs.service.js';
 
-const router = Router();
+const router = Router({ strict: false });
 
 // ─── Helper: intercala cápsulas cada 5 posts ─────────────────────
 function weaveCapsulesIntoFeed(regularPosts, capsulePosts) {
@@ -16,7 +16,7 @@ function weaveCapsulesIntoFeed(regularPosts, capsulePosts) {
     let capsuleIdx = 0;
     for (let i = 0; i < regularPosts.length; i++) {
         result.push(regularPosts[i]);
-        // Cada 5 posts regulares, insertar 1 cápsula de Aseria
+        // Cada 5 posts regulares, insertar 1 cápsula de Ehise
         if ((i + 1) % 5 === 0 && capsuleIdx < capsulePosts.length) {
             result.push({ ...capsulePosts[capsuleIdx], _injected: true });
             capsuleIdx++;
@@ -159,7 +159,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     }
 });
 
-// GET /posts/user/my-stats — Estadísticas para el Aseria Studio
+// GET /posts/user/my-stats — Estadísticas para el Ehise Studio
 router.get('/user/my-stats', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();

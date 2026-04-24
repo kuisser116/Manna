@@ -19,7 +19,7 @@ import { useQuests } from '../../hooks/useQuests';
 import ReportModal from '../ReportModal/ReportModal';
 
 const PINATA_GATEWAY = import.meta.env.VITE_PINATA_GATEWAY || 'https://gateway.pinata.cloud';
-const TYPE_LABELS = { 'micro-text': null, image: '📷 Imagen', video: '🎥 Video', capsule: '✨ Cápsula de Aseria' };
+const TYPE_LABELS = { 'micro-text': null, image: '📷 Imagen', video: '🎥 Video', capsule: '✨ Cápsula de Ehise' };
 
 // Se usa isValidCID desde stringUtils.js
 
@@ -92,11 +92,11 @@ export function PostCard({ post, isDetail = false }) {
             }
 
             // Refrescar misiones en tiempo real
-            window.dispatchEvent(new CustomEvent('manna:quest-refresh'));
+            window.dispatchEvent(new CustomEvent('Ehise:quest-refresh'));
 
             // Si la misión se completa gracias a este like, disparamos el evento de celebración
             if (!wasLiked && res?.data?.missionCompleted) {
-                window.dispatchEvent(new CustomEvent('manna:celebration'));
+                window.dispatchEvent(new CustomEvent('Ehise:celebration'));
             }
         } catch (error) {
             console.error('Failed to toggle like:', error);
@@ -114,8 +114,8 @@ export function PostCard({ post, isDetail = false }) {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: `Post de ${display_name || 'Aseria'}`,
-                    text: 'Mira este aporte en Aseria Network 🌾',
+                    title: `Post de ${display_name || 'Ehise'}`,
+                    text: 'Mira este aporte en Ehise Network 🌾',
                     url: postUrl,
                 });
             } catch (err) {
@@ -365,7 +365,7 @@ export function PostCard({ post, isDetail = false }) {
         >
             {isCapsule && (
                 <div className={styles.capsuleLabel}>
-                    <span>✨ Cápsula de Aseria</span>
+                    <span>✨ Cápsula de Ehise</span>
                 </div>
             )}
 

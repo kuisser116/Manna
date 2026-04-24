@@ -319,7 +319,7 @@ function NewCampaignTab() {
                                 <div className={styles.field}>
                                     <label htmlFor="promoCode">Código de Canje</label>
                                     <input id="promoCode" name="promoCode" type="text" value={formData.promoCode}
-                                        onChange={handleChange} placeholder="Ej: ASERIA2X1" />
+                                        onChange={handleChange} placeholder="Ej: Ehise2X1" />
                                 </div>
                             </div>
                         </div>
@@ -419,7 +419,7 @@ function NewCampaignTab() {
                     />
 
                     <div className={styles.infoCard} style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
-                        <h3 style={{ color: 'var(--color-primary)', marginBottom: '16px', fontSize: '1rem' }}>¿Por qué Aseria Ads?</h3>
+                        <h3 style={{ color: 'var(--color-primary)', marginBottom: '16px', fontSize: '1rem' }}>¿Por qué Ehise Ads?</h3>
                         <ul className={styles.infoList} style={{ display: 'flex', flexDirection: 'column', gap: '12px', color: '#a1a1a1', fontSize: '0.85rem', listStyle: 'none', padding: 0 }}>
                             <li><strong style={{ color: 'white', display: 'block', marginBottom: '2px' }}>Atención Genuina</strong> Solo pagas cuando el usuario realmente ve tu anuncio (≥5s). Sin bots, sin impresiones falsas.</li>
                             <li><strong style={{ color: 'white', display: 'block', marginBottom: '2px' }}>Transparencia Absoluta</strong> Todo el presupuesto es auditable en el blockchain. Puedes verificar cada pago en tiempo real.</li>
@@ -623,12 +623,12 @@ const Advertise = () => {
                 <div className={styles.headerLeft}>
                     <Link to="/feed" className={styles.backBtn}>
                         <ArrowLeft size={20} />
-                        <span>Volver a Aseria</span>
+                        <span>Volver a Ehise</span>
                     </Link>
                     <div className={styles.divider} />
                     <div className={styles.brand}>
-                        <img src={logoImg} alt="Aseria" className={styles.headerLogo} />
-                        <span className={styles.brandName}>Aseria <span className={styles.brandAccent}>Ads</span></span>
+                        <img src={logoImg} alt="Ehise" className={styles.headerLogo} />
+                        <span className={styles.brandName}>Ehise <span className={styles.brandAccent}>Ads</span></span>
                     </div>
                 </div>
                 <div className={styles.headerRight}>

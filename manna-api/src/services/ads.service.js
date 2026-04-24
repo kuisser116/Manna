@@ -3,7 +3,7 @@ import * as stellarService from './stellar.service.js';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'manna-secret-key-123';
+const JWT_SECRET = process.env.JWT_SECRET || 'Ehise-secret-key-123';
 
 const AD_SPECS = {
     banner: { maxSizeMb: 5, formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'] },
@@ -65,10 +65,10 @@ export async function validateProofOfView(userId, adId, sessionToken, context = 
 function calculateShares(costPerView, context, contentType = 'standard', status = 'completed') {
     let baseShares;
     if (!context || context === 'feed') {
-        // Sin creador (feed general): 0/20/40/40 (viewer/manna/fondo regional)
+        // Sin creador (feed general): 0/20/40/40 (viewer/Ehise/fondo regional)
         baseShares = { creator: 0, viewer: costPerView * 0.20, dev: costPerView * 0.40, barn: costPerView * 0.40 };
     } else {
-        // Con creador: 50/20/15/15 (creador/viewer/manna/fondo regional)
+        // Con creador: 50/20/15/15 (creador/viewer/Ehise/fondo regional)
         baseShares = { creator: costPerView * 0.50, viewer: costPerView * 0.20, dev: costPerView * 0.15, barn: costPerView * 0.15 };
     }
     
@@ -172,9 +172,9 @@ export async function triggerDistribution(userId, adId, postId, viewSeconds, pro
         try {
             const { decrypt } = await import('./crypto.service.js');
             const { data: advertiser } = await supabase.from('users').select('stellar_secret_key_encrypted, stellar_public_key').eq('id', ad.advertiser_id).single();
-            const DEV_WALLET = process.env.MANNA_DEV_WALLET;
-            const DEV_SECRET = process.env.MANNA_DEV_WALLET_SECRET;
-            const BARN_WALLET = process.env.MANNA_BARN_WALLET;
+            const DEV_WALLET = process.env.Ehise_DEV_WALLET;
+            const DEV_SECRET = process.env.Ehise_DEV_WALLET_SECRET;
+            const BARN_WALLET = process.env.Ehise_BARN_WALLET;
 
             console.log(`[Ads] Procesando pago Stellar: Advertiser Secret existe: ${!!advertiser?.stellar_secret_key_encrypted}, Dev Secret existe: ${!!DEV_SECRET}`);
             
@@ -219,7 +219,7 @@ export async function triggerDistribution(userId, adId, postId, viewSeconds, pro
                             toPublicKey: viewer.stellar_public_key, 
                             amount: viewerAmount, 
                             assetCode: 'MXNe', 
-                            memo: 'manna:ad:viewer' 
+                            memo: 'Ehise:ad:viewer' 
                         });
                         console.log(`[Ads] Pago exitoso: ${txHash}`);
                     }
@@ -228,7 +228,7 @@ export async function triggerDistribution(userId, adId, postId, viewSeconds, pro
                     if (shares.creator > 0.1 && resolvedCreatorId) {
                         const { data: creator } = await supabase.from('users').select('stellar_public_key').eq('id', resolvedCreatorId).single();
                         if (creator?.stellar_public_key && creator.stellar_public_key !== DEV_WALLET) {
-                            stellarService.sendPayment({ fromSecretKey: effectiveSecret, toPublicKey: creator.stellar_public_key, amount: shares.creator.toFixed(7), assetCode: 'MXNe', memo: 'manna:ad:creator' }).catch(() => {});
+                            stellarService.sendPayment({ fromSecretKey: effectiveSecret, toPublicKey: creator.stellar_public_key, amount: shares.creator.toFixed(7), assetCode: 'MXNe', memo: 'Ehise:ad:creator' }).catch(() => {});
                         }
                     }
                 } catch (pErr) {
@@ -282,30 +282,30 @@ export function shouldInjectAd(postsSinceLastAd) {
 // Anuncios de respaldo garantizados (fallback)
 const FALLBACK_ADS = [
     {
-        id: 'fallback-aseria-1',
-        title: 'Aseria Network',
+        id: 'fallback-Ehise-1',
+        title: 'Ehise Network',
         description: 'La plataforma donde tu contenido vale oro. Únete a la revolución del contenido monetizado.',
-        media_url: 'https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Aseria+Network',
+        media_url: 'https://via.placeholder.com/800x450/1a1a1a/ffffff?text=Ehise+Network',
         media_type: 'banner',
-        advertiser_name: 'Aseria Network',
+        advertiser_name: 'Ehise Network',
         cta_label: 'Conoce más',
-        cta_url: 'https://aseria.network',
+        cta_url: 'https://Ehise.network',
         promo_text: 'Bono de bienvenida',
-        promo_code: 'ASERIA2024',
+        promo_code: 'Ehise2024',
         cpm: 1.0,
         budget_usdc: 1000,
         target_audience: 'all',
         status: 'active'
     },
     {
-        id: 'fallback-aseria-2', 
+        id: 'fallback-Ehise-2', 
         title: 'Crea y Gana',
         description: 'Publica tu contenido y gana MXNe en cada vista. Sin límites, sin restricciones.',
         media_url: 'https://via.placeholder.com/800x450/2a2a2a/ffffff?text=Crea+y+Gana',
         media_type: 'banner',
-        advertiser_name: 'Aseria Network',
+        advertiser_name: 'Ehise Network',
         cta_label: 'Empieza ahora',
-        cta_url: 'https://aseria.network/create',
+        cta_url: 'https://Ehise.network/create',
         promo_text: 'Doble recompensa',
         promo_code: 'CREATOR2024',
         cpm: 1.0,
@@ -314,14 +314,14 @@ const FALLBACK_ADS = [
         status: 'active'
     },
     {
-        id: 'fallback-aseria-3',
+        id: 'fallback-Ehise-3',
         title: 'Soporta a Creadores',
         description: 'Descubre contenido increíble y apoya directamente a tus creadores favoritos.',
         media_url: 'https://via.placeholder.com/800x450/3a3a3a/ffffff?text=Soporta+Creadores',
         media_type: 'banner',
-        advertiser_name: 'Aseria Network',
+        advertiser_name: 'Ehise Network',
         cta_label: 'Explorar',
-        cta_url: 'https://aseria.network/feed',
+        cta_url: 'https://Ehise.network/feed',
         promo_text: 'Reward extra',
         promo_code: 'SUPPORT2024',
         cpm: 1.0,
@@ -429,7 +429,7 @@ export async function getAdvertiserDashboard(advertiserId) {
 export async function createLocalAd({ advertiserId, community_id, content, budget_usdc, title, media_url, media_type }) {
     const supabase = getDB();
     const adId = uuidv4();
-    const ESCROW_WALLET = process.env.MANNA_DEV_WALLET;
+    const ESCROW_WALLET = process.env.Ehise_DEV_WALLET;
     let escrowTxHash = null;
 
     const { data: advertiser } = await supabase.from('users').select('stellar_secret_key_encrypted').eq('id', advertiserId).single();
@@ -442,7 +442,7 @@ export async function createLocalAd({ advertiserId, community_id, content, budge
             toPublicKey: ESCROW_WALLET,
             amount: parseFloat(budget_usdc).toFixed(7),
             assetCode: 'MXNe',
-            memo: `manna:ad:escrow`
+            memo: `Ehise:ad:escrow`
         });
     }
 

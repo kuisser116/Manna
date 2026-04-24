@@ -9,15 +9,15 @@ const useStore = create((set, get) => ({
 
   setToken: (token) => {
     if (token) {
-      localStorage.setItem('manna_token', token);
+      localStorage.setItem('Ehise_token', token);
     } else {
-      localStorage.removeItem('manna_token');
+      localStorage.removeItem('Ehise_token');
     }
     set({ token });
   },
 
   initAuth: async () => {
-    const token = localStorage.getItem('manna_token');
+    const token = localStorage.getItem('Ehise_token');
     if (!token) return;
     set({ token });
     // Restaurar objeto user desde backend (con stellarPublicKey completo)
@@ -30,7 +30,7 @@ const useStore = create((set, get) => ({
         set({ user: data.user });
       } else {
         // Token inválido o expirado — limpiar sesión
-        localStorage.removeItem('manna_token');
+        localStorage.removeItem('Ehise_token');
         set({ token: null, user: null });
       }
     } catch {
@@ -40,7 +40,7 @@ const useStore = create((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('manna_token');
+    localStorage.removeItem('Ehise_token');
     set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [], sessionSeenAds: new Set(), postsSinceLastAd: 0 });
   },
 
@@ -110,10 +110,10 @@ const useStore = create((set, get) => ({
   toggleTheaterMode: () => set((state) => ({ videoMode: state.videoMode === 'theater' ? 'default' : 'theater' })),
 
   // ── Tema / Dark Mode ───────────────────────
-  isDarkMode: localStorage.getItem('manna_theme') === 'dark',
+  isDarkMode: localStorage.getItem('Ehise_theme') === 'dark',
   toggleDarkMode: () => set((state) => {
     const isDark = !state.isDarkMode;
-    localStorage.setItem('manna_theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('Ehise_theme', isDark ? 'dark' : 'light');
     if (isDark) {
       document.documentElement.setAttribute('data-theme', 'dark');
     } else {

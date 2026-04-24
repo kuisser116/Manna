@@ -9,7 +9,7 @@ import multer from 'multer';
 import { uploadToR2 } from '../services/ipfs.service.js';
 import { analyzeContentWithAI } from '../services/moderation.service.js';
 
-const router = Router();
+const router = Router({ strict: false });
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -104,7 +104,7 @@ router.post('/create', authMiddleware, async (req, res) => {
         }
 
         const { data: advertiser } = await supabase.from('users').select('stellar_public_key, stellar_secret_key_encrypted').eq('id', req.user.id).single();
-        const ESCROW_WALLET = process.env.MANNA_DEV_WALLET;
+        const ESCROW_WALLET = process.env.Ehise_DEV_WALLET;
         let escrowTxHash = null;
 
         if (advertiser?.stellar_secret_key_encrypted && advertiser.stellar_secret_key_encrypted !== 'enc-placeholder' && ESCROW_WALLET) {
@@ -116,7 +116,7 @@ router.post('/create', authMiddleware, async (req, res) => {
                 toPublicKey: ESCROW_WALLET,
                 amount: parseFloat(finalBudget).toFixed(7),
                 assetCode: 'MXNe',
-                memo: `manna:ad:escrow`
+                memo: `Ehise:ad:escrow`
             });
         }
 
@@ -226,15 +226,15 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         const remainingBudget = (ad.budget_usdc || 0) - (ad.spent_usdc || 0);
 
         // 3. Procesar reembolso si queda saldo en Escrow
-        if (remainingBudget > 0.01 && ad.advertiser?.stellar_public_key && process.env.MANNA_DEV_WALLET_SECRET) {
+        if (remainingBudget > 0.01 && ad.advertiser?.stellar_public_key && process.env.Ehise_DEV_WALLET_SECRET) {
             try {
                 const stellarService = await import('../services/stellar.service.js');
                 await stellarService.sendPayment({
-                    fromSecretKey: process.env.MANNA_DEV_WALLET_SECRET, // Sale de la wallet de sistema
+                    fromSecretKey: process.env.Ehise_DEV_WALLET_SECRET, // Sale de la wallet de sistema
                     toPublicKey: ad.advertiser.stellar_public_key,
                     amount: remainingBudget.toFixed(7),
                     assetCode: 'MXNe',
-                    memo: 'Reembolso Ad Aseria'
+                    memo: 'Reembolso Ad Ehise'
                 });
                 console.log(`[Refund] Reembolsado ${remainingBudget} MXNe al usuario ${ad.advertiser_id}`);
             } catch (refundErr) {
@@ -329,15 +329,15 @@ router.post('/admin/:id/reject', authMiddleware, adminMiddleware, async (req, re
         const remainingBudget = (ad.budget_usdc || 0) - (ad.spent_usdc || 0);
 
         // 3. Procesar reembolso si hay saldo (Escrow)
-        if (remainingBudget > 0.01 && ad.advertiser?.stellar_public_key && process.env.MANNA_DEV_WALLET_SECRET) {
+        if (remainingBudget > 0.01 && ad.advertiser?.stellar_public_key && process.env.Ehise_DEV_WALLET_SECRET) {
             try {
                 const stellarService = await import('../services/stellar.service.js');
                 await stellarService.sendPayment({
-                    fromSecretKey: process.env.MANNA_DEV_WALLET_SECRET, // Sale de la wallet de sistema
+                    fromSecretKey: process.env.Ehise_DEV_WALLET_SECRET, // Sale de la wallet de sistema
                     toPublicKey: ad.advertiser.stellar_public_key,
                     amount: remainingBudget.toFixed(7),
                     assetCode: 'MXNe',
-                    memo: 'Reembolso Ad Aseria'
+                    memo: 'Reembolso Ad Ehise'
                 });
             } catch (refundErr) {
                 console.error('[Refund Error]:', refundErr.message);

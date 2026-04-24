@@ -11,7 +11,7 @@ import getDB from '../database/db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { analyzeContentWithAI } from '../services/moderation.service.js';
 
-const router = Router();
+const router = Router({ strict: false });
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
 
 router.post('/image', authMiddleware, upload.single('image'), async (req, res) => {

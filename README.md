@@ -1,10 +1,10 @@
-# Kovak — Red Social Descentralizada · Guía Técnica para Desarrollo
+# Ehise — Red Social Descentralizada · Guía Técnica para Desarrollo
 
 > **Propósito de este documento:** Si le mandas este README a una IA (ChatGPT, Claude, Gemini, etc.) antes de pedirle ayuda con esta app, la IA ya sabrá exactamente cómo está estructurado todo y podrá ayudarte sin romper nada ni inventar convenciones nuevas.
 
 ---
 
-## 🧠 ¿Qué es Kovak? (La Visión)
+## 🧠 ¿Qué es Ehise? (La Visión)
 
 **Slogan:**
 
@@ -12,9 +12,9 @@ Imagina que agarras lo mejor de Twitter (textos rápidos), Instagram (fotos), Ti
 
 Una plataforma que ayuda a creadores y emprendedores —tanto los que apenas están comenzando como los que ya están establecidos— ofreciendo visibilidad y recompensas no solo dentro de la aplicación, sino fuera de ella en la propia localidad del usuario.
 
-**Para quién es Kovak**
+**Para quién es Ehise**
 
-Kovak es para todo el mundo, pero especialmente para esa persona que está cansada sin saber bien de qué. Entra a Instagram, TikTok o YouTube, y cuando sale una hora después se siente vacía — siente que lo único que pasó fue que perdió su tiempo. Las redes están llenas de tanto contenido que no la llena en ningún aspecto. Siente que podría hacer algo para aportar al mundo, pero las redes comunes no la apoyan en ello.
+Ehise es para todo el mundo, pero especialmente para esa persona que está cansada sin saber bien de qué. Entra a Instagram, TikTok o YouTube, y cuando sale una hora después se siente vacía — siente que lo único que pasó fue que perdió su tiempo. Las redes están llenas de tanto contenido que no la llena en ningún aspecto. Siente que podría hacer algo para aportar al mundo, pero las redes comunes no la apoyan en ello.
 
 Ese creador de contenido que sube material diferente pero no ve avances en su comunidad, que siente que está trabajando para el algoritmo y no para mejorar realmente la vida de las personas.
 
@@ -194,8 +194,8 @@ Manná utiliza una estética **"Mexican Modern / Soft Brutalist"**. No es el min
 ## 🗂️ Estructura del Proyecto
 
 ```
-manna/
-├── manna-frontend/              ← App React + Vite (la interfaz)
+Ehise/
+├── Ehise-frontend/              ← App React + Vite (la interfaz)
 │   └── src/
 │       ├── App.jsx              ← Router principal + AppLayout (TopBar + Navbar globales)
 │       ├── api/                 ← Instancias de axios por dominio
@@ -220,7 +220,7 @@ manna/
 │       ├── store/               ← Estado global con Zustand
 │       └── styles/              ← CSS Modules por componente/página
 │
-└── manna-api/                   ← API Gateway Node.js + Express
+└── Ehise-api/                   ← API Gateway Node.js + Express
     ├── src/
     │   ├── routes/              ← Endpoints organizados por dominio
     │   │   ├── posts.routes.js
@@ -504,16 +504,16 @@ Manná utiliza **Stellar clásico** (Operations) para todos los pagos y transfer
 ```bash
 # Clonar
 git clone [URL]
-cd Manna
+cd Ehise
 
 # Backend
-cd manna-api
+cd Ehise-api
 npm install
 cp .env.example .env
 npm run dev
 
 # Frontend (otra terminal)
-cd manna-frontend
+cd Ehise-frontend
 npm install
 cp .env.example .env
 npm run dev
@@ -528,9 +528,9 @@ npm run dev
 STELLAR_NETWORK=testnet
 STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
 ADMIN_SECRET_KEY=
-MANNA_DEV_WALLET=
-MANNA_DEV_WALLET_SECRET=
-MANNA_BARN_WALLET=
+Ehise_DEV_WALLET=
+Ehise_DEV_WALLET_SECRET=
+Ehise_BARN_WALLET=
 
 # App
 JWT_SECRET=

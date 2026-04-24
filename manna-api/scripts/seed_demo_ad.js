@@ -50,14 +50,14 @@ async function seedDemoAd() {
         advertiser_id: users.id,
         title: '🚀 Manná — La Red Social que te Paga',
         description: 'Únete a Manná y gana USDC por ver videos y crear contenido. ¡Tu tiempo vale!',
-        media_url: 'https://pub-c009c323337e42b48a1815156b1b51d2.r2.dev/manna-demo-ad.png',
+        media_url: 'https://pub-c009c323337e42b48a1815156b1b51d2.r2.dev/Ehise-demo-ad.png',
         media_type: 'banner',
         budget_usdc: 50.0,
         cpm: 1.0,
         status: 'active',           // ← Activo directamente para el demo
         target_audience: 'all',
         cta_label: 'Conoce Manná',
-        cta_url: 'https://manna.app',
+        cta_url: 'https://Ehise.app',
         alt_text: 'Anuncio de Manná - Gana USDC por usar redes sociales',
     });
 

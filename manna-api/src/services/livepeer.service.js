@@ -148,7 +148,7 @@ export async function triggerTranscoding(postId, r2Url) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                name: `manna-${postId}`,
+                name: `Ehise-${postId}`,
                 url: encodedUrl,
                 profiles: [
                     { width: 1280, height: 720, name: '720p', fps: 30, bitrate: 3000000 },
@@ -189,7 +189,7 @@ export async function triggerTranscoding(postId, r2Url) {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        name: 'manna-transcode-webhook',
+                        name: 'Ehise-transcode-webhook',
                         events: ['asset.ready', 'asset.failed'],
                         url: webhookUrl
                     })

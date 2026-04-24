@@ -6,7 +6,7 @@ const notifAPI = axios.create({
 });
 
 notifAPI.interceptors.request.use((config) => {
-    const token = localStorage.getItem('manna_token');
+    const token = localStorage.getItem('Ehise_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
@@ -15,7 +15,7 @@ notifAPI.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.removeItem('manna_token');
+            localStorage.removeItem('Ehise_token');
             window.location.href = '/';
         }
         return Promise.reject(error);

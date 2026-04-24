@@ -2,7 +2,7 @@ import { Router } from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 
-const router = Router();
+const router = Router({ strict: false });
 
 // GET /search?q=query — Buscar usuarios y posts
 router.get('/', authMiddleware, async (req, res) => {

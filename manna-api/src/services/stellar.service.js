@@ -127,7 +127,7 @@ export async function isWalletActive(publicKey) {
 }
 
 // Enviar pago en Stellar Testnet
-export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = 'USDC', memo = 'Aseria' }) {
+export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = 'USDC', memo = 'Ehise' }) {
     if (!fromSecretKey || fromSecretKey === 'enc-placeholder') {
         throw new Error('Clave secreta no válida para esta wallet de sistema');
     }
@@ -220,7 +220,7 @@ export async function getTransactionHistory(publicKey, limit = 10) {
 /**
  * Registra la autoría de un CID en la blockchain de Stellar usando manageData.
  * 
- * Técnica: Graba `manna:cid:{CID_slice}` en los datos de la cuenta del creador.
+ * Técnica: Graba `Ehise:cid:{CID_slice}` en los datos de la cuenta del creador.
  * Esto es una prueba criptográfica inmutable de que esa wallet publicó ese contenido.
  * 
  * Cuando el contrato ContentOwnership de Soroban esté desplegado, solo hay que
@@ -241,7 +241,7 @@ export async function registerContentOwnership(secretKey, cid) {
 
         // manageData graba un par clave-valor en la cuenta on-chain.
         // La clave tiene límite de 64 bytes. Usamos los primeros 56 chars del CID.
-        const dataKey = `manna:${cid.slice(0, 56)}`;
+        const dataKey = `Ehise:${cid.slice(0, 56)}`;
         const dataValue = 'owned';
 
         const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
@@ -254,7 +254,7 @@ export async function registerContentOwnership(secretKey, cid) {
                     value: dataValue,
                 })
             )
-            .addMemo(StellarSdk.Memo.text('manna:ownership'))
+            .addMemo(StellarSdk.Memo.text('Ehise:ownership'))
             .setTimeout(30)
             .build();
 
@@ -281,7 +281,7 @@ export async function registerContentOwnership(secretKey, cid) {
  * Esto crea un timestamp irrefutable y verificable en Stellar Explorer.
  *
  * @param {object} user - { stellar_public_key, stellar_secret_key_encrypted }
- * @param {string} memoText - 'MANNA_CONSENT_V1' | 'MANNA_REVOKE_V1'
+ * @param {string} memoText - 'Ehise_CONSENT_V1' | 'Ehise_REVOKE_V1'
  * @returns {{ hash: string }|null}
  */
 export async function sendConsentMemo(user, memoText) {
@@ -304,7 +304,7 @@ export async function sendConsentMemo(user, memoText) {
         })
             .addOperation(
                 StellarSdk.Operation.manageData({
-                    name: 'manna:consent',
+                    name: 'Ehise:consent',
                     value: memoText.slice(0, 64),
                 })
             )
@@ -375,8 +375,8 @@ export async function invokeAdDistribution({
                     mxneTokenAddress,          // token_id
                     amountI128,                // amount
                     isFeed,                    // is_feed
-                    process.env.MANNA_DEV_WALLET, 
-                    process.env.MANNA_BARN_WALLET
+                    process.env.Ehise_DEV_WALLET, 
+                    process.env.Ehise_BARN_WALLET
                 ].map(val => {
                     if (val === null) return StellarSdk.nativeToScVal(null);
                     if (typeof val === 'boolean') return StellarSdk.nativeToScVal(val);

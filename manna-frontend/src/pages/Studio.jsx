@@ -151,7 +151,7 @@ export default function Studio() {
         
         const parts = (post.content || '').split('|||');
         if (post.type === 'video') return parts[1] || 'Video sin título';
-        if (post.type === 'image') return parts[2] || parts[1] || 'Imagen de Aseria';
+        if (post.type === 'image') return parts[2] || parts[1] || 'Imagen de Ehise';
         return post.content?.substring(0, 50) + (post.content?.length > 50 ? '...' : '');
     };
 
@@ -163,11 +163,11 @@ export default function Studio() {
                 <div className={styles.headerLeft}>
                     <Link to="/feed" className={styles.backBtn}>
                         <ArrowLeft size={20} />
-                        <span>Volver a Aseria</span>
+                        <span>Volver a Ehise</span>
                     </Link>
                     <div className={styles.divider} />
                     <div className={styles.brand}>
-                        <img src={logoImg} alt="Aseria" className={styles.headerLogo} />
+                        <img src={logoImg} alt="Ehise" className={styles.headerLogo} />
                         <span className={styles.brandName}>Studio</span>
                     </div>
                 </div>

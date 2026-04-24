@@ -5,7 +5,7 @@ import getDB from '../database/db.js';
 import { analyzeContentWithAI } from '../services/moderation.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
-const router = Router();
+const router = Router({ strict: false });
 
 /**
  * POST /analyze-pre-upload
