@@ -59,7 +59,7 @@ app.use('/anchor', anchorRoutes);
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
-        project: 'Manná API',
+        project: 'Aseria API',
         version: '0.3.0',
         sprint: 'Sprint 3 — Comunidades + Apoyos + IA',
         pinata: !!process.env.PINATA_JWT,
@@ -142,7 +142,7 @@ setInterval(checkProcessingVideos, POLLING_INTERVAL_MS);
 app.listen(PORT, () => {
     console.log(`
   🌾  ──────────────────────────────────────── 🌾
-       Manná API Gateway v0.3.0 · Puerto ${PORT}
+       Aseria API Gateway v0.3.0 · Puerto ${PORT}
        R2-Native HLS Pipeline activado
        Stellar: ${process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org'}
        Pinata:  ${process.env.PINATA_JWT ? '✅ Configurado' : '⚠️  Sin JWT (imágenes en modo demo)'}

@@ -234,7 +234,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
                     toPublicKey: ad.advertiser.stellar_public_key,
                     amount: remainingBudget.toFixed(7),
                     assetCode: 'MXNe',
-                    memo: 'Reembolso Ad Manná'
+                    memo: 'Reembolso Ad Aseria'
                 });
                 console.log(`[Refund] Reembolsado ${remainingBudget} MXNe al usuario ${ad.advertiser_id}`);
             } catch (refundErr) {
@@ -337,7 +337,7 @@ router.post('/admin/:id/reject', authMiddleware, adminMiddleware, async (req, re
                     toPublicKey: ad.advertiser.stellar_public_key,
                     amount: remainingBudget.toFixed(7),
                     assetCode: 'MXNe',
-                    memo: 'Reembolso Ad Manná'
+                    memo: 'Reembolso Ad Aseria'
                 });
             } catch (refundErr) {
                 console.error('[Refund Error]:', refundErr.message);

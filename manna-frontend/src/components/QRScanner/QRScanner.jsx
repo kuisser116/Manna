@@ -83,7 +83,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
         } else if (isOpen && defaultPublicKey && step === 'scan') {
             setScanData({
                 publicKey: defaultPublicKey,
-                businessName: defaultBusinessName || 'Usuario Manna',
+                businessName: defaultBusinessName || 'Usuario Aseria',
                 isVerified: false
             });
             setStep('confirm');
@@ -143,7 +143,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     await navigator.credentials.create({
                         publicKey: {
                             challenge,
-                            rp: { name: "Manná Wallet" },
+                            rp: { name: "Aseria Wallet" },
                             user: {
                                 id: new Uint8Array(16),
                                 name: "payment_auth",
@@ -166,7 +166,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
             setLoading(false);
             console.error('WebAuthn Cancelled/Failed:', err);
             // Solo mostramos error si no fue cancelación manual (opcional, por ahora mostramos el aviso de protección)
-            showError('Seguridad Manná', 'Validación biométrica cancelada o no disponible. Tu dinero está seguro.', true);
+            showError('Seguridad Aseria', 'Validación biométrica cancelada o no disponible. Tu dinero está seguro.', true);
             return;
         }
         // ------------------------------------

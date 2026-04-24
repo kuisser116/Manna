@@ -190,7 +190,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
             toPublicKey,
             amount: userAmount,
             assetCode,
-            memo: isDiscountApplicable ? `Manna Pay: ${merchant.business_name}` : 'Manna Transfer'
+            memo: isDiscountApplicable ? `Aseria Pay: ${merchant.business_name}` : 'Aseria Transfer'
         });
 
         // 4. Registrar transacción en DB

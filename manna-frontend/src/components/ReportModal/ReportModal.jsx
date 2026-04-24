@@ -36,7 +36,7 @@ export default function ReportModal({ isOpen, onClose, onConfirm, isSubmitting }
                 </div>
 
                 <div className={styles.body}>
-                    <p className={styles.description}>¿Por qué quieres reportar esta publicación? Tu reporte es anónimo y nos ayuda a mantener Manná seguro.</p>
+                    <p className={styles.description}>¿Por qué quieres reportar esta publicación? Tu reporte es anónimo y nos ayuda a mantener Aseria seguro.</p>
                     <div className={styles.options}>
                         {REASONS.map(reason => (
                             <button 

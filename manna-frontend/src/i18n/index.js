@@ -21,7 +21,7 @@ const resources = {
         "sort": "Ordenar"
       },
       "topbar": {
-        "search": "Buscar en Manná",
+        "search": "Buscar en Aseria",
         "myQR": "Mi QR"
       },
       "sidebar": {
@@ -40,7 +40,7 @@ const resources = {
         "balance": "Saldo",
         "coupons": "Cupones",
         "personalBalance": "TU BALANCE PERSONAL",
-        "yourWallet": "Tu Billetera Manna",
+        "yourWallet": "Tu Billetera Aseria",
         "withdrawOxxo": "Retirar en Oxxo / MoneyGram"
       },
       "profile": {
@@ -91,7 +91,7 @@ const resources = {
         "sort": "Sort"
       },
       "topbar": {
-        "search": "Search in Manná",
+        "search": "Search in Aseria",
         "myQR": "My QR"
       },
       "sidebar": {
@@ -110,7 +110,7 @@ const resources = {
         "balance": "Balance",
         "coupons": "Coupons",
         "personalBalance": "YOUR PERSONAL BALANCE",
-        "yourWallet": "Your Manna Wallet",
+        "yourWallet": "Your Aseria Wallet",
         "withdrawOxxo": "Withdraw at Oxxo / MoneyGram"
       },
       "profile": {

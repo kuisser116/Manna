@@ -86,7 +86,7 @@ export default function ControlCenter() {
                 <div className={styles.titleBox}>
                     <Shield className={styles.icon} size={32} />
                     <div>
-                        <h1>Manná Control Center</h1>
+                        <h1>Aseria Control Center</h1>
                         <p>Gestión global de seguridad, moderación y apelaciones.</p>
                         <a href="/admin/ads" className={styles.adsAdminLink} style={{ color: 'var(--color-primary)', fontSize: '0.85rem', fontWeight: 600, marginTop: '8px', display: 'inline-block' }}>
                             Ir a Gestión de Anuncios

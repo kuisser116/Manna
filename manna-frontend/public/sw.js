@@ -1,5 +1,5 @@
-// Basic Service Worker for Manná PWA
-const CACHE_NAME = 'manna-cache-v1';
+// Basic Service Worker for Aseria PWA
+const CACHE_NAME = 'aseria-cache-v1';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
