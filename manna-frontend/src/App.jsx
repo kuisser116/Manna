@@ -35,9 +35,9 @@ function ProtectedRoute({ children, authLoading }) {
   if (authLoading) {
     return (
       <div className={styles.loadingWrapper}>
-        <img src={logoImg} alt="Cargando Manná" className={styles.loadingLogo} />
+        <img src={logoImg} alt="Cargando Aseria" className={styles.loadingLogo} />
         <p className={styles.loadingText}>
-          Cargando Manná...
+          Cargando Aseria...
         </p>
       </div>
     );

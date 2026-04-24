@@ -101,11 +101,11 @@ export function ImageDetailLayout({
             ? `https://via.placeholder.com/800x600?text=${parts[0]}`
             : parts[0];
         // Para R2: parts[1] es CID, parts[2] es caption
-        title = cleanTitle(parts[2] || parts[1] || 'Imagen de Manná', 'Imagen de Manná');
+        title = cleanTitle(parts[2] || parts[1] || 'Imagen de Aseria', 'Imagen de Aseria');
         description = parts[2] || '';
     } else {
         imgUrl = `${PINATA_GATEWAY}/ipfs/${parts[0]}`;
-        title = cleanTitle(parts[1] || 'Imagen de Manná', 'Imagen de Manná');
+        title = cleanTitle(parts[1] || 'Imagen de Aseria', 'Imagen de Aseria');
         description = parts[2] || '';
     }
 

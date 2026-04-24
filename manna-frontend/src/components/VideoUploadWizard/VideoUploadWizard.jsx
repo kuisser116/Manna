@@ -219,7 +219,7 @@ function StepDetalles({ form, set, thumbInputRef, onThumbSelect, onRemoveThumb }
             <input
                 className={styles.input}
                 type="text"
-                placeholder="musica, arte, manna  (separadas por coma)"
+                placeholder="musica, arte, aseria  (separadas por coma)"
                 value={form.tags}
                 onChange={e => set('tags', e.target.value)}
             />

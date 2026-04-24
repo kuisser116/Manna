@@ -26,7 +26,7 @@ function LandingInner() {
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
-        showLoading('Entrando a Manná...', 'Autenticando con Google ✨');
+        showLoading('Entrando a Aseria...', 'Autenticando con Google ✨');
         try {
             await loginWithGoogle(credentialResponse.credential);
             showSuccess('¡Ya estás dentro!', 'Bienvenido. Aquí sí hay algo real.', true);
@@ -61,9 +61,9 @@ function LandingInner() {
                 >
                     {/* Logo mark */}
                     <div className={styles.logoMark}>
-                        <img src={logoImg} alt="Manná Logo" className={styles.logoImg} />
+                        <img src={logoImg} alt="Aseria Logo" className={styles.logoImg} />
                         <div className={styles.logoText}>
-                            <span className={styles.logoName}>Manná</span>
+                            <span className={styles.logoName}>Aseria</span>
                             <p className={styles.logoTagline}>Porque la luz no deberia estar escondida</p>
                         </div>
                     </div>

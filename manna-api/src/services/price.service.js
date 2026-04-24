@@ -1,5 +1,5 @@
 /**
- * Servicio de Precios (Manná)
+ * Servicio de Precios (Aseria)
  * Proporciona tasas de cambio para visualización local.
  */
 

@@ -16,7 +16,7 @@ function weaveCapsulesIntoFeed(regularPosts, capsulePosts) {
     let capsuleIdx = 0;
     for (let i = 0; i < regularPosts.length; i++) {
         result.push(regularPosts[i]);
-        // Cada 5 posts regulares, insertar 1 cápsula de Manná
+        // Cada 5 posts regulares, insertar 1 cápsula de Aseria
         if ((i + 1) % 5 === 0 && capsuleIdx < capsulePosts.length) {
             result.push({ ...capsulePosts[capsuleIdx], _injected: true });
             capsuleIdx++;
@@ -159,7 +159,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     }
 });
 
-// GET /posts/user/my-stats — Estadísticas para el Manná Studio
+// GET /posts/user/my-stats — Estadísticas para el Aseria Studio
 router.get('/user/my-stats', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();

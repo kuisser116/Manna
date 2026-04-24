@@ -13,7 +13,7 @@ import styles from './VideoDetailLayout.module.css';
 
 /**
  * VideoDetailLayout
- * Layout de dos columnas estilo YouTube con esencia de Manná.
+ * Layout de dos columnas estilo YouTube con esencia de Aseria.
  * 
  * Props:
  *   post           — el post de tipo 'video'

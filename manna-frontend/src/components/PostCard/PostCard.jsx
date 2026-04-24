@@ -19,7 +19,7 @@ import { useQuests } from '../../hooks/useQuests';
 import ReportModal from '../ReportModal/ReportModal';
 
 const PINATA_GATEWAY = import.meta.env.VITE_PINATA_GATEWAY || 'https://gateway.pinata.cloud';
-const TYPE_LABELS = { 'micro-text': null, image: '📷 Imagen', video: '🎥 Video', capsule: '✨ Cápsula de Manná' };
+const TYPE_LABELS = { 'micro-text': null, image: '📷 Imagen', video: '🎥 Video', capsule: '✨ Cápsula de Aseria' };
 
 // Se usa isValidCID desde stringUtils.js
 
@@ -114,8 +114,8 @@ export function PostCard({ post, isDetail = false }) {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: `Post de ${display_name || 'Manna'}`,
-                    text: 'Mira este aporte en Manná Network 🌾',
+                    title: `Post de ${display_name || 'Aseria'}`,
+                    text: 'Mira este aporte en Aseria Network 🌾',
                     url: postUrl,
                 });
             } catch (err) {
@@ -365,7 +365,7 @@ export function PostCard({ post, isDetail = false }) {
         >
             {isCapsule && (
                 <div className={styles.capsuleLabel}>
-                    <span>✨ Cápsula de Manná</span>
+                    <span>✨ Cápsula de Aseria</span>
                 </div>
             )}
 

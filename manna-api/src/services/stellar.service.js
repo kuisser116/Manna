@@ -127,7 +127,7 @@ export async function isWalletActive(publicKey) {
 }
 
 // Enviar pago en Stellar Testnet
-export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = 'USDC', memo = 'Manna' }) {
+export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = 'USDC', memo = 'Aseria' }) {
     if (!fromSecretKey || fromSecretKey === 'enc-placeholder') {
         throw new Error('Clave secreta no válida para esta wallet de sistema');
     }
