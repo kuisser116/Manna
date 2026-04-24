@@ -74,25 +74,21 @@ export function TopBar({ onToggleSidebar }) {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
   };
 
-  const isProfileMinimal = isProfileRoute;
-
   return (
-    <header className={styles.topbar} data-profile-route={isProfileRoute ? 'true' : 'false'}>
+    <header className={styles.topbar}>
       {/* Izquierda: hamburger + logo */}
       <div className={styles.left}>
-        {isProfileMinimal ? null : (
-          <button
-            className={styles.hamburger}
-            onClick={onToggleSidebar}
-            aria-label="Toggle sidebar"
-          >
-            <Menu size={22} />
-          </button>
-        )}
+        <button
+          className={styles.hamburger}
+          onClick={onToggleSidebar}
+          aria-label="Toggle sidebar"
+        >
+          <Menu size={22} />
+        </button>
         <Link to="/feed" className={styles.logo}>
           M
         </Link>
-        {!isProfileMinimal && showBackBtn && (
+        {showBackBtn && (
           <button
             className={styles.backBtn}
             onClick={() => navigate(-1)}
@@ -104,7 +100,7 @@ export function TopBar({ onToggleSidebar }) {
       </div>
 
       {/* Centro: barra de búsqueda con dropdown */}
-      <div className={`${styles.searchWrap} ${isProfileMinimal ? styles.searchWrapHidden : ''}`} ref={dropdownRef}>
+      <div className={styles.searchWrap} ref={dropdownRef}>
         <form className={styles.searchContainer} onSubmit={handleSearch}>
           <div className={styles.searchBox}>
             <input
@@ -170,150 +166,103 @@ export function TopBar({ onToggleSidebar }) {
 
       {/* Derecha: selector idioma + notificaciones + avatar */}
       <div className={styles.right}>
-        {isProfileMinimal ? (
-          <>
-            <button
-              className={styles.iconBtn}
-              aria-label="Toggle sidebar"
-              onClick={onToggleSidebar}
-            >
-              <LayoutGrid size={20} />
-            </button>
+        <LanguageSelector />
 
-            <button
-              className={styles.iconBtn}
-              aria-label="Toggle Theme"
-              onClick={() => setShowUserMenu((v) => !v)}
-            >
-              <Settings size={20} />
-            </button>
+        <button
+          className={styles.iconBtn}
+          aria-label={t('topbar.myQR')}
+          onClick={() => setMyQRModalOpen(true)}
+        >
+          <QrCode size={20} />
+          <span className={styles.btnLabel}>{t('topbar.myQR')}</span>
+        </button>
 
-            {showUserMenu && (
-              <div className={styles.userMenu}>
-                <div className={styles.userMenuHeader}>
-                  <Avatar
-                    avatarUrl={user?.avatarUrl}
-                    name={user?.displayName}
-                    size={40}
-                  />
-                  <div>
-                    <p className={styles.userMenuName}>{user?.displayName}</p>
-                    <p className={styles.userMenuEmail}>{user?.email}</p>
-                  </div>
-                </div>
-                <Link
-                  to="/profile"
-                  className={styles.userMenuItem}
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  Mi perfil
-                </Link>
-                <button
-                  className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
-                  onClick={() => {
-                    logout();
-                    setShowUserMenu(false);
-                  }}
-                >
-                  Cerrar sesión
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <LanguageSelector />
+        <button
+          className={styles.iconBtn}
+          aria-label="Toggle Theme"
+          onClick={toggleDarkMode}
+        >
+          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
 
-            <button
-              className={styles.iconBtn}
-              aria-label={t('topbar.myQR')}
-              onClick={() => setMyQRModalOpen(true)}
-            >
-              <QrCode size={20} />
-              <span className={styles.btnLabel}>{t('topbar.myQR')}</span>
-            </button>
+        <NotificationsDropdown />
 
-            <button
-              className={styles.iconBtn}
-              aria-label="Toggle Theme"
-              onClick={toggleDarkMode}
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+        <div className={styles.userWrap}>
+          <button
+            className={styles.avatarBtn}
+            onClick={() => setShowUserMenu((v) => !v)}
+          >
+            <Avatar
+              avatarUrl={user?.avatarUrl}
+              name={user?.displayName}
+              size={32}
+            />
+          </button>
 
-            <NotificationsDropdown />
-
-            <div className={styles.userWrap}>
-              <button
-                className={styles.avatarBtn}
-                onClick={() => setShowUserMenu((v) => !v)}
-              >
+          {showUserMenu && (
+            <div className={styles.userMenu}>
+              <div className={styles.userMenuHeader}>
                 <Avatar
                   avatarUrl={user?.avatarUrl}
                   name={user?.displayName}
-                  size={32}
+                  size={40}
                 />
-              </button>
-
-              {showUserMenu && (
-                <div className={styles.userMenu}>
-                  <div className={styles.userMenuHeader}>
-                    <Avatar
-                      avatarUrl={user?.avatarUrl}
-                      name={user?.displayName}
-                      size={40}
-                    />
-                    <div>
-                      <p className={styles.userMenuName}>{user?.displayName}</p>
-                      <p className={styles.userMenuEmail}>{user?.email}</p>
-                    </div>
-                  </div>
-                  <Link
-                    to="/profile"
-                    className={styles.userMenuItem}
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    Mi perfil
-                  </Link>
-                  <Link
-                    to="/ads-studio"
-                    className={styles.userMenuItem}
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    Ads Studio
-                  </Link>
-                  {user?.is_admin && (
-                    <>
-                      <Link
-                        to="/admin/control-center"
-                        className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
-                        onClick={() => setShowUserMenu(false)}
-                      >
-                        Control
-                      </Link>
-                      <Link
-                        to="/admin/ads"
-                        className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
-                        onClick={() => setShowUserMenu(false)}
-                      >
-                        Validar Anuncios
-                      </Link>
-                    </>
-                  )}
-                  <button
-                    className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
-                    onClick={() => {
-                      logout();
-                      setShowUserMenu(false);
-                    }}
-                  >
-                    Cerrar sesión
-                  </button>
+                <div>
+                  <p className={styles.userMenuName}>{user?.displayName}</p>
+                  <p className={styles.userMenuEmail}>{user?.email}</p>
                 </div>
+              </div>
+              <Link
+                to="/profile"
+                className={styles.userMenuItem}
+                onClick={() => setShowUserMenu(false)}
+              >
+                Mi perfil
+              </Link>
+              <Link
+                to="/settings"
+                className={styles.userMenuItem}
+                onClick={() => setShowUserMenu(false)}
+              >
+                Settings
+              </Link>
+              <Link
+                to="/ads-studio"
+                className={styles.userMenuItem}
+                onClick={() => setShowUserMenu(false)}
+              >
+                Ads Studio
+              </Link>
+              {user?.is_admin && (
+                <>
+                  <Link
+                    to="/admin/control-center"
+                    className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Control
+                  </Link>
+                  <Link
+                    to="/admin/ads"
+                    className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Validar Anuncios
+                  </Link>
+                </>
               )}
+              <button
+                className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
+                onClick={() => {
+                  logout();
+                  setShowUserMenu(false);
+                }}
+              >
+                Cerrar sesión
+              </button>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </header>
   );
