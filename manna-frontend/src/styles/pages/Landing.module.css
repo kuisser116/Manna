@@ -67,6 +67,51 @@
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
 }
 
+.page[data-theme='dark'] .bandQuote {
+    color: rgba(255, 255, 255, 0.12);
+}
+
+.page[data-theme='dark'] .bandLight {
+    background: rgba(255, 255, 255, 0.04);
+    color: #f7f7f8;
+}
+
+.page[data-theme='dark'] .principlesSection {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.page[data-theme='dark'] .principleLabel strong {
+    color: #f7f7f8;
+}
+
+.page[data-theme='dark'] .principleText {
+    color: rgba(240, 240, 245, 0.75);
+}
+
+.page[data-theme='dark'] .closingSection {
+    background: linear-gradient(180deg, rgba(11, 11, 15, 0.8), rgba(11, 11, 15, 1));
+}
+
+.page[data-theme='dark'] .closingSection h3 {
+    color: #f8fafc;
+}
+
+.page[data-theme='dark'] .closingSection p {
+    color: rgba(240, 240, 245, 0.7);
+}
+
+.page[data-theme='dark'] .principlesList {
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.page[data-theme='dark'] .principleRow {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.page[data-theme='dark'] .heroDivider {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
 /* --- Background Decorations --- */
 .patternLayer {
     position: fixed;
@@ -119,6 +164,19 @@
 .themeToggle:hover {
     transform: translateY(-1px);
     border-color: var(--color-primary, #e11d48);
+}
+
+.themeToggle:focus-visible {
+    outline: 2px solid var(--color-primary, #e11d48);
+    outline-offset: 3px;
+}
+
+.themeToggle svg {
+    transition: transform 0.35s ease;
+}
+
+.themeToggle:hover svg {
+    transform: rotate(18deg);
 }
 
 /* --- Hero Section --- */
@@ -280,6 +338,12 @@
     color: #374151;
     font-size: 12px;
     font-weight: 700;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.heroTapes span:hover {
+    transform: translateY(-2px);
+    border-color: rgba(225, 29, 72, 0.3);
 }
 
 /* --- Hero Poster --- */
@@ -730,5 +794,35 @@
 
     .hero::after {
         display: none;
+    }
+}
+
+/* --- Accessibility: focus-visible on links --- */
+.termsLink:focus-visible,
+.backToTop:focus-visible {
+    outline: 2px solid var(--color-primary, #e11d48);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+/* --- Print --- */
+@media print {
+    .themeToggle,
+    .patternLayer,
+    .bgGlow,
+    .hero::after,
+    .heroPoster::before,
+    .heroPoster::after {
+        display: none !important;
+    }
+
+    .heroSection {
+        min-height: auto;
+        padding: 24px;
+    }
+
+    .page {
+        background: #ffffff;
+        color: #000000;
     }
 }
