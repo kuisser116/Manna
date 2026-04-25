@@ -3,16 +3,21 @@
   /* ── Paleta Principal ── */
   --color-bg: #fafafa;
   --color-surface: #ffffff;
+  --color-surface-2: #f4f4f5;
+  --color-surface-3: #e7e7ea;
   --color-primary: #e11d48; /* Rojo Tequila / Rose */
   --color-primary-dark: #be123c;
   --color-text: #111111;
   --color-text-secondary: #555555;
+  --color-text-muted: #6b7280;
+  --color-text-dim: #8b8b97;
   --color-border: #e5e5e5;
   --color-success: #10b981;
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
   --color-white: #ffffff;
   --color-pattern: rgba(210, 210, 210, 0.58);
+  --color-shadow: rgba(0, 0, 0, 0.1);
 
   /* ── Forma — Soft Brutalist (Radios Generosos) ── */
   --border-width: 1px;
@@ -38,18 +43,28 @@
 
   /* ── Transiciones y Sombras ── */
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 30px var(--color-shadow);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.16);
 }
 
 :root[data-theme='dark'] {
   --color-bg: #0f0f0f;
   --color-surface: #18181b;
+  --color-surface-2: #202024;
+  --color-surface-3: #27272a;
   --color-primary: #e11d48;
   --color-text: #f4f4f5;
   --color-text-secondary: #a1a1aa;
+  --color-text-muted: #8f8f99;
+  --color-text-dim: #72727c;
   --color-border: #27272a;
+  --color-pattern: rgba(132, 132, 141, 0.22);
+  --pattern-opacity: 0.45;
+  --color-shadow: rgba(0, 0, 0, 0.48);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow-md: 0 10px 30px var(--color-shadow);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.58);
 }
 
 /* ── Reset ── */
