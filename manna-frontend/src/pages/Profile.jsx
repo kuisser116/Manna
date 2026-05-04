@@ -97,8 +97,8 @@ export default function Profile() {
       .catch(() => {
         setProfileData({
           id: profileId,
-          displayName: 'Usuario',
-          email: '@usuario',
+          displayName: 'User',
+          email: '@user',
           stellarPublicKey: profileId
         });
       })
@@ -181,24 +181,24 @@ export default function Profile() {
   };
 
   const memberSinceRaw = profileData?.createdAt || profileData?.created_at;
-  const memberSince = memberSinceRaw ? new Date(memberSinceRaw).toLocaleDateString('es-ES', {
+  const memberSince = memberSinceRaw ? new Date(memberSinceRaw).toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric'
-  }) : '21 de marzo de 2026';
+  }) : 'March 21, 2026';
 
   const tabs = [
-    { id: 'posts', label: t('profile.tabs.all', 'Todo'), icon: <LayoutGrid size={14} /> },
+    { id: 'posts', label: t('profile.tabs.all', 'All'), icon: <LayoutGrid size={14} /> },
     { id: 'videos', label: t('profile.tabs.videos', 'Videos'), icon: <Icons.Heart /> },
-    { id: 'images', label: t('profile.tabs.images', 'Imágenes'), icon: <Icons.Bookmark /> },
-    { id: 'text', label: t('profile.tabs.text', 'Texto'), icon: <LayoutGrid size={14} /> },
+    { id: 'images', label: t('profile.tabs.images', 'Images'), icon: <Icons.Bookmark /> },
+    { id: 'text', label: t('profile.tabs.text', 'Text'), icon: <LayoutGrid size={14} /> },
   ];
 
   const emptyStates = {
-    posts: { icon: <Icons.Grid size={24} />, text: t('profile.noPosts', 'Aún no hay publicaciones en este remanso.') },
-    videos: { icon: <Icons.Heart size={24} />, text: t('profile.noVideos', 'Parece que no hay videos por aquí.') },
-    images: { icon: <Icons.Bookmark size={24} />, text: t('profile.noImages', 'No se han compartido imágenes todavía.') },
-    text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'Este espacio de texto está esperando ser llenado.') },
+    posts: { icon: <Icons.Grid size={24} />, text: t('profile.noPosts', 'No posts yet in this profile.') },
+    videos: { icon: <Icons.Heart size={24} />, text: t('profile.noVideos', 'No videos found here yet.') },
+    images: { icon: <Icons.Bookmark size={24} />, text: t('profile.noImages', 'No images have been shared yet.') },
+    text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'This text section is still empty.') },
   };
 
   const hue = 200; // Valor predeterminado para hue
@@ -208,7 +208,7 @@ export default function Profile() {
       <div className={styles.layout}>
         <main className={styles.main}>
           <div className={styles.loadingContainer}>
-            {t('common.loading', 'Cargando...')}
+            {t('common.loading', 'Loading...')}
           </div>
         </main>
       </div>
@@ -229,7 +229,7 @@ export default function Profile() {
                 <button
                   className={`${styles.coverEditBtn} ${coverUploading ? styles.coverEditBtnLoading : ''}`}
                   onClick={() => !coverUploading && coverInputRef.current?.click()}
-                  title="Cambiar portada"
+                  title={t('profile.changeCover', 'Change cover')}
                   disabled={coverUploading}
                 >
                   <ImagePlus size={16} strokeWidth={1.5} />
@@ -259,7 +259,7 @@ export default function Profile() {
               </div>
               <div className={styles.info}>
                 <div className={styles.nameRow}>
-                  <h1 className={styles.name}>{profileData?.displayName || 'Usuario'}</h1>
+                  <h1 className={styles.name}>{profileData?.displayName || 'User'}</h1>
                   {isOwnProfile && (
                     <button 
                       className={styles.editBtn} 
@@ -269,15 +269,15 @@ export default function Profile() {
                     </button>
                   )}
                 </div>
-                <span className={styles.handle}>@{profileData?.email || 'usuario'}</span>
+                <span className={styles.handle}>@{profileData?.email || 'user'}</span>
                 {profileData?.bio && <p className={styles.bio}>{profileData.bio}</p>}
                 <div className={styles.metaLine}>
-                  <CalendarDays size={16} /> {t('Miembro desde')} {memberSince}
+                  <CalendarDays size={16} /> {t('profile.memberSince', 'Member since')} {memberSince}
                 </div>
                 <div className={styles.statsRow}>
-                  <span><b>{profileData?.postsCount || 1}</b> {t('Publicaciones')}</span>
-                  <span><b>{profileData?.followersCount || 1}</b> {t('Seguidores')}</span>
-                  <span><b>{profileData?.followingCount || 1}</b> {t('Siguiendo')}</span>
+                  <span><b>{profileData?.postsCount || 1}</b> {t('profile.stats.posts', 'Posts')}</span>
+                  <span><b>{profileData?.followersCount || 1}</b> {t('profile.stats.followers', 'Followers')}</span>
+                  <span><b>{profileData?.followingCount || 1}</b> {t('profile.stats.following', 'Following')}</span>
                 </div>
                 <div className={styles.chips}>
                   <div className={styles.chip}>
@@ -285,12 +285,12 @@ export default function Profile() {
                     0.00 MXNe
                   </div>
                   <div 
-                    className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress}`}
+                    className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress} ${copied ? styles.chipCopied : ''}`}
                     onClick={handleCopyWallet}
-                    title={t('Copiar dirección')}
+                    title={t('profile.copyAddress', 'Copy address')}
                   >
                     {profileData?.stellarPublicKey?.slice(0, 10)}...{profileData?.stellarPublicKey?.slice(-7)}
-                    {copied ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+                    {copied ? <Check size={12} /> : <Copy size={12} />}
                   </div>
                 </div>
               </div>
@@ -328,7 +328,7 @@ export default function Profile() {
                 {emptyStates[activeTab]?.icon || <Icons.Grid />}
               </div>
               <p className={styles.emptyText}>
-                {emptyStates[activeTab]?.text || t('profile.noContent', 'Sin contenido disponible')}
+                {emptyStates[activeTab]?.text || t('profile.noContent', 'No content available')}
               </p>
             </div>
           )}
