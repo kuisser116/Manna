@@ -100,6 +100,7 @@ router.post('/google', strictLimiter, async (req, res) => {
                     displayName: finalUser.display_name,
                     stellarPublicKey: finalUser.stellar_public_key,
                     is_admin: !!finalUser.is_admin,
+                    terms_accepted_at: null,
                 },
             });
         }
@@ -120,11 +121,31 @@ router.post('/google', strictLimiter, async (req, res) => {
                 displayName: user.display_name,
                 stellarPublicKey: user.stellar_public_key,
                 is_admin: !!user.is_admin,
+                terms_accepted_at: user.terms_accepted_at || null,
             },
         });
     } catch (err) {
         console.error('Google Auth error:', err);
         res.status(500).json({ message: 'Error al iniciar sesión con Google' });
+    }
+});
+
+// POST /auth/accept-terms — Aceptar términos y condiciones
+router.post('/accept-terms', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const now = new Date().toISOString();
+        const { error } = await supabase
+            .from('users')
+            .update({ terms_accepted_at: now })
+            .eq('id', req.user.id);
+
+        if (error) throw error;
+
+        res.json({ terms_accepted_at: now });
+    } catch (err) {
+        console.error('Accept terms error:', err);
+        res.status(500).json({ message: 'Error al aceptar términos' });
     }
 });
 
@@ -152,6 +173,7 @@ router.get('/me', authMiddleware, async (req, res) => {
                 is_admin: !!user.is_admin,
                 avatarUrl: user.avatar_url,
                 createdAt: user.created_at,
+                terms_accepted_at: user.terms_accepted_at || null,
             },
         });
     } catch (err) {

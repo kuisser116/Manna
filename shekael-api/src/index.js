@@ -15,8 +15,6 @@ import searchRoutes from './routes/search.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import anchorRoutes from './routes/anchor.routes.js';
 
-import cron from 'node-cron';
-import { cleanupExpiredLivepeerAssets, waitForLivepeerReady, repatriateHLS } from './services/hls-repatriate.js';
 import getDB from './database/db.js';
 
 const app = express();
@@ -93,76 +91,13 @@ app.use((err, req, res, _next) => {
     res.status(500).json({ message: 'Error interno del servidor' });
 });
 
-// ── Daily HLS Cleanup Job ─────────────────────────────────
-// Borra assets de Livepeer cuyo periodo de gracia de 7 días ya venció
-const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 horas
-cleanupExpiredLivepeerAssets(); // Ejecutar al arrancar
-setInterval(cleanupExpiredLivepeerAssets, CLEANUP_INTERVAL_MS);
-
-// ── Polling Job: Check videos in 'processing' state ────────
-// Verifica cada 30 segundos si los videos en transcodificación ya están listos
-// Esto recupera videos que quedaron atascados si el servidor se reinició
-const POLLING_INTERVAL_MS = 30_000; // 30 segundos
-
-async function checkProcessingVideos() {
-    const apiKey = process.env.LIVEPEER_API_KEY;
-    if (!apiKey) return;
-
-    const supabase = getDB();
-
-    try {
-        const { data: processing } = await supabase
-            .from('posts')
-            .select('id, video_asset_id, video_playback_id, created_at')
-            .eq('video_status', 'processing')
-            .not('video_asset_id', 'is', null)
-            .not('video_playback_id', 'is', null);
-
-        if (!processing?.length) return;
-
-        console.log(`[PollingJob] ${processing.length} videos en estado 'processing'...`);
-
-        for (const post of processing) {
-            try {
-                const { data: currentStatus } = await supabase.from('posts').select('video_status').eq('id', post.id).single();
-                
-                if (currentStatus?.video_status === 'raw') {
-                    console.log(`[PollingJob] ℹ️  Post ${post.id} ya está en 'raw'. Saltando.`);
-                    continue;
-                }
-                
-                const asset = await waitForLivepeerReady(post.video_asset_id);
-                if (asset) {
-                    console.log(`[PollingJob] ✅ Post ${post.id} listo para repatriar`);
-                    await repatriateHLS(post.id, post.video_asset_id, post.video_playback_id);
-                }
-            } catch (err) {
-                console.error(`[PollingJob] ❌ Error verificando post ${post.id}:`, err.message);
-                
-                if (err.message.includes('falló') || err.message.includes('manifest no es válido') || err.message.includes('después de 5 intentos')) {
-                    console.log(`[PollingJob] 🔄 Revertiendo post ${post.id} a 'raw' (fallback)`);
-                    await supabase.from('posts').update({ video_status: 'raw' }).eq('id', post.id);
-                }
-            }
-        }
-    } catch (err) {
-        console.error('[PollingJob] Error en job de polling:', err.message);
-    }
-}
-
-checkProcessingVideos(); // Ejecutar al arrancar
-setInterval(checkProcessingVideos, POLLING_INTERVAL_MS);
-
 // ── Iniciar ───────────────────────────────────────────────
 app.listen(PORT, () => {
     console.log(`
   🌾  ──────────────────────────────────────── 🌾
-       Shekael API Gateway v0.3.0 · Puerto ${PORT}
-       R2-Native HLS Pipeline activado
+       Shekael API Gateway v0.4.0 · Puerto ${PORT}
+       Almacenamiento: R2 (Cloudflare)
        Stellar: ${process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org'}
-       Pinata:  ${process.env.PINATA_JWT ? '✅ Configurado' : '⚠️  Sin JWT (imágenes en modo demo)'}
-       Livepeer:${process.env.LIVEPEER_API_KEY ? '✅ Configurado' : '⚠️  Sin API Key'}
-       Webhooks: ${process.env.WEBHOOK_URL || '⚠️  No configurado (usando polling fallback)'}
   🌾  ──────────────────────────────────────── 🌾
   `);
 });

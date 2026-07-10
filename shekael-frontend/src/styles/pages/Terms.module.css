@@ -100,6 +100,93 @@
     color: var(--color-text);
 }
 
+.summary {
+    background-color: #e0f2fe;
+    border: 1px solid #7dd3fc;
+    border-radius: var(--border-radius);
+    padding: 16px 20px;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #1e3a5f;
+}
+
+.acceptBar {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    padding: 20px 0;
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.acceptBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 36px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.acceptBtn:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.acceptBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.errorMsg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-danger);
+    font-size: 0.95rem;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.acceptedBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.acceptedBox h2 {
+    color: #16a34a;
+    font-family: var(--font-display);
+    margin: 0;
+}
+
+.acceptedBox p {
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
 @media (max-width: 600px) {
     .page {
         padding: 20px 10px;

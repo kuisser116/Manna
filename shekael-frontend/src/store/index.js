@@ -40,6 +40,25 @@ const useStore = create((set, get) => ({
   },
 
   logout: () => {
+
+  // acceptTerms
+  acceptTerms: async () => {
+    const token = get().token;
+    if (!token) throw new Error("No autenticado");
+    const res = await fetch((import.meta.env.VITE_API_URL || location.origin)+"/auth/accept-terms", {
+      method: "POST",
+      headers: { Authorization: "Bearer "+token },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Error al aceptar terminos");
+    }
+    const data = await res.json();
+    const currentUser = get().user;
+    if (currentUser) {
+      set({ user: { ...currentUser, terms_accepted_at: data.terms_accepted_at } });
+    }
+  },
     localStorage.removeItem('Shekael_token');
     set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [], sessionSeenAds: new Set(), postsSinceLastAd: 0 });
   },

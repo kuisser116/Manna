@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { checkAndFundQuest } from '../services/quest.service.js';
-import { triggerTranscoding } from '../services/livepeer.service.js';
 import { analyzeContentWithAI } from '../services/moderation.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { deleteFromR2 } from '../services/ipfs.service.js';
@@ -118,12 +117,12 @@ router.post('/create', authMiddleware, async (req, res) => {
         const postId = uuidv4();
         const finalContent = contentCID || content;
 
-        // --- Moderación Automática por IA ---
-        const aiCheck = await analyzeContentWithAI(finalContent, type);
-        if (aiCheck.verdict === 'rejected' && aiCheck.confidence > 0.8) {
+        // --- Moderación local (sin IA) ---
+        const modCheck = analyzeContentWithAI(finalContent, type, null, req.user.id);
+        if (modCheck.verdict === 'rejected') {
             return res.status(400).json({ 
                 message: 'Contenido rechazado por nuestras normas de comunidad',
-                reason: aiCheck.reason 
+                reason: modCheck.reason 
             });
         }
 

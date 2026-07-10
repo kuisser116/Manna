@@ -3,7 +3,7 @@ import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { checkAndFundQuest } from '../services/quest.service.js';
-import { uploadToR2, computeCID } from '../services/ipfs.service.js';
+import { uploadToR2, generateFilename } from '../services/ipfs.service.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router({ strict: false });
@@ -250,11 +250,7 @@ router.put('/me/cover', authMiddleware, uploadCover.single('cover'), handleMulte
         let contentCID;
         let fileUrl;
 
-        try {
-            contentCID = await computeCID(req.file.buffer);
-        } catch (e) {
-            contentCID = `cover-${uuidv4().slice(0, 8)}`;
-        }
+        contentCID = generateFilename("cover");
 
         if (r2AccountId) {
             fileUrl = await uploadToR2(
@@ -291,13 +287,7 @@ router.put('/me/avatar', authMiddleware, upload.single('avatar'), handleMulterEr
         let contentCID;
         let fileUrl;
 
-        // 1. Calcular CID localmente para firma criptográfica
-        try {
-            contentCID = await computeCID(req.file.buffer);
-        } catch (e) {
-            console.error('Error calculando CID local:', e);
-            contentCID = `avatar-${uuidv4().slice(0, 8)}`;
-        }
+        contentCID = generateFilename("avatar");
 
         // 2. Subir a R2 (o modo demo)
         if (r2AccountId) {

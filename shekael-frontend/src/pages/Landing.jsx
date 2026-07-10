@@ -34,9 +34,14 @@ function LandingInner() {
   const handleGoogleSuccess = async (credentialResponse) => {
     showLoading('Entrando a Shekael...', 'Autenticando con Google');
     try {
-      await loginWithGoogle(credentialResponse.credential);
+      const data = await loginWithGoogle(credentialResponse.credential);
+      hideModal();
       showSuccess('Ya estas dentro!', 'Bienvenido. Aqui si hay algo real.', true);
-      setTimeout(() => navigate('/feed'), 1000);
+      if (!data.user?.terms_accepted_at) {
+        navigate('/terminos');
+      } else {
+        navigate('/feed');
+      }
     } catch (err) {
       hideModal();
       showError('Error de Google', err.message);
