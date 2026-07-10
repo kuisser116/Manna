@@ -7,7 +7,7 @@ import useAuth from "../../hooks/useAuth";
 import { searchGlobal } from "../../api/search.api";
 import Avatar from "../Avatar/Avatar";
 import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdown";
-import LanguageSelector from "../LanguageSelector/LanguageSelector";
+
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
 
@@ -160,7 +160,7 @@ export function TopBar({ onToggleSidebar }) {
       </div>
 
       <div className={styles.right}>
-        <LanguageSelector />
+
 
         <button
           className={styles.iconBtn}

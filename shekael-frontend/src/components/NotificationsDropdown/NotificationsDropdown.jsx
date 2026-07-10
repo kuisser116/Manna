@@ -74,15 +74,8 @@ export function NotificationsDropdown() {
     };
 
     const handleNotificationClick = async (notif) => {
-        // Redirigir si tiene postId
         if (notif.post_id) {
             navigate(`/post/${notif.post_id}`);
-            setIsOpen(false);
-        } else if (notif.type === 'ad_pending_review') {
-            navigate('/admin/ads');
-            setIsOpen(false);
-        } else if (['ad_approved', 'ad_rejected'].includes(notif.type)) {
-            navigate('/ads-studio'); // O a la pestaña de "Mis Campañas"
             setIsOpen(false);
         }
 

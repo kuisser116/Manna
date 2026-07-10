@@ -5,43 +5,42 @@
 }
 
 .bellBtn {
-    width: 42px;
-    height: 42px;
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    color: #1a1a1a;
+    width: 38px;
+    height: 38px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
     cursor: pointer;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    border-radius: 0;
-    transition: all 0.25s ease;
+    border-radius: 12px;
+    transition: all 0.2s ease;
 }
 
 .bellBtn:hover {
-    border-color: #1a1a1a;
-    background: #1a1a1a;
-    color: #fff;
+    background: var(--color-surface-2);
+    color: var(--color-text);
 }
 
 .badge {
     position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: #22c55e;
-    color: #fff;
-    font-size: 0.70rem;
+    top: -4px;
+    right: -4px;
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    font-size: 0.65rem;
     font-weight: 800;
-    min-width: 18px;
-    height: 18px;
+    min-width: 17px;
+    height: 17px;
     border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 4px;
-    border: 2px solid #fff;
+    padding: 0 3px;
+    border: 2px solid var(--color-surface);
 }
 
 .dropdown {
@@ -49,12 +48,12 @@
     top: 100%;
     right: 0;
     margin-top: 8px;
-    width: 320px;
-    max-height: 400px;
-    background-color: #fff;
-    border: 1px solid #e5e5e5;
-    border-radius: 0;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    width: 340px;
+    max-height: 420px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
     display: flex;
     flex-direction: column;
     z-index: 1000;
@@ -65,22 +64,22 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e5e5e5;
-    background: #fafafa;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .header h4 {
     margin: 0;
-    font-size: 1rem;
-    color: #1a1a1a;
+    font-size: 0.95rem;
+    color: var(--color-text);
     font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .markAllBtn {
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    color: #1a1a1a;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -90,13 +89,14 @@
     text-transform: uppercase;
     letter-spacing: 0.03em;
     padding: 0.35rem 0.5rem;
-    transition: all 0.25s ease;
+    border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 .markAllBtn:hover {
-    background: #1a1a1a;
-    color: #fff;
-    border-color: #1a1a1a;
+    background: var(--color-surface-2);
+    color: var(--color-text);
+    border-color: var(--color-border);
 }
 
 .list {
@@ -105,10 +105,11 @@
 }
 
 .empty {
-    padding: 24px;
+    padding: 28px 24px;
     text-align: center;
-    color: #6b7280;
+    color: var(--color-text-muted);
     font-size: 0.875rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .item {
@@ -117,34 +118,37 @@
     gap: 12px;
     padding: 12px 16px;
     cursor: pointer;
-    border-bottom: 1px solid #f3f4f6;
-    transition: all 0.25s ease;
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.15s ease;
 }
 
 .item:hover {
-    background-color: #fafafa;
+    background: var(--color-surface-2);
 }
 
 .item.unread {
-    background-color: rgba(34, 197, 94, 0.05);
-    border-left: 3px solid #22c55e;
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+    border-left: 3px solid var(--color-primary);
 }
+
 .item.unread:hover {
-    background-color: rgba(34, 197, 94, 0.1);
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
 }
 
 .content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+    min-width: 0;
 }
 
 .content p {
     margin: 0;
-    font-size: 0.875rem;
+    font-size: 0.825rem;
     line-height: 1.4;
-    color: #1a1a1a;
+    color: var(--color-text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .content strong {
@@ -152,55 +156,51 @@
 }
 
 .time {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
 }
 
 .unreadDot {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background-color: #22c55e;
+    background: var(--color-primary);
     flex-shrink: 0;
 }
 
 .loadMoreBtn {
     width: 100%;
     padding: 12px;
-    background: #fafafa;
+    background: transparent;
     border: none;
-    color: #16a34a;
-    font-size: 0.875rem;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-primary);
+    font-size: 0.825rem;
     cursor: pointer;
-    font-weight: 700;
-    transition: all 0.25s ease;
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.15s ease;
 }
 
 .loadMoreBtn:hover:not(:disabled) {
-    background: rgba(34, 197, 94, 0.08);
-    color: #15803d;
+    background: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
 .loadMoreBtn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 @media (max-width: 480px) {
-    .bellBtn {
-        width: 38px;
-        height: 38px;
-    }
-
     .dropdown {
         position: fixed;
         top: auto;
-        bottom: 0px;
+        bottom: 0;
         left: 0;
         right: 0;
         width: 100%;
-        max-height: 50vh;
-        border-radius: 0;
+        max-height: 55vh;
+        border-radius: 20px 20px 0 0;
         margin-top: 0;
     }
 }
