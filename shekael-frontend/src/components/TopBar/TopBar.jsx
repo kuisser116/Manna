@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Bell, Menu, X, ArrowLeft, QrCode, Sun, Moon, LayoutGrid, Settings } from "lucide-react";
+import { Search, Bell, Menu, ArrowLeft, QrCode, Sun, Moon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
@@ -23,9 +23,7 @@ export function TopBar({ onToggleSidebar }) {
   const dropdownRef = useRef(null);
   const [suggestions, setSuggestions] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const isProfileRoute = location.pathname.startsWith('/profile');
 
-  // Cargar sugerencias
   useEffect(() => {
     if (!query.trim()) {
       setSuggestions(null);
@@ -43,7 +41,6 @@ export function TopBar({ onToggleSidebar }) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target) &&
@@ -55,7 +52,6 @@ export function TopBar({ onToggleSidebar }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Solo mostrar el botón de regresar si no estamos en feed ni en la portada
   const showBackBtn =
     location.pathname !== "/feed" && location.pathname !== "/";
 
@@ -76,17 +72,17 @@ export function TopBar({ onToggleSidebar }) {
 
   return (
     <header className={styles.topbar}>
-      {/* Izquierda: hamburger + logo */}
       <div className={styles.left}>
         <button
           className={styles.hamburger}
           onClick={onToggleSidebar}
           aria-label="Toggle sidebar"
         >
-          <Menu size={22} />
+          <Menu size={20} />
         </button>
         <Link to="/feed" className={styles.logo}>
-          M
+          <img src={logoImg} alt="Shekael" className={styles.logoImg} />
+          Shekael
         </Link>
         {showBackBtn && (
           <button
@@ -94,12 +90,11 @@ export function TopBar({ onToggleSidebar }) {
             onClick={() => navigate(-1)}
             aria-label="Volver atrás"
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={20} />
           </button>
         )}
       </div>
 
-      {/* Centro: barra de búsqueda con dropdown */}
       <div className={styles.searchWrap} ref={dropdownRef}>
         <form className={styles.searchContainer} onSubmit={handleSearch}>
           <div className={styles.searchBox}>
@@ -164,7 +159,6 @@ export function TopBar({ onToggleSidebar }) {
         )}
       </div>
 
-      {/* Derecha: selector idioma + notificaciones + avatar */}
       <div className={styles.right}>
         <LanguageSelector />
 
@@ -174,7 +168,6 @@ export function TopBar({ onToggleSidebar }) {
           onClick={() => setMyQRModalOpen(true)}
         >
           <QrCode size={20} />
-          <span className={styles.btnLabel}>{t('topbar.myQR')}</span>
         </button>
 
         <button
@@ -219,37 +212,14 @@ export function TopBar({ onToggleSidebar }) {
               >
                 Mi perfil
               </Link>
-              <Link
-                to="/settings"
-                className={styles.userMenuItem}
-                onClick={() => setShowUserMenu(false)}
-              >
-                Settings
-              </Link>
-              <Link
-                to="/ads-studio"
-                className={styles.userMenuItem}
-                onClick={() => setShowUserMenu(false)}
-              >
-                Ads Studio
-              </Link>
               {user?.is_admin && (
-                <>
-                  <Link
-                    to="/admin/control-center"
-                    className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    Control
-                  </Link>
-                  <Link
-                    to="/admin/ads"
-                    className={`${styles.userMenuItem} ${styles.userMenuAdmin}`}
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    Validar Anuncios
-                  </Link>
-                </>
+                <Link
+                  to="/admin/control-center"
+                  className={styles.userMenuItem}
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  Control Center
+                </Link>
               )}
               <button
                 className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
