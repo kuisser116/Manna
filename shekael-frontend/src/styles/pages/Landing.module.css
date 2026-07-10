@@ -1,0 +1,393 @@
+/* ══════════════════════════════════════════════
+   Ehise Landing — Profesional, confianza, sano
+   Visual abstracto con CSS puro, tipografia bold
+   ══════════════════════════════════════════════ */
+
+.page {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ─── Theme Toggle ─── */
+.themeToggle {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.themeToggle:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════
+   HERO — Full viewport, theme-aware
+   ══════════════════════════════════════════════ */
+.hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 24px 20px;
+  background:
+    radial-gradient(ellipse at 70% 40%, rgba(225,29,72,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 30% 70%, rgba(245,204,0,0.04) 0%, transparent 40%),
+    linear-gradient(160deg, #fefcf8 0%, #fdf8f4 40%, #faf5f0 100%);
+  overflow: hidden;
+}
+
+:root[data-theme='dark'] .hero {
+  background:
+    radial-gradient(ellipse at 70% 40%, rgba(225,29,72,0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 30% 70%, rgba(225,29,72,0.05) 0%, transparent 40%),
+    linear-gradient(160deg, #1a1a1e 0%, #18181b 40%, #16161a 100%);
+}
+
+/* ─── Grecas pattern overlay (igual que Profile) ─── */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--color-pattern);
+  -webkit-mask-image: var(--pattern-url);
+  mask-image: var(--pattern-url);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 104px 104px;
+  mask-size: 104px 104px;
+  opacity: var(--pattern-opacity);
+  pointer-events: none;
+}
+
+/* ─── Abstract visual shapes ─── */
+.heroVisual,
+.shape1, .shape2, .shape3, .shape4, .shape5 {
+  display: none;
+}
+
+/* ─── Inner content ─── */
+.heroInner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.heroContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+/* ─── Logo ─── */
+.logoArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.logoWordmark {
+  font-family: 'Caesar Dressing', 'Plus Jakarta Sans', sans-serif;
+  font-size: 42px;
+  line-height: 1;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.logoTag {
+  font-size: 12px;
+  color: var(--color-text-dim);
+  font-style: italic;
+}
+
+/* ─── Headline ─── */
+.headline {
+  margin: 0;
+  font-size: clamp(36px, 6vw, 80px);
+  line-height: 1;
+  letter-spacing: -2.5px;
+  font-weight: 800;
+  color: var(--color-text);
+  max-width: 700px;
+}
+
+.hlAccentWord {
+  color: var(--color-primary);
+}
+
+.hlAccent {
+  color: var(--color-text);
+}
+
+/* ─── Description ─── */
+.desc {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  max-width: 480px;
+}
+
+/* ─── CTA ─── */
+.ctaBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.googleWrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.googleDisabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+.btnBlock {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  cursor: not-allowed;
+}
+
+.terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.checkbox {
+  margin-top: 3px;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.termsLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.termsLink:hover { text-decoration: underline; }
+
+/* ─── Scroll hint ─── */
+.scrollHint {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.scrollHint span {
+  font-size: 10px;
+  color: var(--color-text-dim);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════════
+   SCROLL CONTENT
+   ══════════════════════════════════════════════ */
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+.band { padding: 80px 24px; }
+
+.bandInner {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.bandEyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.bandTitle {
+  margin: 12px 0 16px;
+  font-size: clamp(30px, 4.5vw, 56px);
+  line-height: 0.92;
+  letter-spacing: -1.2px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.bandText {
+  margin: 0;
+  max-width: 620px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-text-secondary);
+}
+
+/* ─── Quote destacada ─── */
+.bandQuote {
+  margin: 32px 0 0;
+  font-size: clamp(24px, 3.5vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.5px;
+  font-weight: 400;
+  color: var(--color-primary);
+  font-family: 'Caesar Dressing', 'Plus Jakarta Sans', sans-serif;
+  text-transform: uppercase;
+  padding: 20px 0 0;
+  border-top: 2px solid var(--color-primary);
+  display: inline-block;
+}
+
+.bandRed {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.bandRed .bandEyebrow { color: rgba(255,255,255,0.7); }
+.bandRed .bandTitle { color: var(--color-white); }
+.bandRed .bandText { color: rgba(255,255,255,0.88); }
+.bandRed .bandQuote { 
+  color: rgba(255,255,255,0.9); 
+  border-top-color: rgba(255,255,255,0.3);
+}
+
+.bandGray {
+  background: var(--color-surface-2);
+}
+
+/* ─── Principles ─── */
+.principles {
+  padding: 64px 24px;
+  background: var(--color-surface);
+}
+
+.principlesList { border-top: 1px solid var(--color-border); }
+
+.principleItem {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-border);
+  align-items: start;
+}
+
+.principleLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.principleLabel strong {
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.principleText {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* ─── Closing ─── */
+.closing {
+  padding: 80px 24px 90px;
+  text-align: center;
+  background: var(--color-surface);
+}
+
+.closingText {
+  margin: 0 auto;
+  max-width: 500px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.btnTop {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 20px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btnTop:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+  background: var(--color-surface);
+  transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════ */
+@media (max-width: 700px) {
+  .hero { padding: 32px 20px 16px; }
+  .headline { font-size: clamp(28px, 8vw, 42px); letter-spacing: -1.5px; }
+  .band { padding: 56px 20px; }
+  .principles { padding: 48px 20px; }
+  .closing { padding: 56px 20px 64px; }
+  .principleItem { grid-template-columns: 1fr; gap: 6px; }
+  .themeToggle { top: 12px; right: 14px; width: 36px; height: 36px; }
+}
+
+@media print {
+  .heroVisual, .themeToggle, .scrollHint { display: none !important; }
+  .hero { background: var(--color-surface) !important; }
+  .hero::before { display: none !important; }
+  .page { background: var(--color-surface); color: var(--color-text); }
+}

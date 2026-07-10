@@ -1,0 +1,332 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.modal {
+    background: var(--color-surface);
+    width: 100%;
+    max-width: 420px;
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.closeBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--color-text);
+    cursor: pointer;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+.stepContent {
+    display: flex;
+    flex-direction: column;
+}
+
+.scannerWrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: #000;
+    overflow: hidden;
+}
+
+.reader {
+    width: 100%;
+    height: 100%;
+}
+
+.switchCamBtn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.switchCamBtn:active {
+    transform: scale(0.9) rotate(180deg);
+}
+
+.scanFooter {
+    padding: 30px;
+    text-align: center;
+}
+
+.title {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+    color: var(--color-text);
+    font-weight: 700;
+}
+
+.desc {
+    color: #aaa;
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 16px;
+    border-radius: 100px;
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.hintIcon {
+    color: var(--color-primary);
+}
+
+.simulateBtn {
+    background: rgba(255,255,255,0.05);
+    border: 1px dashed var(--color-border);
+    padding: 12px 20px;
+    border-radius: 12px;
+    color: var(--color-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Confirm Step */
+.merchantInfo {
+    margin-bottom: 32px;
+}
+
+.avatar {
+    width: 64px;
+    height: 64px;
+    background: rgba(34, 197, 94, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.merchantName {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.verifiedTag {
+    font-size: 0.75rem;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.amountInputWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    padding: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.currency {
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: var(--color-text-dim);
+}
+
+.amountInput {
+    background: transparent;
+    border: none;
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--color-text);
+    width: 220px;
+    text-align: center;
+    outline: none;
+    letter-spacing: -2px;
+}
+
+.currencyCode {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    opacity: 0.8;
+}
+
+.benefitCard {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(201, 168, 76, 0.1) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.benefitIcon {
+    font-size: 1.5rem;
+}
+
+.benefitText {
+    flex: 1;
+}
+
+.benefitText strong {
+    display: block;
+    color: #4ade80;
+    font-size: 0.9rem;
+}
+
+.benefitText p {
+    font-size: 0.75rem;
+    color: var(--color-text-dim);
+}
+
+.benefitAmount {
+    font-weight: 700;
+    color: #4ade80;
+}
+
+.summary {
+    width: 100%;
+    padding: 20px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 24px;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+}
+
+.summaryRow span:last-child {
+    font-weight: 700;
+    color: var(--color-text);
+    font-size: 1.1rem;
+}
+
+.payBtn {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, #D4AF37 100%);
+    color: #000;
+    border: none;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 1.15rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 10px 20px rgba(201, 168, 76, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.payBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 25px rgba(201, 168, 76, 0.3);
+}
+
+.payBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--color-surface-3);
+    color: var(--color-text-dim);
+    box-shadow: none;
+}
+
+/* Success Step */
+.successIcon {
+    width: 80px;
+    height: 80px;
+    background: #22c55e;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+}
+
+.receipt {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+}
+
+.receiptRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.receiptRow:last-child {
+    margin-bottom: 0;
+    font-weight: 700;
+    color: #4ade80;
+}
+
+.doneBtn {
+    width: 100%;
+    padding: 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}

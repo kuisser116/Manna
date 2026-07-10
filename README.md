@@ -1,10 +1,20 @@
-# Ehise — Red Social Descentralizada · Guía Técnica para Desarrollo
+# Shekael — Red Social Descentralizada · Guía Técnica para Desarrollo
+
+> **Origen del nombre:**
+> **Shekael** nace de la unión de tres palabras hebreas de la Biblia:
+> - **Sheket** (שֶׁקֶת) — "Paz, quietud, tranquilidad" — Jueces 3:11, 1 Crónicas 4:40
+> - **Elkanah** (אֶלְקָנָה) — "Dios creó" — 1 Samuel 1
+> - **El** (אֵל) — "Dios" — el Dios de la Biblia
+>
+> **She + Ka + El = "La paz que Dios creó / El lugar de quietud que Dios mismo creó para dar paz"**
+
+---
 
 > **Propósito de este documento:** Si le mandas este README a una IA (ChatGPT, Claude, Gemini, etc.) antes de pedirle ayuda con esta app, la IA ya sabrá exactamente cómo está estructurado todo y podrá ayudarte sin romper nada ni inventar convenciones nuevas.
 
 ---
 
-## 🧠 ¿Qué es Ehise? (La Visión)
+## 🧠 ¿Qué es Shekael? (La Visión)
 
 **Slogan:**
 
@@ -12,9 +22,9 @@ Imagina que agarras lo mejor de Twitter (textos rápidos), Instagram (fotos), Ti
 
 Una plataforma que ayuda a creadores y emprendedores —tanto los que apenas están comenzando como los que ya están establecidos— ofreciendo visibilidad y recompensas no solo dentro de la aplicación, sino fuera de ella en la propia localidad del usuario.
 
-**Para quién es Ehise**
+**Para quién es Shekael**
 
-Ehise es para todo el mundo, pero especialmente para esa persona que está cansada sin saber bien de qué. Entra a Instagram, TikTok o YouTube, y cuando sale una hora después se siente vacía — siente que lo único que pasó fue que perdió su tiempo. Las redes están llenas de tanto contenido que no la llena en ningún aspecto. Siente que podría hacer algo para aportar al mundo, pero las redes comunes no la apoyan en ello.
+Shekael es para todo el mundo, pero especialmente para esa persona que está cansada sin saber bien de qué. Entra a Instagram, TikTok o YouTube, y cuando sale una hora después se siente vacía — siente que lo único que pasó fue que perdió su tiempo. Las redes están llenas de tanto contenido que no la llena en ningún aspecto. Siente que podría hacer algo para aportar al mundo, pero las redes comunes no la apoyan en ello.
 
 Ese creador de contenido que sube material diferente pero no ve avances en su comunidad, que siente que está trabajando para el algoritmo y no para mejorar realmente la vida de las personas.
 
@@ -33,9 +43,9 @@ Es una plataforma híbrida (Micro-blogging, fotos y video largo) construida sobr
 | TikTok | ❌ | ❌ | ✅ |
 | Instagram | ❌ | ❌ | ✅ |
 | Mercado Pago | ❌ | ❌ | — |
-| **Manná** | ✅ MXNe | ✅ 5% (tope $50) | ❌ |
+| **Shekael** | ✅ MXNe | ✅ 5% (tope $50) | ❌ |
 
-**En Manná:**
+**En Shekael:**
 - Te **pagamos** por ver anuncios (en MXNe, pesos mexicanos)
 - **5% de descuento** en compras con QR en comercios locales (tope $50 MXNe)
 - Libertad de expresión real (solo se prohíbe lo ilegal)
@@ -52,7 +62,7 @@ Para que la aplicación sea un éxito global, nadie debe sentir que está usando
 *   **El Regalo de Bienvenida:** Para que el usuario empiece a jugar, el sistema le otorga un saldo inicial muy pequeño. Ese saldo funciona como una garantía reembolsable de buena conducta, no como un cobro.
 
 ### B. El Feed Principal (Contenido que Suma)
-Al abrir Manná, ves un flujo de contenido equilibrado que te nutre en tres áreas:
+Al abrir Shekael, ves un flujo de contenido equilibrado que te nutre en tres áreas:
 1.  **Entretenimiento Sano:** Memes, comedia y arte. El algoritmo premia la creatividad y filtra automáticamente el contenido que incita al odio (vía IA de moderación).
 2.  **Oráculo de Noticias:** Queremos jóvenes despiertos. Integramos noticias globales verificadas, fomentando el pensamiento crítico y la información de calidad.
 3.  **Pausa Consciente (Cápsulas de Contenido):** Videos cortos de 15 segundos con reflexiones, historias de impacto y mensajes que invitan a la gratitud y al crecimiento personal.
@@ -71,7 +81,7 @@ Al abrir Manná, ves un flujo de contenido equilibrado que te nutre en tres áre
 
 ## 🛡️ Las Reglas del Juego: Depósito de Confianza
 
-Internet hoy es un lugar donde cualquiera puede crear un perfil falso para insultar. Manná protege la calidad del feed con un pequeño **"Depósito de Confianza"** que es totalmente reembolsable.
+Internet hoy es un lugar donde cualquiera puede crear un perfil falso para insultar. Shekael protege la calidad del feed con un pequeño **"Depósito de Confianza"** que es totalmente reembolsable.
 
 *   Para publicar o comentar, el usuario bloquea una garantía mínima de **0.01 MXNe** (≈ 0.01 MXN).
 *   No es un pago ni una tarifa fija: es un bloqueo temporal muy pequeño que se devuelve si no hay reporte ni mal comportamiento.
@@ -85,9 +95,9 @@ Internet hoy es un lugar donde cualquiera puede crear un perfil falso para insul
 
 ---
 
-## 🪙 Economía de Manná (Distribución de Anuncios)
+## 🪙 Economía de Shekael (Distribución de Anuncios)
 
-Cada peso que entra por publicidad es distribuido automáticamente por el backend de Manná vía pagos directos en Stellar.
+Cada peso que entra por publicidad es distribuido automáticamente por el backend de Shekael vía pagos directos en Stellar.
 
 ### Distribución CON Creador (50/20/15/15)
 
@@ -97,7 +107,7 @@ Cuando un anuncio aparece en un perfil, post o video de un creador:
 |---|---|---|
 | **Creador del contenido** | 50% | El autor del post/video donde apareció el anuncio |
 | **Espectador** | 20% | El usuario que vio el anuncio |
-| **Manná (Infraestructura)** | 15% | Desarrollo, servidores, Livepeer, R2 |
+| **Shekael (Infraestructura)** | 15% | Desarrollo, servidores, Livepeer, R2 |
 | **Fondo Regional** | 15% | Fondo del estado del usuario (para descuentos) |
 
 ### Distribución SIN Creador (0/20/40/40)
@@ -108,7 +118,7 @@ Cuando un anuncio aparece en el feed general (sin creador específico), el 50% d
 |---|---|---|
 | **Creador** | 0% | No aplica |
 | **Espectador** | 20% | El usuario que vio el anuncio |
-| **Manná (Infraestructura)** | 40% | (15% original + 25% del creador) |
+| **Shekael (Infraestructura)** | 40% | (15% original + 25% del creador) |
 | **Fondo Regional** | 40% | (15% original + 25% del creador) |
 
 > **Regla inflexible:** Esta distribución es la promesa central del proyecto. **Nunca modificar estos porcentajes sin una decisión de producto explícita.**
@@ -152,7 +162,7 @@ El modelo híbrido con tope de $50 MXNe protege el fondo de compras grandes mien
 
 ## 🎨 DNA Visual (Design System: Mexican Modern / Soft Brutalist)
 
-Manná utiliza una estética **"Mexican Modern / Soft Brutalist"**. No es el minimalismo frío de Silicon Valley, sino uno con alma, texturas y contraste de alta energía.
+Shekael utiliza una estética **"Mexican Modern / Soft Brutalist"**. No es el minimalismo frío de Silicon Valley, sino uno con alma, texturas y contraste de alta energía.
 
 ### Principios de Diseño:
 1.  **Sinceridad de Materiales**: Fondos blancos puros (`#ffffff`) sobre superficies con texturas sutiles (patrón de grecas).
@@ -194,8 +204,8 @@ Manná utiliza una estética **"Mexican Modern / Soft Brutalist"**. No es el min
 ## 🗂️ Estructura del Proyecto
 
 ```
-Ehise/
-├── Ehise-frontend/              ← App React + Vite (la interfaz)
+Shekael/
+├── shekael-frontend/              ← App React + Vite (la interfaz)
 │   └── src/
 │       ├── App.jsx              ← Router principal + AppLayout (TopBar + Navbar globales)
 │       ├── api/                 ← Instancias de axios por dominio
@@ -220,7 +230,7 @@ Ehise/
 │       ├── store/               ← Estado global con Zustand
 │       └── styles/              ← CSS Modules por componente/página
 │
-└── Ehise-api/                   ← API Gateway Node.js + Express
+└── shekael-api/                   ← API Gateway Node.js + Express
     ├── src/
     │   ├── routes/              ← Endpoints organizados por dominio
     │   │   ├── posts.routes.js
@@ -261,7 +271,7 @@ Usuario → React UI → API Gateway → Stellar (MXNe)
 
 ## 🔑 Regla #1 — Autenticación y Wallets Custodiales
 
-Manná **no le pide al usuario que instale Freighter ni conozca criptomonedas**. Al registrarse, el backend crea automáticamente una wallet Stellar y guarda la clave encriptada. El usuario solo ve su saldo en **MXNe**.
+Shekael **no le pide al usuario que instale Freighter ni conozca criptomonedas**. Al registrarse, el backend crea automáticamente una wallet Stellar y guarda la clave encriptada. El usuario solo ve su saldo en **MXNe**.
 
 ```javascript
 // Registro — crea wallet automática
@@ -441,7 +451,7 @@ const useStore = create((set) => ({
 
 ## 📜 Regla #11 — Arquitectura de Pagos
 
-Manná utiliza **Stellar clásico** (Operations) para todos los pagos y transferencias. No usamos smart contracts (Soroban) porque:
+Shekael utiliza **Stellar clásico** (Operations) para todos los pagos y transferencias. No usamos smart contracts (Soroban) porque:
 
 1. **Las reglas son simples:** Repartir porcentajes (50/20/15/15) se hace perfectamente desde el backend
 2. **Fees más bajos:** Stellar clásico cuesta ~$0.000001 vs ~$0.003 de Soroban
@@ -472,9 +482,9 @@ Manná utiliza **Stellar clásico** (Operations) para todos los pagos y transfer
 
 ---
 
-## 🏆 Por qué Manná es Diferente
+## 🏆 Por qué Shekael es Diferente
 
-| Criterio | Manná |
+| Criterio | Shekael |
 |---|---|
 | **Moneda** | MXNe (pesos mexicanos, familiar para todos) |
 | **Descuentos** | 5% automático en comercios locales (tope $50) |
@@ -485,7 +495,7 @@ Manná utiliza **Stellar clásico** (Operations) para todos los pagos y transfer
 
 ---
 
-## 📖 Glosario de Conceptos "Manná"
+## 📖 Glosario de Conceptos "Shekael"
 
 | Término | Definición |
 |---------|------------|
@@ -504,16 +514,16 @@ Manná utiliza **Stellar clásico** (Operations) para todos los pagos y transfer
 ```bash
 # Clonar
 git clone [URL]
-cd Ehise
+cd Shekael
 
 # Backend
-cd Ehise-api
+cd shekael-api
 npm install
 cp .env.example .env
 npm run dev
 
 # Frontend (otra terminal)
-cd Ehise-frontend
+cd shekael-frontend
 npm install
 cp .env.example .env
 npm run dev
@@ -528,9 +538,9 @@ npm run dev
 STELLAR_NETWORK=testnet
 STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
 ADMIN_SECRET_KEY=
-Ehise_DEV_WALLET=
-Ehise_DEV_WALLET_SECRET=
-Ehise_BARN_WALLET=
+Shekael_DEV_WALLET=
+Shekael_DEV_WALLET_SECRET=
+Shekael_BARN_WALLET=
 
 # App
 JWT_SECRET=
@@ -555,4 +565,4 @@ PINATA_JWT=
 
 *Documento actualizado el 10 de Abril 2026 — Design System sincronizado con Profile.jsx (Minimal Mexicano Editorial)*
 
-*"Tu tiempo vale dinero real." — Manná 2026*
+*"Tu tiempo vale dinero real." — Shekael 2026*

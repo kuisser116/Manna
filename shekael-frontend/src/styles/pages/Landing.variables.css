@@ -1,0 +1,14 @@
+/* Landing - design tokens (light-only)
+   Centralized variables to ensure consistent contrast and accessibility
+*/
+:root {
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-text: #0f172a; /* primary readable text (very dark blue-gray) */
+  --color-muted: #475569; /* secondary copy */
+  --color-border: #e6e6e6;
+  --color-primary: #e11d48;
+  --color-primary-contrast: #ffffff;
+  --color-weak: rgba(15,23,42,0.7);
+  --color-watermark: rgba(15,23,42,0.06);
+}

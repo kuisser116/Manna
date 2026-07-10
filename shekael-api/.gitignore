@@ -1,0 +1,24 @@
+# ── SECRETOS — NUNCA subir a GitHub ──────────────────────────
+.env
+.env.local
+.env.production
+.env.*
+!.env.example
+
+# ── Base de datos ─────────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+
+# ── Dependencias y uploads ───────────────────────────────────
+node_modules/
+uploads/
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+
+# ── SO ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
