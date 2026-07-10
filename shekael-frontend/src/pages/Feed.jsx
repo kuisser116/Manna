@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
 import useStore from '../store';
@@ -30,16 +29,15 @@ export default function Feed() {
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
   const [activeFilter, setActiveFilter] = useState('all');
 
-  // Cargar feed al tener token
   useEffect(() => {
     if (token) fetchFeed();
   }, [token]);
 
-  // Scroll infinito con debounce
-  const scrollThrottleRef = useRef(false);
+  // Scroll infinito — throttle con RAF, sin framer-motion
+  const scrollLockRef = useRef(false);
   const handleScroll = useCallback(() => {
-    if (scrollThrottleRef.current) return;
-    scrollThrottleRef.current = true;
+    if (scrollLockRef.current) return;
+    scrollLockRef.current = true;
 
     requestAnimationFrame(() => {
       const threshold = 1000;
@@ -49,7 +47,7 @@ export default function Feed() {
       if (scrollBottom >= docHeight - threshold) {
         loadMore();
       }
-      scrollThrottleRef.current = false;
+      scrollLockRef.current = false;
     });
   }, [loadMore]);
 
@@ -58,7 +56,6 @@ export default function Feed() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Filtros
   const filteredPosts = posts.filter((item) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'supported') return true;
@@ -115,24 +112,14 @@ export default function Feed() {
             <a href="/create" className={styles.createLink}>{t('feed.createPost', 'Crear publicación')}</a>
           </div>
         ) : (
-          <motion.div className={styles.postList} layout>
-            {displayPosts.map((item, i) => {
-              const isExistingPost = i < displayPosts.length - 3;
-
-              return (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={isExistingPost ? false : { opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: isExistingPost ? 0 : i * 0.05 }}
-                >
-                  <PostCard post={item} />
-                </motion.div>
-              );
-            })}
+          <div className={styles.postList}>
+            {displayPosts.map((item) => (
+              <div key={item.id}>
+                <PostCard post={item} />
+              </div>
+            ))}
             {loadingMore && (
-              <div className={styles.loadingList}>
+              <div className={styles.loadingMore}>
                 <div className={styles.skeleton} />
               </div>
             )}
@@ -141,7 +128,7 @@ export default function Feed() {
                 <p>{t('feed.endOfFeed', 'Has llegado al final.')}</p>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
