@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
@@ -37,9 +37,12 @@ export default function Feed() {
     if (token) fetchFeed();
   }, [token]);
 
+  // Restaurar scroll al volver de post detail (solo una vez al montar feed)
+  const restoredRef = useRef(false);
   useEffect(() => {
-    if (!feedLoading && posts.length > 0 && feedScrollPosition > 0) {
+    if (!feedLoading && posts.length > 0 && feedScrollPosition > 0 && !restoredRef.current) {
       window.scrollTo(0, feedScrollPosition);
+      restoredRef.current = true;
     }
   }, [feedLoading, posts.length, feedScrollPosition]);
 

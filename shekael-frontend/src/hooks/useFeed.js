@@ -17,6 +17,10 @@ export function useFeed() {
             setFeedLoading(true);
             setCurrentPage(0);
             setHasMore(true);
+            // Reset scroll restoration on fresh fetch
+            if (useStore.getState().feedScrollPosition) {
+                useStore.getState().setFeedScrollPosition(0);
+            }
         }
         setFeedError(null);
         
@@ -38,9 +42,12 @@ export function useFeed() {
                     const updatedPosts = [...currentPosts, ...newPostsOnly];
                     setPosts(updatedPosts);
                     
-                    setTimeout(() => {
-                        window.scrollTo(0, scrollPosition);
-                    }, 50);
+                    // Esperar a que React renderice antes de restaurar scroll
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            window.scrollTo(0, scrollPosition);
+                        });
+                    });
                 }
             } else {
                 setPosts(postsData);

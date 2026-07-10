@@ -1,4 +1,4 @@
-/* ── Feed — Profile-matched premium card layout ── */
+/* ── Feed — posts sin card contenedora ── */
 
 .layout {
   position: relative;
@@ -34,36 +34,17 @@
   z-index: 1;
   max-width: 1000px;
   margin: 0 auto;
-  background: var(--color-surface);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-border);
-}
-
-/* ── Feed Header ── */
-
-.feedHeader {
-  padding: 24px 32px 0;
-}
-
-.feedTitle {
-  font-family: 'Caesar Dressing', 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.8rem;
-  font-weight: 400;
-  color: var(--color-text);
-  margin: 0 0 12px;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  line-height: 0.95;
+  padding: 0;
 }
 
 /* ── Filter Bar inline ── */
 
 .filterWrap {
-  border-bottom: 1px solid var(--color-border);
-  margin: 0;
-  background: transparent;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  margin: 0 0 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .filterTrack {
@@ -72,7 +53,7 @@
   gap: 0;
   background: transparent;
   border: none;
-  padding: 0 32px;
+  padding: 0 20px;
   min-height: 48px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -131,7 +112,7 @@
   color: var(--color-danger);
   padding: 0.75rem 1rem;
   font-size: 0.82rem;
-  margin: 16px 32px 0;
+  margin-bottom: 16px;
   border-radius: 12px;
 }
 
@@ -141,7 +122,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px 32px;
   min-height: 100px;
 }
 
@@ -160,7 +140,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px 32px;
 }
 
 .skeleton {
@@ -196,6 +175,10 @@
   padding: 80px 32px;
   color: var(--color-text-muted);
   text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .emptyLogo {
@@ -245,16 +228,13 @@
     mask-size: 92px 92px;
   }
 
-  .feedHeader {
-    padding: 20px 20px 0;
-  }
-
-  .feedTitle {
-    font-size: 1.5rem;
+  .filterWrap {
+    border-radius: 14px;
+    margin-bottom: 14px;
   }
 
   .filterTrack {
-    padding: 0 20px;
+    padding: 0 16px;
     min-height: 44px;
   }
 
@@ -264,16 +244,15 @@
   }
 
   .errorBanner {
-    margin: 12px 20px 0;
+    margin-bottom: 14px;
   }
 
   .postList {
-    padding: 20px;
     gap: 14px;
   }
 
   .loadingList {
-    padding: 20px;
+    gap: 14px;
   }
 
   .emptyState {
@@ -282,16 +261,13 @@
 }
 
 @media (max-width: 620px) {
-  .feedHeader {
-    padding: 16px 16px 0;
-  }
-
-  .feedTitle {
-    font-size: 1.3rem;
+  .filterWrap {
+    border-radius: 12px;
+    margin-bottom: 12px;
   }
 
   .filterTrack {
-    padding: 0 16px;
+    padding: 0 12px;
     min-height: 40px;
   }
 
@@ -302,16 +278,15 @@
   }
 
   .errorBanner {
-    margin: 10px 16px 0;
+    margin-bottom: 12px;
   }
 
   .postList {
-    padding: 16px;
     gap: 12px;
   }
 
   .loadingList {
-    padding: 16px;
+    gap: 12px;
   }
 
   .emptyState {
