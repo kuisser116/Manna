@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
@@ -26,41 +26,39 @@ const TYPE_MAP = {
 
 export default function Feed() {
   const { t } = useTranslation();
-  const {
-    posts, feedLoading, feedError, token,
-    feedScrollPosition, setFeedScrollPosition
-  } = useStore();
-  const { fetchFeed, loadMore, hasMore } = useFeed();
+  const { posts, feedLoading, feedError, token } = useStore();
+  const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
   const [activeFilter, setActiveFilter] = useState('all');
 
+  // Cargar feed al tener token
   useEffect(() => {
     if (token) fetchFeed();
   }, [token]);
 
-  // Restaurar scroll al volver de post detail (solo una vez al montar feed)
-  const restoredRef = useRef(false);
-  useEffect(() => {
-    if (!feedLoading && posts.length > 0 && feedScrollPosition > 0 && !restoredRef.current) {
-      window.scrollTo(0, feedScrollPosition);
-      restoredRef.current = true;
-    }
-  }, [feedLoading, posts.length, feedScrollPosition]);
+  // Scroll infinito con debounce
+  const scrollThrottleRef = useRef(false);
+  const handleScroll = useCallback(() => {
+    if (scrollThrottleRef.current) return;
+    scrollThrottleRef.current = true;
 
-  useEffect(() => {
-    const handleScroll = () => {
+    requestAnimationFrame(() => {
       const threshold = 1000;
-      const currentScroll = window.innerHeight + document.documentElement.scrollTop;
-      const documentHeight = document.documentElement.offsetHeight;
+      const scrollBottom = window.innerHeight + window.scrollY;
+      const docHeight = document.documentElement.offsetHeight;
 
-      if (currentScroll >= documentHeight - threshold) {
+      if (scrollBottom >= docHeight - threshold) {
         loadMore();
       }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+      scrollThrottleRef.current = false;
+    });
   }, [loadMore]);
 
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Filtros
   const filteredPosts = posts.filter((item) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'supported') return true;
@@ -83,7 +81,7 @@ export default function Feed() {
 
   return (
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
-      <main className={styles.main}>
+      <div className={styles.main}>
         <div className={styles.filterWrap}>
           <div className={styles.filterTrack}>
             {FILTERS.map((f) => (
@@ -133,6 +131,11 @@ export default function Feed() {
                 </motion.div>
               );
             })}
+            {loadingMore && (
+              <div className={styles.loadingList}>
+                <div className={styles.skeleton} />
+              </div>
+            )}
             {!hasMore && displayPosts.length > 0 && (
               <div className={styles.endMessage}>
                 <p>{t('feed.endOfFeed', 'Has llegado al final.')}</p>
@@ -140,7 +143,7 @@ export default function Feed() {
             )}
           </motion.div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

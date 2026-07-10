@@ -4,7 +4,7 @@
   position: relative;
   min-height: 100vh;
   width: 100%;
-  overflow: hidden;
+  overflow: clip;
   margin-top: -70px;
   padding-top: 70px;
 }

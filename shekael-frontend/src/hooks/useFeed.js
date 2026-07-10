@@ -1,86 +1,77 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { getFeed, createPost as apiCreate } from '../api/posts.api';
 import useStore from '../store';
 
 export function useFeed() {
-    const { 
-        setPosts, addPost, setFeedLoading, setFeedError, posts
-    } = useStore();
-    const [currentPage, setCurrentPage] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
+  const { setPosts, addPost, setFeedLoading, setFeedError } = useStore();
 
-    const fetchFeed = useCallback(async (page = 0, append = false) => {
-        if (append) {
-            setLoadingMore(true);
-        } else {
-            setFeedLoading(true);
-            setCurrentPage(0);
-            setHasMore(true);
-            // Reset scroll restoration on fresh fetch
-            if (useStore.getState().feedScrollPosition) {
-                useStore.getState().setFeedScrollPosition(0);
-            }
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageRef = useRef(0);
+  const loadingRef = useRef(false);
+
+  const fetchFeed = useCallback(async (page = 0) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+
+    const isInitial = page === 0;
+    if (isInitial) {
+      setFeedLoading(true);
+      pageRef.current = 0;
+      setHasMore(true);
+    }
+    setFeedError(null);
+
+    try {
+      const { data } = await getFeed(page);
+      const postsData = data.posts || data;
+      const moreAvailable = !!(data.hasMore && postsData.length > 0);
+      setHasMore(moreAvailable);
+
+      if (isInitial) {
+        setPosts(postsData);
+      } else {
+        // Agregar al final — scroll anchoring del navegador mantiene
+        // la posición estable sin intervención manual
+        const store = useStore.getState();
+        const currentPosts = store.posts || [];
+        const existingIds = new Set(currentPosts.map(p => p.id));
+        const newPosts = postsData.filter(p => !existingIds.has(p.id));
+
+        if (newPosts.length > 0) {
+          setPosts([...currentPosts, ...newPosts]);
         }
-        setFeedError(null);
-        
-        try {
-            const { data } = await getFeed(page);
-            const postsData = data.posts || data;
+      }
+    } catch (err) {
+      setFeedError(err.response?.data?.message || 'Error al cargar el feed');
+    } finally {
+      setFeedLoading(false);
+      loadingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [setPosts, setFeedLoading, setFeedError]);
 
-            setHasMore(data.hasMore && postsData.length > 0);
+  const loadMore = useCallback(() => {
+    if (loadingRef.current || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = pageRef.current + 1;
+    pageRef.current = nextPage;
+    fetchFeed(nextPage);
+  }, [fetchFeed, hasMore]);
 
-            if (append && page > 0) {
-                const scrollPosition = window.scrollY;
-                const store = useStore.getState();
-                const currentPosts = store.posts || [];
-                
-                const existingIds = new Set(currentPosts.map(p => p.id));
-                const newPostsOnly = postsData.filter(p => !existingIds.has(p.id));
-                
-                if (newPostsOnly.length > 0) {
-                    const updatedPosts = [...currentPosts, ...newPostsOnly];
-                    setPosts(updatedPosts);
-                    
-                    // Esperar a que React renderice antes de restaurar scroll
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            window.scrollTo(0, scrollPosition);
-                        });
-                    });
-                }
-            } else {
-                setPosts(postsData);
-            }
-        } catch (err) {
-            setFeedError(err.response?.data?.message || 'Error al cargar el feed');
-        } finally {
-            setFeedLoading(false);
-            setLoadingMore(false);
-        }
-    }, [setPosts, setFeedLoading, setFeedError]);
+  const createPost = useCallback(async (postData) => {
+    const { data } = await apiCreate(postData);
+    addPost(data.post || data);
+    return data;
+  }, [addPost]);
 
-    const createPost = useCallback(async (postData) => {
-        const { data } = await apiCreate(postData);
-        addPost(data.post || data);
-        return data;
-    }, [addPost]);
-
-    const loadMore = useCallback(() => {
-        if (!loadingMore && hasMore) {
-            const nextPage = currentPage + 1;
-            setCurrentPage(nextPage);
-            fetchFeed(nextPage, true);
-        }
-    }, [currentPage, loadingMore, hasMore, fetchFeed]);
-
-    return {
-        fetchFeed,
-        createPost,
-        loadMore,
-        hasMore,
-        loadingMore
-    };
+  return {
+    fetchFeed,
+    createPost,
+    loadMore,
+    hasMore,
+    loadingMore,
+  };
 }
 
 export default useFeed;

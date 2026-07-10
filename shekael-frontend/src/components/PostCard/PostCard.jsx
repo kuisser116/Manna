@@ -178,7 +178,7 @@ export function PostCard({ post, isDetail = false }) {
         }
     };
 
-    const { setFeedScrollPosition, openCommentModal } = useStore();
+    const { openCommentModal } = useStore();
 
     const handleComment = (e) => {
         e.stopPropagation();
@@ -196,7 +196,6 @@ export function PostCard({ post, isDetail = false }) {
         if (e.target.closest('a') || e.target.closest('button')) {
             return;
         }
-        setFeedScrollPosition(window.scrollY);
         navigate(`/post/${id}`);
     };
 
