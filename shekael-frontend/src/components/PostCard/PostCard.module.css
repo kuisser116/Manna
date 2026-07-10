@@ -9,35 +9,33 @@
     }
 }
 
+/* ── PostCard: sin card container ── */
 .card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    padding: 20px;
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     animation: fadeUp 0.4s ease both;
     position: relative;
-    overflow: hidden;
 }
 
 .card:hover {
-    box-shadow: var(--shadow-sm);
-    transform: translateX(6px);
+    transform: translateX(8px);
 }
 
+/* Left accent bar on hover */
 .card::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
+    left: -8px;
     width: 0;
     height: 100%;
     background: var(--color-primary);
     transition: width 0.25s ease;
     z-index: 2;
+    border-radius: 0 4px 4px 0;
 }
 
 .card:hover::before {
-    width: 5px;
+    width: 4px;
 }
 
 .likedHeart {
@@ -54,7 +52,6 @@
 
 .capsule {
     border-left: 3px solid var(--color-primary);
-    /* Solo un acento dorado izquierdo */
     border-color: var(--color-border);
     border-left-color: var(--color-primary);
 }
@@ -173,9 +170,7 @@
 .postImage {
     width: 100%;
     border-radius: var(--border-radius-sm);
-    /* Contain: image fits entirely, no cropping */
     object-fit: contain;
-    /* Dark letterbox background for non-square images */
     background: var(--color-bg);
     max-height: 420px;
     display: block;
@@ -206,10 +201,9 @@
     opacity: 0.92;
 }
 
-/* YouTube Style layout for videos */
+/* Video layout in detail view */
 .videoCardWrapper {
     padding: 0;
-    /* Remove padding to let thumbnail bleed */
     overflow: hidden;
 }
 
@@ -220,11 +214,10 @@
 
 .youtubeThumbnailArea .videoWrapper {
     border-radius: 0;
-    /* Bleed to edge */
 }
 
 .youtubeInfoArea {
-    padding: 16px 20px 0 20px;
+    padding: 16px 0 0 0;
 }
 
 .youtubeCaptionText {
@@ -287,7 +280,6 @@
     align-items: center;
     gap: 8px;
     padding-top: 14px;
-    border-top: 1px solid var(--color-border);
     flex-wrap: wrap;
     animation: fadeUp 0.45s ease both;
 }
@@ -298,18 +290,18 @@
     gap: 6px;
     background: transparent;
     border: 1px solid transparent;
-    color: #9ca3af;
+    color: var(--color-text-muted);
     font-size: 13px;
     padding: 7px 12px;
-    border-radius: 2px;
+    border-radius: 999px;
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all 0.2s ease;
 }
 
 .actionBtn:hover {
-    background: var(--color-surface);
+    background: var(--color-surface-2);
     color: var(--color-text);
-    border-color: var(--color-text);
+    border-color: var(--color-border);
     transform: scale(1.05);
 }
 
@@ -323,7 +315,7 @@
 
 @media (max-width: 400px) {
     .card {
-        padding: 12px;
+        padding: 0;
     }
 
     .avatar {
@@ -382,7 +374,7 @@
     }
 
     .youtubeInfoArea {
-        padding: 12px 12px 0 12px;
+        padding: 12px 0 0 0;
     }
 
     .videoCardWrapper .actions {

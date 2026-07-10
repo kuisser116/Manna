@@ -1,17 +1,39 @@
+/* ── VideoThumbnailCard: sin card container ── */
+
 .card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    cursor: pointer;
-    transition: border-color var(--transition), transform var(--transition);
     display: flex;
     flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.35s ease;
+    animation: fadeUp 0.4s ease both;
+    position: relative;
 }
 
 .card:hover {
-    border-color: rgba(255, 255, 255, 0.14);
-    transform: translateY(-2px);
+    transform: translateX(8px);
+}
+
+/* Left accent bar on hover */
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 0;
+    height: 100%;
+    background: var(--color-primary);
+    transition: width 0.25s ease;
+    z-index: 2;
+    border-radius: 0 4px 4px 0;
+}
+
+.card:hover::before {
+    width: 4px;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Thumbnail 16:9 ── */
@@ -20,7 +42,7 @@
     aspect-ratio: 16 / 9;
     background: #000;
     overflow: hidden;
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-radius: 14px;
     flex-shrink: 0;
 }
 
@@ -29,7 +51,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform var(--transition-slow);
+    transition: transform 0.4s ease;
 }
 
 .card:hover .thumbnail {
@@ -52,7 +74,7 @@
 
 /* ── Info ── */
 .info {
-    padding: 14px 16px;
+    padding: 12px 0 0;
     flex: 1;
 }
 
@@ -96,7 +118,6 @@
     color: var(--color-text);
     line-height: 1.4;
     margin-bottom: 4px;
-    /* Truncar a 2 líneas */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
