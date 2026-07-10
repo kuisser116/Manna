@@ -7,11 +7,11 @@ export function useAuth() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const loginWithGoogle = useCallback(async (credential) => {
+    const loginWithGoogle = useCallback(async (credential, recaptchaToken = '') => {
         setLoading(true);
         setError(null);
         try {
-            const { data } = await apiLoginWithGoogle({ credential });
+            const { data } = await apiLoginWithGoogle({ credential, recaptchaToken });
             setToken(data.token);
             setUser(data.user);
             return data;

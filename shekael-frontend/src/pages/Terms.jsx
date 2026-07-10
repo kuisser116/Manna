@@ -5,6 +5,7 @@ import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import styles from '../styles/pages/Terms.module.css';
 import useStore from '../store';
 
+const TERMS_VERSION = 'v1.0';
 const LAST_UPDATED = '10 de Julio de 2026';
 
 export default function Terms() {
@@ -14,13 +15,16 @@ export default function Terms() {
   const [error, setError] = useState('');
   const [accepted, setAccepted] = useState(false);
 
-  const hasAccepted = user?.terms_accepted_at;
+  // Verificar aceptación: primero en BD (user), luego localStorage como respaldo
+  const hasAccepted = user?.terms_accepted_at || localStorage.getItem('shekael_terms_' + TERMS_VERSION + '_accepted') === 'true';
 
   const handleAccept = async () => {
     setAccepting(true);
     setError('');
     try {
-      await acceptTerms();
+      await acceptTerms(TERMS_VERSION);
+      // Flag localStorage para UX instantánea entre recargas
+      localStorage.setItem('shekael_terms_' + TERMS_VERSION + '_accepted', 'true');
       setAccepted(true);
       setTimeout(() => navigate('/feed'), 500);
     } catch (err) {
@@ -68,7 +72,7 @@ export default function Terms() {
             </Link>
           )}
           <h1 className={styles.title}>Términos y Condiciones de Shekael</h1>
-          <p className={styles.lastUpdated}>Última actualización: {LAST_UPDATED}</p>
+          <p className={styles.lastUpdated}>Versión {TERMS_VERSION} · Última actualización: {LAST_UPDATED}</p>
         </motion.div>
 
         <motion.div

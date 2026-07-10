@@ -1,5 +1,5 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, ShieldCheck, Compass, Moon, Sun } from 'lucide-react';
@@ -9,6 +9,8 @@ import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
 import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
 import styles from '../styles/pages/Landing.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 const PRINCIPLES = [
   { icon: <Sparkles size={16} />, label: 'Contenido que suma', text: 'Priorizamos piezas que inspiran, ensenan o hacen reir sin destruir el foco ni la paz mental.' },
@@ -20,8 +22,22 @@ function LandingInner() {
   const navigate = useNavigate();
   const { loginWithGoogle } = useAuth();
   const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(
+    localStorage.getItem('shekael_terms_v1.0_accepted') === 'true' ||
+    !!localStorage.getItem('Shekael_token')
+  );
   const { isDarkMode, toggleDarkMode } = useStore();
+  const recaptchaLoaded = useRef(false);
+
+  // Cargar reCAPTCHA v3
+  useEffect(() => {
+    if (document.querySelector('script[src*="recaptcha/api.js"]')) return;
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.onload = () => { recaptchaLoaded.current = true; };
+    document.head.appendChild(script);
+  }, []);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -32,9 +48,14 @@ function LandingInner() {
   }, [isDarkMode]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    showLoading('Entrando a Shekael...', 'Autenticando con Google');
+    showLoading('Entrando a Shekael...', 'Verificando seguridad');
     try {
-      const data = await loginWithGoogle(credentialResponse.credential);
+      // Obtener token de reCAPTCHA v3
+      let recaptchaToken = '';
+      if (typeof grecaptcha !== 'undefined') {
+        recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'login' });
+      }
+      const data = await loginWithGoogle(credentialResponse.credential, recaptchaToken);
       hideModal();
       showSuccess('Ya estas dentro!', 'Bienvenido. Aqui si hay algo real.', true);
       if (!data.user?.terms_accepted_at) {

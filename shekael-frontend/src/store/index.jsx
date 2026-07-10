@@ -1,0 +1,184 @@
+import { create } from 'zustand';
+
+const useStore = create((set, get) => ({
+  // â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  user: null,
+  token: null,
+
+  setUser: (user) => set({ user }),
+
+  setToken: (token) => {
+    if (token) {
+      localStorage.setItem('Shekael_token', token);
+    } else {
+      localStorage.removeItem('Shekael_token');
+    }
+    set({ token });
+  },
+
+  initAuth: async () => {
+    const token = localStorage.getItem('Shekael_token');
+    if (!token) return;
+    set({ token });
+    // Restaurar objeto user desde backend (con stellarPublicKey completo)
+    try {
+      const res = await fetch(`${(import.meta.env.VITE_API_URL || location.origin)}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ user: data.user });
+      } else {
+        // Token invÃ¡lido o expirado â€” limpiar sesiÃ³n
+        localStorage.removeItem('Shekael_token');
+        set({ token: null, user: null });
+      }
+    } catch {
+      // API no disponible â€” mantener token, user queda null
+      console.warn('No se pudo restaurar sesiÃ³n desde /auth/me');
+    }
+  },
+
+  // acceptTerms — con version tracking
+  acceptTerms: async (version = 'v1.0') => {
+    const token = get().token;
+    if (!token) throw new Error("No autenticado");
+    const apiUrl = import.meta.env.VITE_API_URL || location.origin;
+    const res = await fetch(apiUrl + "/auth/accept-terms", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token 
+      },
+      body: JSON.stringify({ version }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Error al aceptar terminos");
+    }
+    const data = await res.json();
+    const currentUser = get().user;
+    if (currentUser) {
+      set({ user: { 
+        ...currentUser, 
+        terms_accepted_at: data.terms_accepted_at,
+        terms_version: data.terms_version
+      }});
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('Shekael_token');
+    set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [], sessionSeenAds: new Set(), postsSinceLastAd: 0 });
+  },
+
+  // â”€â”€ Wallet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  balance: '0.00',
+  mxneBalance: '0.00',
+  balanceMXN: '0.00',
+  currency: 'XLM',
+  balanceLoading: false,
+
+  setBalance: (balance, currency, balanceMXN, mxneBalance = '0.00') => set({
+    balance,
+    currency: currency || 'XLM',
+    balanceMXN: balanceMXN || '0.00',
+    mxneBalance: mxneBalance || '0.00'
+  }),
+  setBalanceLoading: (balanceLoading) => set({ balanceLoading }),
+
+  posts: [],
+  feedLoading: false,
+  feedError: null,
+  sessionSeenAds: new Set(),
+  postsSinceLastAd: 0,
+
+  setPosts: (posts) => set({ posts }),
+  addPost: (post) => set((state) => ({ posts: [post, ...state.posts] })),
+  setFeedLoading: (feedLoading) => set({ feedLoading }),
+  setFeedError: (feedError) => set({ feedError }),
+  addSeenAd: (adId) => set((state) => {
+    const newAds = new Set(state.sessionSeenAds);
+    newAds.add(adId);
+    return { sessionSeenAds: newAds, postsSinceLastAd: 0 };
+  }),
+  setPostsSinceLastAd: (n) => set({ postsSinceLastAd: n }),
+
+  updatePostSupports: (postId) =>
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p.id === postId ? { ...p, supports_count: (p.supports_count || 0) + 1 } : p
+      ),
+    })),
+
+  // â”€â”€ Fondo Regional â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  qrScannerOpen: false,
+  myQRModalOpen: false,
+  regionalCauses: [],
+  regionalBalance: '0.00',
+  userVotedCause: null,
+
+  setRegionalCauses: (regionalCauses) => set({ regionalCauses }),
+  setRegionalBalance: (regionalBalance) => set({ regionalBalance }),
+  setUserVotedCause: (causeId) => set({ userVotedCause: causeId }),
+  setQrScannerOpen: (open) => set({ qrScannerOpen: open }),
+  setMyQRModalOpen: (open) => set({ myQRModalOpen: open }),
+
+  // â”€â”€ UI / NavegaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  feedScrollPosition: 0,
+  setFeedScrollPosition: (pos) => set({ feedScrollPosition: pos }),
+
+  isCommentModalOpen: false,
+  commentTargetPost: null,
+  openCommentModal: (post) => set({ isCommentModalOpen: true, commentTargetPost: post }),
+  closeCommentModal: () => set({ isCommentModalOpen: false, commentTargetPost: null }),
+
+  videoMode: 'default',
+  setVideoMode: (mode) => set({ videoMode: mode }),
+  toggleTheaterMode: () => set((state) => ({ videoMode: state.videoMode === 'theater' ? 'default' : 'theater' })),
+
+  // â”€â”€ Tema / Dark Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  isDarkMode: localStorage.getItem('Shekael_theme') === 'dark',
+  toggleDarkMode: () => set((state) => {
+    const isDark = !state.isDarkMode;
+    localStorage.setItem('Shekael_theme', isDark ? 'dark' : 'light');
+    if (isDark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    return { isDarkMode: isDark };
+  }),
+
+  // â”€â”€ Misiones (Quests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  questProgress: 0,
+  questStatus: 'pending',
+  questHints: [],
+  questTasks: null,
+  setQuestData: (data) => set({
+    questProgress: data.progress ?? 0,
+    questStatus: data.status ?? 'pending',
+    questHints: Array.isArray(data.hints) ? data.hints : (data.hint ? [data.hint] : []),
+    questTasks: data.tasks ?? null
+  }),
+
+  refreshQuest: async () => {
+    const token = get().token;
+    if (!token) return;
+    try {
+      const res = await fetch(`${(import.meta.env.VITE_API_URL || location.origin)}/quests/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        get().setQuestData(data);
+      }
+    } catch (err) {
+      console.error('[Store] Error refreshing quest status:', err);
+    }
+  },
+
+}));
+
+export default useStore;
+
