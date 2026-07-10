@@ -14,8 +14,6 @@ import FondoRegional from './pages/FondoRegional';
 import Profile from './pages/Profile';
 import Terms from './pages/Terms';
 import PostDetail from './pages/PostDetail';
-import Advertise from './pages/Advertise/Advertise';
-import AdminAds from './pages/AdminAds/AdminAds';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import Studio from './pages/Studio';
 import Search from './pages/Search/Search';
@@ -178,22 +176,6 @@ function App() {
         <Route path="/post/:id" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><PostDetail /></AppLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/ads-studio" element={
-          <ProtectedRoute authLoading={authLoading}>
-            <AppLayout><Advertise /></AppLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/advertise" element={
-          <ProtectedRoute authLoading={authLoading}>
-            <Advertise />
-          </ProtectedRoute>
-        } />
-        <Route path="/ads-studio/*" element={<Navigate to="/ads-studio" replace />} />
-        <Route path="/admin/ads" element={
-          <ProtectedRoute authLoading={authLoading}>
-            <AdminAds />
           </ProtectedRoute>
         } />
         <Route path="/studio" element={

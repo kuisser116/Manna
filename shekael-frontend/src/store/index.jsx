@@ -69,7 +69,7 @@ const useStore = create((set, get) => ({
 
   logout: () => {
     localStorage.removeItem('Shekael_token');
-    set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [], sessionSeenAds: new Set(), postsSinceLastAd: 0 });
+    set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [] });
   },
 
   // â”€â”€ Wallet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -90,19 +90,10 @@ const useStore = create((set, get) => ({
   posts: [],
   feedLoading: false,
   feedError: null,
-  sessionSeenAds: new Set(),
-  postsSinceLastAd: 0,
-
   setPosts: (posts) => set({ posts }),
   addPost: (post) => set((state) => ({ posts: [post, ...state.posts] })),
   setFeedLoading: (feedLoading) => set({ feedLoading }),
   setFeedError: (feedError) => set({ feedError }),
-  addSeenAd: (adId) => set((state) => {
-    const newAds = new Set(state.sessionSeenAds);
-    newAds.add(adId);
-    return { sessionSeenAds: newAds, postsSinceLastAd: 0 };
-  }),
-  setPostsSinceLastAd: (n) => set({ postsSinceLastAd: n }),
 
   updatePostSupports: (postId) =>
     set((state) => ({

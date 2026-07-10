@@ -6,7 +6,6 @@ import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
 import { useQuests } from '../../hooks/useQuests';
 import { verifyWallet } from '../../api/users.api';
-import { getMyCoupons } from '../../api/ads.api';
 import Confetti from 'react-confetti';
 import WalletRamp from '../WalletRamp/WalletRamp';
 import { Gift } from 'lucide-react';
@@ -56,27 +55,9 @@ export function WalletWidget({ variant = 'default' }) {
     const { progress, status, hints, tasks, fetchStatus } = useQuests();
     const [showConfetti, setShowConfetti] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [adRewardPulse, setAdRewardPulse] = useState(false);
-
     // Tasa de cambio en tiempo real (por defecto 20.00 como fallback)
     const [usdRate, setUsdRate] = useState(20.00);
     const [isRampOpen, setIsRampOpen] = useState(false);
-
-    // Cupones State
-    const [activeTab, setActiveTab] = useState('balance'); // 'balance' | 'coupons'
-    const [coupons, setCoupons] = useState([]);
-    const [loadingCoupons, setLoadingCoupons] = useState(false);
-
-    // Fetch cupones
-    useEffect(() => {
-        if (activeTab === 'coupons' && user) {
-            setLoadingCoupons(true);
-            getMyCoupons()
-                .then(res => setCoupons(res.data.coupons || []))
-                .catch(err => console.error('[WalletWidget] Error fetching coupons:', err))
-                .finally(() => setLoadingCoupons(false));
-        }
-    }, [activeTab, user]);
 
     // Obtener tasa real al montar
     useEffect(() => {
@@ -118,19 +99,6 @@ export function WalletWidget({ variant = 'default' }) {
         return () => window.removeEventListener('Shekael:celebration', handleCelebration);
     }, [fetchBalance]);
 
-    // Pulso dorado al recibir recompensa por anuncio
-    useEffect(() => {
-        const handleAdReward = () => {
-            setAdRewardPulse(true);
-            setTimeout(() => {
-                setAdRewardPulse(false);
-                fetchBalance();
-            }, 3000);
-        };
-        window.addEventListener('Shekael:ad-reward', handleAdReward);
-        return () => window.removeEventListener('Shekael:ad-reward', handleAdReward);
-    }, [fetchBalance]);
-
     const explorerUrl = user?.stellarPublicKey
         ? `${EXPLORER_BASE}${user.stellarPublicKey}`
         : null;
@@ -159,7 +127,7 @@ export function WalletWidget({ variant = 'default' }) {
         <>
             {showConfetti && <Confetti width={300} height={200} recycle={false} numberOfPieces={200} />}
             <div className={styles.header}>
-                <div className={`${styles.iconWrap} ${adRewardPulse ? styles.iconGlow : ''}`}>
+                <div className={styles.iconWrap}>
                     <Wallet size={18} color="var(--color-primary)" />
                 </div>
                 <span className={styles.label}>{t('wallet.yourWallet')}</span>
@@ -167,73 +135,16 @@ export function WalletWidget({ variant = 'default' }) {
                     className={styles.refreshBtn}
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (activeTab === 'balance') {
-                            fetchBalance(); fetchStatus();
-                        } else {
-                            setLoadingCoupons(true);
-                            getMyCoupons().then(res => setCoupons(res.data.coupons || [])).finally(() => setLoadingCoupons(false));
-                        }
+                        fetchBalance(); fetchStatus();
                     }}
-                    disabled={balanceLoading || loadingCoupons}
+                    disabled={balanceLoading}
                     title="Actualizar"
                 >
-                    <RefreshCw size={13} className={(balanceLoading || loadingCoupons) ? styles.spinning : ''} />
+                    <RefreshCw size={13} className={balanceLoading ? styles.spinning : ''} />
                 </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-                <button
-                    onClick={() => setActiveTab('balance')}
-                    style={{ flex: 1, padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', color: activeTab === 'balance' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'balance' ? '2px solid var(--color-primary)' : '2px solid transparent', fontWeight: 600, fontSize: '0.85rem' }}
-                >
-                    {t('wallet.balance')}
-                </button>
-                <button
-                    onClick={() => setActiveTab('coupons')}
-                    style={{ flex: 1, padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', color: activeTab === 'coupons' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'coupons' ? '2px solid var(--color-primary)' : '2px solid transparent', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                >
-                    <Gift size={14} /> {t('wallet.coupons')}
-                </button>
-            </div>
-
-            {activeTab === 'coupons' ? (
-                <div className={styles.couponsSection} style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }}>
-                    {loadingCoupons ? (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Cargando cupones...</div>
-                    ) : coupons.length === 0 ? (
-                        <div style={{ padding: '30px 10px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                            <Gift size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-                            <p style={{ fontSize: '0.9rem', marginBottom: '6px' }}>No tienes cupones activos</p>
-                            <p style={{ fontSize: '0.75rem' }}>Interactúa con anuncios de negocios locales para desbloquear ofertas exclusivas.</p>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {coupons.map((coupon) => (
-                                <div key={coupon.id} style={{ background: '#1a1a1a', borderRadius: '10px', border: '1px solid rgba(201, 168, 76, 0.2)', padding: '12px', position: 'relative', overflow: 'hidden' }}>
-                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--color-primary)' }} />
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                                        {coupon.ad?.advertiser?.avatar_url ? (
-                                            <img src={coupon.ad.advertiser.avatar_url} style={{ width: 24, height: 24, borderRadius: '50%' }} alt="Advertiser" />
-                                        ) : (
-                                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Wallet size={12} color="var(--color-text-muted)" />
-                                            </div>
-                                        )}
-                                        <span style={{ fontSize: '0.8rem', color: '#a1a1a1', fontWeight: 600 }}>{coupon.ad?.advertiser?.display_name || 'Patrocinador'}</span>
-                                    </div>
-                                    <h4 style={{ color: 'white', fontSize: '0.95rem', marginBottom: '4px' }}>{coupon.promo_text}</h4>
-                                    <div style={{ background: '#000', padding: '8px', borderRadius: '6px', textAlign: 'center', marginTop: '10px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                        <code style={{ color: 'var(--color-primary)', fontSize: '1.1rem', letterSpacing: '2px', fontWeight: 'bold' }}>{coupon.promo_code}</code>
-                                    </div>
-                                    <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>Ad: {coupon.ad?.title || 'Promoción Especial'}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            ) : showMissions ? (
+            {showMissions ? (
                 <div className={styles.progressSection}>
                     <p className={styles.progressTitle}> Activa tu Wallet</p>
                     <p className={styles.progressSubtitle}>Completa estas tareas para recibir tu bono:</p>
