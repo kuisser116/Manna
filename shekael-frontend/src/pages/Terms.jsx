@@ -60,15 +60,10 @@ export default function Terms() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {hasAccepted ? (
+          {hasAccepted && (
             <Link to="/feed" className={styles.backLink}>
               <ArrowLeft size={20} />
               <span>Volver al inicio</span>
-            </Link>
-          ) : (
-            <Link to="/" className={styles.backLink}>
-              <ArrowLeft size={20} />
-              <span>Volver</span>
             </Link>
           )}
           <h1 className={styles.title}>Términos y Condiciones de Shekael</h1>

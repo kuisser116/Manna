@@ -29,6 +29,15 @@ function LandingInner() {
   const { isDarkMode, toggleDarkMode } = useStore();
   const recaptchaLoaded = useRef(false);
 
+  // Redirigir a términos si ya inició sesión pero no ha aceptado
+  useEffect(() => {
+    const token = localStorage.getItem('Shekael_token');
+    const accepted = localStorage.getItem('shekael_terms_v1.0_accepted') === 'true';
+    if (token && !accepted && !window.location.pathname.startsWith('/terminos')) {
+      navigate('/terminos');
+    }
+  }, []);
+
   // Cargar reCAPTCHA v3
   useEffect(() => {
     if (document.querySelector('script[src*="recaptcha/api.js"]')) return;
