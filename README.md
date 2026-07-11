@@ -1,568 +1,125 @@
-# Shekael — Red Social Descentralizada · Guía Técnica para Desarrollo
+# Shekael — Red Social para tu Comunidad Local
 
-> **Origen del nombre:**
-> **Shekael** nace de la unión de tres palabras hebreas de la Biblia:
-> - **Sheket** (שֶׁקֶת) — "Paz, quietud, tranquilidad" — Jueces 3:11, 1 Crónicas 4:40
-> - **Elkanah** (אֶלְקָנָה) — "Dios creó" — 1 Samuel 1
-> - **El** (אֵל) — "Dios" — el Dios de la Biblia
->
-> **She + Ka + El = "La paz que Dios creó / El lugar de quietud que Dios mismo creó para dar paz"**
+> **Shekael** (שֶׁקֶת): "La paz que Dios creó" — un espacio de quietud, conexión real y apoyo mutuo.
 
----
+## 🌾 Propósito
 
-> **Propósito de este documento:** Si le mandas este README a una IA (ChatGPT, Claude, Gemini, etc.) antes de pedirle ayuda con esta app, la IA ya sabrá exactamente cómo está estructurado todo y podrá ayudarte sin romper nada ni inventar convenciones nuevas.
+Shekael existe para **ayudar a la comunidad local**. Punto.
 
----
+No es para atraparte en un bucle infinito de dopamina. No es para que le regales tu atención a un algoritmo. Es para conectar **gente real, cerca de ti, haciendo cosas reales.**
 
-## 🧠 ¿Qué es Shekael? (La Visión)
-
-**Slogan:**
-
-Imagina que agarras lo mejor de Twitter (textos rápidos), Instagram (fotos), TikTok (videos cortos) y YouTube (videos largos), pero le quitas toda la toxicidad, los bots, las estafas, el robo de tu tiempo y la censura extrema.
-
-Una plataforma que ayuda a creadores y emprendedores —tanto los que apenas están comenzando como los que ya están establecidos— ofreciendo visibilidad y recompensas no solo dentro de la aplicación, sino fuera de ella en la propia localidad del usuario.
-
-**Para quién es Shekael**
-
-Shekael es para todo el mundo, pero especialmente para esa persona que está cansada sin saber bien de qué. Entra a Instagram, TikTok o YouTube, y cuando sale una hora después se siente vacía — siente que lo único que pasó fue que perdió su tiempo. Las redes están llenas de tanto contenido que no la llena en ningún aspecto. Siente que podría hacer algo para aportar al mundo, pero las redes comunes no la apoyan en ello.
-
-Ese creador de contenido que sube material diferente pero no ve avances en su comunidad, que siente que está trabajando para el algoritmo y no para mejorar realmente la vida de las personas.
-
-Una plataforma para todo el mundo que no premia el contenido dañino, que no da viralidad a cosas que dañan la mentalidad de los jóvenes y que los confunden, haciéndolos esclavos de ideas que no los benefician. Un espacio donde puedan encontrar descanso, claridad y una mentalidad que los ayude a mejorar en su día a día — donde el contenido no sea para manipular sino para hacer reflexionar y llevar a las personas por un camino de crecimiento real, con alegría, carisma y humor.
+### Prioridades:
+1. **Ayudar a los comercios locales** — que la gente de tu ciudad sepa qué negocios hay cerca, los apoye y descubra nuevos
+2. **Compartir y aprender** — que la gente normal pueda enseñar algo, mostrar su talento, y que todos crezcamos juntos
+3. **Ganar todos** — el comercio gana clientes, la comunidad gana conexiones, todos ganan
 
 ---
 
-Es una plataforma híbrida (Micro-blogging, fotos y video largo) construida sobre la red **Stellar**. Su objetivo es devolverle la dignidad al usuario, convirtiendo su tiempo en recursos reales y fomentando el crecimiento personal y comunitario.
+## 🏪 ¿Qué la hace diferente?
+
+| App | ¿Ayuda a tu comunidad local? | ¿Prioriza comercios de tu ciudad? | ¿Respeta tu atención? |
+|-----|------------------------------|-----------------------------------|----------------------|
+| TikTok | ❌ | ❌ | ❌ |
+| Instagram | ❌ | ❌ | ❌ |
+| Facebook | ❌ | ❌ | ❌ |
+| **Shekael** | ✅ | ✅ | ✅ |
+
+Shekael no te quiere pegado a la pantalla. Shekael quiere que **encuentres valor y salgas a vivirlo.**
 
 ---
 
-## 💰 La Diferencia: Tu Tiempo Vale Dinero Real
+## 🚀 Estado Actual
 
-| App | ¿Te paga por usarla? | ¿Descuento en comercios? | ¿Censura extrema? |
-|-----|---------------------|-------------------------|-------------------|
-| TikTok | ❌ | ❌ | ✅ |
-| Instagram | ❌ | ❌ | ✅ |
-| Mercado Pago | ❌ | ❌ | — |
-| **Shekael** | ✅ MXNe | ✅ 5% (tope $50) | ❌ |
+Shekael está en construcción activa como red social con:
+- Feed de publicaciones (texto, imágenes, videos)
+- Perfiles de usuario
+- Términos y condiciones con logging forense
+- Moderación local (sin IA costosa)
+- Almacenamiento en R2 (Cloudflare)
+- Autenticación con Google OAuth
+- Antibot con reCAPTCHA v3 + rate limiting
 
-**En Shekael:**
-- Te **pagamos** por ver anuncios (en MXNe, pesos mexicanos)
-- **5% de descuento** en compras con QR en comercios locales (tope $50 MXNe)
-- Libertad de expresión real (solo se prohíbe lo ilegal)
-
----
-
-## 🚀 El Viaje del Usuario: Desde que descarga la app
-
-Para que la aplicación sea un éxito global, nadie debe sentir que está usando tecnología compleja. Todo el motor de la blockchain funciona de manera invisible.
-
-### A. La Entrada (Registro Mágico)
-*   **Lo que hace el usuario:** Descarga la app y se registra simplemente con su cuenta de Google o Apple. No hay contraseñas raras ni "llaves digitales" que guardar.
-*   **La magia detrás:** Al registrarse, el sistema le crea automáticamente una "caja fuerte digital" gratuita y segura (su billetera de Stellar).
-*   **El Regalo de Bienvenida:** Para que el usuario empiece a jugar, el sistema le otorga un saldo inicial muy pequeño. Ese saldo funciona como una garantía reembolsable de buena conducta, no como un cobro.
-
-### B. El Feed Principal (Contenido que Suma)
-Al abrir Shekael, ves un flujo de contenido equilibrado que te nutre en tres áreas:
-1.  **Entretenimiento Sano:** Memes, comedia y arte. El algoritmo premia la creatividad y filtra automáticamente el contenido que incita al odio (vía IA de moderación).
-2.  **Oráculo de Noticias:** Queremos jóvenes despiertos. Integramos noticias globales verificadas, fomentando el pensamiento crítico y la información de calidad.
-3.  **Pausa Consciente (Cápsulas de Contenido):** Videos cortos de 15 segundos con reflexiones, historias de impacto y mensajes que invitan a la gratitud y al crecimiento personal.
-
-### C. Ganar Dinero (Get-Paid-to-Watch)
-- Cada anuncio que ves te genera **MXNe** (pesos mexicanos en Stellar)
-- Puedes apoyar a creadores con micro-pagos (0% comisión)
-- El dinero es **real**: puedes retirarlo en efectivo en OXXO o usarlo en comercios
-
-### D. Descuentos Regionales
-- Cuando pagas con QR en un comercio de tu estado, recibes **5% de descuento**
-- Tope máximo: **$50 MXNe** por transacción
-- El descuento lo cubre el **Fondo Regional** de tu estado
+### Próximas fases:
+1. **Funcionalidad social** — posts, reacciones, comentarios pulidos
+2. **Comercios locales** — perfiles de negocio, descubrimiento geográfico
+3. **QR + descuento local** — paga con QR, 5% de descuento en tu comunidad
+4. **Crecimiento comunitario** — que la gente encuentre y apoye su economía local
 
 ---
 
-## 🛡️ Las Reglas del Juego: Depósito de Confianza
+## 🛠️ Stack Técnico
 
-Internet hoy es un lugar donde cualquiera puede crear un perfil falso para insultar. Shekael protege la calidad del feed con un pequeño **"Depósito de Confianza"** que es totalmente reembolsable.
-
-*   Para publicar o comentar, el usuario bloquea una garantía mínima de **0.01 MXNe** (≈ 0.01 MXN).
-*   No es un pago ni una tarifa fija: es un bloqueo temporal muy pequeño que se devuelve si no hay reporte ni mal comportamiento.
-*   Si el contenido no recibe reportes válidos y cumple las normas, el depósito se devuelve íntegramente.
-*   Solo si el contenido es detectado como tóxico, spam, plagiado o claramente abusivo, el depósito se retiene.
-*   El propósito es disuadir el mal comportamiento de forma proporcional y proteger la experiencia de los demás usuarios.
-
-> **Nota importante:** El monto del depósito (actualmente 0.01 MXNe) puede ajustarse en el futuro basado en factores como la reputación del usuario, el comportamiento general de la plataforma o mejoras en la moderación. Siempre será mínimo, proporcional y claramente comunicado antes de cualquier cambio.
-
-> Resumen: para el usuario debe quedar claro que esto es una garantía mínima y reembolsable, no un cobro permanente.
-
----
-
-## 🪙 Economía de Shekael (Distribución de Anuncios)
-
-Cada peso que entra por publicidad es distribuido automáticamente por el backend de Shekael vía pagos directos en Stellar.
-
-### Distribución CON Creador (50/20/15/15)
-
-Cuando un anuncio aparece en un perfil, post o video de un creador:
-
-| Destino | Porcentaje | Quién lo recibe |
-|---|---|---|
-| **Creador del contenido** | 50% | El autor del post/video donde apareció el anuncio |
-| **Espectador** | 20% | El usuario que vio el anuncio |
-| **Shekael (Infraestructura)** | 15% | Desarrollo, servidores, Livepeer, R2 |
-| **Fondo Regional** | 15% | Fondo del estado del usuario (para descuentos) |
-
-### Distribución SIN Creador (0/20/40/40)
-
-Cuando un anuncio aparece en el feed general (sin creador específico), el 50% del creador se redistribuye:
-
-| Destino | Porcentaje | Quién lo recibe |
-|---|---|---|
-| **Creador** | 0% | No aplica |
-| **Espectador** | 20% | El usuario que vio el anuncio |
-| **Shekael (Infraestructura)** | 40% | (15% original + 25% del creador) |
-| **Fondo Regional** | 40% | (15% original + 25% del creador) |
-
-> **Regla inflexible:** Esta distribución es la promesa central del proyecto. **Nunca modificar estos porcentajes sin una decisión de producto explícita.**
+| Capa | Tecnología |
+|------|-----------|
+| **Frontend** | React 19 + Vite + Zustand + Framer Motion |
+| **Backend** | Node.js + Express |
+| **Base de datos** | Supabase (PostgreSQL) |
+| **Almacenamiento** | Cloudflare R2 |
+| **Blockchain** | Stellar testnet (MXNe como puntos de lealtad) |
+| **Auth** | Google OAuth + JWT |
+| **Anti-bot** | reCAPTCHA v3 + rate limit |
+| **Idioma** | Español (MX) |
 
 ---
 
-## 🏪 El Fondo Regional: Descuentos en tu Estado
-
-### ¿Qué es?
-
-El **Fondo Regional** es un pozo de dinero separado por cada estado de México. El 15% (o 40% sin creador) de cada anuncio visto por usuarios de ese estado va directo al fondo de ese estado.
-
-### ¿Para qué sirve?
-
-**Dar 5% de descuento** en compras con QR en comercios locales.
-
-### Reglas del Descuento:
-```
-• 5% de descuento automático al pagar con QR
-• Tope máximo: $50 MXNe por transacción
-• Solo válido en comercios de tu mismo estado
-• Sujeto a disponibilidad del fondo
-```
-
-### Ejemplo:
-```
-Usuario en Monterrey compra $800 en una taquería
-    ↓
-5% de descuento = $40 MXNe (no pasa el tope de $50)
-    ↓
-Usuario paga: $760 MXNe
-Fondo Regional de Nuevo León cubre: $40 MXNe
-Comercio recibe: $800 MXNe completos
-```
-
-### Sostenibilidad:
-
-El modelo híbrido con tope de $50 MXNe protege el fondo de compras grandes mientras mantiene el descuento atractivo para el usuario promedio.
-
----
-
-## 🎨 DNA Visual (Design System: Mexican Modern / Soft Brutalist)
-
-Shekael utiliza una estética **"Mexican Modern / Soft Brutalist"**. No es el minimalismo frío de Silicon Valley, sino uno con alma, texturas y contraste de alta energía.
-
-### Principios de Diseño:
-1.  **Sinceridad de Materiales**: Fondos blancos puros (`#ffffff`) sobre superficies con texturas sutiles (patrón de grecas).
-2.  **Contraste de Identidad**: Uso del **Rojo Tequila** (`#e11d48`) como color primario para acciones de alta energía (Likes, Reportes, Botones principales).
-3.  **Tipografía con Carácter**:
-    *   **Plus Jakarta Sans**: Tipografía principal para todo el cuerpo y controles. Geométrica, profesional y cálida.
-    *   **Caesar Dressing**: Utilizada exclusivamente para nombres de perfil y títulos de gran impacto. Aporta el toque ancestral/moderno único de la marca.
-    *   **JetBrains Mono**: Para representaciones de código o datos técnicos (Wallet addresses).
-4.  **Bordes y Formas**: Radios de curvatura generosos (**20px a 32px**) para componentes como modales y tarjetas, combinados con bordes finos de `#e5e5e5`. No usamos sombras pesadas, sino elevaciones sutiles.
-5.  **Patrón Identitario (Grecas)**: 
-    - Uso de un patrón de grecas geométricas de alta definición en el fondo (`mask-image` o `background`).
-    - Color: `#d2d2d2` con opacidad controlada (`0.58`).
-    - Tamaño estándar: `104px x 104px`.
-6.  **Micro-interacciones y Jerarquía Directa**:
-    - **Hover Dinámico**: El contenido se desplaza lateralmente (`translateX(8px)`) o escala suavemente (`scale(1.05)`) para indicar interactividad sin recurrir a colores negros agresivos en los bordes.
-    - **Capas Blur (Expert UX)**: Los modales utilizan `backdrop-filter: blur(12px)` con fondos blancos semitransparentes para mantener la luz y la profundidad de la interfaz, nunca oscureciendo totalmente la pantalla.
-    - **Consistencia de Acción**: Todos los botones de confirmación y reporte deben usar el **Rojo Tequila** del sistema.
-
-### Paleta de Colores:
-```css
-:root {
-  --color-bg: #fafafa;
-  --color-surface: #ffffff;
-  --color-primary: #e11d48; /* Rojo Tequila / Rose */
-  --color-text: #111111;
-  --color-border: #e5e5e5;
-  --color-pattern: rgba(210, 210, 210, 0.58);
-}
-```
-
-### PROHIBIDO:
-- ❌ Usar bordes negros gruesos en hovers (usar desplazamientos o sombras suaves).
-- ❌ Colores tierra o "hueso" apagados (usar blanco puro para modernidad).
-- ❌ Tipografías tipo "Comic Sans" o similares (usar Plus Jakarta Sans).
-- ❌ Modales oscuros que cierran al hacer clic fuera (usar Portals y cierre por "X").
-
----
-
-## 🗂️ Estructura del Proyecto
-
-```
-Shekael/
-├── shekael-frontend/              ← App React + Vite (la interfaz)
-│   └── src/
-│       ├── App.jsx              ← Router principal + AppLayout (TopBar + Navbar globales)
-│       ├── api/                 ← Instancias de axios por dominio
-│       │   ├── auth.api.js
-│       │   ├── posts.api.js
-│       │   └── transactions.api.js
-│       ├── pages/               ← Páginas completas (una por ruta)
-│       │   ├── Landing.jsx      ← Página pública (fuera de AppLayout)
-│       │   ├── Feed.jsx         ← Feed principal de posts
-│       │   ├── Profile.jsx      ← Perfil de usuario
-│       │   ├── CreatePost.jsx   ← Crear post (texto, imagen IPFS, video)
-│       │   ├── FondoRegional.jsx ← Fondo Regional (saldo por estado)
-│       │   └── ...
-│       ├── components/          ← Componentes reutilizables
-│       │   ├── TopBar/          ← Barra fija superior (YouTube-style)
-│       │   ├── Navbar/          ← Sidebar icon-only (Instagram-style)
-│       │   ├── PostCard/        ← Card de post individual
-│       │   ├── WalletWidget/    ← Balance + operaciones MXNe
-│       │   ├── SupportButton/   ← Botón "Apoyar" (envía MXNe on-chain)
-│       │   └── ...
-│       ├── hooks/               ← Custom hooks (lógica reutilizable)
-│       ├── store/               ← Estado global con Zustand
-│       └── styles/              ← CSS Modules por componente/página
-│
-└── shekael-api/                   ← API Gateway Node.js + Express
-    ├── src/
-    │   ├── routes/              ← Endpoints organizados por dominio
-    │   │   ├── posts.routes.js
-    │   │   ├── transactions.routes.js
-    │   │   ├── regional_fund.routes.js  ← Fondo Regional
-    │   │   └── ...
-    │   ├── middleware/
-    │   │   └── authMiddleware.js ← Verificación JWT
-    │   ├── services/
-    │   │   ├── stellar.service.js   ← Stellar SDK (MXNe)
-    │   │   ├── ipfs.service.js      ← IPFS/Pinata
-    │   │   ├── livepeer.service.js  ← Livepeer Studio
-    │   │   └── crypto.service.js    ← AES-256 para claves custodiales
-    │   └── index.js
-    └── .env
-```
-
----
-
-## 🏗️ Arquitectura del Sistema (Web2.5 / Web3)
-
-| Capa | Tecnología | Responsabilidad |
-|---|---|---|
-| **🖥️ Interfaz** | React.js + Vite | La cara visual de la app |
-| **📦 Archivos** | IPFS + R2 | Videos, imágenes y audios (egress $0) |
-| **🗄️ Datos** | Supabase (Postgres) | Base de datos relacional |
-| **💰 Economía** | Stellar | Micropagos en MXNe, transferencias instantáneas |
-| **🔄 Orquestador** | Node.js + Express | API Gateway, auth, firma de transacciones |
-
-### Flujo de datos:
-```
-Usuario → React UI → API Gateway → Stellar (MXNe)
-                              └──→ IPFS/R2 (archivos)
-                              └──→ Supabase (datos)
-```
-
----
-
-## 🔑 Regla #1 — Autenticación y Wallets Custodiales
-
-Shekael **no le pide al usuario que instale Freighter ni conozca criptomonedas**. Al registrarse, el backend crea automáticamente una wallet Stellar y guarda la clave encriptada. El usuario solo ve su saldo en **MXNe**.
-
-```javascript
-// Registro — crea wallet automática
-async function register(req, res) {
-  const keypair = StellarSDK.Keypair.random();
-  
-  const user = await User.create({
-    email,
-    displayName,
-    stellarPublicKey: keypair.publicKey(),
-    stellarSecretKey: encrypt(keypair.secret()), // AES-256, NUNCA texto plano
-  });
-
-  // Fondear saldo inicial en MXNe
-  await sendFromSeedFund(keypair.publicKey(), '1.00', 'MXNe');
-  
-  return res.json({ token: generateJWT(user) });
-}
-```
-
----
-
-## 🤖 Regla #1.5 — Escudos Anti-Bots
-
-Para evitar que bots drenen los fondos de bienvenida:
-
-1. **Proof of Engagement:** Misiones invisibles (ver videos, dar likes, seguir gente) antes de desbloquear el saldo
-2. **Google reCAPTCHA v3** en registro
-3. **Límite de 1 cuenta por IP/dispositivo**
-
----
-
-## 🗃️ Regla #3 — Base de Datos (Supabase)
-
-```sql
--- Usuarios
-CREATE TABLE users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE,
-  display_name TEXT,
-  stellar_public_key TEXT,
-  stellar_secret_key_encrypted TEXT, -- AES-256
-  state TEXT,                        -- Estado/Región del usuario
-  reputation_level INTEGER DEFAULT 1,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Posts
-CREATE TABLE posts (
-  id TEXT PRIMARY KEY,
-  author_id TEXT,
-  type TEXT,                        -- 'micro-text' | 'image' | 'video' | 'capsule'
-  content TEXT,
-  supports_count INTEGER DEFAULT 0,
-  likes_count INTEGER DEFAULT 0,
-  views_count INTEGER DEFAULT 0,
-  is_banned BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  -- Video metadata...
-);
-
--- Fondo Regional (por estado)
-CREATE TABLE regional_funds (
-  id TEXT PRIMARY KEY,
-  state TEXT UNIQUE,                -- 'nuevo_leon', 'jalisco', etc.
-  balance_mxne NUMERIC DEFAULT 0,
-  total_discounts_given NUMERIC DEFAULT 0,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Transacciones de descuento
-CREATE TABLE discount_transactions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT,
-  commerce_id TEXT,
-  state TEXT,
-  original_amount NUMERIC,
-  discount_applied NUMERIC,         -- Máx $50 MXNe
-  stellar_hash TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-## 🛣️ Regla #4 — Rutas de la App (Frontend)
-
-```
-/                    → Landing.jsx (Login con Google)
-/feed                → Feed.jsx (timeline principal)
-/profile/:id         → Profile.jsx (perfil de usuario)
-/create              → CreatePost.jsx (publicar contenido)
-/fondo-regional      → FondoRegional.jsx (saldo de tu estado)
-```
-
----
-
-## 🎨 Regla #5 — Design System (Mexican Modern / Soft Brutalist)
-
-### Estilo Visual:
-**Mexican Modern / Soft Brutalist** — Modernidad editorial con alto contraste de luz, superficies blancas puras y acentos vibrantes de la identidad mexicana.
-
-### Características Principales:
-- **Fondo principal:** #fafafa (Gris ultra-claro para limpieza extrema)
-- **Superficies:** #ffffff (Blanco puro para elevar el contenido)
-- **Texto:** #111111 (Contraste máximo)
-- **Acento principal:** #e11d48 (Rojo Tequila / Rose)
-- **Bordes:** #e5e5e5 (Finos y sutiles)
-- **Tipografía:** 
-    - **Caesar Dressing**: Solo para nombres de perfil y títulos de impacto.
-    - **Plus Jakarta Sans**: Tipografía funcional para toda la interfaz (Plus Jakarta es cálida y moderna).
-- **Patrón de marca:** Greca mexicana geométrica sutil (`opacity: 0.58`) como textura de fondo.
-
-### Paleta de Colores (CSS Variables):
-```css
-:root {
-  --color-bg: #fafafa;
-  --color-surface: #ffffff;
-  --color-primary: #e11d48;
-  --color-text: #111111;
-  --color-border: #e5e5e5;
-}
-```
-
-### Componentes Clave:
-| Componente | Estilo |
-|------------|--------|
-| **Modales** | `backdrop-filter: blur(12px)`, fondo blanco semitransparente, radios de 32px |
-| **Tarjetas (Posts)** | Desplazamiento lateral de 8px en hover, sin bordes negros |
-| **Avatar** | Frame circular con escala 1.05 en hover |
-| **Botones** | Radios de 20px, texto Bold y mayúsculas para acciones principales |
-
-### PROHIBIDO:
-- ❌ Usar bordes negros agresivos en interacción (usar desplazamientos o sombras)
-- ❌ Paletas de colores "hueso" o "tierra" apagadas
-- ❌ Tipografías genéricas o fallback tipo Comic Sans
-- ❌ Modales que se cierran al hacer clic fuera (usar cierre explícito)
-
----
-
-## 💬 Regla #6 — Modales de Feedback
-
-Siempre usar `useFeedbackModal`, nunca `alert()`:
-
-```jsx
-const { showSuccess, showError, showLoading, hideModal } = useFeedbackModal();
-
-const handleAccion = async () => {
-  showLoading('Procesando...', 'Firmando transacción en Stellar');
-  try {
-    await api.post('/transaccion', { ... });
-    showSuccess('¡Listo!', 'Tu pago se completó', true);
-  } catch (err) {
-    hideModal();
-    showError('Error', err.message);
-  }
-};
-```
-
----
-
-## 📡 Regla #8 — Estado Global (Zustand)
-
-```javascript
-const useStore = create((set) => ({
-  user: null,
-  token: null,
-  balance: '0.00',        // MXNe
-  state: null,            // Estado/Región del usuario
-  setUser: (user) => set({ user }),
-  setBalance: (balance) => set({ balance }),
-  logout: () => set({ user: null, token: null }),
-}));
-```
-
----
-
-## 📜 Regla #11 — Arquitectura de Pagos
-
-Shekael utiliza **Stellar clásico** (Operations) para todos los pagos y transferencias. No usamos smart contracts (Soroban) porque:
-
-1. **Las reglas son simples:** Repartir porcentajes (50/20/15/15) se hace perfectamente desde el backend
-2. **Fees más bajos:** Stellar clásico cuesta ~$0.000001 vs ~$0.003 de Soroban
-3. **Sin complejidad:** No hay TTL, storage rent, ni footprints que manejar
-4. **Funciona hoy:** Todo lo que necesitamos ya funciona sin smart contracts
-
-| Función | Implementación |
-|---|---|
-| **Distribución de anuncios** | Backend calcula y envía pagos directos con `sendPayment()` |
-| **Fondo Regional** | Base de datos Supabase + pagos subsidiados |
-| **Depósito de Confianza** | Garantía mínima reembolsable de 0.01 MXNe / MXN, retenida solo por reportes válidos |
-| **Registro de contenido** | `manageData` de Stellar (ya funciona) |
-
-> **Nota:** Si en el futuro los comercios o usuarios exigen "transparencia inmutable", podemos migrar a Soroban. Por ahora, Stellar clásico es más que suficiente.
-
----
-
-## ✅ Funcionalidades Implementadas
-
-- ✅ **Auth + Wallets Custodiales:** Registro invisible, llaves encriptadas AES-256
-- ✅ **Pipeline de Video:** R2 + Livepeer + Repatriación HLS (egress $0)
-- ✅ **Feed y Contenido:** Micro-blogging, imágenes, video con moderación IA
-- ✅ **Economía Stellar:** Micropagos en MXNe, distribución automática
-- ✅ **Protección del Creador:** Registro de CID on-chain
-- ✅ **Sistema Anti-Bots:** Proof-of-Engagement + reCAPTCHA
-- ✅ **QR y Pagos:** Generación de QR personal, scanner, pagos con descuento
-- ✅ **Mobile/PWA:** Instalable en Android/iOS
-
----
-
-## 🏆 Por qué Shekael es Diferente
-
-| Criterio | Shekael |
-|---|---|
-| **Moneda** | MXNe (pesos mexicanos, familiar para todos) |
-| **Descuentos** | 5% automático en comercios locales (tope $50) |
-| **Economía local** | Fondo Regional por estado (el dinero se queda en tu región) |
-| **Distribución justa** | 50/20/15/15 o 0/20/40/40 (sin causas sociales, solo descuentos) |
-| **UX** | Wallet invisible, cero fricción |
-| **Escalabilidad** | Video pipeline con egress $0 |
-
----
-
-## 📖 Glosario de Conceptos "Shekael"
-
-| Término | Definición |
-|---------|------------|
-| **Stellar** | Red blockchain rápida, barata y ecológica |
-| **MXNe** | Peso Mexicano Digital en Stellar (1 MXNe = $1 MXN) |
-| **Depósito de Confianza** | Garantía mínima reembolsable de 0.01 MXNe / MXN, retenida solo por reportes válidos |
-| **Apoyos** | Micro-pagos de centavos entre usuarios (0% comisión) |
-| **Fondo Regional** | Pozo de dinero por estado para subsidiar descuentos del 5% |
-| **Distribución 50/20/15/15** | 50% creador / 20% usuario / 15% infra / 15% fondo (con creador) |
-| **Distribución 0/20/40/40** | Sin creador: el 50% se reparte entre infra y fondo |
-
----
-
-## 🚀 Quick Start
+## 🧑‍💻 Desarrollo Local
 
 ```bash
-# Clonar
-git clone [URL]
-cd Shekael
+# Requisitos
+node >= 18
+npm
 
 # Backend
 cd shekael-api
+cp .env.example .env   # configurar variables
 npm install
-cp .env.example .env
-npm run dev
+npm run dev            # http://localhost:3001
 
-# Frontend (otra terminal)
+# Frontend
 cd shekael-frontend
 npm install
-cp .env.example .env
-npm run dev
+npm run dev            # http://localhost:5173
 ```
 
 ---
 
-## 🔐 Variables de Entorno
+## 🧱 Arquitectura
 
-```env
-# Stellar
-STELLAR_NETWORK=testnet
-STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
-ADMIN_SECRET_KEY=
-Shekael_DEV_WALLET=
-Shekael_DEV_WALLET_SECRET=
-Shekael_BARN_WALLET=
-
-# App
-JWT_SECRET=
-ENCRYPTION_KEY=
-PORT=3000
-
-# Supabase
-SUPABASE_URL=
-SUPABASE_KEY=
-
-# R2
-R2_ENDPOINT=
-R2_ACCESS_KEY=
-R2_SECRET_KEY=
-R2_BUCKET=
-
-# IPFS
-PINATA_JWT=
+```
+Shekael/
+├── shekael-api/          # Backend (Express + Supabase + Stellar)
+│   ├── src/
+│   │   ├── routes/       # Endpoints REST
+│   │   ├── services/     # Lógica de negocio
+│   │   └── middleware/   # Auth, rate limit, validación
+│   └── ...
+├── shekael-frontend/     # Frontend (React + Vite)
+│   ├── src/
+│   │   ├── components/   # Componentes UI
+│   │   ├── pages/        # Páginas (Feed, Perfil, etc.)
+│   │   ├── store/        # Estado global (Zustand)
+│   │   ├── hooks/        # Custom hooks
+│   │   └── api/          # Clientes HTTP
+│   └── ...
+└── README.md
 ```
 
 ---
 
-*Documento actualizado el 10 de Abril 2026 — Design System sincronizado con Profile.jsx (Minimal Mexicano Editorial)*
+## 🌱 Filosofía
 
-*"Tu tiempo vale dinero real." — Shekael 2026*
+Shekael no compite con Instagram ni TikTok. **No queremos tu atención, queremos tu comunidad.**
+
+- Sin algoritmos que maximicen tiempo en pantalla
+- Sin manipulación emocional
+- Sin contenido diseñado para enganchar
+- Sin shadowban ni censura invisible
+- Sin bots ni cuentas falsas
+
+**Transparencia, autenticidad y apoyo local.** Eso es Shekael.
+
+---
+
+## 📜 Licencia
+
+Proyecto privado — Kuki Corp.

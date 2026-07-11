@@ -38,7 +38,10 @@ export const getSavedPosts = () => postsAPI.get('/posts/bookmarks/me');
 export const toggleSavePost = (postId) => postsAPI.post(`/posts/${postId}/save`);
 export const deletePost = (postId) => postsAPI.delete(`/posts/${postId}`);
 
-// â”€â”€ ModeraciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Seen tracking ──
+export const markPostAsSeen = (postId) => postsAPI.post(`/posts/${postId}/seen`);
+
+// ── Moderación ──
 export const preValidateContent = (data) => postsAPI.post('/moderation/analyze-pre-upload', data);
 
 export default postsAPI;

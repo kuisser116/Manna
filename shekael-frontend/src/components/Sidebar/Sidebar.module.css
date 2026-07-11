@@ -9,11 +9,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Centrado vertical en la pantalla */
   padding: 2rem 0;
   background: transparent;
   border-right: none;
-  overflow-y: auto;
+  /* Sin overflow: el contenido (4 iconos) no necesita scroll,
+     y queremos que los hover labels (::after) sean visibles
+     aunque sobresalgan del ancho del sidebar */
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -51,16 +52,43 @@
   padding: 0;
   border-radius: 12px;
   text-decoration: none;
+  position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hover: Rosa Mexicano (#e11d48) profundo sutil */
 .iconBtn:hover {
   background: rgba(225, 29, 72, 0.15);
-  /* Fondo rosa mexicano transparente */
   color: var(--color-accent, #e11d48);
-  /* Mexican accent */
   transform: scale(1.1);
+}
+
+/* ── Floating label on hover (collapsed mode) ── */
+.collapsed .iconBtn::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  white-space: nowrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 1100;
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-family);
+}
+
+.collapsed .iconBtn:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 

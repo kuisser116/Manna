@@ -47,6 +47,18 @@
   border-radius: 12px;
 }
 
+/* ── Section Labels ── */
+
+.sectionLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 0;
+  margin-bottom: -10px;
+}
+
 /* ── Post List ── */
 
 .postList {

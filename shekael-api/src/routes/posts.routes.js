@@ -24,7 +24,7 @@ function weaveCapsulesIntoFeed(regularPosts, capsulePosts) {
     return result;
 }
 
-// GET /posts/feed — Feed con algoritmo: score + cápsulas intercaladas
+// GET /posts/feed — Feed con algoritmo: unseen primero, después vistos
 router.get('/feed', authMiddleware, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 0;
@@ -33,9 +33,7 @@ router.get('/feed', authMiddleware, async (req, res) => {
         const currentUserId = req.user.id;
         const supabase = getDB();
 
-        // 1. Obtener posts regulares (No cápsulas)
-        // Nota: El algoritmo de ordenamiento complejo se simplifica para Supabase-JS 
-        // o se puede mover a un RPC si el ordenamiento por seguidores/likes es crítico.
+        // 1. Obtener posts regulares (No cápsulas) con seen_at
         const { data: regularPosts, error: regError } = await supabase
             .from('posts')
             .select(`
@@ -43,7 +41,8 @@ router.get('/feed', authMiddleware, async (req, res) => {
                 author:users!posts_author_id_fkey (id, display_name, stellar_public_key, avatar_url),
                 post_likes (user_id),
                 post_saves (user_id),
-                post_comments (id)
+                post_comments (id),
+                post_views!left (seen_at, user_id)
             `)
             .eq('is_banned', false)
             .neq('type', 'capsule')
@@ -57,8 +56,9 @@ router.get('/feed', authMiddleware, async (req, res) => {
             .from('posts')
             .select(`
                 *,
-                author:users!posts_author_id_fkey (id, display_name, stellar_public_key, avatar_url),
-                post_comments (id)
+                author:users!posts_author_id_fkey (display_name, stellar_public_key, avatar_url),
+                post_comments (id),
+                post_views!left (seen_at, user_id)
             `)
             .eq('is_banned', false)
             .eq('type', 'capsule')
@@ -74,7 +74,16 @@ router.get('/feed', authMiddleware, async (req, res) => {
             .eq('follower_id', currentUserId);
         const followingSet = new Set(followingRecords?.map(r => r.followed_id) || []);
 
-        // Formatear posts para que coincidan con la estructura esperada por el frontend
+        // Helper: extraer seen_at del usuario actual de la relación post_views
+        const getSeenAt = (p) => {
+            if (!p.post_views) return null;
+            const view = Array.isArray(p.post_views)
+                ? p.post_views.find(v => v.user_id === currentUserId)
+                : p.post_views;
+            return view?.seen_at || null;
+        };
+
+        // Formatear posts con seen_at
         const formattedPosts = regularPosts.map(p => ({
             ...p,
             display_name: p.author.display_name,
@@ -83,7 +92,8 @@ router.get('/feed', authMiddleware, async (req, res) => {
             has_liked: p.post_likes && p.post_likes.some(l => l.user_id === currentUserId),
             has_saved: p.post_saves && p.post_saves.some(s => s.user_id === currentUserId),
             comments_count: p.post_comments ? p.post_comments.length : 0,
-            isFollowing: followingSet.has(p.author_id)
+            isFollowing: followingSet.has(p.author_id),
+            seen_at: getSeenAt(p)
         }));
 
         const formattedCapsules = capsulePosts.map(p => ({
@@ -91,14 +101,27 @@ router.get('/feed', authMiddleware, async (req, res) => {
             display_name: p.author.display_name,
             stellar_public_key: p.author.stellar_public_key,
             avatar_url: p.author.avatar_url,
-            has_liked: false, // Simplificado
+            has_liked: false,
             comments_count: p.post_comments ? p.post_comments.length : 0,
-            isFollowing: followingSet.has(p.author_id)
+            isFollowing: followingSet.has(p.author_id),
+            seen_at: getSeenAt(p)
         }));
 
-        const feed = weaveCapsulesIntoFeed(formattedPosts, formattedCapsules);
+        // Ordenar: no vistos primero (por created_at DESC), después vistos
+        const sortBySeen = (posts) => {
+            const unseen = posts.filter(p => !p.seen_at);
+            const seen = posts.filter(p => p.seen_at);
+            return [...unseen, ...seen];
+        };
 
-        res.json({ posts: feed, page, hasMore: regularPosts.length === limit });
+        const sortedRegular = sortBySeen(formattedPosts);
+        const sortedCapsules = sortBySeen(formattedCapsules);
+        const feed = weaveCapsulesIntoFeed(sortedRegular, sortedCapsules);
+
+        // Contar cuántos no vistos hay (para el front)
+        const unseenCount = formattedPosts.filter(p => !p.seen_at).length;
+
+        res.json({ posts: feed, page, hasMore: regularPosts.length === limit, unseenCount });
     } catch (err) {
         console.error('Feed error:', err);
         res.status(500).json({ message: 'Error al cargar el feed' });
@@ -339,6 +362,42 @@ router.post('/:postId/unlike', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Unlike error:', err);
         res.status(500).json({ message: 'Error al remover el like' });
+    }
+});
+
+// POST /posts/:postId/seen — Marcar post como visto en el feed
+router.post('/:postId/seen', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const postId = req.params.postId;
+        const userId = req.user.id;
+
+        // Upsert: si ya existe el registro, solo actualiza seen_at
+        const { data: existing } = await supabase
+            .from('post_views')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('post_id', postId)
+            .maybeSingle();
+
+        if (existing) {
+            // Ya existe solo actualizar timestamp
+            await supabase
+                .from('post_views')
+                .update({ seen_at: new Date().toISOString() })
+                .eq('id', existing.id);
+        } else {
+            // Nuevo registro
+            await supabase
+                .from('post_views')
+                .insert({ user_id: userId, post_id: postId });
+        }
+
+        res.json({ seen: true });
+    } catch (err) {
+        console.error('Error marking post as seen:', err);
+        // Si la tabla no existe, responder ok igual (graceful degradation)
+        res.json({ seen: true });
     }
 });
 

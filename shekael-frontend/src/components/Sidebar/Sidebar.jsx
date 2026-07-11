@@ -23,6 +23,7 @@ export function Sidebar({ collapsed = false, hidden = false }) {
                     to="/feed"
                     className={styles.iconBtn}
                     title={t('sidebar.feed', 'Inicio')}
+                    data-label={t('sidebar.feed', 'Inicio')}
                 >
                     <Home size={24} strokeWidth={2} />
                 </Link>
@@ -32,6 +33,7 @@ export function Sidebar({ collapsed = false, hidden = false }) {
                     to="/create"
                     className={styles.iconBtn}
                     title={t('sidebar.create', 'Crear publicación')}
+                    data-label={t('sidebar.create', 'Crear publicación')}
                 >
                     <PlusSquare size={24} strokeWidth={2} />
                 </Link>
@@ -42,6 +44,7 @@ export function Sidebar({ collapsed = false, hidden = false }) {
                     onClick={() => setQrScannerOpen(true)}
                     aria-label="Mi QR"
                     title={t('sidebar.qr', 'Mi QR')}
+                    data-label={t('sidebar.qr', 'Mi QR')}
                 >
                     <QrCode size={24} strokeWidth={2} />
                 </button>
@@ -51,6 +54,7 @@ export function Sidebar({ collapsed = false, hidden = false }) {
                     to="/profile"
                     className={styles.iconBtn}
                     title={t('sidebar.profile', 'Perfil')}
+                    data-label={t('sidebar.profile', 'Perfil')}
                 >
                     <User size={24} strokeWidth={2} />
                 </Link>
