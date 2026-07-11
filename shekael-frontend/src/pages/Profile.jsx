@@ -321,14 +321,7 @@ export default function Profile() {
                     </>
                   )}
                 </div>
-                <span className={styles.handle}>
-                  @{profileData?.username 
-                    ? profileData.username
-                    : isOwnProfile
-                      ? (profileData?.email?.split('@')[0] || 'usuario')
-                      : (profileData?.handle || profileData?.displayName?.toLowerCase().replace(/\s/g, '') || 'usuario')
-                  }
-                </span>
+
                 {profileData?.bio && (isOwnProfile ? privacy.showBio !== false : true) && <p className={styles.bio}>{profileData.bio}</p>}
                 <div className={styles.metaLine}>
                   <CalendarDays size={16} /> {t('profile.memberSince', 'Member since')} {memberSince}
