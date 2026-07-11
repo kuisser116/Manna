@@ -229,6 +229,81 @@ router.put('/me/public-key', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /users/me/check-username?username=xxx — Verificar disponibilidad
+router.get('/me/check-username', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const username = req.query.username?.toLowerCase().trim();
+
+        if (!username) return res.json({ available: false, error: 'Username requerido' });
+
+        // Validar formato (solo letras, números, guión bajo, 3-20 chars)
+        if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+            return res.json({
+                available: false,
+                error: 'Solo letras minúsculas, números y guión bajo (3-20 caracteres)'
+            });
+        }
+
+        const { data, error } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        res.json({
+            available: !data,
+            error: data ? 'Este nombre de usuario ya está en uso' : null
+        });
+    } catch (err) {
+        console.error('Error checking username:', err);
+        res.status(500).json({ available: false, error: 'Error al verificar' });
+    }
+});
+
+// PUT /users/me/username — Establecer nombre de usuario
+router.put('/me/username', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        let username = req.body.username?.toLowerCase().trim();
+
+        if (!username) return res.status(400).json({ message: 'Username requerido' });
+
+        // Validar formato
+        if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+            return res.status(400).json({
+                message: 'Solo letras minúsculas, números y guión bajo (3-20 caracteres)'
+            });
+        }
+
+        // Verificar disponibilidad
+        const { data: existing } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .maybeSingle();
+
+        if (existing) {
+            return res.status(409).json({ message: 'Este nombre de usuario ya está en uso' });
+        }
+
+        const { error } = await supabase
+            .from('users')
+            .update({ username })
+            .eq('id', userId);
+
+        if (error) throw error;
+
+        res.json({ username, message: 'Nombre de usuario guardado' });
+    } catch (err) {
+        console.error('Error setting username:', err);
+        res.status(500).json({ message: 'Error al guardar nombre de usuario' });
+    }
+});
+
 router.put('/me', authMiddleware, async (req, res) => {
     try {
         const { displayName, bio } = req.body;

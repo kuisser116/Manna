@@ -221,6 +221,93 @@
     animation: spin 1s linear infinite;
 }
 
+/* ── Username ── */
+
+.usernameAlert {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #92400e;
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.usernameInputWrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+.usernamePrefix {
+    position: absolute;
+    left: 12px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+.usernameInput {
+    flex: 1;
+    padding-left: 28px !important;
+}
+
+.usernameOk {
+    border-color: var(--color-success) !important;
+}
+
+.usernameTaken {
+    border-color: var(--color-danger) !important;
+}
+
+.usernameInvalid {
+    border-color: var(--color-warning) !important;
+}
+
+.usernameCheckIcon {
+    color: var(--color-success);
+    flex-shrink: 0;
+}
+
+.usernameXIcon {
+    color: var(--color-danger);
+    flex-shrink: 0;
+}
+
+.usernameHintOk {
+    font-size: 0.72rem;
+    color: var(--color-success);
+    font-weight: 500;
+}
+
+.usernameHintTaken {
+    font-size: 0.72rem;
+    color: var(--color-danger);
+    font-weight: 500;
+}
+
+.usernameHintInvalid {
+    font-size: 0.72rem;
+    color: var(--color-warning);
+    font-weight: 500;
+}
+
+.usernameHelp {
+    font-size: 0.7rem;
+    color: var(--color-text-dim);
+    margin-top: 2px;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
 @keyframes spin {
     100% {
         transform: rotate(360deg);

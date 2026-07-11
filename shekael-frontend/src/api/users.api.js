@@ -53,6 +53,20 @@ export const updateProfile = (data) => {
 };
 
 /**
+ * Verifica disponibilidad de un nombre de usuario
+ */
+export const checkUsername = (username) => {
+    return api.get(`/users/me/check-username?username=${encodeURIComponent(username)}`);
+};
+
+/**
+ * Establece el nombre de usuario
+ */
+export const setUsername = (username) => {
+    return api.put('/users/me/username', { username });
+};
+
+/**
  * Fuerza la verificaciÃ³n y reparaciÃ³n de la wallet del usuario actual
  */
 export const verifyWallet = () => {

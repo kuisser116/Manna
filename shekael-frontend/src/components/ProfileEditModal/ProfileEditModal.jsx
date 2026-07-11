@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, X, Camera, CheckCircle2, Loader2, User } from 'lucide-react';
+import { Upload, X, Camera, CheckCircle2, Loader2, User, Check, AlertCircle } from 'lucide-react';
+import { checkUsername, setUsername } from '../../api/users.api';
 import styles from './ProfileEditModal.module.css';
 
 export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
@@ -8,18 +9,50 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
     const [preview, setPreview] = useState(user?.avatarUrl || null);
     const [displayName, setDisplayName] = useState(user?.displayName || '');
     const [bio, setBio] = useState(user?.bio || '');
+    const [username, setUsernameLocal] = useState(user?.username || '');
+    const [usernameStatus, setUsernameStatus] = useState(null); // null | 'checking' | 'available' | 'taken' | 'invalid'
     const [isSaving, setIsSaving] = useState(false);
-    
+    const usernameTimer = useRef(null);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (isOpen && user) {
             setDisplayName(user.displayName || '');
             setBio(user.bio || '');
+            setUsernameLocal(user.username || '');
             setPreview(user.avatarUrl || null);
             setSelectedFile(null);
+            setUsernameStatus(null);
         }
     }, [isOpen, user]);
+
+    // Verificar disponibilidad de username con debounce
+    const handleUsernameChange = (e) => {
+        const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        setUsernameLocal(val);
+
+        if (usernameTimer.current) clearTimeout(usernameTimer.current);
+
+        if (!val || val === user?.username) {
+            setUsernameStatus(null);
+            return;
+        }
+
+        if (val.length < 3) {
+            setUsernameStatus('invalid');
+            return;
+        }
+
+        setUsernameStatus('checking');
+        usernameTimer.current = setTimeout(async () => {
+            try {
+                const { data } = await checkUsername(val);
+                setUsernameStatus(data.available ? 'available' : 'taken');
+            } catch {
+                setUsernameStatus(null);
+            }
+        }, 500);
+    };
 
     const handleFileSelect = (e) => {
         const file = e.target.files?.[0];
@@ -41,6 +74,11 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            // Guardar username si cambió
+            if (username !== user?.username && usernameStatus === 'available') {
+                await setUsername(username);
+            }
+
             await onSave({
                 displayName: displayName !== user.displayName ? displayName : undefined,
                 bio: bio !== user.bio ? bio : undefined,
@@ -121,6 +159,39 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
                             placeholder="Tu nombre o seudónimo"
                             maxLength={50}
                         />
+                    </div>
+
+                    {!user?.username && (
+                        <div className={styles.usernameAlert}>
+                            <AlertCircle size={14} />
+                            Elige un nombre de usuario único antes de guardar
+                        </div>
+                    )}
+
+                    <div className={styles.formGroup}>
+                        <label>Nombre de usuario</label>
+                        <div className={styles.usernameInputWrap}>
+                            <span className={styles.usernamePrefix}>@</span>
+                            <input
+                                type="text"
+                                value={username}
+                                onChange={handleUsernameChange}
+                                placeholder="tunombre"
+                                maxLength={20}
+                                className={`${styles.usernameInput} ${
+                                    usernameStatus === 'available' ? styles.usernameOk :
+                                    usernameStatus === 'taken' ? styles.usernameTaken :
+                                    usernameStatus === 'invalid' ? styles.usernameInvalid : ''
+                                }`}
+                            />
+                            {usernameStatus === 'checking' && <Loader2 size={14} className={styles.spin} />}
+                            {usernameStatus === 'available' && <Check size={14} className={styles.usernameCheckIcon} />}
+                            {usernameStatus === 'taken' && <X size={14} className={styles.usernameXIcon} />}
+                        </div>
+                        {usernameStatus === 'available' && <span className={styles.usernameHintOk}>Disponible</span>}
+                        {usernameStatus === 'taken' && <span className={styles.usernameHintTaken}>Ya está en uso</span>}
+                        {usernameStatus === 'invalid' && <span className={styles.usernameHintInvalid}>Mínimo 3 caracteres</span>}
+                        <span className={styles.usernameHelp}>Solo minúsculas, números y guión bajo</span>
                     </div>
 
                     <div className={styles.formGroup}>

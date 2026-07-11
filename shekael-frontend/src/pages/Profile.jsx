@@ -100,6 +100,7 @@ export default function Profile() {
         const normalized = {
           id: userData.id,
           displayName: userData.displayName || userData.display_name || 'Usuario',
+          username: userData.username || null,
           handle: userData.handle || 'usuario',
           bio: userData.bio || '',
           avatarUrl: userData.avatarUrl || userData.avatar_url || null,
@@ -116,6 +117,10 @@ export default function Profile() {
           if (userData.avatar_url && !userData.avatarUrl) {
             normalized.avatarUrl = userData.avatar_url;
             setProfileData(prev => ({ ...prev, avatarUrl: userData.avatar_url }));
+          }
+          // Actualizar store con username si cambió
+          if (normalized.username && normalized.username !== currentUser?.username) {
+            useStore.getState().setUser({ ...currentUser, username: normalized.username });
           }
         } else {
           // Perfil ajeno: SOLO datos del servidor
@@ -317,9 +322,11 @@ export default function Profile() {
                   )}
                 </div>
                 <span className={styles.handle}>
-                  @{isOwnProfile
-                    ? (profileData?.email || 'usuario')
-                    : (profileData?.handle || profileData?.displayName?.toLowerCase().replace(/\s/g, '') || 'usuario')
+                  @{profileData?.username 
+                    ? profileData.username
+                    : isOwnProfile
+                      ? (profileData?.email?.split('@')[0] || 'usuario')
+                      : (profileData?.handle || profileData?.displayName?.toLowerCase().replace(/\s/g, '') || 'usuario')
                   }
                 </span>
                 {profileData?.bio && (isOwnProfile ? privacy.showBio !== false : true) && <p className={styles.bio}>{profileData.bio}</p>}
