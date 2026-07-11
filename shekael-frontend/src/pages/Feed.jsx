@@ -14,19 +14,9 @@ const TYPE_MAP = {
   text: 'micro-text',
 };
 
-const FILTERS = [
-  { id: 'all', label: 'Todo' },
-  { id: 'image', label: 'Imágenes' },
-  { id: 'video', label: 'Videos' },
-  { id: 'text', label: 'Texto' },
-  { id: 'supported', label: 'Más apoyados' },
-  { id: 'recent', label: 'Recientes' },
-  { id: 'following', label: 'Siguiendo' },
-];
-
 export default function Feed() {
   const { t } = useTranslation();
-  const { posts, feedLoading, feedError, token, activeFilter, setActiveFilter } = useStore();
+  const { posts, feedLoading, feedError, token, activeFilter } = useStore();
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
 
   useEffect(() => {
@@ -143,21 +133,6 @@ export default function Feed() {
             ⚠️ {feedError}
           </div>
         )}
-
-        {/* Filter Bar */}
-        <div className={styles.filterBar}>
-          <div className={styles.filterTrack}>
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                className={`${styles.filterChip} ${activeFilter === f.id ? styles.filterChipActive : ''}`}
-                onClick={() => setActiveFilter(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {feedLoading ? (
           <div className={styles.loadingList}>
