@@ -18,6 +18,20 @@ export default function Terms() {
   // Verificar aceptación: primero en BD (user), luego localStorage como respaldo
   const hasAccepted = user?.terms_accepted_at || localStorage.getItem('shekael_terms_' + TERMS_VERSION + '_accepted') === 'true';
 
+  // Bloquear navegación hacia atrás si no ha aceptado
+  useEffect(() => {
+    if (hasAccepted) return;
+    const handler = (e) => {
+      e.preventDefault();
+      // Forzar hacia adelante de nuevo
+      window.history.pushState(null, '', window.location.href);
+    };
+    // Meter un estado extra en el history para que back no salga de la página
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [hasAccepted]);
+
   const handleAccept = async () => {
     setAccepting(true);
     setError('');
