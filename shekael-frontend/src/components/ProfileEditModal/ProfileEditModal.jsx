@@ -74,20 +74,21 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
         setIsSaving(true);
         try {
             // Guardar username (actualiza username + display_name en backend)
+            let newDisplayName = null;
             if (username !== user?.username && usernameStatus === 'available') {
                 const { data } = await setUsername(username);
-                // Actualizar el user del store con el nuevo displayName
-                if (data.displayName) {
+                newDisplayName = data.displayName;
+                if (newDisplayName) {
                     useStore.getState().setUser({
                         ...useStore.getState().user,
                         username: data.username,
-                        displayName: data.displayName
+                        displayName: newDisplayName
                     });
                 }
             }
 
             await onSave({
-                displayName: undefined, // Ya no se edita aparte
+                displayName: newDisplayName || undefined,
                 bio: bio !== user.bio ? bio : undefined,
                 avatarFile: selectedFile
             });
