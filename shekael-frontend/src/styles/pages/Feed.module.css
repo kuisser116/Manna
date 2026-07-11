@@ -35,6 +35,54 @@
   padding: 30px 0 0;
 }
 
+/* ── Filter Bar (YouTube-style, inside Feed) ── */
+
+.filterBar {
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.filterTrack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.filterTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.filterChip {
+  flex-shrink: 0;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filterChip:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-text-secondary);
+}
+
+.filterChipActive {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+
 /* ── Error ── */
 
 .errorBanner {

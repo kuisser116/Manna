@@ -11,19 +11,9 @@ import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdow
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
 
-const FILTERS = [
-  { id: 'all', label: 'Todo' },
-  { id: 'image', label: 'Imágenes' },
-  { id: 'video', label: 'Videos' },
-  { id: 'text', label: 'Texto' },
-  { id: 'supported', label: 'Más apoyados' },
-  { id: 'recent', label: 'Recientes' },
-  { id: 'following', label: 'Siguiendo' },
-];
-
 export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) {
   const { t } = useTranslation();
-  const { user, setMyQRModalOpen, isDarkMode, toggleDarkMode, activeFilter, setActiveFilter } = useStore();
+  const { user, setMyQRModalOpen, isDarkMode, toggleDarkMode } = useStore();
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -245,19 +235,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
         </div>
       </div>
 
-      <div className={styles.filterBar}>
-        <div className={styles.filterTrack} style={{ paddingLeft: isMobile ? '1rem' : `calc(${sidebarWidth}px + 1.5rem)` }}>
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              className={`${styles.filterChip} ${activeFilter === f.id ? styles.filterChipActive : ''}`}
-              onClick={() => setActiveFilter(f.id)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+
     </header>
   );
 }
