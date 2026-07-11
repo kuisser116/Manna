@@ -11,7 +11,7 @@ import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdow
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
 
-export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) {
+export function TopBar({ onToggleSidebar }) {
   const { t } = useTranslation();
   const { user, setMyQRModalOpen, isDarkMode, toggleDarkMode } = useStore();
   const { logout } = useAuth();

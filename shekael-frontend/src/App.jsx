@@ -104,7 +104,7 @@ function AppLayout({ children }) {
 
   return (
     <>
-      <TopBar onToggleSidebar={handleToggleSidebar} sidebarWidth={isMobile ? 0 : navWidth} isMobile={isMobile} />
+      <TopBar onToggleSidebar={handleToggleSidebar} />
       <Sidebar collapsed={actualSidebarCollapsed} hidden={isSidebarHidden} />
       <div
         className={styles.appContent}
