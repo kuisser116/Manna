@@ -209,6 +209,26 @@ router.get('/me/export', authMiddleware, async (req, res) => {
 });
 
 // PUT /users/me — Actualiza perfil general (nombre y bio)
+// PUT /users/me/public-key — Guardar llave pública E2EE
+router.put('/me/public-key', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { publicKey } = req.body;
+        if (!publicKey) return res.status(400).json({ message: 'Llave pública requerida' });
+
+        const { error } = await supabase
+            .from('users')
+            .update({ public_key: publicKey })
+            .eq('id', req.user.id);
+
+        if (error) throw error;
+        res.json({ saved: true });
+    } catch (err) {
+        console.error('Error saving public key:', err);
+        res.status(500).json({ message: 'Error al guardar llave pública' });
+    }
+});
+
 router.put('/me', authMiddleware, async (req, res) => {
     try {
         const { displayName, bio } = req.body;

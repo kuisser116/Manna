@@ -17,6 +17,7 @@ import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import Studio from './pages/Studio';
 import Search from './pages/Search/Search';
+import Chat from './pages/Chat/Chat';
 
 
 
@@ -191,6 +192,11 @@ function App() {
         <Route path="/search" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><Search /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/chat" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <Chat />
           </ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />

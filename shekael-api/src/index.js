@@ -13,6 +13,7 @@ import moderationRoutes from './routes/moderation.routes.js';
 import searchRoutes from './routes/search.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import anchorRoutes from './routes/anchor.routes.js';
+import chatRoutes from './routes/chats.routes.js';
 
 import getDB from './database/db.js';
 
@@ -64,6 +65,7 @@ app.use('/moderation', moderationRoutes);
 app.use('/search', searchRoutes);
 app.use('/notifications', notificationsRoutes);
 app.use('/anchor', anchorRoutes);
+app.use('/chats', chatRoutes);
 
 
 // ── Health check ─────────────────────────────────
