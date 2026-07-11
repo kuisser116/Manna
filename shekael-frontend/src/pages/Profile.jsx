@@ -33,7 +33,7 @@ const Icons = {
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
-  const { user: currentUser } = useStore();
+  const { user: currentUser, privacy } = useStore();
 
   const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -95,30 +95,36 @@ export default function Profile() {
     getUserProfile(targetId)
       .then(({ data }) => {
         const userData = data.user || data;
+
+        // Normalizar campos (tanto para propio como ajeno)
+        const normalized = {
+          id: userData.id,
+          displayName: userData.displayName || userData.display_name || 'Usuario',
+          handle: userData.handle || 'usuario',
+          bio: userData.bio || '',
+          avatarUrl: userData.avatarUrl || userData.avatar_url || null,
+          stellarPublicKey: userData.stellarPublicKey || userData.stellar_public_key || null,
+          createdAt: userData.createdAt || userData.created_at,
+          postsCount: userData.postsCount || userData.posts_count || 0,
+          followersCount: userData.followersCount || userData.followers_count || 0,
+          followingCount: userData.followingCount || userData.following_count || 0,
+        };
+
         if (isOwnProfile) {
-          // Propio perfil: fusionar con datos del store
-          setProfileData(prev => ({ ...prev, ...userData }));
+          // Propio perfil: fusionar con datos actuales del store
+          setProfileData(prev => ({ ...prev, ...normalized }));
           if (userData.avatar_url && !userData.avatarUrl) {
+            normalized.avatarUrl = userData.avatar_url;
             setProfileData(prev => ({ ...prev, avatarUrl: userData.avatar_url }));
           }
         } else {
-          // Perfil ajeno: SOLO datos del servidor, nada del currentUser
-          const clean = {
-            id: userData.id,
-            displayName: userData.displayName || userData.display_name || 'Usuario',
-            handle: userData.handle || 'usuario',
-            bio: userData.bio || '',
-            avatarUrl: userData.avatarUrl || userData.avatar_url || null,
-            stellarPublicKey: userData.stellarPublicKey || userData.stellar_public_key || null,
-            coverUrl: userData.coverUrl || userData.cover_url || null,
-            createdAt: userData.createdAt || userData.created_at,
-            postsCount: userData.postsCount || userData.posts_count || 0,
-            followersCount: userData.followersCount || userData.followers_count || 0,
-            followingCount: userData.followingCount || userData.following_count || 0,
-          };
-          setProfileData(clean);
-          if (clean.coverUrl) setCoverUrl(clean.coverUrl);
+          // Perfil ajeno: SOLO datos del servidor
+          setProfileData(normalized);
         }
+
+        // Cover para AMBOS casos (propio y ajeno)
+        const cover = userData.coverUrl || userData.cover_url;
+        if (cover) setCoverUrl(cover);
       })
       .catch(() => {
         setProfileData({
@@ -316,23 +322,25 @@ export default function Profile() {
                     : (profileData?.handle || profileData?.displayName?.toLowerCase().replace(/\s/g, '') || 'usuario')
                   }
                 </span>
-                {profileData?.bio && <p className={styles.bio}>{profileData.bio}</p>}
+                {profileData?.bio && (isOwnProfile ? privacy.showBio !== false : true) && <p className={styles.bio}>{profileData.bio}</p>}
                 <div className={styles.metaLine}>
                   <CalendarDays size={16} /> {t('profile.memberSince', 'Member since')} {memberSince}
                 </div>
-                <div className={styles.statsRow}>
-                  <span><b>{profileData?.postsCount || 0}</b> {t('profile.stats.posts', 'Posts')}</span>
-                  <span><b>{profileData?.followersCount || 0}</b> {t('profile.stats.followers', 'Followers')}</span>
-                  <span><b>{profileData?.followingCount || 0}</b> {t('profile.stats.following', 'Following')}</span>
-                </div>
+                {(!isOwnProfile || privacy.showStats !== false) && (
+                  <div className={styles.statsRow}>
+                    <span><b>{profileData?.postsCount || 0}</b> {t('profile.stats.posts', 'Posts')}</span>
+                    <span><b>{profileData?.followersCount || 0}</b> {t('profile.stats.followers', 'Followers')}</span>
+                    <span><b>{profileData?.followingCount || 0}</b> {t('profile.stats.following', 'Following')}</span>
+                  </div>
+                )}
                 <div className={styles.chips}>
-                  {isOwnProfile && (
+                  {isOwnProfile && privacy.showMXNe !== false && (
                     <div className={styles.chip}>
                       <Icons.Heart />
                       0.00 MXNe
                     </div>
                   )}
-                  {profileData?.stellarPublicKey && (
+                  {profileData?.stellarPublicKey && (isOwnProfile ? privacy.showStellarKey !== false : true) && (
                     <div
                       className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress} ${copied ? styles.chipCopied : ''}`}
                       onClick={handleCopyWallet}
@@ -411,11 +419,16 @@ export default function Profile() {
 
 function PrivacyModal({ isOpen, onClose }) {
   const { t } = useTranslation();
+  const { privacy, setPrivacy } = useStore();
 
   if (!isOpen) return null;
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onClose();
+  };
+
+  const toggle = (key) => {
+    setPrivacy({ [key]: !privacy[key] });
   };
 
   return (
@@ -426,54 +439,68 @@ function PrivacyModal({ isOpen, onClose }) {
           <button className={styles.modalClose} onClick={onClose}>✕</button>
         </div>
         <div className={styles.modalBody}>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1rem' }}>
-            Tu privacidad es importante. En Shekael, la información sensible como tu correo electrónico
-            <strong>nunca se muestra</strong> a otros usuarios. Solo tú puedes verlo en tu propio perfil.
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '0.5rem' }}>
+            Controla qué información se muestra en tu perfil público.
+          </p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', lineHeight: 1.4, marginBottom: '1.25rem' }}>
+            Los mensajes directos siempre están cifrados E2EE y nadie puede leerlos, ni Shekael.
           </p>
 
           <div className={styles.privacySection}>
-            <div className={styles.privacyItem}>
-              <div>
-                <strong>Correo electrónico</strong>
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  Visible solo para ti. Otros usuarios ven @usuario en lugar de tu correo.
-                </p>
-              </div>
-              <span className={styles.privacyBadge}>Solo tú</span>
-            </div>
-
-            <div className={styles.privacyItem}>
-              <div>
-                <strong>Llave pública (Stellar)</strong>
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  Visible para todos. Es necesaria para recibir pagos MXNe.
-                </p>
-              </div>
-              <span className={styles.privacyBadge}>Pública</span>
-            </div>
-
-            <div className={styles.privacyItem}>
-              <div>
-                <strong>Publicaciones</strong>
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  Tus posts son visibles para todos los usuarios de Shekael.
-                </p>
-              </div>
-              <span className={styles.privacyBadge}>Pública</span>
-            </div>
-
-            <div className={styles.privacyItem}>
-              <div>
-                <strong>Mensajes directos</strong>
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  Cifrados de extremo a extremo. Nadie puede leerlos, ni Shekael.
-                </p>
-              </div>
-              <span className={styles.privacyBadge}>E2EE</span>
-            </div>
+            <PrivacyToggle
+              label="Mostrar correo electrónico"
+              desc="Si está apagado, otros usuarios verán @usuario en lugar de tu correo"
+              enabled={privacy.showEmail}
+              onToggle={() => toggle('showEmail')}
+            />
+            <PrivacyToggle
+              label="Mostrar llave Stellar"
+              desc="Necesaria para recibir pagos MXNe de otros usuarios"
+              enabled={privacy.showStellarKey !== false}
+              onToggle={() => toggle('showStellarKey')}
+            />
+            <PrivacyToggle
+              label="Mostrar estadísticas"
+              desc="Seguidores, siguiendo y conteo de publicaciones"
+              enabled={privacy.showStats !== false}
+              onToggle={() => toggle('showStats')}
+            />
+            <PrivacyToggle
+              label="Mostrar MXNe"
+              desc="Muestra tu saldo de puntos de lealtad"
+              enabled={privacy.showMXNe !== false}
+              onToggle={() => toggle('showMXNe')}
+            />
+            <PrivacyToggle
+              label="Mostrar biografía"
+              desc="Tu bio se muestra en tu perfil público"
+              enabled={privacy.showBio !== false}
+              onToggle={() => toggle('showBio')}
+            />
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PrivacyToggle({ label, desc, enabled, onToggle }) {
+  return (
+    <div className={styles.privacyItem}>
+      <div style={{ flex: 1 }}>
+        <strong>{label}</strong>
+        <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+          {desc}
+        </p>
+      </div>
+      <button
+        className={`${styles.toggleSwitch} ${enabled ? styles.toggleOn : ''}`}
+        onClick={onToggle}
+        role="switch"
+        aria-checked={enabled}
+      >
+        <span className={styles.toggleKnob} />
+      </button>
     </div>
   );
 }

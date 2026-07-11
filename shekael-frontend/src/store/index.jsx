@@ -131,6 +131,19 @@ const useStore = create((set, get) => ({
   setVideoMode: (mode) => set({ videoMode: mode }),
   toggleTheaterMode: () => set((state) => ({ videoMode: state.videoMode === 'theater' ? 'default' : 'theater' })),
 
+  // ── Privacidad ──
+  privacy: (() => {
+    try {
+      return JSON.parse(localStorage.getItem('Shekael_privacy') || '{}');
+    } catch { return {}; }
+  })(),
+
+  setPrivacy: (updates) => set((state) => {
+    const newPrivacy = { ...state.privacy, ...updates };
+    localStorage.setItem('Shekael_privacy', JSON.stringify(newPrivacy));
+    return { privacy: newPrivacy };
+  }),
+
   // â”€â”€ Tema / Dark Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   isDarkMode: localStorage.getItem('Shekael_theme') === 'dark',
   toggleDarkMode: () => set((state) => {
