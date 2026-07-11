@@ -196,7 +196,7 @@ function App() {
         } />
         <Route path="/chat" element={
           <ProtectedRoute authLoading={authLoading}>
-            <Chat />
+            <AppLayout><Chat /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
