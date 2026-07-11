@@ -15,8 +15,13 @@ export default function Terms() {
   const [error, setError] = useState('');
   const [accepted, setAccepted] = useState(false);
 
-  // Verificar aceptación: primero en BD (user), luego localStorage como respaldo
-  const hasAccepted = user?.terms_accepted_at || localStorage.getItem('shekael_terms_' + TERMS_VERSION + '_accepted') === 'true';
+  // Si hay token pero user aún no carga, esperar
+  const storedToken = localStorage.getItem('Shekael_token');
+  const isLoadingUser = !!storedToken && !user;
+
+  // Verificar aceptación: solo confiar en BD, no en localStorage
+  // (localStorage persiste entre cuentas y da falso positivo)
+  const hasAccepted = user ? !!user.terms_accepted_at : false;
 
   // Bloquear navegación hacia atrás si no ha aceptado
   useEffect(() => {
@@ -47,6 +52,22 @@ export default function Terms() {
       setAccepting(false);
     }
   };
+
+  if (isLoadingUser) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <Loader2 size={32} className={styles.spinner} />
+        </div>
+      </div>
+    );
+  }
+
+  // Ya teníamos aceptado en BD, redirigir
+  if (hasAccepted) {
+    navigate('/feed');
+    return null;
+  }
 
   if (accepted) {
     return (

@@ -69,6 +69,7 @@ const useStore = create((set, get) => ({
 
   logout: () => {
     localStorage.removeItem('Shekael_token');
+    localStorage.removeItem('shekael_terms_v1.0_accepted');
     set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [] });
   },
 

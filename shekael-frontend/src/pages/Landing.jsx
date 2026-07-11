@@ -29,11 +29,10 @@ function LandingInner() {
   const { isDarkMode, toggleDarkMode } = useStore();
   const recaptchaLoaded = useRef(false);
 
-  // Redirigir a términos si ya inició sesión pero no ha aceptado
+  // Redirigir a términos si hay token (la página de terms verifica si ya aceptó en BD)
   useEffect(() => {
     const token = localStorage.getItem('Shekael_token');
-    const accepted = localStorage.getItem('shekael_terms_v1.0_accepted') === 'true';
-    if (token && !accepted && !window.location.pathname.startsWith('/terminos')) {
+    if (token && !window.location.pathname.startsWith('/terminos')) {
       navigate('/terminos');
     }
   }, []);
