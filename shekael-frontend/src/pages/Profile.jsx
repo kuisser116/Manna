@@ -66,6 +66,7 @@ export default function Profile() {
   const [profileData, setProfileData] = useState(isOwnProfile ? currentUser : null);
   const [profileLoading, setProfileLoading] = useState(!isOwnProfile);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopyWallet = () => {
@@ -87,19 +88,44 @@ export default function Profile() {
       setProfileData(currentUser);
     } else {
       setProfileLoading(true);
+      // Resetear datos ajenos para no mostrar datos del usuario actual
+      setProfileData(null);
     }
 
     getUserProfile(targetId)
       .then(({ data }) => {
-        setProfileData(prev => ({ ...prev, ...(data.user || data) }));
-        if (data.user?.coverUrl) setCoverUrl(data.user.coverUrl);
+        const userData = data.user || data;
+        if (isOwnProfile) {
+          // Propio perfil: fusionar con datos del store
+          setProfileData(prev => ({ ...prev, ...userData }));
+          if (userData.avatar_url && !userData.avatarUrl) {
+            setProfileData(prev => ({ ...prev, avatarUrl: userData.avatar_url }));
+          }
+        } else {
+          // Perfil ajeno: SOLO datos del servidor, nada del currentUser
+          const clean = {
+            id: userData.id,
+            displayName: userData.displayName || userData.display_name || 'Usuario',
+            handle: userData.handle || 'usuario',
+            bio: userData.bio || '',
+            avatarUrl: userData.avatarUrl || userData.avatar_url || null,
+            stellarPublicKey: userData.stellarPublicKey || userData.stellar_public_key || null,
+            coverUrl: userData.coverUrl || userData.cover_url || null,
+            createdAt: userData.createdAt || userData.created_at,
+            postsCount: userData.postsCount || userData.posts_count || 0,
+            followersCount: userData.followersCount || userData.followers_count || 0,
+            followingCount: userData.followingCount || userData.following_count || 0,
+          };
+          setProfileData(clean);
+          if (clean.coverUrl) setCoverUrl(clean.coverUrl);
+        }
       })
       .catch(() => {
         setProfileData({
           id: profileId,
-          displayName: 'User',
-          email: '@user',
-          stellarPublicKey: profileId
+          displayName: 'Usuario',
+          handle: 'no encontrado',
+          stellarPublicKey: null
         });
       })
       .finally(() => setProfileLoading(false));
@@ -201,7 +227,7 @@ export default function Profile() {
     text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'This text section is still empty.') },
   };
 
-  const hue = 200; // Valor predeterminado para hue
+  const hue = 200;
 
   if (profileLoading) {
     return (
@@ -251,47 +277,71 @@ export default function Profile() {
                 <div className={styles.avatarFrame}>
                   <div className={styles.avatar} style={{ backgroundImage: `url(${profileData?.avatarUrl})` }}>
                     {!profileData?.avatarUrl && <span className={styles.avatarEmpty}>A</span>}
-                    <div className={styles.avatarOverlay}>
-                      <Camera size={20} />
-                    </div>
+                    {isOwnProfile && (
+                      <div className={styles.avatarOverlay}>
+                        <Camera size={20} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               <div className={styles.info}>
                 <div className={styles.nameRow}>
-                  <h1 className={styles.name}>{profileData?.displayName || 'User'}</h1>
+                  <h1 className={styles.name}>{profileData?.displayName || 'Usuario'}</h1>
                   {isOwnProfile && (
-                    <button 
-                      className={styles.editBtn} 
-                      onClick={() => setIsProfileModalOpen(true)}
-                    >
-                      <Settings size={18} />
-                    </button>
+                    <>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => setIsProfileModalOpen(true)}
+                        title="Editar perfil"
+                      >
+                        <Settings size={18} />
+                      </button>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => setIsPrivacyModalOpen(true)}
+                        title="Privacidad"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                      </button>
+                    </>
                   )}
                 </div>
-                <span className={styles.handle}>@{profileData?.email || 'user'}</span>
+                <span className={styles.handle}>
+                  @{isOwnProfile
+                    ? (profileData?.email || 'usuario')
+                    : (profileData?.handle || profileData?.displayName?.toLowerCase().replace(/\s/g, '') || 'usuario')
+                  }
+                </span>
                 {profileData?.bio && <p className={styles.bio}>{profileData.bio}</p>}
                 <div className={styles.metaLine}>
                   <CalendarDays size={16} /> {t('profile.memberSince', 'Member since')} {memberSince}
                 </div>
                 <div className={styles.statsRow}>
-                  <span><b>{profileData?.postsCount || 1}</b> {t('profile.stats.posts', 'Posts')}</span>
-                  <span><b>{profileData?.followersCount || 1}</b> {t('profile.stats.followers', 'Followers')}</span>
-                  <span><b>{profileData?.followingCount || 1}</b> {t('profile.stats.following', 'Following')}</span>
+                  <span><b>{profileData?.postsCount || 0}</b> {t('profile.stats.posts', 'Posts')}</span>
+                  <span><b>{profileData?.followersCount || 0}</b> {t('profile.stats.followers', 'Followers')}</span>
+                  <span><b>{profileData?.followingCount || 0}</b> {t('profile.stats.following', 'Following')}</span>
                 </div>
                 <div className={styles.chips}>
-                  <div className={styles.chip}>
-                    <Icons.Heart />
-                    0.00 MXNe
-                  </div>
-                  <div 
-                    className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress} ${copied ? styles.chipCopied : ''}`}
-                    onClick={handleCopyWallet}
-                    title={t('profile.copyAddress', 'Copy address')}
-                  >
-                    {profileData?.stellarPublicKey?.slice(0, 10)}...{profileData?.stellarPublicKey?.slice(-7)}
-                    {copied ? <Check size={12} /> : <Copy size={12} />}
-                  </div>
+                  {isOwnProfile && (
+                    <div className={styles.chip}>
+                      <Icons.Heart />
+                      0.00 MXNe
+                    </div>
+                  )}
+                  {profileData?.stellarPublicKey && (
+                    <div
+                      className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress} ${copied ? styles.chipCopied : ''}`}
+                      onClick={handleCopyWallet}
+                      title={t('profile.copyAddress', 'Copy address')}
+                    >
+                      {profileData.stellarPublicKey.slice(0, 10)}...{profileData.stellarPublicKey.slice(-7)}
+                      {copied ? <Check size={12} /> : <Copy size={12} />}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -345,6 +395,85 @@ export default function Profile() {
           />
         )}
       </AnimatePresence>
+
+      {/* Modal de Privacidad */}
+      <AnimatePresence>
+        {isPrivacyModalOpen && (
+          <PrivacyModal
+            isOpen={isPrivacyModalOpen}
+            onClose={() => setIsPrivacyModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function PrivacyModal({ isOpen, onClose }) {
+  const { t } = useTranslation();
+
+  if (!isOpen) return null;
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return (
+    <div className={styles.modalOverlay} onClick={handleOverlayClick}>
+      <div className={styles.modalContent}>
+        <div className={styles.modalHeader}>
+          <h2>Privacidad</h2>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+        <div className={styles.modalBody}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1rem' }}>
+            Tu privacidad es importante. En Shekael, la información sensible como tu correo electrónico
+            <strong>nunca se muestra</strong> a otros usuarios. Solo tú puedes verlo en tu propio perfil.
+          </p>
+
+          <div className={styles.privacySection}>
+            <div className={styles.privacyItem}>
+              <div>
+                <strong>Correo electrónico</strong>
+                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                  Visible solo para ti. Otros usuarios ven @usuario en lugar de tu correo.
+                </p>
+              </div>
+              <span className={styles.privacyBadge}>Solo tú</span>
+            </div>
+
+            <div className={styles.privacyItem}>
+              <div>
+                <strong>Llave pública (Stellar)</strong>
+                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                  Visible para todos. Es necesaria para recibir pagos MXNe.
+                </p>
+              </div>
+              <span className={styles.privacyBadge}>Pública</span>
+            </div>
+
+            <div className={styles.privacyItem}>
+              <div>
+                <strong>Publicaciones</strong>
+                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                  Tus posts son visibles para todos los usuarios de Shekael.
+                </p>
+              </div>
+              <span className={styles.privacyBadge}>Pública</span>
+            </div>
+
+            <div className={styles.privacyItem}>
+              <div>
+                <strong>Mensajes directos</strong>
+                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                  Cifrados de extremo a extremo. Nadie puede leerlos, ni Shekael.
+                </p>
+              </div>
+              <span className={styles.privacyBadge}>E2EE</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
