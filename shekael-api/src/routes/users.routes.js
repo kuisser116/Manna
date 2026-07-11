@@ -233,29 +233,29 @@ router.put('/me/public-key', authMiddleware, async (req, res) => {
 router.get('/me/check-username', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
-        const username = req.query.username?.toLowerCase().trim();
+        const raw = req.query.username?.trim();
 
-        if (!username) return res.json({ available: false, error: 'Username requerido' });
-
-        // Validar formato (solo letras, números, guión bajo, 3-20 chars)
-        if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-            return res.json({
-                available: false,
-                error: 'Solo letras minúsculas, números y guión bajo (3-20 caracteres)'
-            });
+        if (!raw) return res.json({ available: false, error: 'Nombre requerido' });
+        if (raw.length < 2 || raw.length > 30) {
+            return res.json({ available: false, error: 'Entre 2 y 30 caracteres' });
         }
+        if (!/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9 ._-]+$/.test(raw)) {
+            return res.json({ available: false, error: 'Solo letras, números, espacios, puntos y guiones' });
+        }
+
+        const dbUsername = raw.toLowerCase().replace(/\s+/g, '_');
 
         const { data, error } = await supabase
             .from('users')
             .select('id')
-            .eq('username', username)
+            .eq('username', dbUsername)
             .maybeSingle();
 
         if (error) throw error;
 
         res.json({
             available: !data,
-            error: data ? 'Este nombre de usuario ya está en uso' : null
+            error: data ? 'Este nombre ya está en uso' : null
         });
     } catch (err) {
         console.error('Error checking username:', err);
@@ -263,44 +263,49 @@ router.get('/me/check-username', authMiddleware, async (req, res) => {
     }
 });
 
-// PUT /users/me/username — Establecer nombre de usuario
+// PUT /users/me/username — Establecer nombre de usuario (único, visible en toda la app)
 router.put('/me/username', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
         const userId = req.user.id;
-        let username = req.body.username?.toLowerCase().trim();
+        let username = req.body.username?.trim();
 
-        if (!username) return res.status(400).json({ message: 'Username requerido' });
+        if (!username) return res.status(400).json({ message: 'Nombre requerido' });
 
-        // Validar formato
-        if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-            return res.status(400).json({
-                message: 'Solo letras minúsculas, números y guión bajo (3-20 caracteres)'
-            });
+        // Validar: entre 2 y 30 caracteres, letras, números, espacios, puntos y guiones
+        if (username.length < 2 || username.length > 30) {
+            return res.status(400).json({ message: 'El nombre debe tener entre 2 y 30 caracteres' });
         }
+        if (!/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9 ._-]+$/.test(username)) {
+            return res.status(400).json({ message: 'Solo letras, números, espacios, puntos y guiones' });
+        }
+
+        // El username a nivel BD se guarda en lowercase para unique check
+        const dbUsername = username.toLowerCase().replace(/\s+/g, '_');
 
         // Verificar disponibilidad
         const { data: existing } = await supabase
             .from('users')
             .select('id')
-            .eq('username', username)
+            .eq('username', dbUsername)
             .maybeSingle();
 
-        if (existing) {
-            return res.status(409).json({ message: 'Este nombre de usuario ya está en uso' });
+        if (existing && existing.id !== userId) {
+            return res.status(409).json({ message: 'Este nombre ya está en uso' });
         }
 
+        // Actualizar username + display_name al mismo valor
         const { error } = await supabase
             .from('users')
-            .update({ username })
+            .update({ username: dbUsername, display_name: username })
             .eq('id', userId);
 
         if (error) throw error;
 
-        res.json({ username, message: 'Nombre de usuario guardado' });
+        res.json({ username: dbUsername, displayName: username, message: 'Nombre guardado' });
     } catch (err) {
         console.error('Error setting username:', err);
-        res.status(500).json({ message: 'Error al guardar nombre de usuario' });
+        res.status(500).json({ message: 'Error al guardar nombre' });
     }
 });
 

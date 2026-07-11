@@ -223,6 +223,13 @@
 
 /* ── Username ── */
 
+.fieldDesc {
+    font-size: 0.76rem;
+    color: var(--color-text-dim);
+    margin: -4px 0 8px;
+    line-height: 1.4;
+}
+
 .usernameAlert {
     display: flex;
     align-items: center;

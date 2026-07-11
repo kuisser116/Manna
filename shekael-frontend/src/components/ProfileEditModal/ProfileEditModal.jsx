@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, X, Camera, CheckCircle2, Loader2, User, Check, AlertCircle } from 'lucide-react';
 import { checkUsername, setUsername } from '../../api/users.api';
+import useStore from '../../store';
 import styles from './ProfileEditModal.module.css';
 
 export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
     const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState(user?.avatarUrl || null);
-    const [displayName, setDisplayName] = useState(user?.displayName || '');
     const [bio, setBio] = useState(user?.bio || '');
     const [username, setUsernameLocal] = useState(user?.username || '');
     const [usernameStatus, setUsernameStatus] = useState(null); // null | 'checking' | 'available' | 'taken' | 'invalid'
@@ -17,9 +17,8 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
 
     useEffect(() => {
         if (isOpen && user) {
-            setDisplayName(user.displayName || '');
-            setBio(user.bio || '');
             setUsernameLocal(user.username || '');
+            setBio(user.bio || '');
             setPreview(user.avatarUrl || null);
             setSelectedFile(null);
             setUsernameStatus(null);
@@ -28,7 +27,7 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
 
     // Verificar disponibilidad de username con debounce
     const handleUsernameChange = (e) => {
-        const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        const val = e.target.value;
         setUsernameLocal(val);
 
         if (usernameTimer.current) clearTimeout(usernameTimer.current);
@@ -38,7 +37,7 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
             return;
         }
 
-        if (val.length < 3) {
+        if (val.length < 2) {
             setUsernameStatus('invalid');
             return;
         }
@@ -74,13 +73,21 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Guardar username si cambió
+            // Guardar username (actualiza username + display_name en backend)
             if (username !== user?.username && usernameStatus === 'available') {
-                await setUsername(username);
+                const { data } = await setUsername(username);
+                // Actualizar el user del store con el nuevo displayName
+                if (data.displayName) {
+                    useStore.getState().setUser({
+                        ...useStore.getState().user,
+                        username: data.username,
+                        displayName: data.displayName
+                    });
+                }
             }
 
             await onSave({
-                displayName: displayName !== user.displayName ? displayName : undefined,
+                displayName: undefined, // Ya no se edita aparte
                 bio: bio !== user.bio ? bio : undefined,
                 avatarFile: selectedFile
             });
@@ -150,34 +157,24 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
                         <p className={styles.uploadHint}>JPG, PNG o WebP · Máximo 5MB</p>
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label>Nombre a mostrar</label>
-                        <input
-                            type="text"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            placeholder="Tu nombre o seudónimo"
-                            maxLength={50}
-                        />
-                    </div>
-
                     {!user?.username && (
                         <div className={styles.usernameAlert}>
                             <AlertCircle size={14} />
-                            Elige un nombre de usuario único antes de guardar
+                            Elige un nombre único para tu perfil
                         </div>
                     )}
 
                     <div className={styles.formGroup}>
-                        <label>Nombre de usuario</label>
+                        <label>Nombre único</label>
+                        <p className={styles.fieldDesc}>Este será tu nombre en toda la app. Debe ser único.</p>
                         <div className={styles.usernameInputWrap}>
                             <span className={styles.usernamePrefix}>@</span>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={handleUsernameChange}
-                                placeholder="tunombre"
-                                maxLength={20}
+                                placeholder="Tu nombre"
+                                maxLength={30}
                                 className={`${styles.usernameInput} ${
                                     usernameStatus === 'available' ? styles.usernameOk :
                                     usernameStatus === 'taken' ? styles.usernameTaken :
@@ -190,8 +187,8 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
                         </div>
                         {usernameStatus === 'available' && <span className={styles.usernameHintOk}>Disponible</span>}
                         {usernameStatus === 'taken' && <span className={styles.usernameHintTaken}>Ya está en uso</span>}
-                        {usernameStatus === 'invalid' && <span className={styles.usernameHintInvalid}>Mínimo 3 caracteres</span>}
-                        <span className={styles.usernameHelp}>Solo minúsculas, números y guión bajo</span>
+                        {usernameStatus === 'invalid' && <span className={styles.usernameHintInvalid}>Mínimo 2 caracteres</span>}
+                        <span className={styles.usernameHelp}>Letras, números, espacios, puntos y guiones</span>
                     </div>
 
                     <div className={styles.formGroup}>
@@ -213,7 +210,7 @@ export default function ProfileEditModal({ user, isOpen, onClose, onSave }) {
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={isSaving || (!displayName.trim() && !bio.trim() && !selectedFile)}
+                        disabled={isSaving || (!username.trim() && !bio.trim() && !selectedFile)}
                         className={styles.btnPrimary}
                     >
                         {isSaving ? (
