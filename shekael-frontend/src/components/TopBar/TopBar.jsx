@@ -11,9 +11,19 @@ import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdow
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
 
-export function TopBar({ onToggleSidebar }) {
+const FILTERS = [
+  { id: 'all', label: 'Todo' },
+  { id: 'image', label: 'Imágenes' },
+  { id: 'video', label: 'Videos' },
+  { id: 'text', label: 'Texto' },
+  { id: 'supported', label: 'Más apoyados' },
+  { id: 'recent', label: 'Recientes' },
+  { id: 'following', label: 'Siguiendo' },
+];
+
+export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) {
   const { t } = useTranslation();
-  const { user, setMyQRModalOpen, isDarkMode, toggleDarkMode } = useStore();
+  const { user, setMyQRModalOpen, isDarkMode, toggleDarkMode, activeFilter, setActiveFilter } = useStore();
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -72,166 +82,180 @@ export function TopBar({ onToggleSidebar }) {
 
   return (
     <header className={styles.topbar}>
-      <div className={styles.left}>
-        <button
-          className={styles.hamburger}
-          onClick={onToggleSidebar}
-          aria-label="Toggle sidebar"
-        >
-          <Menu size={20} />
-        </button>
-        <Link to="/feed" className={styles.logo}>
-          <img src={logoImg} alt="Shekael" className={styles.logoImg} />
-          Shekael
-        </Link>
-        {showBackBtn && (
+      <div className={styles.topbarMain}>
+        <div className={styles.left}>
           <button
-            className={styles.backBtn}
-            onClick={() => navigate(-1)}
-            aria-label="Volver atrás"
+            className={styles.hamburger}
+            onClick={onToggleSidebar}
+            aria-label="Toggle sidebar"
           >
-            <ArrowLeft size={20} />
+            <Menu size={20} />
           </button>
-        )}
-      </div>
-
-      <div className={styles.searchWrap} ref={dropdownRef}>
-        <form className={styles.searchContainer} onSubmit={handleSearch}>
-          <div className={styles.searchBox}>
-            <input
-              ref={inputRef}
-              type="text"
-              className={styles.searchInput}
-              placeholder={t('topbar.search')}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => {
-                if (query.trim() && suggestions) setShowSuggestions(true);
-              }}
-            />
+          <Link to="/feed" className={styles.logo}>
+            <img src={logoImg} alt="Shekael" className={styles.logoImg} />
+            Shekael
+          </Link>
+          {showBackBtn && (
             <button
-              type="submit"
-              className={styles.searchBtn}
-              aria-label={t('topbar.search')}
+              className={styles.backBtn}
+              onClick={() => navigate(-1)}
+              aria-label="Volver atrás"
             >
-              <Search size={18} />
+              <ArrowLeft size={20} />
             </button>
-          </div>
-        </form>
+          )}
+        </div>
 
-        {showSuggestions && suggestions && (
-          <div className={styles.suggestionsDropdown}>
-            {suggestions.users?.length > 0 && (
-              <>
-                <div className={styles.suggestionSection}>Usuarios</div>
-                {suggestions.users.slice(0, 3).map(u => (
-                  <Link to={`/profile/${u.id}`} className={styles.suggestionItem} key={u.id} onClick={() => setShowSuggestions(false)}>
-                    <Avatar avatarUrl={u.avatarUrl} name={u.displayName} size={32} />
-                    <div className={styles.suggestionText}>
-                      <span className={styles.suggestionTitle}>{u.displayName}</span>
-                    </div>
-                  </Link>
-                ))}
-              </>
-            )}
+        <div className={styles.searchWrap} ref={dropdownRef}>
+          <form className={styles.searchContainer} onSubmit={handleSearch}>
+            <div className={styles.searchBox}>
+              <input
+                ref={inputRef}
+                type="text"
+                className={styles.searchInput}
+                placeholder={t('topbar.search')}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => {
+                  if (query.trim() && suggestions) setShowSuggestions(true);
+                }}
+              />
+              <button
+                type="submit"
+                className={styles.searchBtn}
+                aria-label={t('topbar.search')}
+              >
+                <Search size={18} />
+              </button>
+            </div>
+          </form>
 
-            {suggestions.posts?.length > 0 && (
-              <>
-                <div className={styles.suggestionSection}>Publicaciones</div>
-                {suggestions.posts.slice(0, 3).map(p => (
-                  <Link to={`/post/${p.id}`} className={styles.suggestionItem} key={p.id} onClick={() => setShowSuggestions(false)}>
-                    <Search size={16} color="var(--color-text-muted)" />
-                    <div className={styles.suggestionText}>
-                      <span className={styles.suggestionTitle}>
-                        {getSuggestionText(p)}
-                      </span>
-                      <span className={styles.suggestionSubtitle}>de {p.display_name}</span>
-                    </div>
-                  </Link>
-                ))}
-              </>
-            )}
+          {showSuggestions && suggestions && (
+            <div className={styles.suggestionsDropdown}>
+              {suggestions.users?.length > 0 && (
+                <>
+                  <div className={styles.suggestionSection}>Usuarios</div>
+                  {suggestions.users.slice(0, 3).map(u => (
+                    <Link to={`/profile/${u.id}`} className={styles.suggestionItem} key={u.id} onClick={() => setShowSuggestions(false)}>
+                      <Avatar avatarUrl={u.avatarUrl} name={u.displayName} size={32} />
+                      <div className={styles.suggestionText}>
+                        <span className={styles.suggestionTitle}>{u.displayName}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </>
+              )}
 
-            <Link to={`/search?q=${encodeURIComponent(query)}`} className={styles.viewAllBtn} onClick={() => setShowSuggestions(false)}>
-              Ver todos los resultados para "{query}"
-            </Link>
-          </div>
-        )}
-      </div>
+              {suggestions.posts?.length > 0 && (
+                <>
+                  <div className={styles.suggestionSection}>Publicaciones</div>
+                  {suggestions.posts.slice(0, 3).map(p => (
+                    <Link to={`/post/${p.id}`} className={styles.suggestionItem} key={p.id} onClick={() => setShowSuggestions(false)}>
+                      <Search size={16} color="var(--color-text-muted)" />
+                      <div className={styles.suggestionText}>
+                        <span className={styles.suggestionTitle}>
+                          {getSuggestionText(p)}
+                        </span>
+                        <span className={styles.suggestionSubtitle}>de {p.display_name}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </>
+              )}
 
-      <div className={styles.right}>
+              <Link to={`/search?q=${encodeURIComponent(query)}`} className={styles.viewAllBtn} onClick={() => setShowSuggestions(false)}>
+                Ver todos los resultados para "{query}"
+              </Link>
+            </div>
+          )}
+        </div>
 
-
-        <button
-          className={styles.iconBtn}
-          aria-label={t('topbar.myQR')}
-          onClick={() => setMyQRModalOpen(true)}
-        >
-          <QrCode size={20} />
-        </button>
-
-        <button
-          className={styles.iconBtn}
-          aria-label="Toggle Theme"
-          onClick={toggleDarkMode}
-        >
-          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-
-        <NotificationsDropdown />
-
-        <div className={styles.userWrap}>
+        <div className={styles.right}>
           <button
-            className={styles.avatarBtn}
-            onClick={() => setShowUserMenu((v) => !v)}
+            className={styles.iconBtn}
+            aria-label={t('topbar.myQR')}
+            onClick={() => setMyQRModalOpen(true)}
           >
-            <Avatar
-              avatarUrl={user?.avatarUrl}
-              name={user?.displayName}
-              size={32}
-            />
+            <QrCode size={20} />
           </button>
 
-          {showUserMenu && (
-            <div className={styles.userMenu}>
-              <div className={styles.userMenuHeader}>
-                <Avatar
-                  avatarUrl={user?.avatarUrl}
-                  name={user?.displayName}
-                  size={40}
-                />
-                <div>
-                  <p className={styles.userMenuName}>{user?.displayName}</p>
-                  <p className={styles.userMenuEmail}>{user?.email}</p>
+          <button
+            className={styles.iconBtn}
+            aria-label="Toggle Theme"
+            onClick={toggleDarkMode}
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+
+          <NotificationsDropdown />
+
+          <div className={styles.userWrap}>
+            <button
+              className={styles.avatarBtn}
+              onClick={() => setShowUserMenu((v) => !v)}
+            >
+              <Avatar
+                avatarUrl={user?.avatarUrl}
+                name={user?.displayName}
+                size={32}
+              />
+            </button>
+
+            {showUserMenu && (
+              <div className={styles.userMenu}>
+                <div className={styles.userMenuHeader}>
+                  <Avatar
+                    avatarUrl={user?.avatarUrl}
+                    name={user?.displayName}
+                    size={40}
+                  />
+                  <div>
+                    <p className={styles.userMenuName}>{user?.displayName}</p>
+                    <p className={styles.userMenuEmail}>{user?.email}</p>
+                  </div>
                 </div>
-              </div>
-              <Link
-                to="/profile"
-                className={styles.userMenuItem}
-                onClick={() => setShowUserMenu(false)}
-              >
-                Mi perfil
-              </Link>
-              {user?.is_admin && (
                 <Link
-                  to="/admin/control-center"
+                  to="/profile"
                   className={styles.userMenuItem}
                   onClick={() => setShowUserMenu(false)}
                 >
-                  Control Center
+                  Mi perfil
                 </Link>
-              )}
-              <button
-                className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
-                onClick={() => {
-                  logout();
-                  setShowUserMenu(false);
-                }}
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          )}
+                {user?.is_admin && (
+                  <Link
+                    to="/admin/control-center"
+                    className={styles.userMenuItem}
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Control Center
+                  </Link>
+                )}
+                <button
+                  className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
+                  onClick={() => {
+                    logout();
+                    setShowUserMenu(false);
+                  }}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.filterBar}>
+        <div className={styles.filterTrack} style={{ paddingLeft: isMobile ? '1rem' : `calc(${sidebarWidth}px + 1.5rem)` }}>
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              className={`${styles.filterChip} ${activeFilter === f.id ? styles.filterChipActive : ''}`}
+              onClick={() => setActiveFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
     </header>

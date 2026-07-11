@@ -1,16 +1,22 @@
-/* ── VideoThumbnailCard: sin card container ── */
+/* ── VideoThumbnailCard: sin card container — con background sutil + lineart ── */
 
 .card {
+    background: color-mix(in srgb, var(--color-surface) 38%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     display: flex;
     flex-direction: column;
     cursor: pointer;
-    transition: transform 0.35s ease;
+    transition: transform 0.35s ease, box-shadow 0.3s ease;
     animation: fadeUp 0.4s ease both;
     position: relative;
 }
 
 .card:hover {
     transform: translateX(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
 
 /* Left accent bar on hover */
@@ -74,7 +80,7 @@
 
 /* ── Info ── */
 .info {
-    padding: 12px 0 0;
+    padding: 10px 0 0;
     flex: 1;
 }
 

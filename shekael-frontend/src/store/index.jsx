@@ -115,9 +115,12 @@ const useStore = create((set, get) => ({
   setQrScannerOpen: (open) => set({ qrScannerOpen: open }),
   setMyQRModalOpen: (open) => set({ myQRModalOpen: open }),
 
-  // â”€â”€ UI / NavegaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── UI / Navegación ──
   feedScrollPosition: 0,
   setFeedScrollPosition: (pos) => set({ feedScrollPosition: pos }),
+
+  activeFilter: 'all',
+  setActiveFilter: (filter) => set({ activeFilter: filter }),
 
   isCommentModalOpen: false,
   commentTargetPost: null,

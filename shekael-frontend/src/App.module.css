@@ -21,17 +21,14 @@
 
 /* ── Main Content Area ── */
 .appContent {
-    margin-top: 70px;
-    min-height: calc(100vh - 70px);
+    min-height: 100vh;
     background: var(--color-bg, #fff);
     width: 100%;
-    /* Sin margen lateral - la barra superior (topbar) ahora es horizontal arriba */
 }
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
     .appContent {
-        margin-top: 60px;
-        min-height: calc(100vh - 60px);
+        min-height: 100vh;
     }
 }

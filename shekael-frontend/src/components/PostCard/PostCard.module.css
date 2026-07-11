@@ -9,15 +9,21 @@
     }
 }
 
-/* ── PostCard: sin card container ── */
+/* ── PostCard: sin card container — con background sutil + lineart ── */
 .card {
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    background: color-mix(in srgb, var(--color-surface) 38%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
     animation: fadeUp 0.4s ease both;
     position: relative;
 }
 
 .card:hover {
     transform: translateX(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
 
 /* Left accent bar on hover */
@@ -38,6 +44,13 @@
     width: 4px;
 }
 
+/* Capsule: preserve left accent over card border */
+.capsule {
+    border-left: 3px solid var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-border) 55%, transparent);
+    border-left-color: var(--color-primary);
+}
+
 .likedHeart {
     color: var(--color-primary);
 }
@@ -50,11 +63,7 @@
     margin-top: 12px;
 }
 
-.capsule {
-    border-left: 3px solid var(--color-primary);
-    border-color: var(--color-border);
-    border-left-color: var(--color-primary);
-}
+
 
 .capsuleLabel {
     display: inline-flex;
@@ -205,6 +214,7 @@
 .videoCardWrapper {
     padding: 0;
     overflow: hidden;
+    border-radius: inherit;
 }
 
 .youtubeThumbnailArea {
@@ -316,6 +326,7 @@
 @media (max-width: 400px) {
     .card {
         padding: 0;
+        border-radius: 12px;
     }
 
     .avatar {

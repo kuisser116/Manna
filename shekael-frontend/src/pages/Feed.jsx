@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
 import useStore from '../store';
@@ -6,16 +6,6 @@ import useFeed from '../hooks/useFeed';
 import styles from '../styles/pages/Feed.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 import logoImg from '../assets/personaje_1.12.png';
-
-const FILTERS = [
-  { id: 'all', label: 'Todo' },
-  { id: 'image', label: 'Imágenes' },
-  { id: 'video', label: 'Videos' },
-  { id: 'text', label: 'Texto' },
-  { id: 'supported', label: 'Más apoyados' },
-  { id: 'recent', label: 'Recientes' },
-  { id: 'following', label: 'Siguiendo' },
-];
 
 const TYPE_MAP = {
   image: 'image',
@@ -25,9 +15,8 @@ const TYPE_MAP = {
 
 export default function Feed() {
   const { t } = useTranslation();
-  const { posts, feedLoading, feedError, token } = useStore();
+  const { posts, feedLoading, feedError, token, activeFilter } = useStore();
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
-  const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
     if (token) fetchFeed();
@@ -79,20 +68,6 @@ export default function Feed() {
   return (
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <div className={styles.main}>
-        <div className={styles.filterWrap}>
-          <div className={styles.filterTrack}>
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                className={`${styles.filterChip} ${activeFilter === f.id ? styles.filterChipActive : ''}`}
-                onClick={() => setActiveFilter(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {feedError && (
           <div className={styles.errorBanner}>
             ⚠️ {feedError}
