@@ -1309,6 +1309,7 @@ export default function Chat() {
                   )}
                 </div>
               )}
+
               {showAudioRecorder && (
                 <AudioRecorder
                   onSend={async (audio) => {
@@ -1615,42 +1616,7 @@ export default function Chat() {
         />
       )}
 
-order && (
-        <AudioRecorder
-          onSend={async (audio) => {
-            try {
-              if (!ratchetReadyRef.current) {
-                const otherUser = otherUserCache.current[activeConv.id];
-                if (otherUser?.public_key) {
-                  const ss = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
-                  if (ss) {
-                    const existing = await ratchet.loadState(activeConv.id);
-                    if (!existing) await ratchet.initSession(activeConv.id, ss);
-                    ratchetReadyRef.current = true;
-                  }
-                }
-              }
-              setSending(true);
-              await sodiumReady;
-              const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
-              const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
-              const ciphertext = _sodium.crypto_secretbox_easy(
-                _sodium.from_string(''), nonce, msgKey
-              );
-              const res = await sendMessage(
-                activeConv.id, _sodium.to_base64(ciphertext), _sodium.to_base64(nonce),
-                msgIndex, null, null, 'audio', audio.url, null,
-                audio.fileName, audio.fileSize, audio.mimeType, audio.duration
-              );
-              if (res.data?.message) {
-                setMessages(prev => [...prev, { ...res.data.message, decrypted: 'Audio' }]);
-              }
-            } catch (e) { console.error('Audio send err:', e); alert('Error al enviar audio:\n' + (e.message || e)); }
-            setSending(false);
-          }}
-          onClose={() => setShowAudioRecorder(false)}
-        />
-      )}
+
 
       {/* Poll creator */}
       {showPollCreator && activeConv && (

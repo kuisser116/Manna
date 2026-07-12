@@ -15,6 +15,9 @@ export default function AudioRecorder({ onSend, onClose }) {
   const audioCtxRef = useRef(null);
   const waveHistoryRef = useRef([]);
   const maxSamples = 200;
+  const containerRef = useRef(null);
+  const canvasWidth = 280;
+  const canvasHeight = 50;
 
   useEffect(() => {
     startRecording();
@@ -34,105 +37,116 @@ export default function AudioRecorder({ onSend, onClose }) {
   };
 
   const drawWaveform = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !analyserRef.current) return;
-    const ctx = canvas.getContext('2d');
-    const { width, height } = canvas;
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    analyserRef.current.getByteTimeDomainData(dataArray);
-
-    // Calculate average amplitude
-    let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
-      sum += Math.abs(dataArray[i] - 128);
-    }
-    const avg = sum / bufferLength / 128; // 0..1
-
-    // Store in history
-    waveHistoryRef.current.push(avg);
-    if (waveHistoryRef.current.length > maxSamples) {
-      waveHistoryRef.current.shift();
-    }
-
-    const history = waveHistoryRef.current;
-    const len = history.length;
-
-    // Clear
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, width, height, 8);
-    ctx.fill();
-
-    // Center line
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
-    ctx.stroke();
-
-    // Draw waveform from left to right (oldest to newest)
-    const centerY = height / 2;
-    const maxH = height * 0.75;
-
-    ctx.strokeStyle = '#e11d48';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    for (let i = 0; i < len; i++) {
-      const x = (i / maxSamples) * width;
-      const barH = Math.min(history[i] * maxH, maxH / 2);
-
-      if (i === 0) {
-        ctx.moveTo(x, centerY - barH);
-      } else {
-        ctx.lineTo(x, centerY - barH);
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas || !analyserRef.current) {
+        animFrameRef.current = requestAnimationFrame(drawWaveform);
+        return;
       }
-    }
-    ctx.stroke();
+      const ctx = canvas.getContext('2d');
+      const { width, height } = canvas;
 
-    // Bottom half (mirror)
-    ctx.strokeStyle = '#be123c';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    for (let i = 0; i < len; i++) {
-      const x = (i / maxSamples) * width;
-      const barH = Math.min(history[i] * maxH, maxH / 2);
+      // Get audio data
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.getByteTimeDomainData(dataArray);
 
-      if (i === 0) {
-        ctx.moveTo(x, centerY + barH);
-      } else {
-        ctx.lineTo(x, centerY + barH);
+      // Average amplitude this frame
+      let sum = 0;
+      const len = dataArray.length;
+      for (let i = 0; i < len; i++) {
+        sum += Math.abs(dataArray[i] - 128);
       }
-    }
-    ctx.stroke();
+      const avg = Math.min(sum / len / 128, 1);
 
-    // Fill between lines (subtle gradient)
-    ctx.fillStyle = 'rgba(225, 29, 72, 0.15)';
-    ctx.beginPath();
-    ctx.moveTo(0, centerY);
-    for (let i = 0; i < len; i++) {
-      const x = (i / maxSamples) * width;
-      const barH = Math.min(history[i] * maxH, maxH / 2);
-      ctx.lineTo(x, centerY - barH);
-    }
-    for (let i = len - 1; i >= 0; i--) {
-      const x = (i / maxSamples) * width;
-      const barH = Math.min(history[i] * maxH, maxH / 2);
-      ctx.lineTo(x, centerY + barH);
-    }
-    ctx.closePath();
-    ctx.fill();
+      // Store in rolling history
+      waveHistoryRef.current.push(avg);
+      if (waveHistoryRef.current.length > maxSamples) {
+        waveHistoryRef.current.shift();
+      }
 
-    // Recording indicator dot
-    ctx.fillStyle = '#e11d48';
-    ctx.beginPath();
-    ctx.arc(width - 8, 10, 3, 0, Math.PI * 2);
-    ctx.fill();
+      const history = waveHistoryRef.current;
+      const hLen = history.length;
 
-    if (state === 'recording') {
-      animFrameRef.current = requestAnimationFrame(drawWaveform);
+      // --- Clear canvas ---
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(0, 0, width, height);
+
+      // --- Center line ---
+      const centerY = height / 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(4, centerY);
+      ctx.lineTo(width - 4, centerY);
+      ctx.stroke();
+
+      if (hLen < 2) {
+        // Not enough data yet — just show a flat line
+        ctx.strokeStyle = '#e11d48';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
+      } else {
+        // --- Draw upper waveform ---
+        const maxH = height * 0.72;
+        ctx.strokeStyle = '#e11d48';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < hLen; i++) {
+          const x = (i / maxSamples) * width;
+          const barH = Math.min(history[i] * maxH, maxH / 2);
+          if (i === 0) ctx.moveTo(x, centerY - barH);
+          else ctx.lineTo(x, centerY - barH);
+        }
+        ctx.stroke();
+
+        // --- Draw lower waveform (mirror) ---
+        ctx.strokeStyle = '#be123c';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < hLen; i++) {
+          const x = (i / maxSamples) * width;
+          const barH = Math.min(history[i] * maxH, maxH / 2);
+          if (i === 0) ctx.moveTo(x, centerY + barH);
+          else ctx.lineTo(x, centerY + barH);
+        }
+        ctx.stroke();
+
+        // --- Fill between (translucent red) ---
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.2)';
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        for (let i = 0; i < hLen; i++) {
+          const x = (i / maxSamples) * width;
+          const barH = Math.min(history[i] * maxH, maxH / 2);
+          ctx.lineTo(x, centerY - barH);
+        }
+        for (let i = hLen - 1; i >= 0; i--) {
+          const x = (i / maxSamples) * width;
+          const barH = Math.min(history[i] * maxH, maxH / 2);
+          ctx.lineTo(x, centerY + barH);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // --- Recording dot (upper right) ---
+      ctx.fillStyle = '#e11d48';
+      ctx.beginPath();
+      ctx.arc(width - 10, 10, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (state === 'recording') {
+        animFrameRef.current = requestAnimationFrame(drawWaveform);
+      }
+    } catch (e) {
+      console.warn('Draw error:', e);
+      // Keep drawing even on error
+      if (state === 'recording') {
+        animFrameRef.current = requestAnimationFrame(drawWaveform);
+      }
     }
   };
 
@@ -151,7 +165,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(s);
       const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 128;
+      analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
 
@@ -179,7 +193,6 @@ export default function AudioRecorder({ onSend, onClose }) {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       setState('paused');
     } else if (state === 'paused') {
-      // Resume - create new MediaRecorder
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
       const mr = new MediaRecorder(streamRef.current, { mimeType: mime });
       recorderRef.current = mr;
@@ -259,7 +272,9 @@ export default function AudioRecorder({ onSend, onClose }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
 
-        <canvas ref={canvasRef} className={styles.waveform} width="180" height="50" />
+        <div className={styles.waveWrap} ref={containerRef}>
+          <canvas ref={canvasRef} className={styles.waveform} width={canvasWidth} height={canvasHeight} />
+        </div>
 
         <span className={styles.timer}>{formatTime(duration)}</span>
 
