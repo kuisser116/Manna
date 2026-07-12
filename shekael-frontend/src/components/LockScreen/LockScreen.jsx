@@ -78,24 +78,21 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
 
   // Cifrar la llave privada con el PIN y guardarla en IDB (borrando la plana)
   async function encryptKeyWithPin(thePin) {
-    const db = await openKeysDB();
-    const tx = db.transaction('keys', 'readwrite');
-    const store = tx.objectStore('keys');
-
-    // Obtener llave plana actual
+    // ⚠️ Transacción 1: LEER la llave plana (se cierra sola al terminar)
+    const dbRead = await openKeysDB();
     const stored = await new Promise((resolve) => {
-      const req = store.get('main');
+      const tx = dbRead.transaction('keys', 'readonly');
+      const req = tx.objectStore('keys').get('main');
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => resolve(null);
+      tx.oncomplete = () => dbRead.close();
     });
     if (!stored || !stored.privateKey) throw new Error('No hay llave privada para cifrar');
 
-    // Derivar key AES-256 del PIN
+    // Crypto (sin IndexedDB de por medio)
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const aesKey = await deriveAesKey(thePin, salt);
-
-    // Cifrar privateKey
     const enc = new TextEncoder();
     const encrypted = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv },
@@ -103,32 +100,33 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
       enc.encode(stored.privateKey)
     );
 
-    // Guardar versión cifrada, borrar plana
-    store.put({
-      id: 'main_encrypted',
-      encryptedData: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
-      salt: btoa(String.fromCharCode(...salt)),
-      iv: btoa(String.fromCharCode(...iv))
-    });
-    store.delete('main');
-
+    // ⚠️ Transacción 2: ESCRIBIR (nueva transacción, misma DB)
+    const dbWrite = await openKeysDB();
     await new Promise((resolve, reject) => {
-      tx.oncomplete = resolve;
+      const tx = dbWrite.transaction('keys', 'readwrite');
+      const store = tx.objectStore('keys');
+      store.put({
+        id: 'main_encrypted',
+        encryptedData: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+        salt: btoa(String.fromCharCode(...salt)),
+        iv: btoa(String.fromCharCode(...iv))
+      });
+      store.delete('main');
+      tx.oncomplete = () => { dbWrite.close(); resolve(); };
       tx.onerror = reject;
     });
-    db.close();
   }
 
   // Descifrar la llave con el PIN y ponerla a disposición como 'main' (temporal)
   async function decryptKeyWithPin(thePin) {
-    const db = await openKeysDB();
-    const tx = db.transaction('keys', 'readwrite');
-    const store = tx.objectStore('keys');
-
+    // ⚠️ Transacción 1: LEER (se cierra sola)
+    const dbRead = await openKeysDB();
     const encryptedEntry = await new Promise((resolve) => {
-      const req = store.get('main_encrypted');
+      const tx = dbRead.transaction('keys', 'readonly');
+      const req = tx.objectStore('keys').get('main_encrypted');
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => resolve(null);
+      tx.oncomplete = () => dbRead.close();
     });
     if (!encryptedEntry) throw new Error('No hay llave cifrada');
 
@@ -137,30 +135,28 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
     const iv = Uint8Array.from(atob(encryptedEntry.iv), c => c.charCodeAt(0));
     const encryptedData = Uint8Array.from(atob(encryptedEntry.encryptedData), c => c.charCodeAt(0));
 
-    // Derivar key AES-256 del PIN
+    // Crypto (sin IndexedDB)
     const aesKey = await deriveAesKey(thePin, salt);
-
-    // Descifrar
     const decrypted = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv },
       aesKey,
       encryptedData
     );
-
     const decryptedKey = new TextDecoder().decode(decrypted);
 
-    // Guardar temporalmente como 'main_unlocked' (se borra al bloquear)
-    store.put({
-      id: 'main_unlocked',
-      publicKey: encryptedEntry.publicKey,
-      privateKey: decryptedKey
-    });
-
+    // ⚠️ Transacción 2: ESCRIBIR
+    const dbWrite = await openKeysDB();
     await new Promise((resolve, reject) => {
-      tx.oncomplete = resolve;
+      const tx = dbWrite.transaction('keys', 'readwrite');
+      const store = tx.objectStore('keys');
+      store.put({
+        id: 'main_unlocked',
+        publicKey: encryptedEntry.publicKey,
+        privateKey: decryptedKey
+      });
+      tx.oncomplete = () => { dbWrite.close(); resolve(); };
       tx.onerror = reject;
     });
-    db.close();
   }
 
   // ── Handlers ──
