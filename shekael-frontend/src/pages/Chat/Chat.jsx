@@ -228,13 +228,43 @@ export default function Chat() {
     ? conversations.filter(c => c.lastReadAt && c.lastMessage?.created_at > c.lastReadAt)
     : conversations;
 
-  // Load pinned message
+  // Load pinned message and try to decrypt it
   useEffect(() => {
     if (!activeConv) { setPinnedMessage(null); return; }
-    getPinnedMessage(activeConv.id).then(res => {
+    getPinnedMessage(activeConv.id).then(async (res) => {
       const pm = res.data.pinnedMessage;
-      if (pm) setPinnedMessage(pm);
-      else setPinnedMessage(null);
+      if (!pm) { setPinnedMessage(null); return; }
+
+      // Try to decrypt using ratchet or fallback
+      let decryptedText = null;
+      if (pm.msg_index && sharedSecretCache.current[activeConv.id]) {
+        try {
+          const msgKey = await ratchet.deriveKeyForIndex(activeConv.id, sharedSecretCache.current[activeConv.id], pm.msg_index);
+          decryptedText = _sodium.to_string(
+            _sodium.crypto_secretbox_open_easy(
+              _sodium.from_base64(pm.encrypted_content),
+              _sodium.from_base64(pm.nonce),
+              msgKey
+            )
+          );
+        } catch (e) {
+          // Try legacy
+          try {
+            const sharedSecret = sharedSecretCache.current[activeConv.id];
+            if (sharedSecret && pm.nonce && pm.encrypted_content) {
+              const key = await ratchet.deriveKeyForIndex(activeConv.id, sharedSecret, pm.msg_index || 1);
+              decryptedText = _sodium.to_string(
+                _sodium.crypto_secretbox_open_easy(
+                  _sodium.from_base64(pm.encrypted_content),
+                  _sodium.from_base64(pm.nonce),
+                  key
+                )
+              );
+            }
+          } catch { /* no se puede descifrar */ }
+        }
+      }
+      setPinnedMessage({ ...pm, decryptedText });
     }).catch(() => setPinnedMessage(null));
   }, [activeConv]);
 
@@ -723,15 +753,18 @@ export default function Chat() {
     }
   };
 
-  // ── Buscar en el chat ──
+  // ── Buscar en el chat (cliente-side, porque los mensajes están cifrados E2EE) ──
 
-  const handleChatSearch = async (q) => {
+  const handleChatSearch = (q) => {
     setChatSearchQuery(q);
     if (!activeConv || q.length < 2) { setChatSearchResults([]); return; }
-    try {
-      const res = await searchChatMessages(activeConv.id, q);
-      setChatSearchResults(res.data.messages || []);
-    } catch { setChatSearchResults([]); }
+    const qLower = q.toLowerCase();
+    const results = messages.filter(m =>
+      !m.deleted_at &&
+      m.decrypted &&
+      m.decrypted.toLowerCase().includes(qLower)
+    );
+    setChatSearchResults(results);
   };
 
   // ── Insertar emoji ──
@@ -1032,12 +1065,27 @@ export default function Chat() {
 
             {/* Pinned message banner */}
             {pinnedMessage && (
-              <div className={styles.pinnedBanner}>
+              <div
+                className={styles.pinnedBanner}
+                onClick={() => {
+                  const el = document.getElementById(`msg-${pinnedMessage.id}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.style.background = 'var(--color-primary-glow)';
+                    setTimeout(() => { el.style.background = ''; }, 1500);
+                  }
+                }}
+              >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
                 </svg>
-                <span className={styles.pinnedText}>Mensaje fijado</span>
-                <button className={styles.pinnedClose} onClick={handleUnpinMsg} title="Desfijar">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.pinnedArrow}>
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+                <span className={styles.pinnedText}>
+                  {pinnedMessage.decryptedText || (pinnedMessage.file_name || 'Mensaje fijado')}
+                </span>
+                <button className={styles.pinnedClose} onClick={(e) => { e.stopPropagation(); handleUnpinMsg(); }} title="Desfijar">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
@@ -1059,12 +1107,25 @@ export default function Chat() {
                 {chatSearchQuery.length >= 2 && (
                   <div className={styles.chatSearchResults}>
                     {chatSearchResults.map(m => (
-                      <div key={m.id} className={styles.chatSearchItem}>
+                      <div
+                        key={m.id}
+                        className={styles.chatSearchItem}
+                        onClick={() => {
+                          const el = document.getElementById(`msg-${m.id}`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            el.style.background = 'var(--color-primary-glow)';
+                            setTimeout(() => { el.style.background = ''; }, 1500);
+                          }
+                          setShowChatSearch(false);
+                          setChatSearchQuery('');
+                        }}
+                      >
                         <span className={styles.chatSearchContent}>
-                          {(m.file_name || m.message_type || 'texto cifrado').substring(0, 50)}
+                          {(m.decrypted || m.file_name || 'Mensaje').substring(0, 60)}
                         </span>
                         <span className={styles.chatSearchDate}>
-                          {new Date(m.created_at).toLocaleDateString()}
+                          {new Date(m.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     ))}
