@@ -31,12 +31,18 @@ export default function Chat() {
   const msgListRef = useRef(null);
   const otherUserCache = useRef({});
 
-  // Inicializar crypto (no bloquea la UI — solo afecta cifrado/descifrado)
+  // Inicializar crypto — genera llaves automáticamente si no existen
   useEffect(() => {
     async function init() {
       try {
         await crypto.loadKeyPair();
-        const has = await crypto.hasKeys();
+        let has = await crypto.hasKeys();
+        if (!has) {
+          await crypto.generateKeyPair();
+          const kp = await crypto.loadKeyPair();
+          await updatePublicKey(kp.publicKey);
+          has = true;
+        }
         setKeysReady(has);
       } catch {
         setKeysReady(false);
@@ -421,12 +427,6 @@ export default function Chat() {
               </span>
             </div>
 
-            {!keysReady && (
-              <div className={styles.keysWarning}>
-                ⚠️ No tienes llaves de cifrado. <GenerateKeysButton crypto={crypto} onReady={() => setKeysReady(true)} />
-              </div>
-            )}
-
             <div className={styles.messagesList} ref={msgListRef}>
               {messages.length === 0 ? (
                 <div className={styles.noMessages}>
@@ -482,21 +482,4 @@ export default function Chat() {
   );
 }
 
-function GenerateKeysButton({ crypto, onReady }) {
-  const gen = async () => {
-    await crypto.generateKeyPair();
-    const kp = await crypto.loadKeyPair();
-    try {
-      await updatePublicKey(kp.publicKey);
-    } catch (err) {
-      console.error('Error saving public key:', err);
-    }
-    onReady();
-  };
 
-  return (
-    <button className={styles.generateKeysBtn} onClick={gen}>
-      Generar llaves
-    </button>
-  );
-}
