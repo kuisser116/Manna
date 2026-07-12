@@ -5,7 +5,7 @@ import useChatCrypto from '../../hooks/useChatCrypto';
 import {
   getConversations, getMessages, sendMessage,
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
-  searchUsers, sendMessageRequest
+  searchUsers, sendMessageRequest, updatePublicKey
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
 

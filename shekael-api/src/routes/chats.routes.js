@@ -89,6 +89,7 @@ router.get('/requests', authMiddleware, async (req, res) => {
                 from_user:users!message_requests_from_user_id_fkey (id, display_name, avatar_url, public_key)
             `)
             .eq('to_user_id', userId)
+            .eq('status', 'pending')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
