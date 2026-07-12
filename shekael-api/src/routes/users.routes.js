@@ -1,10 +1,17 @@
 import { Router } from 'express';
 import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { checkAndFundQuest } from '../services/quest.service.js';
 import { uploadToR2, generateFilename } from '../services/ipfs.service.js';
 import { v4 as uuidv4 } from 'uuid';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const router = Router({ strict: false });
 
@@ -394,12 +401,18 @@ router.put('/me/cover', authMiddleware, uploadCover.single('cover'), handleMulte
                     req.file.mimetype
                 );
             } catch (r2Err) {
-                console.error('R2 upload falló, usando demo:', r2Err.message);
-                fileUrl = `demo-cover://${contentCID}`;
+                console.error('R2 upload falló, guardando local:', r2Err.message);
+                const localFilename = `cover-${req.user.id}-${contentCID}.jpg`;
+                fs.writeFileSync(path.join(uploadsDir, localFilename), req.file.buffer);
+                const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
+                fileUrl = `${baseUrl}/uploads/${localFilename}`;
             }
         } else {
-            console.warn('CLOUDFLARE_R2_ACCOUNT_ID no configurado — modo demo');
-            fileUrl = `demo-cover://${contentCID}`;
+            console.warn('CLOUDFLARE_R2_ACCOUNT_ID no configurado — guardando local');
+            const localFilename = `cover-${req.user.id}-${contentCID}.jpg`;
+            fs.writeFileSync(path.join(uploadsDir, localFilename), req.file.buffer);
+            const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
+            fileUrl = `${baseUrl}/uploads/${localFilename}`;
         }
 
         const supabase = getDB();
@@ -437,12 +450,18 @@ router.put('/me/avatar', authMiddleware, upload.single('avatar'), handleMulterEr
                     req.file.mimetype
                 );
             } catch (r2Err) {
-                console.error('R2 upload falló, usando demo:', r2Err.message);
-                fileUrl = `demo-avatar://${contentCID}`;
+                console.error('R2 upload falló, guardando local:', r2Err.message);
+                const localFilename = `avatar-${req.user.id}-${contentCID}.jpg`;
+                fs.writeFileSync(path.join(uploadsDir, localFilename), req.file.buffer);
+                const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
+                fileUrl = `${baseUrl}/uploads/${localFilename}`;
             }
         } else {
-            console.warn('CLOUDFLARE_R2_ACCOUNT_ID no configurado — modo demo');
-            fileUrl = `demo-avatar://${contentCID}`;
+            console.warn('CLOUDFLARE_R2_ACCOUNT_ID no configurado — guardando local');
+            const localFilename = `avatar-${req.user.id}-${contentCID}.jpg`;
+            fs.writeFileSync(path.join(uploadsDir, localFilename), req.file.buffer);
+            const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
+            fileUrl = `${baseUrl}/uploads/${localFilename}`;
         }
 
         // 3. Actualizar avatar_url en DB

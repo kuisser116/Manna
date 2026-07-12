@@ -51,6 +51,15 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ── Archivos subidos localmente ────────────────
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', express.static(uploadsDir));
+
 // ── Rutas ────────────────────────────────────────
 app.use('/auth', authRoutes);
 app.use('/users', usersRoutes);
