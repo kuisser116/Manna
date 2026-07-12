@@ -1073,7 +1073,7 @@ export default function Chat() {
                 </svg>
                 <span className={styles.pinnedText}>
                   {pinnedMessage.decryptedText ||
-                   pinnedMessage.media_url ? (<><img src={pinnedMessage.media_thumb_url||pinnedMessage.media_url} alt="" className={styles.replyThumb} /> Foto</>) : (pinnedMessage.file_name || 'Mensaje fijado')}
+                   pinnedMessage.media_url ? (<span className={styles.replyMediaInline}><img src={pinnedMessage.media_thumb_url||pinnedMessage.media_url} alt="" className={styles.replyThumb} /> Foto</span>) : (pinnedMessage.file_name || 'Mensaje fijado')}
                 </span>
                 <button className={styles.pinnedClose} onClick={(e) => { e.stopPropagation(); handleUnpinMsg(); }} title="Desfijar">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -1173,10 +1173,10 @@ export default function Chat() {
                             </span>
                             <span className={styles.replyText}>
                               {msg.media_url ? (
-                                <>
-                                  <img src={msg.media_thumb_url||msg.media_url} alt="" className={styles.replyThumb} />
-                                  Foto
-                                </>
+                                <span className={styles.replyMediaInline}>
+                              <img src={msg.media_thumb_url||msg.media_url} alt="" className={styles.replyThumb} />
+                              Foto
+                            </span>
                               ) : (msg.reply_preview || 'Mensaje original').substring(0, 60)}
                             </span>
                           </div>
@@ -1241,7 +1241,7 @@ export default function Chat() {
                     <span className={styles.replyPreviewText}>
                       {replyTo.decrypted
                         ? replyTo.decrypted.substring(0, 60)
-                        : replyTo.media_url ? (<><img src={replyTo.media_thumb_url||replyTo.media_url} alt="" className={styles.replyThumb} /> Foto</>) : (replyTo.file_name || 'Mensaje')}
+                        : replyTo.media_url ? (<span className={styles.replyMediaInline}><img src={replyTo.media_thumb_url||replyTo.media_url} alt="" className={styles.replyThumb} /> Foto</span>) : (replyTo.file_name || 'Mensaje')}
                     </span>
                   </div>
                   <button className={styles.removeFileBtn} onClick={cancelReply}>

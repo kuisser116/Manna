@@ -766,16 +766,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
 
 .replyThumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
   object-fit: cover;
   flex-shrink: 0;
   vertical-align: middle;
-  margin-right: 4px;
 }
+
+.replyMediaInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* ── Reply Preview (above input) ── */
