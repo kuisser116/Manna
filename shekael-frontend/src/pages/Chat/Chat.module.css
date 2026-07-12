@@ -474,17 +474,6 @@
   color: var(--color-text);
 }
 
-.encryptionBadge {
-  font-size: 0.68rem;
-  color: var(--color-success);
-  background: rgba(16, 185, 129, 0.1);
-  padding: 4px 10px;
-  border-radius: var(--border-radius-full);
-  cursor: help;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
 /* ── Key Warning ── */
 
 

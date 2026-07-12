@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../../store';
 import useChatCrypto from '../../hooks/useChatCrypto';
+import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import {
   getConversations, getMessages, sendMessage,
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
@@ -31,37 +32,79 @@ export default function Chat() {
   const msgListRef = useRef(null);
   const otherUserCache = useRef({});
 
-  // Inicializar crypto — genera llaves OBLIGATORIAMENTE
+  // Inicializar crypto — genera llaves con libsodium (import estático)
   useEffect(() => {
+    let cancelled = false;
+
     async function init() {
       try {
+        // 1. Esperar a que libsodium esté listo
+        await sodiumReady;
+        if (cancelled) return;
+
+        // 2. Verificar si ya hay llaves locales
         await crypto.loadKeyPair();
-      } catch { /* IndexedDB puede fallar, se genera de nuevo */ }
+        let has = await crypto.hasKeys().catch(() => false);
 
-      let has = false;
-      try {
-        has = await crypto.hasKeys();
-      } catch { /* ignorar */ }
-
-      if (!has) {
-        try {
-          await crypto.generateKeyPair();
-          has = true;
-          try {
-            const kp = await crypto.loadKeyPair();
-            await updatePublicKey(kp.publicKey);
-          } catch {
-            console.warn('No se pudo subir la llave pública');
-          }
-        } catch (e) {
-          console.error('Error grave: no se pudieron generar llaves de cifrado:', e);
+        if (has) {
+          setKeysReady(true);
+          return;
         }
-      }
 
-      setKeysReady(has);
+        // 3. Generar nuevo par de llaves
+        const kp = _sodium.crypto_box_keypair();
+        const keyPair = {
+          publicKey: _sodium.to_base64(kp.publicKey),
+          privateKey: _sodium.to_base64(kp.privateKey)
+        };
+
+        // 4. Guardar en IndexedDB
+        try {
+          const db = await openKeyDB();
+          const tx = db.transaction('keys', 'readwrite');
+          const store = tx.objectStore('keys');
+          await new Promise((resolve, reject) => {
+            const req = store.put({ id: 'main', ...keyPair });
+            req.onsuccess = resolve;
+            req.onerror = reject;
+          });
+          db.close();
+        } catch (e) {
+          console.warn('No se pudo guardar en IndexedDB:', e);
+        }
+
+        // 5. Subir llave pública al servidor (best-effort)
+        try {
+          await updatePublicKey(keyPair.publicKey);
+        } catch {
+          console.warn('No se pudo subir la llave pública');
+        }
+
+        if (!cancelled) setKeysReady(true);
+      } catch (e) {
+        console.error('Error al inicializar cifrado:', e);
+        if (!cancelled) setKeysReady(false);
+      }
     }
+
     init();
+    return () => { cancelled = true; };
   }, []);
+
+  // Helper IndexedDB (mismo que useChatCrypto pero acá no depende de nada)
+  function openKeyDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('ShekaelKeys', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('keys')) {
+          db.createObjectStore('keys', { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
 
   // Cargar conversaciones y solicitudes al montar, sin esperar crypto
   useEffect(() => {
@@ -425,9 +468,7 @@ export default function Chat() {
                 </div>
                 <span>{activeConv.otherUser?.display_name || 'Usuario'}</span>
               </div>
-              <span className={styles.encryptionBadge} title="Cifrado de extremo a extremo">
-                🔒 E2EE
-              </span>
+
             </div>
 
             {!keysReady && (
@@ -440,7 +481,7 @@ export default function Chat() {
               {messages.length === 0 ? (
                 <div className={styles.noMessages}>
                   <p>No hay mensajes aún</p>
-                  <p className={styles.emptyHint}>Envía el primer mensaje con cifrado E2EE</p>
+                  <p className={styles.emptyHint}>Envía el primer mensaje</p>
                 </div>
               ) : (
                 messages.map(msg => (
