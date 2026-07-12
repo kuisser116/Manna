@@ -1,0 +1,75 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.recorder {
+  background: var(--color-bg);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+}
+
+.visualizer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.time {
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.cancelBtn, .sendBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.cancelBtn { background: rgba(128,128,128,0.1); color: var(--color-text); }
+.sendBtn { background: var(--color-primary); color: white; }
+.cancelBtn:hover, .sendBtn:hover { transform: scale(1.1); }
+
+.sending {
+  font-size: 0.9rem;
+  opacity: 0.6;
+  padding: 24px;
+}

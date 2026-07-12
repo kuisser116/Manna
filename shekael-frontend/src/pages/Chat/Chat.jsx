@@ -15,6 +15,12 @@ import {
   togglePinMessage, getPinnedMessage
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
+import StickerPicker from '../../components/StickerPicker';
+import AudioRecorder from '../../components/AudioRecorder';
+import PollCreator from '../../components/PollCreator';
+import PollResults from '../../components/PollResults';
+import GroupCreateModal from '../../components/GroupCreateModal';
+import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../api/chats.api';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -66,6 +72,12 @@ export default function Chat() {
   // Reenviar
   const [forwardTarget, setForwardTarget] = useState(null); // message being forwarded
   const [forwardConvId, setForwardConvId] = useState('');
+
+  // Nuevos modales
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [showPollCreator, setShowPollCreator] = useState(false);
+  const [showGroupCreate, setShowGroupCreate] = useState(false);
 
   // Pin
   const [pinnedMessage, setPinnedMessage] = useState(null);
@@ -837,6 +849,17 @@ export default function Chat() {
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
               </svg>
             </button>
+            <button
+              className={styles.toolBtn}
+              onClick={() => setShowGroupCreate(true)}
+              title="Nuevo grupo"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -1143,6 +1166,8 @@ export default function Chat() {
                 messages.filter(m => !m.deleted_at).map(msg => {
                   const isImage = msg.message_type === 'image' || msg.media_url;
                   const isFile = msg.message_type === 'file';
+                  const isAudio = msg.message_type === 'audio';
+                  const isPoll = msg.message_type === 'poll';
                   const msgText = msg.decrypted || (isImage || isFile ? '' : '[Cifrado]');
 
                   // Encontrar replied message para mostrar preview
@@ -1308,6 +1333,47 @@ export default function Chat() {
                     <line x1="15" y1="9" x2="15.01" y2="9"/>
                   </svg>
                 </button>
+                <button
+                  className={styles.toolBtn}
+                  onClick={() => setShowStickerPicker(true)}
+                  disabled={!keysReady}
+                  title="Sticker"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z"/>
+                    <path d="M12 2c6 0 10 4 10 10l-10 2-2 10C4 22 2 17.5 2 12c0-5.5 4.5-10 10-10z"/>
+                    <circle cx="9" cy="9" r="1" fill="currentColor"/>
+                    <circle cx="15" cy="9" r="1" fill="currentColor"/>
+                  </svg>
+                </button>
+                <button
+                  className={styles.toolBtn}
+                  onClick={() => setShowAudioRecorder(true)}
+                  disabled={!keysReady}
+                  title="Audio"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                  </svg>
+                </button>
+                <button
+                  className={styles.toolBtn}
+                  onClick={() => setShowPollCreator(true)}
+                  disabled={!keysReady}
+                  title="Encuesta"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                    <line x1="7" y1="13" x2="10" y2="13"/>
+                    <line x1="14" y1="13" x2="17" y2="13"/>
+                    <line x1="7" y1="17" x2="10" y2="17"/>
+                    <line x1="14" y1="17" x2="17" y2="17"/>
+                  </svg>
+                </button>
                 {/* Emoji picker popover */}
                 {showEmojiPicker && (
                   <div className={styles.emojiPicker} ref={emojiPickerRef}>
@@ -1466,6 +1532,86 @@ export default function Chat() {
           <img src={lightboxUrl} alt="" className={styles.lightboxImage} />
         </div>
       )}
+
+      {/* Sticker picker */}
+      {showStickerPicker && (
+        <StickerPicker
+          onSelect={async (imageUrl) => {
+            setShowStickerPicker(false);
+            // Send sticker as an image message
+            try {
+              setSending(true);
+              const convKey = await deriveEcdhSecret(activeConv.id);
+              if (!convKey || !ratchet) return;
+              const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
+              const encrypted = await crypto.encrypt('', convKey);
+              const res = await sendMessage(
+                activeConv.id, encrypted.ciphertext, encrypted.nonce,
+                msgIndex, null, null, 'image', imageUrl, imageUrl,
+                null, null, 'image/png'
+              );
+              if (res.data?.message) {
+                const plaintextMsg = { ...res.data.message, decrypted: '' };
+                setMessages(prev => [...prev, plaintextMsg]);
+                setInputText('');
+              }
+            } catch (e) { console.error('Sticker send err:', e); }
+            setSending(false);
+            loadConversations();
+          }}
+          onClose={() => setShowStickerPicker(false)}
+        />
+      )}
+
+      {/* Audio recorder */}
+      {showAudioRecorder && (
+        <AudioRecorder
+          onSend={async (audio) => {
+            try {
+              const convKey = await deriveEcdhSecret(activeConv.id);
+              if (!convKey || !ratchet) return;
+              const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
+              const encrypted = await crypto.encrypt('Audio', convKey);
+              const res = await sendMessage(
+                activeConv.id, encrypted.ciphertext, encrypted.nonce,
+                msgIndex, null, null, 'audio', audio.url, null,
+                audio.fileName, audio.fileSize, audio.mimeType, audio.duration
+              );
+              if (res.data?.message) {
+                setMessages(prev => [...prev, { ...res.data.message, decrypted: 'Audio' }]);
+              }
+            } catch (e) { console.error('Audio send err:', e); }
+            loadConversations();
+          }}
+          onClose={() => setShowAudioRecorder(false)}
+        />
+      )}
+
+      {/* Poll creator */}
+      {showPollCreator && activeConv && (
+        <PollCreator
+          conversationId={activeConv.id}
+          onCreated={() => {
+            // Reload messages to show the poll
+            loadData();
+          }}
+          onClose={() => setShowPollCreator(false)}
+        />
+      )}
+
+      {/* Group create modal */}
+      {showGroupCreate && (
+        <GroupCreateModal
+          onCreated={(convId) => {
+            setShowGroupCreate(false);
+            // Select the new group conversation
+            loadConversations();
+          }}
+          onClose={() => setShowGroupCreate(false)}
+        />
+      )}
+
+
     </div>
   );
 }

@@ -78,4 +78,53 @@ export const togglePinMessage = (conversationId, messageId) =>
 export const getPinnedMessage = (conversationId) =>
     chatAPI.get(`/chats/${conversationId}/pinned-message`);
 
+
+
+// Stickers
+export const getStickers = () => chatAPI.get('/chats/stickers');
+export const uploadSticker = (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return chatAPI.post('/chats/stickers', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+export const toggleStickerFav = (stickerId) => chatAPI.patch(`/chats/stickers/${stickerId}/fav`);
+
+// Encuestas
+export const createPoll = (conversationId, question, options) =>
+    chatAPI.post('/chats/polls', { conversationId, question, options });
+export const votePoll = (pollId, optionId) =>
+    chatAPI.post(`/chats/polls/${pollId}/vote`, { optionId });
+export const getPoll = (pollId) => chatAPI.get(`/chats/polls/${pollId}`);
+
+// Grupos
+export const createGroup = (name, description, memberIds) =>
+    chatAPI.post('/chats/groups', { name, description, memberIds });
+export const generateInvite = (conversationId) =>
+    chatAPI.post(`/chats/${conversationId}/invite`);
+export const getInviteInfo = (code) => chatAPI.get(`/chats/join/${code}`);
+export const joinGroup = (code) => chatAPI.post(`/chats/join/${code}`);
+export const leaveGroup = (conversationId) =>
+    chatAPI.post(`/chats/${conversationId}/leave`);
+export const uploadGroupPhoto = (conversationId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return chatAPI.post(`/chats/${conversationId}/group-photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+// Notificaciones SSE
+export const getEventStream = () => {
+    const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
+    const API_URL = import.meta.env.VITE_API_URL || location.origin;
+    return new EventSource(`${API_URL}/chats/events?token=${encodeURIComponent(token)}`);
+};
+
+// Mensajes guardados
+export const toggleSaveMessage = (messageId) =>
+    chatAPI.post(`/chats/messages/${messageId}/save`);
+export const getSavedMessages = () => chatAPI.get('/chats/saved-messages');
+
 export default chatAPI;

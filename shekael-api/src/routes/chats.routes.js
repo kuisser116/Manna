@@ -1065,4 +1065,587 @@ router.get('/:id/pinned-message', authMiddleware, async (req, res) => {
     }
 });
 
+
+
+// ── Stickers ──
+
+// GET /chats/stickers — Obtener stickers del usuario + defaults
+router.get('/stickers', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+
+        // Defaults + usuario
+        const { data: stickers, error } = await supabase
+            .from('chat_stickers')
+            .select('*')
+            .or(`is_default.eq.true,user_id.eq.${userId}`)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ stickers: stickers || [] });
+    } catch (err) {
+        console.error('[Stickers Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /chats/stickers — Subir sticker propio
+router.post('/stickers', authMiddleware, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No file' });
+        const supabase = getDB();
+        const userId = req.user.id;
+        const file = req.file;
+
+        const ext = file.originalname?.split('.').pop()?.toLowerCase() || 'png';
+        const filename = `sticker-${uuidv4()}.${ext}`;
+        let imageUrl;
+        try {
+            const { uploadToR2 } = await import('../services/ipfs.service.js');
+            imageUrl = await uploadToR2(file.buffer, filename, file.mimetype);
+        } catch {
+            const { writeFileSync, mkdirSync, existsSync } = await import('fs');
+            const { join, dirname } = await import('path');
+            const { fileURLToPath } = await import('url');
+            const __dir = dirname(fileURLToPath(import.meta.url));
+            const upDir = join(__dir, '..', 'uploads');
+            if (!existsSync(upDir)) mkdirSync(upDir, { recursive: true });
+            writeFileSync(join(upDir, filename), file.buffer);
+            imageUrl = '/uploads/' + filename;
+        }
+
+        const { data: sticker, error } = await supabase
+            .from('chat_stickers')
+            .insert({ user_id: userId, image_url: imageUrl, is_default: false })
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ sticker });
+    } catch (err) {
+        console.error('[Stickers Upload Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PATCH /chats/stickers/:id/fav — Marcar/desmarcar favorito
+router.patch('/stickers/:id/fav', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const stickerId = req.params.id;
+
+        const { data: sticker } = await supabase
+            .from('chat_stickers')
+            .select('is_favorite')
+            .eq('id', stickerId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!sticker) return res.status(404).json({ message: 'Sticker no encontrado' });
+
+        const newFav = !sticker.is_favorite;
+        await supabase.from('chat_stickers')
+            .update({ is_favorite: newFav })
+            .eq('id', stickerId);
+
+        res.json({ favorited: newFav });
+    } catch (err) {
+        console.error('[Stickers Fav Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Encuestas ──
+
+// POST /chats/polls — Crear encuesta en una conversación
+router.post('/polls', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const { conversationId, question, options } = req.body;
+
+        if (!conversationId || !question || !options?.length > 1) {
+            return res.status(400).json({ message: 'Faltan datos: conversationId, question, options (min 2)' });
+        }
+
+        // Verificar participación
+        const { data: membership } = await supabase
+            .from('conversation_participants')
+            .select('id')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId)
+            .eq('accepted', true)
+            .single();
+
+        if (!membership) return res.status(403).json({ message: 'No eres participante' });
+
+        // Crear encuesta
+        const { data: poll, error: pollErr } = await supabase
+            .from('chat_polls')
+            .insert({
+                conversation_id: conversationId,
+                question,
+                created_by: userId
+            })
+            .select()
+            .single();
+
+        if (pollErr) throw pollErr;
+
+        // Crear opciones
+        const pollOptions = options.map((text, i) => ({
+            poll_id: poll.id,
+            text,
+            position: i
+        }));
+        const { error: optErr } = await supabase
+            .from('chat_poll_options')
+            .insert(pollOptions);
+
+        if (optErr) throw optErr;
+
+        res.json({ poll });
+    } catch (err) {
+        console.error('[Polls Create Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /chats/polls/:id/vote — Votar
+router.post('/polls/:id/vote', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const pollId = req.params.id;
+        const { optionId } = req.body;
+
+        if (!optionId) return res.status(400).json({ message: 'Opción requerida' });
+
+        // Verificar que la opción pertenece a la encuesta
+        const { data: option } = await supabase
+            .from('chat_poll_options')
+            .select('id')
+            .eq('id', optionId)
+            .eq('poll_id', pollId)
+            .single();
+
+        if (!option) return res.status(404).json({ message: 'Opción no encontrada' });
+
+        // Verificar que no haya votado ya (upsert con unique constraint)
+        const { error } = await supabase
+            .from('chat_poll_votes')
+            .upsert({
+                poll_id: pollId,
+                user_id: userId,
+                option_id: optionId
+            }, { onConflict: 'poll_id,user_id' });
+
+        if (error) throw error;
+
+        res.json({ voted: true });
+    } catch (err) {
+        console.error('[Polls Vote Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /chats/polls/:id — Resultados
+router.get('/polls/:id', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const pollId = req.params.id;
+
+        const { data: poll } = await supabase
+            .from('chat_polls')
+            .select('*')
+            .eq('id', pollId)
+            .single();
+
+        if (!poll) return res.status(404).json({ message: 'Encuesta no encontrada' });
+
+        const { data: options } = await supabase
+            .from('chat_poll_options')
+            .select('*, votes:chat_poll_votes(count)')
+            .eq('poll_id', pollId)
+            .order('position');
+
+        const { data: myVote } = await supabase
+            .from('chat_poll_votes')
+            .select('option_id')
+            .eq('poll_id', pollId)
+            .eq('user_id', req.user.id)
+            .maybeSingle();
+
+        res.json({
+            poll,
+            options: options || [],
+            myVote: myVote?.option_id || null
+        });
+    } catch (err) {
+        console.error('[Polls Get Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Grupos ──
+
+// POST /chats/groups — Crear grupo
+router.post('/groups', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const { name, description, memberIds } = req.body;
+
+        if (!name) return res.status(400).json({ message: 'Nombre del grupo requerido' });
+
+        const conversationId = uuidv4();
+
+        const { error: convErr } = await supabase
+            .from('conversations')
+            .insert({
+                id: conversationId,
+                is_group: true,
+                group_name: name,
+                group_description: description || null,
+                group_created_by: userId
+            });
+
+        if (convErr) throw convErr;
+
+        // Insertar creador como admin
+        const participants = [{ conversation_id: conversationId, user_id: userId, accepted: true, is_admin: true }];
+        // Insertar miembros (sin aceptar aún, aceptan al unirse o al ser agregados)
+        if (memberIds?.length) {
+            memberIds.forEach(mid => {
+                if (mid !== userId) {
+                    participants.push({ conversation_id: conversationId, user_id: mid, accepted: true, is_admin: false });
+                }
+            });
+        }
+
+        const { error: partErr } = await supabase
+            .from('conversation_participants')
+            .insert(participants);
+
+        if (partErr) throw partErr;
+
+        res.json({ conversationId });
+    } catch (err) {
+        console.error('[Groups Create Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /chats/:id/invite — Generar link de invitación
+router.post('/:id/invite', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+
+        // Verificar que es admin del grupo
+        const { data: membership } = await supabase
+            .from('conversation_participants')
+            .select('is_admin')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!membership?.is_admin) {
+            return res.status(403).json({ message: 'Solo admins pueden generar invitaciones' });
+        }
+
+        const code = uuidv4().replace(/-/g, '').substring(0, 12);
+        const { data: link, error } = await supabase
+            .from('group_invite_links')
+            .insert({
+                conversation_id: conversationId,
+                code,
+                created_by: userId
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({ inviteLink: link, url: `/chats/join/${code}` });
+    } catch (err) {
+        console.error('[Invite Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /chats/join/:code — Info del link de invitación
+router.get('/join/:code', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { code } = req.params;
+
+        const { data: link } = await supabase
+            .from('group_invite_links')
+            .select('*, conversation:conversations(id, group_name, group_photo_url, group_description)')
+            .eq('code', code)
+            .single();
+
+        if (!link) return res.status(404).json({ message: 'Link inválido o expirado' });
+
+        if (link.expires_at && new Date(link.expires_at) < new Date()) {
+            return res.status(410).json({ message: 'Link expirado' });
+        }
+        if (link.max_uses > 0 && link.use_count >= link.max_uses) {
+            return res.status(410).json({ message: 'Link agotado' });
+        }
+
+        res.json({
+            groupName: link.conversation?.group_name,
+            groupPhoto: link.conversation?.group_photo_url,
+            groupDescription: link.conversation?.group_description,
+            conversationId: link.conversation_id
+        });
+    } catch (err) {
+        console.error('[Join Info Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /chats/join/:code — Unirse al grupo
+router.post('/join/:code', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const { code } = req.params;
+
+        const { data: link } = await supabase
+            .from('group_invite_links')
+            .select('*')
+            .eq('code', code)
+            .single();
+
+        if (!link) return res.status(404).json({ message: 'Link inválido' });
+
+        // Verificar si ya es miembro
+        const { data: existing } = await supabase
+            .from('conversation_participants')
+            .select('id')
+            .eq('conversation_id', link.conversation_id)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (existing) {
+            return res.json({ alreadyMember: true, conversationId: link.conversation_id });
+        }
+
+        // Unirse
+        const { error } = await supabase
+            .from('conversation_participants')
+            .insert({
+                conversation_id: link.conversation_id,
+                user_id: userId,
+                accepted: true,
+                is_admin: false
+            });
+
+        if (error) throw error;
+
+        // Incrementar use_count
+        await supabase
+            .from('group_invite_links')
+            .update({ use_count: (link.use_count || 0) + 1 })
+            .eq('id', link.id);
+
+        res.json({ joined: true, conversationId: link.conversation_id });
+    } catch (err) {
+        console.error('[Join Group Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /chats/:id/leave — Salir de un grupo
+router.post('/:id/leave', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+
+        const { error } = await supabase
+            .from('conversation_participants')
+            .delete()
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        res.json({ left: true });
+    } catch (err) {
+        console.error('[Leave Group Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /chats/:id/group-photo — Actualizar foto de grupo
+router.post('/:id/group-photo', authMiddleware, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No file' });
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+
+        // Solo admin puede cambiar foto
+        const { data: membership } = await supabase
+            .from('conversation_participants')
+            .select('is_admin')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!membership?.is_admin) return res.status(403).json({ message: 'Solo admins' });
+
+        const file = req.file;
+        const ext = file.originalname?.split('.').pop()?.toLowerCase() || 'jpg';
+        const filename = `group-${uuidv4()}.${ext}`;
+
+        let photoUrl;
+        try {
+            const { uploadToR2 } = await import('../services/ipfs.service.js');
+            photoUrl = await uploadToR2(file.buffer, filename, file.mimetype);
+        } catch {
+            const { writeFileSync, mkdirSync, existsSync } = await import('fs');
+            const { join, dirname } = await import('path');
+            const { fileURLToPath } = await import('url');
+            const __dir = dirname(fileURLToPath(import.meta.url));
+            const upDir = join(__dir, '..', 'uploads');
+            if (!existsSync(upDir)) mkdirSync(upDir, { recursive: true });
+            writeFileSync(join(upDir, filename), file.buffer);
+            photoUrl = '/uploads/' + filename;
+        }
+
+        await supabase.from('conversations')
+            .update({ group_photo_url: photoUrl })
+            .eq('id', conversationId);
+
+        res.json({ photoUrl });
+    } catch (err) {
+        console.error('[Group Photo Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Notificaciones ──
+
+// GET /chats/events — SSE para notificaciones en tiempo real
+router.get('/events', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'
+        });
+
+        res.write('data: {"type":"connected"}\n\n');
+
+        // Polling simple cada 5s para detectar nuevos mensajes
+        let lastCheck = new Date().toISOString();
+        const interval = setInterval(async () => {
+            try {
+                // Nuevos mensajes en conversaciones del usuario
+                const { data: convs } = await supabase
+                    .from('conversation_participants')
+                    .select('conversation_id, last_read_at')
+                    .eq('user_id', userId);
+
+                if (!convs?.length) return;
+
+                const convIds = convs.map(c => c.conversation_id);
+                const { data: newMsgs } = await supabase
+                    .from('chat_messages')
+                    .select('conversation_id, sender_id, message_type, created_at')
+                    .in('conversation_id', convIds)
+                    .neq('sender_id', userId)
+                    .gt('created_at', lastCheck)
+                    .limit(5);
+
+                if (newMsgs?.length > 0) {
+                    res.write(`data: ${JSON.stringify({type:'new_messages', messages: newMsgs})}\n\n`);
+                    lastCheck = new Date().toISOString();
+                }
+
+                // Nuevas solicitudes de mensaje
+                const { data: newRequests } = await supabase
+                    .from('message_requests')
+                    .select('id, from_user_id, created_at')
+                    .eq('to_user_id', userId)
+                    .eq('status', 'pending')
+                    .gt('created_at', lastCheck)
+                    .limit(5);
+
+                if (newRequests?.length > 0) {
+                    res.write(`data: ${JSON.stringify({type:'new_requests', requests: newRequests})}\n\n`);
+                }
+            } catch {}
+        }, 5000);
+
+        req.on('close', () => clearInterval(interval));
+    } catch (err) {
+        console.error('[SSE Error]:', err);
+        if (!res.headersSent) res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Mensajes guardados ──
+
+// POST /chats/messages/:id/save — Guardar/quitar de favoritos
+router.post('/messages/:id/save', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const messageId = req.params.id;
+
+        const { data: existing } = await supabase
+            .from('chat_saved_messages')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('message_id', messageId)
+            .maybeSingle();
+
+        if (existing) {
+            await supabase.from('chat_saved_messages').delete().eq('id', existing.id);
+            return res.json({ saved: false });
+        }
+
+        await supabase.from('chat_saved_messages').insert({ user_id: userId, message_id: messageId });
+        res.json({ saved: true });
+    } catch (err) {
+        console.error('[Save Message Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /chats/saved-messages — Listar guardados
+router.get('/saved-messages', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+
+        const { data: saved, error } = await supabase
+            .from('chat_saved_messages')
+            .select('*, message:chat_messages(*)')
+            .eq('user_id', userId)
+            .order('saved_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ saved: saved || [] });
+    } catch (err) {
+        console.error('[Saved Messages Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
 export default router;
