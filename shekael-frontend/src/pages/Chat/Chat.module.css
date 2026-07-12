@@ -1088,13 +1088,14 @@
 .message {
   display: flex;
   flex-direction: column;
-  max-width: 72%;
+  max-width: 92%;
   animation: fadeUp 0.3s ease both;
 }
 
 .ownMessage {
   align-self: flex-end;
   align-items: flex-end;
+  max-width: 92%;
 }
 
 .otherMessage {
@@ -1563,6 +1564,6 @@
   align-items: center;
   gap: 8px;
   padding: 10px 8px;
-  max-width: 440px;
+  max-width: 500px;
 }
 
