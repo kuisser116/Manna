@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@react-oauth/google": "^0.13.4",
     "@stellar/stellar-sdk": "^14.6.0",
     "axios": "^1.13.6",
     "fast-average-color": "^9.5.1",
     "framer-motion": "^12.35.0",
+    "gsap": "^3.15.0",
     "hls.js": "^1.6.15",
     "html5-qrcode": "^2.3.8",
     "i18next": "^26.0.3",

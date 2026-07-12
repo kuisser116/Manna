@@ -137,19 +137,15 @@ input:focus, textarea:focus {
   box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.05);
 }
 
-/* ── Scrollbar ── */
+/* ── Scrollbar oculto (scroll funcional) ── */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 0;
+  height: 0;
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background: var(--color-bg);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #ccc;
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* ── Botones Brutalist ── */
