@@ -51,75 +51,6 @@ export default function AudioRecorder({ onSend, onClose }) {
     }
   };
 
-  // 3-point moving average (lighter smoothing with higher sample rate)
-  const smoothData = (arr) => {
-    const n = arr.length;
-    if (n < 3) return arr;
-    const out = new Array(n);
-    out[0] = arr[0];
-    for (let i = 1; i < n - 1; i++) {
-      out[i] = (arr[i-1] + arr[i] + arr[i+1]) / 3;
-    }
-    out[n-1] = arr[n-1];
-    return out;
-  };
-
-  // Catmull-Rom to Bezier
-  const catmullRomToBezier = (p0, p1, p2, p3) => ({
-    cp1: { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 },
-    cp2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }
-  });
-
-  // Draw smooth filled waveform (DaVinci-style)
-  const drawFilledWaveform = (ctx, pts, fillColor, centerY) => {
-    if (pts.length < 2) return;
-
-    // 1. Draw the smooth top curved line
-    ctx.strokeStyle = fillColor;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // Build the fill path: top curve → right edge → center line → back to left
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-
-    for (let i = 1; i < pts.length; i++) {
-      const p0 = i > 1 ? pts[i-2] : pts[i-1];
-      const p1 = pts[i-1];
-      const p2 = pts[i];
-      const p3 = i < pts.length - 1 ? pts[i+1] : pts[i];
-      const { cp1, cp2 } = catmullRomToBezier(p0, p1, p2, p3);
-      ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p2.x, p2.y);
-    }
-
-    // Close at the center line
-    const lastX = pts[pts.length - 1].x;
-    ctx.lineTo(lastX, centerY);
-    ctx.lineTo(pts[0].x, centerY);
-    ctx.closePath();
-
-    // Gradient fill: more opaque at top, subtle at center
-    const grad = ctx.createLinearGradient(0, 0, 0, centerY);
-    grad.addColorStop(0, fillColor);
-    grad.addColorStop(1, 'rgba(225, 29, 72, 0.05)');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Re-stroke just the top curve on top of the fill
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) {
-      const p0 = i > 1 ? pts[i-2] : pts[i-1];
-      const p1 = pts[i-1];
-      const p2 = pts[i];
-      const p3 = i < pts.length - 1 ? pts[i+1] : pts[i];
-      const { cp1, cp2 } = catmullRomToBezier(p0, p1, p2, p3);
-      ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p2.x, p2.y);
-    }
-    ctx.stroke();
-  };
-
   const drawWaveform = () => {
     try {
       const canvas = canvasRef.current;
@@ -132,7 +63,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       const width = canvas.width;
       const height = canvas.height;
 
-      // Audio data
+      // Sample audio level
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteTimeDomainData(dataArray);
 
@@ -141,7 +72,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       let avg = sum / dataArray.length / 128 * 3.5;
       avg = Math.pow(Math.min(avg, 1), 0.75);
 
-      // Throttled history
+      // Throttle samples
       const now = Date.now();
       if (now - lastSampleRef.current > 40) {
         lastSampleRef.current = now;
@@ -149,40 +80,40 @@ export default function AudioRecorder({ onSend, onClose }) {
         if (waveHistoryRef.current.length > maxSamples) waveHistoryRef.current.shift();
       }
 
+      // Limpiar canvas — sin fondo extra
+      ctx.clearRect(0, 0, width, height);
+
       const raw = waveHistoryRef.current;
-      const history = smoothData(raw);
-      const hLen = history.length;
-      const centerY = height / 2;
-      const maxH = height * 0.88;
-
-      // Dark background
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(0, 0, width, height);
-
-      if (hLen >= 2) {
-        // Build top points (deviation from center, upward)
-        const ptsTop = [];
-        for (let i = 0; i < hLen; i++) {
-          const age = hLen - 1 - i;
-          const x = width - (age * width) / maxSamples;
-          const dev = Math.min(history[i] * maxH, maxH / 2);
-          ptsTop.push({ x, y: centerY - dev });
-        }
-
-        // Draw DaVinci-style filled waveform (upper half)
-        drawFilledWaveform(ctx, ptsTop, '#e11d48', centerY);
-
-        // Lower half (mirror, slightly dimmer)
-        const ptsBot = ptsTop.map(p => ({ x: p.x, y: centerY + (centerY - p.y) }));
-        drawFilledWaveform(ctx, ptsBot, '#be123c', centerY);
-
-      } else {
-        ctx.strokeStyle = 'rgba(225,29,72,0.15)';
+      if (raw.length < 2) {
+        // Linea central silenciosa
+        ctx.strokeStyle = 'rgba(225,29,72,0.2)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(0, centerY);
-        ctx.lineTo(width, centerY);
+        ctx.moveTo(0, height/2);
+        ctx.lineTo(width, height/2);
         ctx.stroke();
+        if (runningRef.current) animFrameRef.current = requestAnimationFrame(drawWaveform);
+        return;
+      }
+
+      // Barras verticales tipo WhatsApp
+      const barWidth = 3;
+      const gap = 2;
+      const step = barWidth + gap;
+      const centerY = height / 2;
+      const maxH = height * 0.8;
+
+      // De derecha a izquierda: la muestra más nueva (última del array) va a la derecha
+      for (let i = 0; i < raw.length; i++) {
+        const x = width - (raw.length - i) * step;
+        if (x + barWidth < 0) continue;
+        if (x > width) break;
+        const barH = Math.max(raw[i] * maxH, 1.5);
+        const y = centerY - barH / 2;
+        ctx.fillStyle = '#e11d48';
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barH, 1.5);
+        ctx.fill();
       }
 
       if (runningRef.current) {
