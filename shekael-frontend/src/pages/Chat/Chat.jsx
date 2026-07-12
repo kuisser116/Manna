@@ -36,17 +36,26 @@ export default function Chat() {
     async function init() {
       try {
         await crypto.loadKeyPair();
-        let has = await crypto.hasKeys();
-        if (!has) {
+      } catch { /* IndexedDB puede fallar, se genera de nuevo */ }
+
+      let has = await crypto.hasKeys();
+      if (!has) {
+        try {
           await crypto.generateKeyPair();
-          const kp = await crypto.loadKeyPair();
-          await updatePublicKey(kp.publicKey);
           has = true;
+          // Subir llave pública al servidor (best-effort)
+          try {
+            const kp = await crypto.loadKeyPair();
+            await updatePublicKey(kp.publicKey);
+          } catch {
+            console.warn('No se pudo subir la llave pública, se reintentará después');
+          }
+        } catch {
+          console.error('No se pudieron generar llaves de cifrado');
         }
-        setKeysReady(has);
-      } catch {
-        setKeysReady(false);
       }
+
+      setKeysReady(has);
     }
     init();
   }, []);
