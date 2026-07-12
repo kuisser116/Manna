@@ -1539,6 +1539,17 @@ export default function Chat() {
           onSelect={async (imageUrl) => {
             setShowStickerPicker(false);
             try {
+              if (!ratchetReadyRef.current) {
+                const otherUser = otherUserCache.current[activeConv.id];
+                if (otherUser?.public_key) {
+                  const ss = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
+                  if (ss) {
+                    const existing = await ratchet.loadState(activeConv.id);
+                    if (!existing) await ratchet.initSession(activeConv.id, ss);
+                    ratchetReadyRef.current = true;
+                  }
+                }
+              }
               setSending(true);
               await sodiumReady;
               const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
@@ -1554,8 +1565,7 @@ export default function Chat() {
               if (res.data?.message) {
                 setMessages(prev => [...prev, { ...res.data.message, decrypted: '' }]);
               }
-              setInputText('');
-            } catch (e) { console.error('Sticker send err:', e); }
+            } catch (e) { console.error('Sticker send err:', e); alert('Error al enviar sticker:\n' + (e.message || e)); }
             setSending(false);
           }}
           onClose={() => setShowStickerPicker(false)}
@@ -1567,6 +1577,17 @@ export default function Chat() {
         <AudioRecorder
           onSend={async (audio) => {
             try {
+              if (!ratchetReadyRef.current) {
+                const otherUser = otherUserCache.current[activeConv.id];
+                if (otherUser?.public_key) {
+                  const ss = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
+                  if (ss) {
+                    const existing = await ratchet.loadState(activeConv.id);
+                    if (!existing) await ratchet.initSession(activeConv.id, ss);
+                    ratchetReadyRef.current = true;
+                  }
+                }
+              }
               setSending(true);
               await sodiumReady;
               const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
@@ -1582,7 +1603,7 @@ export default function Chat() {
               if (res.data?.message) {
                 setMessages(prev => [...prev, { ...res.data.message, decrypted: 'Audio' }]);
               }
-            } catch (e) { console.error('Audio send err:', e); }
+            } catch (e) { console.error('Audio send err:', e); alert('Error al enviar audio:\n' + (e.message || e)); }
             setSending(false);
           }}
           onClose={() => setShowAudioRecorder(false)}
