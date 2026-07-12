@@ -673,9 +673,36 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
                      file.mimetype?.startsWith('audio/') ? 'audio' : 'file';
         const filename = `chat-${uuidv4()}.${ext}`;
 
+        // ── Fix WebM duration header (Chrome escribe metadata incorrecta) ──
+        let uploadBuffer = file.buffer;
+        let correctedDuration = null;
+        if (type === 'audio' && file.mimetype?.includes('webm')) {
+            try {
+                const { execSync } = await import('child_process');
+                const { writeFileSync, unlinkSync } = await import('fs');
+                const tmpIn = `/tmp/audio-fix-${uuidv4()}.webm`;
+                const tmpOut = `/tmp/audio-fixed-${uuidv4()}.webm`;
+                writeFileSync(tmpIn, file.buffer);
+                // Re-encode completo para arreglar el header de duración que Chrome escribe mal
+                execSync(`ffmpeg -y -i ${tmpIn} -c:a libopus -b:a 32k -vn ${tmpOut}`, { timeout: 30000, stdio: 'pipe' });
+                const { readFileSync } = await import('fs');
+                uploadBuffer = readFileSync(tmpOut);
+                // Obtener duración real con ffprobe
+                try {
+                    const durOut = execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${tmpOut}`, { timeout: 10000, encoding: 'utf8' }).trim();
+                    if (durOut) correctedDuration = Math.round(parseFloat(durOut));
+                } catch {}
+                unlinkSync(tmpIn);
+                unlinkSync(tmpOut);
+            } catch (e) {
+                console.warn('[Chat Upload] ffmpeg fix failed:', e.message);
+                // Seguir con el buffer original si falla
+            }
+        }
+
         let fileUrl, thumbUrl;
         try {
-            fileUrl = await uploadToR2(file.buffer, filename, file.mimetype);
+            fileUrl = await uploadToR2(uploadBuffer, filename, file.mimetype);
         } catch {
             // Fallback a local
             const { writeFileSync, mkdirSync, existsSync } = await import('fs');
@@ -699,7 +726,8 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
             type,
             name: file.originalname,
             size: file.size,
-            mime: file.mimetype
+            mime: file.mimetype,
+            duration: correctedDuration
         });
     } catch (err) {
         console.error('[Chat Upload Error]:', err);

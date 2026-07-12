@@ -1,13 +1,15 @@
 .player {
   padding: 4px 0;
-  max-width: 600px;
+  max-width: 100%;
+  width: 100%;
   position: relative;
 }
 
 .controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  width: 100%;
 }
 
 /* ── Play Button ── */
@@ -31,20 +33,21 @@
 }
 .playing { color: var(--color-text); }
 
-/* ── Speed Select ── */
-.speedCol { position: relative; flex-shrink: 0; }
-
-.speedSelect {
+/* ── Speed Button (click-to-cycle: 1x → 2x → 4x → 1x) ── */
+.speedBtn {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px 5px;
+  justify-content: center;
+  padding: 2px 7px;
   border-radius: 4px;
+  border: none;
+  background: transparent;
   cursor: pointer;
   transition: background 0.15s;
   user-select: none;
+  flex-shrink: 0;
 }
-.speedSelect:hover { background: rgba(128,128,128,0.08); }
+.speedBtn:hover { background: rgba(128,128,128,0.08); }
 
 .speedLabel {
   font-size: 0.78rem;
@@ -53,49 +56,22 @@
   opacity: 0.45;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  transition: opacity 0.15s;
 }
-
-.dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 100;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 4px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-  min-width: 70px;
+.speedBtn:hover .speedLabel {
+  opacity: 0.8;
 }
-
-.dropdownItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 8px 14px;
-  border: none;
-  background: none;
-  color: var(--color-text);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 5px;
-  font-family: var(--font-family);
-  transition: background 0.1s;
-}
-.dropdownItem:hover { background: rgba(128,128,128,0.08); }
-.dropdownActive { color: var(--color-primary); font-weight: 600; }
 
 /* ── Progress ── */
 .progressWrap {
-  flex: 1;
+  flex: 0 0 20%;
   position: relative;
-  height: 20px;
+  height: 24px;
   display: flex;
   align-items: center;
   cursor: pointer;
-  min-width: 30px;
+  min-width: 60px;
+  max-width: 20%;
 }
 
 .track {

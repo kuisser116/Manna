@@ -348,6 +348,7 @@ export default function Chat() {
         // Modo normal: derivar shared secret ECDH
         if (!otherUser?.public_key) {
           setMessages(msgs);
+          scrollToBottom();
           return;
         }
         sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
@@ -355,6 +356,7 @@ export default function Chat() {
 
       if (!sharedSecret) {
         setMessages(msgs);
+        scrollToBottom();
         return;
       }
 
@@ -396,6 +398,7 @@ export default function Chat() {
 
       ratchetReadyRef.current = true;
       setMessages(decrypted);
+      scrollToBottom();
       // Cargar mensaje fijado ahora que sharedSecretCache está listo
       loadPinnedMessage(conv.id);
     } catch (err) {

@@ -267,7 +267,10 @@ export default function AudioRecorder({ onSend, onClose }) {
       const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
       const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm;codecs=opus' });
       const { data } = await uploadChatFile(file);
-      onSend?.({ url: data.url, fileName: data.name, fileSize: data.size, mimeType: data.mime, duration: Math.round(duration) });
+      // Usar duración corregida por el servidor (ffprobe) si está disponible,
+      // porque Chrome escribe metadata incorrecta en WebM
+      const realDuration = data.duration || Math.round(duration);
+      onSend?.({ url: data.url, fileName: data.name, fileSize: data.size, mimeType: data.mime, duration: realDuration });
       onClose?.();
     } catch (e) { console.warn('Audio send err:', e); alert('Error: ' + (e.message || e)); setState('recording'); }
   };

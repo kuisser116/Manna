@@ -1072,6 +1072,24 @@
   flex-direction: column;
   gap: 8px;
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.messagesList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.messagesList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messagesList::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+
+.messagesList:hover::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.15);
 }
 
 .noMessages {
@@ -1093,7 +1111,9 @@
 }
 
 /* Audio messages take full width for long timeline */
-.message:has(.audioBubble) {
+.message:has(.audioBubble),
+.ownMessage:has(.audioBubble),
+.otherMessage:has(.audioBubble) {
   max-width: 98%;
 }
 
@@ -1142,6 +1162,14 @@
 
 .ownMessage .messageTime {
   color: var(--color-text-muted);
+}
+
+/* Audio messages: pegar la hora más al mensaje */
+.message:has(.audioBubble) .messageTime {
+  margin-top: 0;
+  padding: 0 4px;
+  font-size: 0.7rem;
+  line-height: 1;
 }
 
 /* ── Input ── */
@@ -1568,7 +1596,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 8px;
-  max-width: 700px;
+  padding: 12px 12px;
+  max-width: 100%;
+  width: 100%;
 }
 

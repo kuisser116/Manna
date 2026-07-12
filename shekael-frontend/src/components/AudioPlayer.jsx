@@ -1,93 +1,166 @@
 import { useState, useRef, useEffect } from 'react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
 import styles from './AudioPlayer.module.css';
 
-gsap.registerPlugin(useGSAP);
-
-const SPEEDS = [1, 1.5, 2, 3, 4];
+const CYCLE_SPEEDS = [1, 2, 4];
+const TICK_MS = 200;
 
 export default function AudioPlayer({ src, mimeType, initialDuration, onComplete, isActive, onActivate }) {
   const audioRef = useRef(null);
-  const animRef = useRef(null);
-  const dropdownRef = useRef(null);
   const playerRef = useRef(null);
+  const timerRef = useRef(null);
+  const posRef = useRef(0);       // posición actual en la escala DISPLAY (float segundos)
+  const totalRef = useRef(initialDuration || 0); // duración DISPLAY
+  const speedRef = useRef(1);
+  const lastTickRef = useRef(0);   // timestamp del último tick para calcular delta real
+
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(initialDuration || 0);
-  const [loaded, setLoaded] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [ready, setReady] = useState(false);
   const progressRef = useRef(null);
 
+  // Al montar: cargar audio, obtener duración del metadata
   useEffect(() => {
-    if (!showDropdown) return;
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showDropdown]);
+    const audio = audioRef.current;
+    if (!audio) return;
 
+    const onMeta = () => {
+      const metaDur = audio.duration && isFinite(audio.duration) ? Math.floor(audio.duration) : 0;
+      // Usar initialDuration si existe y es > metaDur (metadata mal)
+      if (initialDuration && initialDuration > 0 && (metaDur === 0 || initialDuration > metaDur)) {
+        totalRef.current = initialDuration;
+        setDuration(initialDuration);
+      } else if (metaDur > 0) {
+        totalRef.current = metaDur;
+        setDuration(metaDur);
+      } else {
+        totalRef.current = initialDuration || 0;
+        setDuration(initialDuration || 0);
+      }
+      setReady(true);
+    };
+
+    const onEnd = () => {
+      // El audio llegó al final de su metadata.
+      // NO hacemos nada: el timer sigue corriendo hasta totalRef.current
+    };
+
+    if (audio.readyState >= 1) onMeta();
+    audio.addEventListener('loadedmetadata', onMeta);
+    audio.addEventListener('ended', onEnd);
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', onMeta);
+      audio.removeEventListener('ended', onEnd);
+      stopTimer();
+      audio.pause();
+    };
+  }, [initialDuration]);
+
+  // Pausar si ya no está activo
   useEffect(() => {
     if (!isActive && playing) {
       audioRef.current?.pause();
+      stopTimer();
       setPlaying(false);
     }
   }, [isActive]);
 
-  useGSAP(() => {
-    if (showDropdown && dropdownRef.current) {
-      gsap.fromTo(dropdownRef.current,
-        { opacity: 0, y: -4, scaleY: 0.92 },
-        { opacity: 1, y: 0, scaleY: 1, duration: 0.15, ease: 'power2.out', transformOrigin: 'top center' }
-      );
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-  }, { dependencies: [showDropdown], scope: playerRef });
+  };
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onLoaded = () => { setDuration(Math.floor(audio.duration)); setLoaded(true); };
-    const onTime = () => setCurrent(Math.floor(audio.currentTime));
-    const onEnd = () => { setPlaying(false); setCurrent(0); onComplete?.(); };
-    audio.addEventListener('loadedmetadata', onLoaded);
-    audio.addEventListener('timeupdate', onTime);
-    audio.addEventListener('ended', onEnd);
-    return () => {
-      audio.removeEventListener('loadedmetadata', onLoaded);
-      audio.removeEventListener('timeupdate', onTime);
-      audio.removeEventListener('ended', onEnd);
-      audio.pause();
-    };
-  }, []);
+  const startTimer = () => {
+    stopTimer();
+    lastTickRef.current = performance.now();
+    timerRef.current = setInterval(() => {
+      const now = performance.now();
+      const deltaMs = now - lastTickRef.current;
+      lastTickRef.current = now;
+      // Avanzar posición según tiempo real transcurrido × velocidad
+      posRef.current += (deltaMs / 1000) * speedRef.current;
+
+      if (posRef.current >= totalRef.current) {
+        // Llegó al final de la duración DISPLAY
+        posRef.current = totalRef.current;
+        setCurrent(totalRef.current);
+        stopTimer();
+        setPlaying(false);
+        onComplete?.();
+        return;
+      }
+
+      setCurrent(Math.floor(posRef.current));
+    }, TICK_MS);
+  };
 
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
+
     if (playing) {
       audio.pause();
+      stopTimer();
       setPlaying(false);
     } else {
       onActivate?.();
-      audio.playbackRate = speed;
-      audio.play().then(() => setPlaying(true)).catch(() => {});
+      // Si llegó al final, reiniciar
+      if (posRef.current >= totalRef.current - 0.3) {
+        posRef.current = 0;
+        setCurrent(0);
+        audio.currentTime = 0;
+      }
+      audio.playbackRate = speedRef.current;
+      audio.play().then(() => {
+        setPlaying(true);
+        startTimer();
+      }).catch(() => {});
     }
   };
 
-  const changeSpeed = (s) => {
-    setSpeed(s);
-    setShowDropdown(false);
-    if (audioRef.current && playing) audioRef.current.playbackRate = s;
+  const cycleSpeed = () => {
+    const idx = CYCLE_SPEEDS.indexOf(speedRef.current);
+    const next = CYCLE_SPEEDS[(idx + 1) % CYCLE_SPEEDS.length];
+    speedRef.current = next;
+    setSpeed(next);
+    if (audioRef.current && playing) audioRef.current.playbackRate = next;
   };
+
+  // En lugar de usar setSpeed común, sincronizamos speedRef
+  const [speed, setSpeed] = useState(1);
 
   const seek = (e) => {
     const rect = progressRef.current?.getBoundingClientRect();
     if (!rect) return;
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    if (audioRef.current) {
-      audioRef.current.currentTime = pct * duration;
-      setCurrent(Math.floor(pct * duration));
+    const targetDisplay = pct * totalRef.current;
+    posRef.current = targetDisplay;
+    setCurrent(Math.floor(targetDisplay));
+
+    // Mapear a tiempo real del archivo de audio
+    const audio = audioRef.current;
+    if (audio) {
+      const audioDur = audio.duration && isFinite(audio.duration) ? audio.duration : 0;
+      const total = totalRef.current;
+      let realTarget;
+      if (audioDur > 0 && total > 0 && audioDur < total) {
+        // Metadata mal: escalar
+        realTarget = (targetDisplay / total) * audioDur;
+      } else {
+        realTarget = targetDisplay;
+      }
+      // Dejar margen de seguridad para no disparar ended
+      const maxSafe = Math.max(0, (audioDur || total) - 0.3);
+      audio.currentTime = Math.min(realTarget, maxSafe);
+    }
+
+    // Si estaba en pausa y había llegado al final, no hace falta más
+    // Si está sonando, el timer sigue desde la nueva posición
+    if (playing) {
+      lastTickRef.current = performance.now();
     }
   };
 
@@ -109,22 +182,9 @@ export default function AudioPlayer({ src, mimeType, initialDuration, onComplete
           )}
         </button>
 
-        <div className={styles.speedCol}>
-          <div className={styles.speedSelect} onClick={() => setShowDropdown(!showDropdown)}>
-            <span className={styles.speedLabel}>{speed}x</span>
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 16 6 8 18 8"/></svg>
-          </div>
-          {showDropdown && (
-            <div ref={dropdownRef} className={styles.dropdown}>
-              {SPEEDS.map(s => (
-                <button key={s} className={`${styles.dropdownItem} ${speed === s ? styles.dropdownActive : ''}`} onClick={() => changeSpeed(s)}>
-                  <span>{s}x</span>
-                  {speed === s && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <button className={styles.speedBtn} onClick={cycleSpeed} title="Velocidad">
+          <span className={styles.speedLabel}>{speed}x</span>
+        </button>
 
         <div className={styles.progressWrap} ref={progressRef} onClick={seek}>
           <div className={styles.track}>
@@ -133,7 +193,7 @@ export default function AudioPlayer({ src, mimeType, initialDuration, onComplete
           <div className={styles.handle} style={{ left: `${progress}%` }} />
         </div>
 
-        <span className={styles.time}>{loaded ? fmt(current) : '0:00'} / {fmt(duration)}</span>
+        <span className={styles.time}>{ready ? fmt(current) : '0:00'} / {fmt(duration)}</span>
       </div>
     </div>
   );
