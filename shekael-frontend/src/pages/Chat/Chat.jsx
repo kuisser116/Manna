@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
+import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
 import useChatCrypto from '../../hooks/useChatCrypto';
 import useRatchetSession from '../../hooks/useRatchetSession';
@@ -23,7 +24,7 @@ import PollResults from '../../components/PollResults';
 import GroupCreateModal from '../../components/GroupCreateModal';
 import AudioPlayer from '../../components/AudioPlayer';
 import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../api/chats.api';
-import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
+
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -856,7 +857,7 @@ export default function Chat() {
   };
 
   return (
-    <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
+    <div className={styles.layout}>
       {/* Panel izquierdo: conversaciones */}
       <div className={styles.sidePanel}>
         <div className={styles.sideHeader}>
@@ -1073,7 +1074,7 @@ export default function Chat() {
       </div>
 
       {/* Panel derecho: conversación activa */}
-      <div className={styles.chatPanel}>
+      <div className={styles.chatPanel} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
         {!activeConv ? (
           <div className={styles.noChat}>
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.3">

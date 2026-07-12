@@ -9,28 +9,7 @@
   position: relative;
   width: 100%;
   background: var(--color-bg);
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.layout::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: var(--color-pattern);
-  -webkit-mask-image: var(--pattern-url);
-  mask-image: var(--pattern-url);
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 104px 104px;
-  mask-size: 104px 104px;
-  opacity: var(--pattern-opacity);
-  pointer-events: none;
-}
-
-.layout,
-.layout * {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family);
 }
 
 /* ── Side Panel (conversaciones) ── */
@@ -44,6 +23,7 @@
   background: var(--color-surface);
   z-index: 2;
   overflow: hidden;
+  position: relative;
 }
 
 .sideHeader {
@@ -467,6 +447,23 @@
   background: var(--color-bg);
   overflow: hidden;
   min-height: 0;
+  position: relative;
+}
+
+.chatPanel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--color-pattern);
+  -webkit-mask-image: var(--pattern-url);
+  mask-image: var(--pattern-url);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 104px 104px;
+  mask-size: 104px 104px;
+  opacity: var(--pattern-opacity);
+  pointer-events: none;
 }
 
 .noChat {
@@ -654,6 +651,9 @@
   color: var(--color-text-muted);
   cursor: pointer;
   transition: background var(--transition);
+  position: sticky;
+  top: 62px;
+  z-index: 9;
 }
 
 .pinnedBanner:hover {
@@ -1102,6 +1102,8 @@
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   padding: 0 0 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .messagesContent {
@@ -1214,6 +1216,7 @@
 
 .inputArea {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 0;
