@@ -127,3 +127,23 @@
   font-size: 0.85rem;
   padding: 20px;
 }
+
+
+.uploadArea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 2px dashed var(--color-primary);
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+.uploadArea:hover {
+  background: rgba(225, 29, 72, 0.06);
+}

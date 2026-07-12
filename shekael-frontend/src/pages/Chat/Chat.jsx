@@ -1538,26 +1538,25 @@ export default function Chat() {
         <StickerPicker
           onSelect={async (imageUrl) => {
             setShowStickerPicker(false);
-            // Send sticker as an image message
             try {
               setSending(true);
-              const convKey = await deriveEcdhSecret(activeConv.id);
-              if (!convKey || !ratchet) return;
-              const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
-              const encrypted = await crypto.encrypt('', convKey);
+              await sodiumReady;
+              const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
+              const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
+              const ciphertext = _sodium.crypto_secretbox_easy(
+                _sodium.from_string(''), nonce, msgKey
+              );
               const res = await sendMessage(
-                activeConv.id, encrypted.encryptedContent, encrypted.nonce,
+                activeConv.id, _sodium.to_base64(ciphertext), _sodium.to_base64(nonce),
                 msgIndex, null, null, 'image', imageUrl, imageUrl,
                 null, null, 'image/png'
               );
               if (res.data?.message) {
-                const plaintextMsg = { ...res.data.message, decrypted: '' };
-                setMessages(prev => [...prev, plaintextMsg]);
-                setInputText('');
+                setMessages(prev => [...prev, { ...res.data.message, decrypted: '' }]);
               }
+              setInputText('');
             } catch (e) { console.error('Sticker send err:', e); }
             setSending(false);
-            loadConversations();
           }}
           onClose={() => setShowStickerPicker(false)}
         />
@@ -1568,12 +1567,15 @@ export default function Chat() {
         <AudioRecorder
           onSend={async (audio) => {
             try {
-              const convKey = await deriveEcdhSecret(activeConv.id);
-              if (!convKey || !ratchet) return;
-              const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
-              const encrypted = await crypto.encrypt('Audio', convKey);
+              setSending(true);
+              await sodiumReady;
+              const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
+              const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
+              const ciphertext = _sodium.crypto_secretbox_easy(
+                _sodium.from_string('Audio'), nonce, msgKey
+              );
               const res = await sendMessage(
-                activeConv.id, encrypted.encryptedContent, encrypted.nonce,
+                activeConv.id, _sodium.to_base64(ciphertext), _sodium.to_base64(nonce),
                 msgIndex, null, null, 'audio', audio.url, null,
                 audio.fileName, audio.fileSize, audio.mimeType, audio.duration
               );
@@ -1581,7 +1583,7 @@ export default function Chat() {
                 setMessages(prev => [...prev, { ...res.data.message, decrypted: 'Audio' }]);
               }
             } catch (e) { console.error('Audio send err:', e); }
-            loadConversations();
+            setSending(false);
           }}
           onClose={() => setShowAudioRecorder(false)}
         />
