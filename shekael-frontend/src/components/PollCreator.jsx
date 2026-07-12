@@ -23,8 +23,8 @@ export default function PollCreator({ conversationId, onCreated, onClose }) {
     if (validOptions.length < 2) return;
 
     try {
-      await createPoll(conversationId, question.trim(), validOptions);
-      onCreated?.();
+      const { data } = await createPoll(conversationId, question.trim(), validOptions);
+      onCreated?.(data?.poll || { question: question.trim() });
       onClose?.();
     } catch (e) { console.warn('Poll create err:', e); }
   };

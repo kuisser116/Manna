@@ -1546,7 +1546,7 @@ export default function Chat() {
               const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
               const encrypted = await crypto.encrypt('', convKey);
               const res = await sendMessage(
-                activeConv.id, encrypted.ciphertext, encrypted.nonce,
+                activeConv.id, encrypted.encryptedContent, encrypted.nonce,
                 msgIndex, null, null, 'image', imageUrl, imageUrl,
                 null, null, 'image/png'
               );
@@ -1573,7 +1573,7 @@ export default function Chat() {
               const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
               const encrypted = await crypto.encrypt('Audio', convKey);
               const res = await sendMessage(
-                activeConv.id, encrypted.ciphertext, encrypted.nonce,
+                activeConv.id, encrypted.encryptedContent, encrypted.nonce,
                 msgIndex, null, null, 'audio', audio.url, null,
                 audio.fileName, audio.fileSize, audio.mimeType, audio.duration
               );
@@ -1591,8 +1591,22 @@ export default function Chat() {
       {showPollCreator && activeConv && (
         <PollCreator
           conversationId={activeConv.id}
-          onCreated={() => {
-            // Reload messages to show the poll
+          onCreated={async (poll) => {
+            // Enviar mensaje del sistema con el poll_id
+            try {
+              const convKey = await deriveEcdhSecret(activeConv.id);
+              if (!convKey || !ratchet) return;
+              const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
+              const encrypted = await crypto.encrypt('Encuesta: ' + poll?.question, convKey);
+              const res = await sendMessage(
+                activeConv.id, encrypted.encryptedContent, encrypted.nonce,
+                msgIndex, null, null, 'poll', null, null,
+                null, null, null, null, poll?.id
+              );
+              if (res.data?.message) {
+                setMessages(prev => [...prev, { ...res.data.message, decrypted: 'Encuesta: ' + poll?.question, poll_id: poll?.id }]);
+              }
+            } catch (e) { console.error('Poll msg send err:', e); }
             loadData();
           }}
           onClose={() => setShowPollCreator(false)}

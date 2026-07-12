@@ -385,7 +385,7 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
         const conversationId = req.params.id;
         const {
             encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId,
-            messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType, duration
+            messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType, duration, pollId
         } = req.body;
 
         if (!encryptedContent || !nonce) {
@@ -422,9 +422,10 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
                 file_name: fileName || null,
                 file_size: fileSize || null,
                 mime_type: mimeType || null,
-                duration: duration || null
+                duration: duration || null,
+                poll_id: pollId || null
             })
-            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, created_at')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, poll_id, created_at')
             .single();
 
         if (error) throw error;

@@ -21,8 +21,8 @@ export const getConversations = () => chatAPI.get('/chats/conversations');
 
 // Mensajes
 export const getMessages = (conversationId, page = 0) => chatAPI.get(`/chats/${conversationId}/messages?page=${page}`);
-export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType) =>
-    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType });
+export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType, duration, pollId) =>
+    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType, duration, pollId });
 
 // Búsqueda de usuarios
 export const searchUsers = (q) => chatAPI.get(`/chats/users/search?q=${encodeURIComponent(q)}`);
