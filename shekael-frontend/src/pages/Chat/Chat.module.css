@@ -341,6 +341,23 @@
   opacity: 0.6;
 }
 
+.emptyActionBtn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.78rem;
+  font-family: var(--font-family);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.emptyActionBtn:hover {
+  opacity: 0.8;
+}
+
 .convItem {
   display: flex;
   align-items: center;

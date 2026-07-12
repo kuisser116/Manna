@@ -31,19 +31,24 @@ export default function Chat() {
   const msgListRef = useRef(null);
   const otherUserCache = useRef({});
 
-  // Inicializar crypto y cargar datos
+  // Inicializar crypto (no bloquea la UI — solo afecta cifrado/descifrado)
   useEffect(() => {
     async function init() {
-      await crypto.loadKeyPair();
-      const has = await crypto.hasKeys();
-      setKeysReady(has);
+      try {
+        await crypto.loadKeyPair();
+        const has = await crypto.hasKeys();
+        setKeysReady(has);
+      } catch {
+        setKeysReady(false);
+      }
     }
     init();
   }, []);
 
+  // Cargar conversaciones y solicitudes al montar, sin esperar crypto
   useEffect(() => {
-    if (keysReady) loadData();
-  }, [keysReady]);
+    loadData();
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -53,7 +58,12 @@ export default function Chat() {
         getMessageRequests()
       ]);
       setConversations(convRes.data.conversations || []);
-      setRequests(reqRes.data.requests || []);
+      const pendingReqs = reqRes.data.requests || [];
+      setRequests(pendingReqs);
+      // Mostrar automáticamente el panel de solicitudes si hay pendientes
+      if (pendingReqs.length > 0) {
+        setShowRequests(true);
+      }
     } catch (err) {
       console.error('Error loading chat data:', err);
     } finally {
@@ -331,12 +341,20 @@ export default function Chat() {
         <div className={styles.conversationsList}>
           {loading ? (
             <div className={styles.loadingState}>Cargando...</div>
-          ) : conversations.length === 0 ? (
+          ) : conversations.length === 0 && !showSearch ? (
             <div className={styles.emptyState}>
-              <p>No tienes conversaciones aún</p>
-              <p className={styles.emptyHint}>Busca usuarios para iniciar un chat</p>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.25">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <p>Todavía no hay nada</p>
+              <p className={styles.emptyHint}>
+                Busca a alguien presionando{' '}
+                <button className={styles.emptyActionBtn} onClick={() => setShowSearch(true)}>
+                  + Nuevo chat
+                </button>
+              </p>
             </div>
-          ) : (
+          ) : conversations.length === 0 ? null : (
             conversations.map(conv => (
               <div
                 key={conv.id}
