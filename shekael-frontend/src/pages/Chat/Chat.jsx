@@ -321,14 +321,20 @@ export default function Chat() {
                     </span>
                   </div>
                   <div className={styles.requestActions}>
-                    <button className={styles.acceptBtn} onClick={() => handleAccept(req.id)}>
-                      Aceptar
+                    <button className={styles.acceptBtn} onClick={() => handleAccept(req.id)} title="Aceptar">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
                     </button>
-                    <button className={styles.rejectBtn} onClick={() => handleReject(req.id)}>
-                      Rechazar
+                    <button className={styles.rejectBtn} onClick={() => handleReject(req.id)} title="Rechazar">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
                     </button>
-                    <button className={styles.blockBtn} onClick={() => handleBlock(req.id)}>
-                      Bloquear
+                    <button className={styles.blockBtn} onClick={() => handleBlock(req.id)} title="Bloquear">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
