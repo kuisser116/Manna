@@ -83,6 +83,9 @@ export default function Chat() {
   // Pin
   const [pinnedMessage, setPinnedMessage] = useState(null);
 
+  // Audio auto-play
+  const [activeAudioId, setActiveAudioId] = useState(null);
+
   // Nickname edit
   const [showNicknameEdit, setShowNicknameEdit] = useState(false);
   const [nicknameInput, setNicknameInput] = useState('');
@@ -1242,7 +1245,24 @@ export default function Chat() {
                       {/* Audio */}
                       {isAudio && msg.media_url && (
                         <div className={styles.audioBubble}>
-                          <AudioPlayer src={msg.media_url} mimeType={msg.mime_type} initialDuration={msg.duration} />
+                          <AudioPlayer
+                            src={msg.media_url}
+                            mimeType={msg.mime_type}
+                            initialDuration={msg.duration}
+                            isActive={activeAudioId === msg.id}
+                            onActivate={() => setActiveAudioId(msg.id)}
+                            onComplete={() => {
+                              // Play next audio message
+                              const audioMessages = messages.filter(m => m.message_type === 'audio' && m.media_url);
+                              const currentIdx = audioMessages.findIndex(m => m.id === msg.id);
+                              const nextAudio = audioMessages[currentIdx + 1];
+                              if (nextAudio) {
+                                setActiveAudioId(nextAudio.id);
+                              } else {
+                                setActiveAudioId(null);
+                              }
+                            }}
+                          />
                         </div>
                       )}
                       {/* Texto */}

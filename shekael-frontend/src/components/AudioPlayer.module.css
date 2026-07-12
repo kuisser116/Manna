@@ -1,6 +1,7 @@
 .player {
   padding: 2px 0;
   max-width: 300px;
+  position: relative;
 }
 
 .controls {
@@ -9,6 +10,7 @@
   gap: 4px;
 }
 
+/* ── Play Button ── */
 .playBtn {
   width: 26px;
   height: 26px;
@@ -27,17 +29,87 @@
   transform: scale(1.15);
   background: rgba(225, 29, 72, 0.1);
 }
-.playing {
-  color: var(--color-text);
+.playing { color: var(--color-text); }
+
+/* ── Speed Select ── */
+.speedCol {
+  position: relative;
+  flex-shrink: 0;
 }
 
+.speedSelect {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+.speedSelect:hover {
+  background: rgba(128,128,128,0.08);
+}
+
+.speedLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text);
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.speedArrow {
+  opacity: 0.3;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  min-width: 72px;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 5px 10px;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 5px;
+  font-family: var(--font-family);
+  transition: background 0.1s;
+}
+.dropdownItem:hover {
+  background: rgba(128,128,128,0.08);
+}
+.dropdownActive {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ── Mini Wave ── */
 .miniWave {
-  width: 44px;
-  height: 24px;
+  width: 40px;
+  height: 22px;
   border-radius: 4px;
   flex-shrink: 0;
 }
 
+/* ── Progress ── */
 .progressWrap {
   flex: 1;
   position: relative;
@@ -45,7 +117,7 @@
   display: flex;
   align-items: center;
   cursor: pointer;
-  min-width: 24px;
+  min-width: 20px;
 }
 
 .track {
@@ -63,56 +135,11 @@
   transition: width 0.1s linear;
 }
 
-.rightCol {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
 .time {
   font-size: 0.6rem;
   opacity: 0.45;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.speedWrap {
-  display: flex;
-  gap: 2px;
-  opacity: 0;
-}
-
-.speedVisible {
-  opacity: 1;
-}
-
-.speedHidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.speedBtn {
-  background: none;
-  border: none;
-  color: var(--color-text);
-  opacity: 0.3;
-  font-size: 0.55rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 1px 3px;
-  border-radius: 3px;
-  transition: opacity 0.15s, background 0.15s;
-  line-height: 1;
-  font-family: var(--font-family);
-}
-.speedBtn:hover {
-  opacity: 0.7;
-  background: rgba(128,128,128,0.08);
-}
-.speedActive {
-  opacity: 1 !important;
-  color: var(--color-primary);
+  flex-shrink: 0;
+  min-width: 42px;
 }
