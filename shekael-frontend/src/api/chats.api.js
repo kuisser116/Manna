@@ -48,4 +48,34 @@ export const uploadChatFile = (file) => {
 export const getChatMedia = (conversationId, type = 'all') =>
     chatAPI.get(`/chats/${conversationId}/media?type=${type}`);
 
+// Buscar en el chat
+export const searchChatMessages = (conversationId, q) =>
+    chatAPI.get(`/chats/${conversationId}/search?q=${encodeURIComponent(q)}`);
+
+// Eliminar mensaje
+export const deleteMessage = (messageId) =>
+    chatAPI.delete(`/chats/messages/${messageId}`);
+
+// Reenviar mensaje
+export const forwardMessage = (messageId, toConversationId) =>
+    chatAPI.post(`/chats/messages/${messageId}/forward`, { toConversationId });
+
+// Fijar conversación
+export const togglePinConversation = (conversationId) =>
+    chatAPI.post(`/chats/${conversationId}/pin`);
+
+// Nickname
+export const setChatNickname = (conversationId, nickname) =>
+    chatAPI.put(`/chats/${conversationId}/nickname`, { nickname });
+
+// Fondo de chat
+export const setChatBackground = (conversationId, backgroundUrl) =>
+    chatAPI.put(`/chats/${conversationId}/background`, { backgroundUrl });
+
+// Mensaje fijado
+export const togglePinMessage = (conversationId, messageId) =>
+    chatAPI.post(`/chats/${conversationId}/pin-message`, { messageId });
+export const getPinnedMessage = (conversationId) =>
+    chatAPI.get(`/chats/${conversationId}/pinned-message`);
+
 export default chatAPI;

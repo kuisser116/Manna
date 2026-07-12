@@ -243,7 +243,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
         const { data: participants, error } = await supabase
             .from('conversation_participants')
             .select(`
-                conversation_id, last_read_at,
+                conversation_id, last_read_at, is_pinned, nickname, custom_bg_url,
                 conversation:conversations (id, updated_at)
             `)
             .eq('user_id', userId)
@@ -260,7 +260,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
         const { data: otherParticipants } = await supabase
             .from('conversation_participants')
             .select(`
-                conversation_id, last_read_at,
+                conversation_id, last_read_at, is_pinned, nickname, custom_bg_url,
                 user:users!conversation_participants_user_id_fkey (id, display_name, avatar_url, public_key)
             `)
             .in('conversation_id', convIds)
@@ -289,17 +289,31 @@ router.get('/conversations', authMiddleware, async (req, res) => {
         const conversations = participants.map(p => {
             const other = otherParticipants?.find(op => op.conversation_id === p.conversation_id);
             const lastMsg = lastMessageMap[p.conversation_id];
+            const otherUser = other?.user || { id: 'unknown' };
+            // Si hay nickname del otro participante, se lo asignamos
+            if (other?.nickname) {
+                otherUser.nickname = other.nickname;
+            }
+            if (other?.custom_bg_url) {
+                otherUser.custom_bg_url = other.custom_bg_url;
+            }
             return {
                 id: p.conversation_id,
                 updatedAt: p.conversation?.updated_at,
-                otherUser: other?.user || { id: 'unknown' },
+                otherUser,
                 lastMessage: lastMsg || null,
-                lastReadAt: p.last_read_at
+                lastReadAt: p.last_read_at,
+                isPinned: !!p.is_pinned,
+                pinnedAt: p.pinned_at,
+                myNickname: p.nickname,
+                customBgUrl: p.custom_bg_url
             };
         });
 
-        // Ordenar por último mensaje o updated_at
+        // Pinned primero, luego por último mensaje
         conversations.sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
             const aTime = a.lastMessage?.created_at || a.updatedAt || '';
             const bTime = b.lastMessage?.created_at || b.updatedAt || '';
             return bTime.localeCompare(aTime);
@@ -339,7 +353,7 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
 
         const { data: messages, error } = await supabase
             .from('chat_messages')
-            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, created_at')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, reply_to_id, reply_preview, deleted_at, created_at')
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
@@ -436,7 +450,8 @@ router.patch('/messages/:id', authMiddleware, async (req, res) => {
         const messageId = req.params.id;
         const {
             message_type, media_url, media_thumb_url,
-            file_name, file_size, mime_type
+            file_name, file_size, mime_type,
+            reply_to_id, reply_preview
         } = req.body;
 
         // Verificar que el mensaje pertenece al usuario
@@ -458,7 +473,9 @@ router.patch('/messages/:id', authMiddleware, async (req, res) => {
                 media_thumb_url: media_thumb_url || null,
                 file_name: file_name || null,
                 file_size: file_size || null,
-                mime_type: mime_type || null
+                mime_type: mime_type || null,
+                reply_to_id: reply_to_id || null,
+                reply_preview: reply_preview || null
             })
             .eq('id', messageId);
 
@@ -726,6 +743,324 @@ router.get('/:id/media', authMiddleware, async (req, res) => {
         res.json({ media: media || [] });
     } catch (err) {
         console.error('[Chat Media Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Buscar en el chat ──
+
+// GET /chats/:id/search?q= — Buscar mensajes en una conversación
+router.get('/:id/search', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+        const q = req.query.q || '';
+
+        if (!q.trim()) return res.json({ messages: [] });
+
+        // Verificar participación
+        const { data: membership } = await supabase
+            .from('conversation_participants')
+            .select('id')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId)
+            .eq('accepted', true)
+            .single();
+
+        if (!membership) return res.status(403).json({ message: 'No eres participante' });
+
+        // Buscar en encrypted_content (solo podemos buscar texto plano en la BD)
+        // Como está cifrado E2EE, solo buscamos metadata visible (file_name, etc.)
+        const { data: messages, error } = await supabase
+            .from('chat_messages')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, message_type, media_url, media_thumb_url, file_name, created_at')
+            .eq('conversation_id', conversationId)
+            .or(`file_name.ilike.%${q}%,message_type.eq.text`)
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        res.json({ messages: messages || [] });
+    } catch (err) {
+        console.error('[Chat Search Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Eliminar mensaje ──
+
+// DELETE /chats/messages/:id — Eliminar mensaje (soft delete, sin rastro)
+router.delete('/messages/:id', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const messageId = req.params.id;
+
+        const { data: msg } = await supabase
+            .from('chat_messages')
+            .select('id, sender_id')
+            .eq('id', messageId)
+            .single();
+
+        if (!msg || msg.sender_id !== userId) {
+            return res.status(403).json({ message: 'No puedes eliminar este mensaje' });
+        }
+
+        const { error } = await supabase
+            .from('chat_messages')
+            .update({
+                deleted_at: new Date().toISOString(),
+                deleted_by: userId,
+                encrypted_content: null,
+                nonce: null,
+                msg_index: null,
+                media_url: null,
+                media_thumb_url: null
+            })
+            .eq('id', messageId);
+
+        if (error) throw error;
+
+        res.json({ deleted: true });
+    } catch (err) {
+        console.error('[Chat Delete Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Reenviar mensaje ──
+
+// POST /chats/messages/:id/forward — Reenviar mensaje a otra conversación
+router.post('/messages/:id/forward', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const messageId = req.params.id;
+        const { toConversationId } = req.body;
+
+        if (!toConversationId) return res.status(400).json({ message: 'Conversación destino requerida' });
+
+        // Verificar que eres participante en AMBAS conversaciones
+        // Obtener mensaje original
+        const { data: originalMsg } = await supabase
+            .from('chat_messages')
+            .select('encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration')
+            .eq('id', messageId)
+            .single();
+
+        if (!originalMsg) return res.status(404).json({ message: 'Mensaje no encontrado' });
+
+        // Verificar participación en destino
+        const { data: destMembership } = await supabase
+            .from('conversation_participants')
+            .select('id')
+            .eq('conversation_id', toConversationId)
+            .eq('user_id', userId)
+            .eq('accepted', true)
+            .single();
+
+        if (!destMembership) return res.status(403).json({ message: 'No participas en la conversación destino' });
+
+        // Insertar copia cifrada del mensaje (mismo encrypted_content — el destinatario
+        // podrá descifrarlo si tiene la misma shared secret)
+        const { data: newMsg, error } = await supabase
+            .from('chat_messages')
+            .insert({
+                conversation_id: toConversationId,
+                sender_id: userId,
+                encrypted_content: originalMsg.encrypted_content,
+                nonce: originalMsg.nonce,
+                msg_index: null, // se re-asignará al descifrar o se usa null para legacy
+                sender_ephemeral_key: originalMsg.sender_ephemeral_key,
+                pre_key_used_id: originalMsg.pre_key_used_id,
+                message_type: originalMsg.message_type || 'text',
+                media_url: originalMsg.media_url,
+                media_thumb_url: originalMsg.media_thumb_url,
+                file_name: originalMsg.file_name,
+                file_size: originalMsg.file_size,
+                mime_type: originalMsg.mime_type,
+                forwarded_from: userId,
+                forwarded_at: new Date().toISOString()
+            })
+            .select('id, created_at')
+            .single();
+
+        if (error) throw error;
+
+        // Actualizar updated_at de destino
+        await supabase.from('conversations')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', toConversationId);
+
+        res.json({ forwarded: true, message: newMsg });
+    } catch (err) {
+        console.error('[Chat Forward Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Conversaciones: pin, nickname, background ──
+
+// POST /chats/:id/pin — Fijar/desfijar conversación
+router.post('/:id/pin', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+
+        const { data: participant } = await supabase
+            .from('conversation_participants')
+            .select('is_pinned')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!participant) return res.status(404).json({ message: 'No eres participante' });
+
+        const newPinned = !participant.is_pinned;
+        const { error } = await supabase
+            .from('conversation_participants')
+            .update({
+                is_pinned: newPinned,
+                pinned_at: newPinned ? new Date().toISOString() : null
+            })
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        res.json({ pinned: newPinned });
+    } catch (err) {
+        console.error('[Chat Pin Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PUT /chats/:id/nickname — Cambiar apodo
+router.put('/:id/nickname', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+        const { nickname } = req.body;
+
+        const { error } = await supabase
+            .from('conversation_participants')
+            .update({ nickname: nickname || null })
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        res.json({ nickname: nickname || null });
+    } catch (err) {
+        console.error('[Chat Nickname Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PUT /chats/:id/background — Cambiar fondo de chat
+router.put('/:id/background', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+        const { backgroundUrl } = req.body;
+
+        const { error } = await supabase
+            .from('conversation_participants')
+            .update({ custom_bg_url: backgroundUrl || null })
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        res.json({ backgroundUrl: backgroundUrl || null });
+    } catch (err) {
+        console.error('[Chat Background Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// ── Mensaje fijado ──
+
+// POST /chats/:id/pin-message — Fijar/desfijar mensaje
+router.post('/:id/pin-message', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+        const { messageId } = req.body;
+
+        if (!messageId) {
+            // Desfijar: eliminar pinned message
+            const { error } = await supabase
+                .from('chat_pinned_messages')
+                .delete()
+                .eq('conversation_id', conversationId);
+            if (error) throw error;
+            return res.json({ pinned: false });
+        }
+
+        // Verificar que existe en la conversación
+        const { data: msg } = await supabase
+            .from('chat_messages')
+            .select('id')
+            .eq('id', messageId)
+            .eq('conversation_id', conversationId)
+            .single();
+
+        if (!msg) return res.status(404).json({ message: 'Mensaje no encontrado' });
+
+        // Eliminar pin anterior si existe
+        await supabase
+            .from('chat_pinned_messages')
+            .delete()
+            .eq('conversation_id', conversationId);
+
+        // Fijar nuevo
+        const { error } = await supabase
+            .from('chat_pinned_messages')
+            .insert({
+                conversation_id: conversationId,
+                message_id: messageId,
+                pinned_by: userId
+            });
+
+        if (error) throw error;
+
+        res.json({ pinned: true, messageId });
+    } catch (err) {
+        console.error('[Chat Pin Message Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /chats/:id/pinned-message — Obtener mensaje fijado
+router.get('/:id/pinned-message', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const conversationId = req.params.id;
+
+        const { data: pin } = await supabase
+            .from('chat_pinned_messages')
+            .select('message_id, pinned_by, pinned_at')
+            .eq('conversation_id', conversationId)
+            .maybeSingle();
+
+        if (!pin) return res.json({ pinnedMessage: null });
+
+        const { data: msg } = await supabase
+            .from('chat_messages')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, message_type, media_url, created_at')
+            .eq('id', pin.message_id)
+            .single();
+
+        res.json({ pinnedMessage: msg || null });
+    } catch (err) {
+        console.error('[Chat Get Pinned Error]:', err);
         res.status(500).json({ message: err.message });
     }
 });

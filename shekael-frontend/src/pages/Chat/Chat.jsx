@@ -9,7 +9,10 @@ import {
   getConversations, getMessages, sendMessage,
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
   searchUsers, sendMessageRequest, updatePublicKey,
-  uploadChatFile
+  uploadChatFile,
+  searchChatMessages, deleteMessage, forwardMessage,
+  togglePinConversation, setChatNickname, setChatBackground,
+  togglePinMessage, getPinnedMessage
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
 
@@ -44,6 +47,56 @@ export default function Chat() {
   const [uploading, setUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Reply
+  const [replyTo, setReplyTo] = useState(null);
+
+  // Menú contextual
+  const [contextMenu, setContextMenu] = useState(null);
+
+  // Búsqueda en el chat
+  const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [chatSearchResults, setChatSearchResults] = useState([]);
+  const [showChatSearch, setShowChatSearch] = useState(false);
+
+  // Emoji picker
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef(null);
+
+  // Reenviar
+  const [forwardTarget, setForwardTarget] = useState(null); // message being forwarded
+  const [forwardConvId, setForwardConvId] = useState('');
+
+  // Pin
+  const [pinnedMessage, setPinnedMessage] = useState(null);
+
+  // Nickname edit
+  const [showNicknameEdit, setShowNicknameEdit] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState('');
+
+  // Filtro: 'all' | 'unread'
+  const [convFilter, setConvFilter] = useState('all');
+
+  // Cerrar emoji picker al hacer click fuera
+  useEffect(() => {
+    const handler = (e) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handler);
+    }
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showEmojiPicker]);
+
+  // Cerrar context menu al hacer click fuera
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = () => setContextMenu(null);
+    setTimeout(() => document.addEventListener('click', handler), 0);
+    return () => document.removeEventListener('click', handler);
+  }, [contextMenu]);
 
   // Escape para cerrar lightbox
   useEffect(() => {
@@ -169,6 +222,21 @@ export default function Chat() {
     sharedSecretCache.current[convId] = sharedSecret;
     return sharedSecret;
   }, [crypto]);
+
+  // Filter conversations
+  const filteredConversations = convFilter === 'unread'
+    ? conversations.filter(c => c.lastReadAt && c.lastMessage?.created_at > c.lastReadAt)
+    : conversations;
+
+  // Load pinned message
+  useEffect(() => {
+    if (!activeConv) { setPinnedMessage(null); return; }
+    getPinnedMessage(activeConv.id).then(res => {
+      const pm = res.data.pinnedMessage;
+      if (pm) setPinnedMessage(pm);
+      else setPinnedMessage(null);
+    }).catch(() => setPinnedMessage(null));
+  }, [activeConv]);
 
   // Cargar mensajes al seleccionar conversación
   const selectConversation = useCallback(async (conv) => {
@@ -445,6 +513,12 @@ export default function Chat() {
 
       const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
 
+      // Reply preview for the reply_to field
+      let replyPreview = null;
+      if (replyTo) {
+        replyPreview = (replyTo.decrypted || '').substring(0, 80);
+      }
+
       const res = await sendMessage(
         activeConv.id,
         _sodium.to_base64(ciphertext),
@@ -460,10 +534,28 @@ export default function Chat() {
         fileMeta.mimeType
       );
 
+      // Update the message with reply info via PATCH since sendMessage doesn't support it inline yet
+      if (replyTo && res.data.message?.id) {
+        try {
+          const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
+          const { default: axios } = await import('axios');
+          const API_URL = import.meta.env.VITE_API_URL || location.origin;
+          await axios.patch(`${API_URL}/chats/messages/${res.data.message.id}`, {
+            reply_to_id: replyTo.id,
+            reply_preview: replyPreview
+          }, { headers: { Authorization: `Bearer ${token}` } });
+          res.data.message.reply_to_id = replyTo.id;
+          res.data.message.reply_preview = replyPreview;
+        } catch (patchErr) {
+          console.warn('Could not add reply info:', patchErr);
+        }
+      }
+
       const displayText = hasFile ? (inputText || '') : inputText;
       setMessages(prev => [...prev, { ...res.data.message, decrypted: displayText }]);
       setInputText('');
       handleRemoveFile();
+      cancelReply();
       scrollToBottom();
     } catch (err) {
       console.error('Error sending:', err);
@@ -533,6 +625,124 @@ export default function Chat() {
   // Calcular no leídos
   const unreadCount = 0; // Se puede implementar después con last_read_at
 
+  // ── Reply ──
+
+  const startReply = (msg) => {
+    setReplyTo(msg);
+    setInputText('');
+    if (fileInputRef.current) fileInputRef.current.focus();
+  };
+
+  const cancelReply = () => setReplyTo(null);
+
+  // ── Context Menu ──
+
+  const handleContextMenu = (e, msg) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, message: msg });
+  };
+
+  // ── Eliminar ──
+
+  const handleDeleteMessage = async (msgId) => {
+    setContextMenu(null);
+    try {
+      await deleteMessage(msgId);
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (err) {
+      console.error('Error deleting message:', err);
+    }
+  };
+
+  // ── Reenviar ──
+
+  const startForward = (msg) => {
+    setContextMenu(null);
+    setForwardTarget(msg);
+    setForwardConvId('');
+  };
+
+  const handleForward = async () => {
+    if (!forwardTarget || !forwardConvId) return;
+    try {
+      await forwardMessage(forwardTarget.id, forwardConvId);
+      setForwardTarget(null);
+    } catch (err) {
+      console.error('Error forwarding:', err);
+      alert('Error al reenviar mensaje');
+    }
+  };
+
+  // ── Pin conversación ──
+
+  const handlePinConv = async (convId) => {
+    try {
+      const res = await togglePinConversation(convId);
+      setConversations(prev => prev.map(c =>
+        c.id === convId ? { ...c, isPinned: res.data.pinned } : c
+      ));
+    } catch (err) {
+      console.error('Error pinning conversation:', err);
+    }
+  };
+
+  // ── Pin mensaje ──
+
+  const handlePinMsg = async (msgId) => {
+    setContextMenu(null);
+    try {
+      await togglePinMessage(activeConv.id, msgId);
+      const res = await getPinnedMessage(activeConv.id);
+      setPinnedMessage(res.data.pinnedMessage);
+    } catch (err) {
+      console.error('Error pinning message:', err);
+    }
+  };
+
+  const handleUnpinMsg = async () => {
+    try {
+      await togglePinMessage(activeConv.id, null);
+      setPinnedMessage(null);
+    } catch (err) {
+      console.error('Error unpinning message:', err);
+    }
+  };
+
+  // ── Nickname ──
+
+  const handleNicknameSave = async () => {
+    if (!activeConv) return;
+    try {
+      await setChatNickname(activeConv.id, nicknameInput);
+      setConversations(prev => prev.map(c =>
+        c.id === activeConv.id ? { ...c, myNickname: nicknameInput } : c
+      ));
+      setShowNicknameEdit(false);
+    } catch (err) {
+      console.error('Error setting nickname:', err);
+    }
+  };
+
+  // ── Buscar en el chat ──
+
+  const handleChatSearch = async (q) => {
+    setChatSearchQuery(q);
+    if (!activeConv || q.length < 2) { setChatSearchResults([]); return; }
+    try {
+      const res = await searchChatMessages(activeConv.id, q);
+      setChatSearchResults(res.data.messages || []);
+    } catch { setChatSearchResults([]); }
+  };
+
+  // ── Insertar emoji ──
+
+  const insertEmoji = (emoji) => {
+    setInputText(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const EMOJIS = ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😋','😎','😍','🥰','😘','😗','😙','😚','🙂','🤗','🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','🤐','😯','😪','😫','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🤑','😲','☹️','🙁','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','😡','😠','🤬','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','💕','💞','💗','💖','✨','🔥','⭐','🌟','💯','🎉','🎊','🎈','❤️‍🔥','💋','💀','👋','✋','🖐️','✌️','🤞','👍','👎','👊','✊','🤛','🤜','👏','🙌','🤲','🤝','🙏','✍️','💅','👀','🗣️','👤','👥','💬','💭','🫂','🏆','🥇','🥈','🥉'];
+
   // ── Adjuntar archivos ──
 
   const handleFileSelect = (e) => {
@@ -570,6 +780,20 @@ export default function Chat() {
       <div className={styles.sidePanel}>
         <div className={styles.sideHeader}>
           <h2>Chats</h2>
+          <div className={styles.filterTabs}>
+            <button
+              className={`${styles.filterTab} ${convFilter === 'all' ? styles.filterActive : ''}`}
+              onClick={() => setConvFilter('all')}
+            >
+              Todos
+            </button>
+            <button
+              className={`${styles.filterTab} ${convFilter === 'unread' ? styles.filterActive : ''}`}
+              onClick={() => setConvFilter('unread')}
+            >
+              No leídos
+            </button>
+          </div>
           <div className={styles.headerActions}>
             <button
               className={`${styles.requestBtn} ${requests.length > 0 ? styles.hasRequests : ''}`}
@@ -706,34 +930,50 @@ export default function Chat() {
                 </button>
               </p>
             </div>
-          ) : conversations.length === 0 ? null : (
-            conversations.map(conv => (
-              <div
-                key={conv.id}
-                className={`${styles.convItem} ${activeConv?.id === conv.id ? styles.activeConv : ''}`}
-                onClick={() => selectConversation(conv)}
-              >
-                <div className={styles.avatarSmall}>
-                  {conv.otherUser?.avatar_url ? (
-                    <img src={conv.otherUser.avatar_url} alt="" />
-                  ) : (
-                    <div className={styles.avatarPlaceholder}>
-                      {conv.otherUser?.display_name?.[0] || '?'}
-                    </div>
-                  )}
+          ) : filteredConversations.length === 0 ? (
+            <div className={styles.noResults}>
+              {convFilter === 'unread' ? 'No hay chats no leídos' : 'Sin conversaciones'}
+            </div>
+          ) : (
+            filteredConversations.map(conv => {
+              const displayName = conv.myNickname || conv.otherUser?.display_name || 'Usuario';
+              return (
+                <div
+                  key={conv.id}
+                  className={`${styles.convItem} ${activeConv?.id === conv.id ? styles.activeConv : ''} ${conv.isPinned ? styles.pinnedConv : ''}`}
+                  onClick={() => selectConversation(conv)}
+                >
+                  <div className={styles.avatarSmall}>
+                    {conv.otherUser?.avatar_url ? (
+                      <img src={conv.otherUser.avatar_url} alt="" />
+                    ) : (
+                      <div className={styles.avatarPlaceholder}>
+                        {displayName[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.convInfo}>
+                    <span className={styles.convName}>
+                      {displayName}
+                    </span>
+                    <span className={styles.convPreview}>
+                      {conv.lastMessage?.decrypted
+                        ? conv.lastMessage.decrypted.substring(0, 40)
+                        : 'Mensaje cifrado'}
+                    </span>
+                  </div>
+                  <button
+                    className={styles.pinBtn}
+                    onClick={(e) => { e.stopPropagation(); handlePinConv(conv.id); }}
+                    title={conv.isPinned ? 'Desfijar' : 'Fijar'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={conv.isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+                    </svg>
+                  </button>
                 </div>
-                <div className={styles.convInfo}>
-                  <span className={styles.convName}>
-                    {conv.otherUser?.display_name || 'Usuario'}
-                  </span>
-                  <span className={styles.convPreview}>
-                    {conv.lastMessage?.decrypted
-                      ? conv.lastMessage.decrypted.substring(0, 40)
-                      : 'Mensaje cifrado'}
-                  </span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -760,10 +1000,81 @@ export default function Chat() {
                     </div>
                   )}
                 </div>
-                <span>{activeConv.otherUser?.display_name || 'Usuario'}</span>
+                <div className={styles.chatHeaderInfo}>
+                  <span
+                    className={styles.chatHeaderName}
+                    onClick={() => {
+                      setNicknameInput(activeConv.myNickname || '');
+                      setShowNicknameEdit(true);
+                    }}
+                    title="Cambiar apodo"
+                  >
+                    {activeConv.myNickname || activeConv.otherUser?.display_name || 'Usuario'}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.editIcon}>
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </span>
+                </div>
               </div>
-
+              <div className={styles.chatHeaderActions}>
+                <button
+                  className={styles.chatActionBtn}
+                  onClick={() => setShowChatSearch(!showChatSearch)}
+                  title="Buscar en el chat"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </button>
+              </div>
             </div>
+
+            {/* Pinned message banner */}
+            {pinnedMessage && (
+              <div className={styles.pinnedBanner}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+                </svg>
+                <span className={styles.pinnedText}>Mensaje fijado</span>
+                <button className={styles.pinnedClose} onClick={handleUnpinMsg} title="Desfijar">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {/* Chat search */}
+            {showChatSearch && (
+              <div className={styles.chatSearchPanel}>
+                <input
+                  type="text"
+                  placeholder="Buscar en esta conversación..."
+                  autoFocus
+                  className={styles.chatSearchInput}
+                  value={chatSearchQuery}
+                  onChange={(e) => handleChatSearch(e.target.value)}
+                />
+                {chatSearchQuery.length >= 2 && (
+                  <div className={styles.chatSearchResults}>
+                    {chatSearchResults.map(m => (
+                      <div key={m.id} className={styles.chatSearchItem}>
+                        <span className={styles.chatSearchContent}>
+                          {(m.file_name || m.message_type || 'texto cifrado').substring(0, 50)}
+                        </span>
+                        <span className={styles.chatSearchDate}>
+                          {new Date(m.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                    {chatSearchResults.length === 0 && (
+                      <div className={styles.noResults}>Sin resultados</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {!keysReady && (
               <div className={styles.keysWarning}>
@@ -778,15 +1089,42 @@ export default function Chat() {
                   <p className={styles.emptyHint}>Envía el primer mensaje</p>
                 </div>
               ) : (
-                messages.map(msg => {
+                messages.filter(m => !m.deleted_at).map(msg => {
                   const isImage = msg.message_type === 'image' || msg.media_url;
                   const isFile = msg.message_type === 'file';
                   const msgText = msg.decrypted || (isImage || isFile ? '' : '[Cifrado]');
+
+                  // Encontrar replied message para mostrar preview
+                  const repliedMsg = msg.reply_to_id
+                    ? messages.find(m => m.id === msg.reply_to_id)
+                    : null;
+
                   return (
                     <div
                       key={msg.id}
                       className={`${styles.message} ${msg.sender_id === user?.id ? styles.ownMessage : styles.otherMessage}`}
+                      onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
+                      {/* Reply indicator */}
+                      {msg.reply_to_id && (
+                        <div
+                          className={styles.replyIndicator}
+                          onClick={() => {
+                            const el = document.getElementById(`msg-${msg.reply_to_id}`);
+                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                        >
+                          <div className={styles.replyBar} />
+                          <div className={styles.replyContent}>
+                            <span className={styles.replyName}>
+                              {repliedMsg?.sender_id === user?.id ? 'Tú' : 'Respondiendo'}
+                            </span>
+                            <span className={styles.replyText}>
+                              {msg.reply_preview?.substring(0, 60) || 'Mensaje original'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       {/* Imagen */}
                       {isImage && msg.media_url && (
                         <div
@@ -820,7 +1158,7 @@ export default function Chat() {
                       )}
                       {/* Texto */}
                       {msgText && (
-                        <div className={styles.messageBubble}>
+                        <div className={styles.messageBubble} id={`msg-${msg.id}`}>
                           {msgText}
                         </div>
                       )}
@@ -837,6 +1175,23 @@ export default function Chat() {
             </div>
 
             <div className={styles.inputArea}>
+              {/* Reply preview */}
+              {replyTo && (
+                <div className={styles.replyPreview}>
+                  <div className={styles.replyPreviewBar} />
+                  <div className={styles.replyPreviewContent}>
+                    <span className={styles.replyPreviewLabel}>Respondiendo</span>
+                    <span className={styles.replyPreviewText}>
+                      {(replyTo.decrypted || '').substring(0, 60)}
+                    </span>
+                  </div>
+                  <button className={styles.removeFileBtn} onClick={cancelReply}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
               {/* Preview de archivo seleccionado */}
               {selectedFile && (
                 <div className={styles.filePreviewStrip}>
@@ -881,9 +1236,38 @@ export default function Chat() {
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
+                <button
+                  className={styles.emojiBtn}
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  disabled={!keysReady}
+                  title="Emoji"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                  </svg>
+                </button>
+                {/* Emoji picker popover */}
+                {showEmojiPicker && (
+                  <div className={styles.emojiPicker} ref={emojiPickerRef}>
+                    <div className={styles.emojiGrid}>
+                      {EMOJIS.map((e, i) => (
+                        <button
+                          key={i}
+                          className={styles.emojiItem}
+                          onClick={() => insertEmoji(e)}
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <input
                   type="text"
-                  placeholder={selectedFile ? 'Agrega un pie de foto...' : 'Escribe un mensaje...'}
+                  placeholder={selectedFile ? 'Agrega un pie de foto...' : replyTo ? 'Escribe una respuesta...' : 'Escribe un mensaje...'}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -908,6 +1292,109 @@ export default function Chat() {
           </>
         )}
       </div>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          className={styles.contextMenu}
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button className={styles.contextMenuItem} onClick={() => { startReply(contextMenu.message); setContextMenu(null); }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Responder
+          </button>
+          <button className={styles.contextMenuItem} onClick={() => startForward(contextMenu.message)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+            Reenviar
+          </button>
+          {contextMenu.message.sender_id === user?.id && (
+            <>
+              <button className={styles.contextMenuItem} onClick={() => handlePinMsg(contextMenu.message.id)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+                </svg>
+                Fijar mensaje
+              </button>
+              <button className={`${styles.contextMenuItem} ${styles.dangerItem}`} onClick={() => handleDeleteMessage(contextMenu.message.id)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                Eliminar
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Nickname edit modal */}
+      {showNicknameEdit && (
+        <div className={styles.modalOverlay} onClick={() => setShowNicknameEdit(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <h3>Apodo para este chat</h3>
+            <input
+              autoFocus
+              className={styles.modalInput}
+              placeholder="Escribe un apodo..."
+              value={nicknameInput}
+              onChange={e => setNicknameInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleNicknameSave(); }}
+            />
+            <div className={styles.modalActions}>
+              <button className={styles.modalCancelBtn} onClick={() => setShowNicknameEdit(false)}>Cancelar</button>
+              <button className={styles.modalSaveBtn} onClick={handleNicknameSave}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forward picker modal */}
+      {forwardTarget && (
+        <div className={styles.modalOverlay} onClick={() => setForwardTarget(null)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <h3>Reenviar mensaje</h3>
+            <p className={styles.forwardSelectLabel}>Selecciona una conversación:</p>
+            <div className={styles.forwardConvList}>
+              {conversations.filter(c => c.id !== activeConv?.id).map(conv => {
+                const dName = conv.myNickname || conv.otherUser?.display_name || 'Usuario';
+                return (
+                  <div
+                    key={conv.id}
+                    className={`${styles.forwardConvItem} ${forwardConvId === conv.id ? styles.forwardConvActive : ''}`}
+                    onClick={() => setForwardConvId(conv.id)}
+                  >
+                    <div className={styles.avatarSmall}>
+                      {conv.otherUser?.avatar_url ? (
+                        <img src={conv.otherUser.avatar_url} alt="" />
+                      ) : (
+                        <div className={styles.avatarPlaceholder}>
+                          {dName[0] || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <span>{dName}</span>
+                  </div>
+                );
+              })}
+              {conversations.length <= 1 && (
+                <p className={styles.noResults}>No hay otras conversaciones</p>
+              )}
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.modalCancelBtn} onClick={() => setForwardTarget(null)}>Cancelar</button>
+              <button className={styles.modalSaveBtn} onClick={handleForward} disabled={!forwardConvId}>
+                Reenviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox para imágenes */}
       {lightboxUrl && (
