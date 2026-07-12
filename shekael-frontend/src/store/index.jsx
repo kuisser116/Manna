@@ -145,17 +145,25 @@ const useStore = create((set, get) => ({
     return { privacy: newPrivacy };
   }),
 
-  // â”€â”€ Tema / Dark Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  isDarkMode: localStorage.getItem('Shekael_theme') === 'dark',
-  toggleDarkMode: () => set((state) => {
-    const isDark = !state.isDarkMode;
-    localStorage.setItem('Shekael_theme', isDark ? 'dark' : 'light');
-    if (isDark) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
+  // â”€â”€ Tema / Theme Cycling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  themeName: (() => {
+    const stored = localStorage.getItem('Shekael_theme');
+    const valid = ['light', 'everforest', 'navy', 'catppuccin', 'tokyo-night'];
+    if (stored && valid.includes(stored)) return stored;
+    if (stored === 'dark') return 'everforest';
+    return 'light';
+  })(),
+  cycleTheme: () => set((state) => {
+    const themes = ['light', 'everforest', 'navy', 'catppuccin', 'tokyo-night'];
+    const currentIdx = themes.indexOf(state.themeName);
+    const nextTheme = themes[(currentIdx + 1) % themes.length];
+    localStorage.setItem('Shekael_theme', nextTheme);
+    if (nextTheme === 'light') {
       document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', nextTheme);
     }
-    return { isDarkMode: isDark };
+    return { themeName: nextTheme };
   }),
 
   // â”€â”€ Misiones (Quests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

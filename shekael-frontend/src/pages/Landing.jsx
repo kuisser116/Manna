@@ -2,7 +2,7 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ShieldCheck, Compass, Moon, Sun } from 'lucide-react';
+import { Sparkles, ShieldCheck, Compass, Palette } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useStore from '../store';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -23,7 +23,7 @@ function LandingInner() {
   const { loginWithGoogle } = useAuth();
   const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
   // Términos se aceptan en /terminos después del login, no aquí
-  const { isDarkMode, toggleDarkMode } = useStore();
+  const { themeName, cycleTheme } = useStore();
   const recaptchaLoaded = useRef(false);
 
   // Redirigir a términos si hay token (salvo que se haya solicitado ver la landing)
@@ -48,12 +48,12 @@ function LandingInner() {
   }, []);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
+    if (themeName === 'light') {
       document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', themeName);
     }
-  }, [isDarkMode]);
+  }, [themeName]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     showLoading('Entrando a Shekael...', 'Verificando seguridad');
@@ -80,8 +80,8 @@ function LandingInner() {
   return (
     <div className={styles.page} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       {/* ─── Theme Toggle ─── */}
-      <button className={styles.themeToggle} onClick={toggleDarkMode} aria-label="Cambiar tema">
-        {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+      <button className={styles.themeToggle} onClick={cycleTheme} aria-label="Cambiar tema" title={`Tema: ${themeName}`}>
+        <Palette size={18} />
       </button>
 
       {/* ─── HERO ─── */}

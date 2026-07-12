@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Bell, Menu, ArrowLeft, QrCode, Sun, Moon } from "lucide-react";
+import { Search, Bell, Menu, ArrowLeft, QrCode, Palette } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
@@ -23,7 +23,7 @@ const FILTERS = [
 
 export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) {
   const { t } = useTranslation();
-  const { user, setMyQRModalOpen, isDarkMode, toggleDarkMode, activeFilter, setActiveFilter } = useStore();
+  const { user, setMyQRModalOpen, themeName, cycleTheme, activeFilter, setActiveFilter } = useStore();
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -181,10 +181,11 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
 
           <button
             className={styles.iconBtn}
-            aria-label="Toggle Theme"
-            onClick={toggleDarkMode}
+            aria-label="Cambiar tema"
+            onClick={cycleTheme}
+            title={`Tema: ${themeName}`}
           >
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            <Palette size={20} />
           </button>
 
           <NotificationsDropdown />

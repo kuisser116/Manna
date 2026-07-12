@@ -156,9 +156,9 @@ function App() {
 
   useEffect(() => {
     initAuth().finally(() => setAuthLoading(false));
-    const isDark = useStore.getState().isDarkMode;
-    if (isDark) {
-      document.documentElement.setAttribute('data-theme', 'dark');
+    const t = useStore.getState().themeName;
+    if (t !== 'light') {
+      document.documentElement.setAttribute('data-theme', t);
     }
   }, [initAuth]);
 
