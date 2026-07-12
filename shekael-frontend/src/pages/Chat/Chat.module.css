@@ -480,9 +480,6 @@
 /* ── Chat Header ── */
 
 .chatHeader {
-  position: sticky;
-  top: 0;
-  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -651,9 +648,6 @@
   color: var(--color-text-muted);
   cursor: pointer;
   transition: background var(--transition);
-  position: sticky;
-  top: 62px;
-  z-index: 9;
 }
 
 .pinnedBanner:hover {
@@ -1093,12 +1087,17 @@
 
 /* ── Messages ── */
 
+.stickyGroup {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .messagesList {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   padding: 0 0 16px;

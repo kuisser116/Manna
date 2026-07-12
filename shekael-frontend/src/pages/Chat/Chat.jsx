@@ -1085,6 +1085,7 @@ export default function Chat() {
         ) : (
           <>
             <div className={styles.messagesList} ref={msgListRef}>
+              <div className={styles.stickyGroup}>
               <div className={styles.chatHeader}>
               <div className={styles.chatHeaderUser}>
                 <div className={styles.avatarSmall}>
@@ -1206,6 +1207,7 @@ export default function Chat() {
                 <span>⚠️ Generando llaves de cifrado...</span>
               </div>
             )}
+            </div>
               <div className={styles.messagesContent}>
               {messages.length === 0 ? (
                 <div className={styles.noMessages}>
