@@ -238,9 +238,8 @@
 .requestItem {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 6px;
+  gap: 12px;
+  padding: 14px 8px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -251,57 +250,81 @@
 .requestUser {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .requestUserName {
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 600;
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .requestActions {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .acceptBtn,
-.rejectBtn,
-.blockBtn {
-  padding: 4px 10px;
-  border-radius: var(--border-radius-sm, 6px);
+.rejectBtn {
+  padding: 7px 16px;
+  border-radius: var(--border-radius-full);
   border: none;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-family: var(--font-family);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .acceptBtn {
-  background: var(--color-success, #10b981);
+  background: var(--color-primary);
   color: var(--color-white);
 }
-.acceptBtn:hover { opacity: 0.85; }
+.acceptBtn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);
+}
 
 .rejectBtn {
-  background: var(--color-danger, #ef4444);
-  color: var(--color-white);
-}
-.rejectBtn:hover { opacity: 0.85; }
-
-.blockBtn {
   background: transparent;
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
 }
-.blockBtn:hover { background: rgba(239, 68, 68, 0.1); color: var(--color-danger); }
+.rejectBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.blockBtn {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-family: var(--font-family);
+  font-weight: 500;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: transparent;
+}
+
+.blockBtn:hover {
+  color: var(--color-danger);
+  text-decoration-color: currentColor;
+}
 
 /* ── Conversaciones ── */
 
