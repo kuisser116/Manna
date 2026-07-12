@@ -15,7 +15,9 @@ export default function AudioRecorder({ onSend, onClose }) {
   const audioCtxRef = useRef(null);
   const waveHistoryRef = useRef([]);
   const runningRef = useRef(false); // controls rAF loop, not state
-  const maxSamples = 200;
+  const maxSamples = 80;
+  const lastSampleRef = useRef(0);
+  const pausedRef = useRef(false);
 
   // Size canvas to its container using a synchronous layout effect
   useEffect(() => {
@@ -78,10 +80,14 @@ export default function AudioRecorder({ onSend, onClose }) {
       }
       const avg = Math.min(sum / dataArray.length / 128, 1);
 
-      // Rolling history (max 200 samples)
-      waveHistoryRef.current.push(avg);
-      if (waveHistoryRef.current.length > maxSamples) {
-        waveHistoryRef.current.shift();
+      // Rolling history — throttle to ~150ms per sample
+      const now = Date.now();
+      if (now - lastSampleRef.current > 150) {
+        lastSampleRef.current = now;
+        waveHistoryRef.current.push(avg);
+        if (waveHistoryRef.current.length > maxSamples) {
+          waveHistoryRef.current.shift();
+        }
       }
 
       const history = waveHistoryRef.current;
@@ -192,7 +198,9 @@ export default function AudioRecorder({ onSend, onClose }) {
       runningRef.current = true;
       drawWaveform();
 
-      timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+      timerRef.current = setInterval(() => {
+        if (!pausedRef.current) setDuration(d => d + 1);
+      }, 1000);
     } catch (e) {
       console.warn('Audio error:', e);
       alert('No se pudo acceder al microfono.');
@@ -206,6 +214,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       recorderRef.current.stop();
       if (audioCtxRef.current) audioCtxRef.current.suspend();
       if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      pausedRef.current = true;
       runningRef.current = false;
       if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
       setState('paused');
@@ -216,10 +225,13 @@ export default function AudioRecorder({ onSend, onClose }) {
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.start();
       if (audioCtxRef.current) audioCtxRef.current.resume();
+      pausedRef.current = false;
       setState('recording');
       runningRef.current = true;
       drawWaveform();
-      timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+      timerRef.current = setInterval(() => {
+        if (!pausedRef.current) setDuration(d => d + 1);
+      }, 1000);
     }
   };
 
