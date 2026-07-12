@@ -26,11 +26,15 @@
 }
 
 .sideHeader {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sideHeaderTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 10px;
 }
 
 .sideHeader h2 {
@@ -496,10 +500,8 @@
 
 .filterTabs {
   display: flex;
-  gap: 2px;
-  background: var(--color-surface-2);
-  border-radius: var(--border-radius-sm, 8px);
-  padding: 2px;
+  gap: 4px;
+  align-self: flex-start;
 }
 
 .filterTab {

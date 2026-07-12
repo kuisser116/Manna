@@ -820,22 +820,9 @@ export default function Chat() {
       {/* Panel izquierdo: conversaciones */}
       <div className={styles.sidePanel}>
         <div className={styles.sideHeader}>
-          <h2>Chats</h2>
-          <div className={styles.filterTabs}>
-            <button
-              className={`${styles.filterTab} ${convFilter === 'all' ? styles.filterActive : ''}`}
-              onClick={() => setConvFilter('all')}
-            >
-              Todos
-            </button>
-            <button
-              className={`${styles.filterTab} ${convFilter === 'unread' ? styles.filterActive : ''}`}
-              onClick={() => setConvFilter('unread')}
-            >
-              No leídos
-            </button>
-          </div>
-          <div className={styles.headerActions}>
+          <div className={styles.sideHeaderTop}>
+            <h2>Chats</h2>
+            <div className={styles.headerActions}>
             <button
               className={`${styles.requestBtn} ${requests.length > 0 ? styles.hasRequests : ''}`}
               onClick={() => setShowRequests(!showRequests)}
@@ -866,6 +853,21 @@ export default function Chat() {
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
+            </button>
+          </div>
+        </div>
+          <div className={styles.filterTabs}>
+            <button
+              className={`${styles.filterTab} ${convFilter === 'all' ? styles.filterActive : ''}`}
+              onClick={() => setConvFilter('all')}
+            >
+              Todos
+            </button>
+            <button
+              className={`${styles.filterTab} ${convFilter === 'unread' ? styles.filterActive : ''}`}
+              onClick={() => setConvFilter('unread')}
+            >
+              No leídos
             </button>
           </div>
         </div>

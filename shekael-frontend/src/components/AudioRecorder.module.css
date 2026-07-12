@@ -1,5 +1,6 @@
 .inlineBar {
-  padding: 6px 8px;
+  padding: 3px 8px;
+  margin-top: -12px;
   animation: slideIn 0.25s ease-out;
 }
 
@@ -16,7 +17,7 @@
 
 .waveWrap {
   flex: 1;
-  height: 72px;
+  height: 40px;
   min-width: 80px;
   overflow: hidden;
 }
