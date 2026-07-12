@@ -1083,7 +1083,8 @@ export default function Chat() {
           </div>
         ) : (
           <>
-            <div className={styles.chatHeader}>
+            <div className={styles.messagesList} ref={msgListRef}>
+              <div className={styles.chatHeader}>
               <div className={styles.chatHeaderUser}>
                 <div className={styles.avatarSmall}>
                   {activeConv.otherUser?.avatar_url ? (
@@ -1204,8 +1205,7 @@ export default function Chat() {
                 <span>⚠️ Generando llaves de cifrado...</span>
               </div>
             )}
-
-            <div className={styles.messagesList} ref={msgListRef}>
+              <div className={styles.messagesContent}>
               {messages.length === 0 ? (
                 <div className={styles.noMessages}>
                   <p>No hay mensajes aún</p>
@@ -1326,6 +1326,7 @@ export default function Chat() {
                 })
               )}
               <div ref={messagesEndRef} />
+            </div>
             </div>
 
             <div className={styles.inputArea}>
