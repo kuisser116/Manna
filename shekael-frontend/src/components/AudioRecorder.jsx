@@ -12,41 +12,50 @@ export default function AudioRecorder({ onSend, onClose }) {
   const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
   const analyserRef = useRef(null);
+  const ctxRef = useRef(null);
 
   useEffect(() => {
     startRecording();
     return () => {
+      stopTracks();
       if (timerRef.current) clearInterval(timerRef.current);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-      if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     };
   }, []);
+
+  const stopTracks = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+  };
 
   const drawWaveform = () => {
     const canvas = canvasRef.current;
     if (!canvas || !analyserRef.current) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = ctxRef.current || canvas.getContext('2d');
+    ctxRef.current = ctx;
     const { width, height } = canvas;
     const bufferLength = analyserRef.current.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     analyserRef.current.getByteTimeDomainData(dataArray);
 
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = 'rgba(225, 29, 72, 0.08)';
-    ctx.fillRect(0, 0, width, height);
 
-    const barCount = Math.min(40, Math.floor(width / 8));
-    const barWidth = width / barCount;
+    const barCount = 36;
+    const barWidth = (width - 20) / barCount;
+    const gap = 3;
     const centerY = height / 2;
-    const maxHeight = height * 0.8;
+    const maxH = height * 0.75;
 
     for (let i = 0; i < barCount; i++) {
       const idx = Math.floor((i / barCount) * bufferLength);
-      const value = dataArray[idx] / 128.0;
-      const barH = Math.min((value - 1) * maxHeight, maxHeight / 2);
+      const value = (dataArray[idx] - 128) / 128;
+      const barH = Math.min(Math.abs(value) * maxH, maxH / 2);
 
-      const x = i * barWidth + 2;
+      if (barH < 2) continue;
+
+      const x = 10 + i * (barWidth + gap);
       const gradient = ctx.createLinearGradient(0, centerY - barH, 0, centerY + barH);
       gradient.addColorStop(0, '#e11d48');
       gradient.addColorStop(0.5, '#f43f5e');
@@ -54,7 +63,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       ctx.fillStyle = gradient;
 
       ctx.beginPath();
-      ctx.roundRect(x, centerY - barH, barWidth - 4, barH * 2, 3);
+      ctx.roundRect(x, centerY - barH, barWidth, barH * 2, barWidth / 2);
       ctx.fill();
     }
 
@@ -65,12 +74,13 @@ export default function AudioRecorder({ onSend, onClose }) {
     try {
       const s = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = s;
+
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
       const mr = new MediaRecorder(s, { mimeType: mime });
       recorderRef.current = mr;
       chunksRef.current = [];
 
-      // Setup analyser for waveform
+      // Audio context for waveform
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(s);
       const analyser = audioCtx.createAnalyser();
@@ -78,37 +88,55 @@ export default function AudioRecorder({ onSend, onClose }) {
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
 
+      // Start recording (without timeslice - ondataavailable fires on stop)
       mr.start();
       setState('recording');
       setDuration(0);
-
-      // Start waveform animation
       drawWaveform();
 
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
     } catch (e) {
       console.warn('Audio access denied:', e);
+      alert('No se pudo acceder al microfono. Permite acceso y vuelve a intentar.');
       onClose?.();
     }
   };
 
   const handleSend = async () => {
-    if (chunksRef.current.length === 0) return;
-    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-
-    setState('sending');
-    await new Promise(r => setTimeout(r, 100));
-
-    const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
-    const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm;codecs=opus' });
-
     try {
+      // 1. Stop the recorder FIRST - this triggers ondataavailable with all data
+      if (recorderRef.current?.state === 'recording') {
+        recorderRef.current.stop();
+      }
+
+      // 2. Stop animation and timer
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      stopTracks();
+
+      // 3. Wait briefly for final ondataavailable to be processed
+      await new Promise(r => setTimeout(r, 50));
+
+      // 4. Check we have data
+      if (chunksRef.current.length === 0) {
+        alert('No se grabo ningun audio. Intenta de nuevo.');
+        onClose?.();
+        return;
+      }
+
+      setState('sending');
+
+      // 5. Create blob and upload
+      const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
+      const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm;codecs=opus' });
+
       const { data } = await uploadChatFile(file);
+
+      // 6. Call onSend (encrypt + send message)
       onSend?.({
         url: data.url,
         fileName: data.name,
@@ -118,7 +146,8 @@ export default function AudioRecorder({ onSend, onClose }) {
       });
       onClose?.();
     } catch (e) {
-      console.warn('Audio upload err:', e);
+      console.warn('Audio send error:', e);
+      alert('Error al enviar audio: ' + (e.message || e));
       setState('recording');
     }
   };
@@ -127,15 +156,11 @@ export default function AudioRecorder({ onSend, onClose }) {
     if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     if (timerRef.current) clearInterval(timerRef.current);
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    stopTracks();
     onClose?.();
   };
 
-  const formatTime = (sec) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+  const formatTime = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
   return (
     <div className={styles.overlay} onClick={handleCancel}>
@@ -161,7 +186,7 @@ export default function AudioRecorder({ onSend, onClose }) {
         {state === 'starting' && (
           <div className={styles.starting}>
             <span className={styles.spinner}></span>
-            Iniciando grabacion...
+            Iniciando...
           </div>
         )}
         {state === 'sending' && (
