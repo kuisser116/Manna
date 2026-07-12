@@ -205,12 +205,22 @@ export default function Chat() {
           pdb.close();
 
           if (myPreKey) {
-            sharedSecret = await ratchet.recoverFromPreKey(
-              conv.id,
-              myPreKey.privateKey,
-              x3dhMsg.sender_ephemeral_key,
-              otherUser?.public_key || x3dhMsg.sender_id // fallback
-            );
+            // Necesitamos la identity key del remitente
+            let senderPubKey = otherUser?.public_key;
+            if (!senderPubKey) {
+              try {
+                const senderRes = await getUserProfile(x3dhMsg.sender_id);
+                senderPubKey = (senderRes.data?.user || senderRes.data)?.public_key;
+              } catch {}
+            }
+            if (senderPubKey) {
+              sharedSecret = await ratchet.recoverFromPreKey(
+                conv.id,
+                myPreKey.privateKey,
+                x3dhMsg.sender_ephemeral_key,
+                senderPubKey
+              );
+            }
           }
         } catch (e) {
           console.warn('X3DH recovery failed:', e);

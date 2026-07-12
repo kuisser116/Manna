@@ -29,6 +29,8 @@ import CommentModal from './components/CommentModal/CommentModal';
 import QRScanner from './components/QRScanner/QRScanner';
 import MyQRModal from './components/MyQRModal/MyQRModal';
 import WalletWidget from './components/WalletWidget/WalletWidget';
+import LockScreen from './components/LockScreen/LockScreen';
+import useSessionLock from './hooks/useSessionLock';
 
 
 function ProtectedRoute({ children, authLoading }) {
@@ -53,6 +55,7 @@ function AppLayout({ children }) {
   const [qrScannerData, setQrScannerData] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
   const location = useLocation();
+  const sessionLock = useSessionLock();
 
   const { videoMode, qrScannerOpen, setQrScannerOpen, myQRModalOpen, setMyQRModalOpen } = useStore();
   const isTheaterMode = videoMode === 'theater';
@@ -106,6 +109,12 @@ function AppLayout({ children }) {
 
   return (
     <>
+      {sessionLock.locked && (
+        <LockScreen
+          onUnlock={sessionLock.unlock}
+          mode={localStorage.getItem('shekael_pin_hash') ? 'lock' : 'setup'}
+        />
+      )}
       <TopBar onToggleSidebar={handleToggleSidebar} sidebarWidth={isMobile ? 0 : navWidth} isMobile={isMobile} />
       <Sidebar collapsed={actualSidebarCollapsed} hidden={isSidebarHidden} />
       <div
