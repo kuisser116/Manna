@@ -21,8 +21,8 @@ export const getConversations = () => chatAPI.get('/chats/conversations');
 
 // Mensajes
 export const getMessages = (conversationId, page = 0) => chatAPI.get(`/chats/${conversationId}/messages?page=${page}`);
-export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId) =>
-    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId });
+export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType) =>
+    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType });
 
 // Búsqueda de usuarios
 export const searchUsers = (q) => chatAPI.get(`/chats/users/search?q=${encodeURIComponent(q)}`);
@@ -35,5 +35,17 @@ export const uploadPreKeys = (preKeys, signedPreKey) =>
     chatAPI.post('/chats/pre-keys', { preKeys, signedPreKey });
 export const fetchPreKey = (userId) => chatAPI.get(`/chats/pre-keys/${userId}`);
 export const preKeyCount = (userId) => chatAPI.get(`/chats/pre-keys/${userId}/count`);
+
+// Archivos multimedia para chat
+export const uploadChatFile = (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return chatAPI.post('/chats/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+export const getChatMedia = (conversationId, type = 'all') =>
+    chatAPI.get(`/chats/${conversationId}/media?type=${type}`);
 
 export default chatAPI;

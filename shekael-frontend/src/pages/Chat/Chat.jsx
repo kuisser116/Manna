@@ -8,7 +8,8 @@ import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import {
   getConversations, getMessages, sendMessage,
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
-  searchUsers, sendMessageRequest, updatePublicKey
+  searchUsers, sendMessageRequest, updatePublicKey,
+  uploadChatFile
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
 
@@ -36,6 +37,21 @@ export default function Chat() {
   const otherUserCache = useRef({});
   const sharedSecretCache = useRef({}); // { [convId]: Uint8Array } ECDH shared secret
   const ratchetReadyRef = useRef(false); // si ya se recuperó la sesión del ratchet
+
+  // Estado para adjuntos
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Escape para cerrar lightbox
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const handler = (e) => { if (e.key === 'Escape') setLightboxUrl(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxUrl]);
 
   // Inicializar crypto — genera llaves con libsodium (import estático)
   useEffect(() => {
@@ -321,8 +337,33 @@ export default function Chat() {
 
   // Enviar mensaje con ratchet (forward secrecy) + soporte offline vía pre-keys
   const handleSend = async () => {
-    if (!inputText.trim() || sending || !activeConv) return;
+    const hasFile = !!selectedFile;
+    if (!inputText.trim() && !hasFile) return;
+    if (sending || uploading || !activeConv) return;
     if (!keysReady) return;
+
+    // Subir archivo primero si hay
+    let uploadedUrl = null, uploadedThumb = null;
+    let fileMeta = {};
+    if (hasFile) {
+      setUploading(true);
+      try {
+        const res = await uploadChatFile(selectedFile);
+        uploadedUrl = res.data.url;
+        uploadedThumb = res.data.thumbUrl;
+        fileMeta = {
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          mimeType: selectedFile.type
+        };
+      } catch (err) {
+        console.error('Error uploading file:', err);
+        alert('Error al subir el archivo. Intenta de nuevo.');
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
 
     let otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
     let usingPreKey = false;
@@ -402,16 +443,27 @@ export default function Chat() {
         msgKey
       );
 
+      const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
+
       const res = await sendMessage(
         activeConv.id,
         _sodium.to_base64(ciphertext),
         _sodium.to_base64(nonce),
         msgIndex,
         ephemeralPubB64,
-        preKeyUsedId
+        preKeyUsedId,
+        messageType,
+        uploadedUrl,
+        uploadedThumb,
+        fileMeta.fileName,
+        fileMeta.fileSize,
+        fileMeta.mimeType
       );
-      setMessages(prev => [...prev, { ...res.data.message, decrypted: inputText }]);
+
+      const displayText = hasFile ? (inputText || '') : inputText;
+      setMessages(prev => [...prev, { ...res.data.message, decrypted: displayText }]);
       setInputText('');
+      handleRemoveFile();
       scrollToBottom();
     } catch (err) {
       console.error('Error sending:', err);
@@ -480,6 +532,29 @@ export default function Chat() {
 
   // Calcular no leídos
   const unreadCount = 0; // Se puede implementar después con last_read_at
+
+  // ── Adjuntar archivos ──
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFile(file);
+
+    // Preview para imágenes
+    if (file.type?.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setFilePreview(ev.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // Tecla Enter para enviar
   const handleKeyDown = (e) => {
@@ -703,50 +778,148 @@ export default function Chat() {
                   <p className={styles.emptyHint}>Envía el primer mensaje</p>
                 </div>
               ) : (
-                messages.map(msg => (
-                  <div
-                    key={msg.id}
-                    className={`${styles.message} ${msg.sender_id === user?.id ? styles.ownMessage : styles.otherMessage}`}
-                  >
-                    <div className={styles.messageBubble}>
-                      {msg.decrypted || '[Cifrado]'}
+                messages.map(msg => {
+                  const isImage = msg.message_type === 'image' || msg.media_url;
+                  const isFile = msg.message_type === 'file';
+                  const msgText = msg.decrypted || (isImage || isFile ? '' : '[Cifrado]');
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`${styles.message} ${msg.sender_id === user?.id ? styles.ownMessage : styles.otherMessage}`}
+                    >
+                      {/* Imagen */}
+                      {isImage && msg.media_url && (
+                        <div
+                          className={styles.mediaBubble}
+                          onClick={() => setLightboxUrl(msg.media_url)}
+                        >
+                          <img
+                            src={msg.media_thumb_url || msg.media_url}
+                            alt={msgText || 'Imagen'}
+                            className={styles.mediaImage}
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+                      {/* Documento */}
+                      {isFile && msg.media_url && (
+                        <div className={styles.fileBubble}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                          <div className={styles.fileInfo}>
+                            <span className={styles.fileName}>{msg.file_name || 'Archivo'}</span>
+                            {msg.file_size && (
+                              <span className={styles.fileSize}>
+                                {(msg.file_size / 1024 / 1024).toFixed(1)} MB
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Texto */}
+                      {msgText && (
+                        <div className={styles.messageBubble}>
+                          {msgText}
+                        </div>
+                      )}
+                      <span className={styles.messageTime}>
+                        {new Date(msg.created_at).toLocaleTimeString('es-MX', {
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </span>
                     </div>
-                    <span className={styles.messageTime}>
-                      {new Date(msg.created_at).toLocaleTimeString('es-MX', {
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
 
             <div className={styles.inputArea}>
-              <input
-                type="text"
-                placeholder="Escribe un mensaje..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className={styles.messageInput}
-                disabled={!keysReady}
-              />
-              <button
-                className={styles.sendBtn}
-                onClick={handleSend}
-                disabled={!inputText.trim() || sending || !keysReady}
-              >
-                {sending ? '...' : (
+              {/* Preview de archivo seleccionado */}
+              {selectedFile && (
+                <div className={styles.filePreviewStrip}>
+                  {filePreview ? (
+                    <div className={styles.previewImageWrap}>
+                      <img src={filePreview} alt="Preview" className={styles.previewImage} />
+                    </div>
+                  ) : (
+                    <div className={styles.previewFileInfo}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                      <span className={styles.previewFileName}>{selectedFile.name}</span>
+                    </div>
+                  )}
+                  <button className={styles.removeFileBtn} onClick={handleRemoveFile}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                  {filePreview && inputText && (
+                    <span className={styles.previewCaption}>{inputText}</span>
+                  )}
+                </div>
+              )}
+              <div className={styles.inputRow}>
+                <button
+                  className={styles.attachBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!keysReady || uploading}
+                  title="Adjuntar imagen o archivo"
+                >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                   </svg>
-                )}
-              </button>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                <input
+                  type="text"
+                  placeholder={selectedFile ? 'Agrega un pie de foto...' : 'Escribe un mensaje...'}
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className={styles.messageInput}
+                  disabled={!keysReady || uploading}
+                />
+                <button
+                  className={styles.sendBtn}
+                  onClick={handleSend}
+                  disabled={(!inputText.trim() && !selectedFile) || sending || uploading || !keysReady}
+                >
+                  {uploading ? (
+                    <span className={styles.uploadingSpinner} />
+                  ) : sending ? '...' : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Lightbox para imágenes */}
+      {lightboxUrl && (
+        <div className={styles.lightbox} onClick={() => setLightboxUrl(null)}>
+          <button className={styles.lightboxClose} onClick={() => setLightboxUrl(null)}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <img src={lightboxUrl} alt="" className={styles.lightboxImage} />
+        </div>
+      )}
     </div>
   );
 }

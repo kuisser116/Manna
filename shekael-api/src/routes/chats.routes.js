@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
+import { uploadToR2 } from '../services/ipfs.service.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 const router = Router({ strict: false });
 
@@ -335,7 +339,7 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
 
         const { data: messages, error } = await supabase
             .from('chat_messages')
-            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, created_at')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, created_at')
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
@@ -365,7 +369,10 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
         const supabase = getDB();
         const userId = req.user.id;
         const conversationId = req.params.id;
-        const { encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId } = req.body;
+        const {
+            encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId,
+            messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType, duration
+        } = req.body;
 
         if (!encryptedContent || !nonce) {
             return res.status(400).json({ message: 'Contenido cifrado y nonce requeridos' });
@@ -394,9 +401,16 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
                 nonce,
                 msg_index: msgIndex || 1,
                 sender_ephemeral_key: senderEphemeralKey || null,
-                pre_key_used_id: preKeyUsedId || null
+                pre_key_used_id: preKeyUsedId || null,
+                message_type: messageType || 'text',
+                media_url: mediaUrl || null,
+                media_thumb_url: mediaThumbUrl || null,
+                file_name: fileName || null,
+                file_size: fileSize || null,
+                mime_type: mimeType || null,
+                duration: duration || null
             })
-            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, created_at')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, created_at')
             .single();
 
         if (error) throw error;
@@ -411,6 +425,49 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Error sending message:', err);
         res.status(500).json({ message: 'Error al enviar mensaje' });
+    }
+});
+
+// PATCH /chats/messages/:id — Actualizar metadatos de mensaje (media fields)
+router.patch('/messages/:id', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const messageId = req.params.id;
+        const {
+            message_type, media_url, media_thumb_url,
+            file_name, file_size, mime_type
+        } = req.body;
+
+        // Verificar que el mensaje pertenece al usuario
+        const { data: msg } = await supabase
+            .from('chat_messages')
+            .select('id, sender_id')
+            .eq('id', messageId)
+            .single();
+
+        if (!msg || msg.sender_id !== userId) {
+            return res.status(403).json({ message: 'No puedes modificar este mensaje' });
+        }
+
+        const { error } = await supabase
+            .from('chat_messages')
+            .update({
+                message_type: message_type || 'text',
+                media_url: media_url || null,
+                media_thumb_url: media_thumb_url || null,
+                file_name: file_name || null,
+                file_size: file_size || null,
+                mime_type: mime_type || null
+            })
+            .eq('id', messageId);
+
+        if (error) throw error;
+
+        res.json({ updated: true });
+    } catch (err) {
+        console.error('Error updating message:', err);
+        res.status(500).json({ message: 'Error al actualizar mensaje' });
     }
 });
 
@@ -582,6 +639,94 @@ router.get('/pre-keys/:userId/count', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Error counting pre-keys:', err);
         res.status(500).json({ message: 'Error al contar pre-keys' });
+    }
+});
+
+// ── Subida de archivos para chat ──
+
+// POST /chats/upload — Subir imagen/archivo para adjuntar en mensaje
+router.post('/upload', authMiddleware, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No file' });
+
+        const file = req.file;
+        const ext = file.originalname?.split('.').pop()?.toLowerCase() || 'bin';
+        const type = file.mimetype?.startsWith('image/') ? 'image' :
+                     file.mimetype?.startsWith('audio/') ? 'audio' : 'file';
+        const filename = `chat-${uuidv4()}.${ext}`;
+
+        let fileUrl, thumbUrl;
+        try {
+            fileUrl = await uploadToR2(file.buffer, filename, file.mimetype);
+        } catch {
+            // Fallback a local
+            const { writeFileSync, mkdirSync, existsSync } = await import('fs');
+            const { join, dirname } = await import('path');
+            const { fileURLToPath } = await import('url');
+            const __dir = dirname(fileURLToPath(import.meta.url));
+            const upDir = join(__dir, '..', 'uploads');
+            if (!existsSync(upDir)) mkdirSync(upDir, { recursive: true });
+            writeFileSync(join(upDir, filename), file.buffer);
+            fileUrl = `/uploads/${filename}`;
+        }
+
+        // Thumbnail para imágenes
+        if (type === 'image') {
+            thumbUrl = fileUrl;
+        }
+
+        res.json({
+            url: fileUrl,
+            thumbUrl,
+            type,
+            name: file.originalname,
+            size: file.size,
+            mime: file.mimetype
+        });
+    } catch (err) {
+        console.error('[Chat Upload Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /chats/:id/media — Listar archivos multimedia de una conversación
+router.get('/:id/media', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+
+        // Verificar participación
+        const { data: membership } = await supabase
+            .from('conversation_participants')
+            .select('id')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId)
+            .eq('accepted', true)
+            .single();
+
+        if (!membership) {
+            return res.status(403).json({ message: 'No eres participante' });
+        }
+
+        const type = req.query.type || ''; // image, audio, file, all
+        let query = supabase
+            .from('chat_messages')
+            .select('id, sender_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, created_at')
+            .eq('conversation_id', conversationId)
+            .not('media_url', 'is', null);
+
+        if (type && type !== 'all') {
+            query = query.eq('message_type', type);
+        }
+
+        const { data: media, error } = await query.order('created_at', { ascending: false }).limit(100);
+        if (error) throw error;
+
+        res.json({ media: media || [] });
+    } catch (err) {
+        console.error('[Chat Media Error]:', err);
+        res.status(500).json({ message: err.message });
     }
 });
 
