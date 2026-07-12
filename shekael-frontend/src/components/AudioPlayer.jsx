@@ -49,7 +49,7 @@ export default function AudioPlayer({ src, mimeType, initialDuration }) {
   const seek = (e) => {
     const rect = progressRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const pct = (e.clientX - rect.left) / rect.width;
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const time = pct * duration;
     if (audioRef.current) {
       audioRef.current.currentTime = time;
@@ -66,14 +66,14 @@ export default function AudioPlayer({ src, mimeType, initialDuration }) {
         <source src={src} type={mimeType || 'audio/webm;codecs=opus'} />
       </audio>
 
-      <button className={styles.playBtn} onClick={togglePlay} title={playing ? 'Pausar' : 'Reproducir'}>
+      <button className={`${styles.playBtn} ${playing ? styles.playing : ''}`} onClick={togglePlay} title={playing ? 'Pausar' : 'Reproducir'}>
         {playing ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16" rx="1"/>
             <rect x="14" y="4" width="4" height="16" rx="1"/>
           </svg>
         ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
         )}

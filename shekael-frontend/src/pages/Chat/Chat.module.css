@@ -1112,8 +1112,10 @@
 }
 
 .ownMessage .messageBubble {
-  background: var(--color-primary);
-  color: var(--color-white);
+  background: color-mix(in srgb, var(--color-surface) 50%, transparent);
+  color: var(--color-text);
+  border: 1px solid;
+  border-color: color-mix(in srgb, var(--color-border) 25%, transparent);
   border-bottom-right-radius: 4px;
 }
 

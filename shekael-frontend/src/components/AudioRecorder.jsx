@@ -14,12 +14,32 @@ export default function AudioRecorder({ onSend, onClose }) {
   const analyserRef = useRef(null);
   const audioCtxRef = useRef(null);
   const waveHistoryRef = useRef([]);
+  const runningRef = useRef(false); // controls rAF loop, not state
   const maxSamples = 200;
-  const [recording, setRecording] = useState(false);
 
+  // Size canvas to its container using a synchronous layout effect
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !canvas.parentElement) return;
+    const size = () => {
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+      if (w > 0 && h > 0) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+    };
+    size();
+    const ro = new ResizeObserver(size);
+    ro.observe(canvas.parentElement);
+    return () => ro.disconnect();
+  }, []);
+
+  // Start recording on mount
   useEffect(() => {
     startRecording();
     return () => {
+      runningRef.current = false;
       stopTracks();
       if (timerRef.current) clearInterval(timerRef.current);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -37,29 +57,28 @@ export default function AudioRecorder({ onSend, onClose }) {
   const drawWaveform = () => {
     try {
       const canvas = canvasRef.current;
-      if (!canvas || !analyserRef.current) {
-        if (recording) animFrameRef.current = requestAnimationFrame(drawWaveform);
-        return;
-      }
-      const ctx = canvas.getContext('2d');
-      const { width, height } = canvas;
-      if (!width || !height) {
-        if (recording) animFrameRef.current = requestAnimationFrame(drawWaveform);
+      const width = canvas?.width;
+      const height = canvas?.height;
+
+      if (!canvas || !analyserRef.current || !width || !height) {
+        if (runningRef.current) animFrameRef.current = requestAnimationFrame(drawWaveform);
         return;
       }
 
+      const ctx = canvas.getContext('2d');
+
+      // Read audio time-domain data
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteTimeDomainData(dataArray);
 
-      // Average amplitude
+      // Average deviation from silence (128)
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) {
         sum += Math.abs(dataArray[i] - 128);
       }
       const avg = Math.min(sum / dataArray.length / 128, 1);
-      if (avg > 0.01) setRecording(true);
 
-      // Rolling history
+      // Rolling history (max 200 samples)
       waveHistoryRef.current.push(avg);
       if (waveHistoryRef.current.length > maxSamples) {
         waveHistoryRef.current.shift();
@@ -67,38 +86,24 @@ export default function AudioRecorder({ onSend, onClose }) {
 
       const history = waveHistoryRef.current;
       const hLen = history.length;
-
-      // --- Draw ---
       const centerY = height / 2;
       const maxH = height * 0.72;
-      const fillColor = 'rgba(225, 29, 72, 0.2)';
-      const midColor = 'rgba(255,255,255,0.08)';
-      const topColor = '#e11d48';
-      const botColor = '#be123c';
 
       // Background
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.fillRect(0, 0, width, height);
 
       // Center line
-      ctx.strokeStyle = midColor;
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, centerY);
       ctx.lineTo(width, centerY);
       ctx.stroke();
 
-      if (hLen < 2) {
-        // Flat line when no data yet
-        ctx.strokeStyle = topColor;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(0, centerY);
-        ctx.lineTo(width, centerY);
-        ctx.stroke();
-      } else {
-        // Fill between top and bottom
-        ctx.fillStyle = fillColor;
+      if (hLen >= 2) {
+        // Fill between upper and lower envelope
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.15)';
         ctx.beginPath();
         ctx.moveTo(0, centerY);
         for (let i = 0; i < hLen; i++) {
@@ -106,7 +111,6 @@ export default function AudioRecorder({ onSend, onClose }) {
           const barH = Math.min(history[i] * maxH, maxH / 2);
           ctx.lineTo(x, centerY - barH);
         }
-        ctx.lineTo(width, centerY);
         for (let i = hLen - 1; i >= 0; i--) {
           const x = (i / maxSamples) * width;
           const barH = Math.min(history[i] * maxH, maxH / 2);
@@ -115,8 +119,8 @@ export default function AudioRecorder({ onSend, onClose }) {
         ctx.closePath();
         ctx.fill();
 
-        // Upper line
-        ctx.strokeStyle = topColor;
+        // Upper line (bright red)
+        ctx.strokeStyle = '#e11d48';
         ctx.lineWidth = 2;
         ctx.beginPath();
         for (let i = 0; i < hLen; i++) {
@@ -127,8 +131,8 @@ export default function AudioRecorder({ onSend, onClose }) {
         }
         ctx.stroke();
 
-        // Lower line
-        ctx.strokeStyle = botColor;
+        // Lower line (darker)
+        ctx.strokeStyle = '#be123c';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let i = 0; i < hLen; i++) {
@@ -138,14 +142,22 @@ export default function AudioRecorder({ onSend, onClose }) {
           else ctx.lineTo(x, centerY + barH);
         }
         ctx.stroke();
+      } else {
+        // Flat placeholder line
+        ctx.strokeStyle = 'rgba(225,29,72,0.3)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
       }
 
-      if (recording) {
+      if (runningRef.current) {
         animFrameRef.current = requestAnimationFrame(drawWaveform);
       }
     } catch (e) {
-      // Keep drawing through errors
-      if (recording) {
+      console.warn('draw err:', e);
+      if (runningRef.current) {
         animFrameRef.current = requestAnimationFrame(drawWaveform);
       }
     }
@@ -161,7 +173,6 @@ export default function AudioRecorder({ onSend, onClose }) {
       recorderRef.current = mr;
       chunksRef.current = [];
       waveHistoryRef.current = [];
-      setRecording(false);
 
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       audioCtxRef.current = audioCtx;
@@ -172,12 +183,13 @@ export default function AudioRecorder({ onSend, onClose }) {
       analyserRef.current = analyser;
 
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-
-      // Start everything
       mr.start();
+
       setState('recording');
       setDuration(0);
-      setRecording(true);
+
+      // Set ref BEFORE draw so the rAF loop works
+      runningRef.current = true;
       drawWaveform();
 
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
@@ -188,50 +200,14 @@ export default function AudioRecorder({ onSend, onClose }) {
     }
   };
 
-  // Separate effect to size canvas after layout
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const sizeCanvas = () => {
-      if (!canvas.parentElement) return;
-      const w = canvas.parentElement.clientWidth;
-      const h = canvas.parentElement.clientHeight;
-      if (w > 0 && h > 0) {
-        canvas.width = w;
-        canvas.height = h;
-      }
-    };
-
-    sizeCanvas();
-    // Retry a few times in case layout isn't ready
-    let tries = 0;
-    const interval = setInterval(() => {
-      tries++;
-      sizeCanvas();
-      if (tries > 5 || (canvas.width > 0 && canvas.height > 0)) {
-        clearInterval(interval);
-      }
-    }, 100);
-
-    const resizeObserver = new ResizeObserver(sizeCanvas);
-    resizeObserver.observe(canvas.parentElement);
-
-    return () => {
-      clearInterval(interval);
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  // Pause handler
   const togglePause = () => {
     if (!recorderRef.current) return;
     if (state === 'recording') {
       recorderRef.current.stop();
       if (audioCtxRef.current) audioCtxRef.current.suspend();
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      setRecording(false);
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      runningRef.current = false;
+      if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
       setState('paused');
     } else if (state === 'paused') {
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
@@ -241,7 +217,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       mr.start();
       if (audioCtxRef.current) audioCtxRef.current.resume();
       setState('recording');
-      setRecording(true);
+      runningRef.current = true;
       drawWaveform();
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
     }
@@ -250,8 +226,9 @@ export default function AudioRecorder({ onSend, onClose }) {
   const handleSend = async () => {
     try {
       if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      runningRef.current = false;
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
       stopTracks();
       if (audioCtxRef.current) audioCtxRef.current.close();
 
@@ -287,8 +264,9 @@ export default function AudioRecorder({ onSend, onClose }) {
 
   const handleCancel = () => {
     if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    runningRef.current = false;
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
     stopTracks();
     if (audioCtxRef.current) audioCtxRef.current.close();
     onClose?.();
