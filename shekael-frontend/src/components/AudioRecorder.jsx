@@ -15,17 +15,9 @@ export default function AudioRecorder({ onSend, onClose }) {
   const audioCtxRef = useRef(null);
   const waveHistoryRef = useRef([]);
   const maxSamples = 200;
-  const containerRef = useRef(null);
+  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
-    // Size canvas to match its display container
-    const canvas = canvasRef.current;
-    if (canvas && canvas.parentElement) {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      canvas.width = Math.floor(rect.width);
-      canvas.height = Math.floor(rect.height);
-    }
-
     startRecording();
     return () => {
       stopTracks();
@@ -46,25 +38,28 @@ export default function AudioRecorder({ onSend, onClose }) {
     try {
       const canvas = canvasRef.current;
       if (!canvas || !analyserRef.current) {
-        animFrameRef.current = requestAnimationFrame(drawWaveform);
+        if (recording) animFrameRef.current = requestAnimationFrame(drawWaveform);
         return;
       }
       const ctx = canvas.getContext('2d');
       const { width, height } = canvas;
+      if (!width || !height) {
+        if (recording) animFrameRef.current = requestAnimationFrame(drawWaveform);
+        return;
+      }
 
-      // Get audio data
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteTimeDomainData(dataArray);
 
-      // Average amplitude this frame
+      // Average amplitude
       let sum = 0;
-      const len = dataArray.length;
-      for (let i = 0; i < len; i++) {
+      for (let i = 0; i < dataArray.length; i++) {
         sum += Math.abs(dataArray[i] - 128);
       }
-      const avg = Math.min(sum / len / 128, 1);
+      const avg = Math.min(sum / dataArray.length / 128, 1);
+      if (avg > 0.01) setRecording(true);
 
-      // Store in rolling history
+      // Rolling history
       waveHistoryRef.current.push(avg);
       if (waveHistoryRef.current.length > maxSamples) {
         waveHistoryRef.current.shift();
@@ -73,31 +68,55 @@ export default function AudioRecorder({ onSend, onClose }) {
       const history = waveHistoryRef.current;
       const hLen = history.length;
 
-      // --- Clear canvas ---
+      // --- Draw ---
+      const centerY = height / 2;
+      const maxH = height * 0.72;
+      const fillColor = 'rgba(225, 29, 72, 0.2)';
+      const midColor = 'rgba(255,255,255,0.08)';
+      const topColor = '#e11d48';
+      const botColor = '#be123c';
+
+      // Background
       ctx.fillStyle = 'rgba(0,0,0,0.3)';
       ctx.fillRect(0, 0, width, height);
 
-      // --- Center line ---
-      const centerY = height / 2;
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      // Center line
+      ctx.strokeStyle = midColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(4, centerY);
-      ctx.lineTo(width - 4, centerY);
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(width, centerY);
       ctx.stroke();
 
       if (hLen < 2) {
-        // Not enough data yet — just show a flat line
-        ctx.strokeStyle = '#e11d48';
+        // Flat line when no data yet
+        ctx.strokeStyle = topColor;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(0, centerY);
         ctx.lineTo(width, centerY);
         ctx.stroke();
       } else {
-        // --- Draw upper waveform ---
-        const maxH = height * 0.72;
-        ctx.strokeStyle = '#e11d48';
+        // Fill between top and bottom
+        ctx.fillStyle = fillColor;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        for (let i = 0; i < hLen; i++) {
+          const x = (i / maxSamples) * width;
+          const barH = Math.min(history[i] * maxH, maxH / 2);
+          ctx.lineTo(x, centerY - barH);
+        }
+        ctx.lineTo(width, centerY);
+        for (let i = hLen - 1; i >= 0; i--) {
+          const x = (i / maxSamples) * width;
+          const barH = Math.min(history[i] * maxH, maxH / 2);
+          ctx.lineTo(x, centerY + barH);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        // Upper line
+        ctx.strokeStyle = topColor;
         ctx.lineWidth = 2;
         ctx.beginPath();
         for (let i = 0; i < hLen; i++) {
@@ -108,8 +127,8 @@ export default function AudioRecorder({ onSend, onClose }) {
         }
         ctx.stroke();
 
-        // --- Draw lower waveform (mirror) ---
-        ctx.strokeStyle = '#be123c';
+        // Lower line
+        ctx.strokeStyle = botColor;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let i = 0; i < hLen; i++) {
@@ -119,38 +138,14 @@ export default function AudioRecorder({ onSend, onClose }) {
           else ctx.lineTo(x, centerY + barH);
         }
         ctx.stroke();
-
-        // --- Fill between (translucent red) ---
-        ctx.fillStyle = 'rgba(225, 29, 72, 0.2)';
-        ctx.beginPath();
-        ctx.moveTo(0, centerY);
-        for (let i = 0; i < hLen; i++) {
-          const x = (i / maxSamples) * width;
-          const barH = Math.min(history[i] * maxH, maxH / 2);
-          ctx.lineTo(x, centerY - barH);
-        }
-        for (let i = hLen - 1; i >= 0; i--) {
-          const x = (i / maxSamples) * width;
-          const barH = Math.min(history[i] * maxH, maxH / 2);
-          ctx.lineTo(x, centerY + barH);
-        }
-        ctx.closePath();
-        ctx.fill();
       }
 
-      // --- Recording dot (upper right) ---
-      ctx.fillStyle = '#e11d48';
-      ctx.beginPath();
-      ctx.arc(width - 10, 10, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (state === 'recording') {
+      if (recording) {
         animFrameRef.current = requestAnimationFrame(drawWaveform);
       }
     } catch (e) {
-      console.warn('Draw error:', e);
-      // Keep drawing even on error
-      if (state === 'recording') {
+      // Keep drawing through errors
+      if (recording) {
         animFrameRef.current = requestAnimationFrame(drawWaveform);
       }
     }
@@ -166,6 +161,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       recorderRef.current = mr;
       chunksRef.current = [];
       waveHistoryRef.current = [];
+      setRecording(false);
 
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       audioCtxRef.current = audioCtx;
@@ -177,9 +173,11 @@ export default function AudioRecorder({ onSend, onClose }) {
 
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
 
+      // Start everything
       mr.start();
       setState('recording');
       setDuration(0);
+      setRecording(true);
       drawWaveform();
 
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
@@ -190,6 +188,42 @@ export default function AudioRecorder({ onSend, onClose }) {
     }
   };
 
+  // Separate effect to size canvas after layout
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const sizeCanvas = () => {
+      if (!canvas.parentElement) return;
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+      if (w > 0 && h > 0) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+    };
+
+    sizeCanvas();
+    // Retry a few times in case layout isn't ready
+    let tries = 0;
+    const interval = setInterval(() => {
+      tries++;
+      sizeCanvas();
+      if (tries > 5 || (canvas.width > 0 && canvas.height > 0)) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    const resizeObserver = new ResizeObserver(sizeCanvas);
+    resizeObserver.observe(canvas.parentElement);
+
+    return () => {
+      clearInterval(interval);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Pause handler
   const togglePause = () => {
     if (!recorderRef.current) return;
     if (state === 'recording') {
@@ -197,6 +231,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       if (audioCtxRef.current) audioCtxRef.current.suspend();
       if (timerRef.current) clearInterval(timerRef.current);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      setRecording(false);
       setState('paused');
     } else if (state === 'paused') {
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
@@ -206,6 +241,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       mr.start();
       if (audioCtxRef.current) audioCtxRef.current.resume();
       setState('recording');
+      setRecording(true);
       drawWaveform();
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
     }
@@ -278,19 +314,22 @@ export default function AudioRecorder({ onSend, onClose }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
 
-        <div className={styles.waveWrap} ref={containerRef}>
+        <div className={styles.waveWrap}>
           <canvas ref={canvasRef} className={styles.waveform} />
         </div>
 
         <span className={styles.timer}>{formatTime(duration)}</span>
 
-        <button className={styles.playPauseBtn} onClick={togglePause} title={state === 'paused' ? 'Reanudar' : 'Pausar'}>
-          {state === 'paused' ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          ) : (
+        {state === 'recording' && (
+          <button className={styles.pauseBtn} onClick={togglePause} title="Pausar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-          )}
-        </button>
+          </button>
+        )}
+        {state === 'paused' && (
+          <button className={styles.pauseBtn} onClick={togglePause} title="Reanudar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+        )}
 
         <button className={styles.sendBtn} onClick={handleSend} title="Enviar">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
