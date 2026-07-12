@@ -1562,7 +1562,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 4px;
-  max-width: 220px;
+  padding: 8px 6px;
+  max-width: 360px;
 }
 
