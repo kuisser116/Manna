@@ -1563,3 +1563,31 @@
   transition: opacity 0.2s;
 }
 .groupCreateBtn:hover { opacity: 1; }
+
+
+/* Audio bubble */
+.audioBubble {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  max-width: 220px;
+}
+
+.audioElement {
+  height: 38px;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.audioElement::-webkit-media-controls-panel {
+  background: var(--color-surface);
+}
+
+.audioDuration {
+  font-size: 0.72rem;
+  opacity: 0.5;
+  white-space: nowrap;
+  flex-shrink: 0;
+}

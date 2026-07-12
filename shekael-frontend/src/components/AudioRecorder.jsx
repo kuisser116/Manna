@@ -12,7 +12,7 @@ export default function AudioRecorder({ onSend, onClose }) {
   const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
   const analyserRef = useRef(null);
-  const ctxRef = useRef(null);
+  const smoothValsRef = useRef(new Float32Array(40).fill(0));
 
   useEffect(() => {
     startRecording();
@@ -33,37 +33,68 @@ export default function AudioRecorder({ onSend, onClose }) {
   const drawWaveform = () => {
     const canvas = canvasRef.current;
     if (!canvas || !analyserRef.current) return;
-    const ctx = ctxRef.current || canvas.getContext('2d');
-    ctxRef.current = ctx;
+    const ctx = canvas.getContext('2d');
     const { width, height } = canvas;
     const bufferLength = analyserRef.current.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     analyserRef.current.getByteTimeDomainData(dataArray);
 
-    ctx.clearRect(0, 0, width, height);
+    // Clear with subtle gradient background
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, 'rgba(225, 29, 72, 0.03)');
+    bg.addColorStop(0.5, 'rgba(225, 29, 72, 0.06)');
+    bg.addColorStop(1, 'rgba(225, 29, 72, 0.03)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
 
-    const barCount = 36;
-    const barWidth = (width - 20) / barCount;
+    const barCount = 40;
+    const barWidth = (width - 28) / barCount;
     const gap = 3;
     const centerY = height / 2;
     const maxH = height * 0.75;
+    const smoothFactor = 0.3;
+    const smooth = smoothValsRef.current;
+
+    // Draw center line
+    ctx.strokeStyle = 'rgba(225, 29, 72, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(8, centerY);
+    ctx.lineTo(width - 8, centerY);
+    ctx.stroke();
 
     for (let i = 0; i < barCount; i++) {
       const idx = Math.floor((i / barCount) * bufferLength);
       const value = (dataArray[idx] - 128) / 128;
-      const barH = Math.min(Math.abs(value) * maxH, maxH / 2);
 
-      if (barH < 2) continue;
+      // Smooth the value
+      smooth[i] += (Math.abs(value) - smooth[i]) * smoothFactor;
+      const barH = Math.min(smooth[i] * maxH, maxH / 2);
+      if (barH < 1.5) continue;
 
-      const x = 10 + i * (barWidth + gap);
-      const gradient = ctx.createLinearGradient(0, centerY - barH, 0, centerY + barH);
-      gradient.addColorStop(0, '#e11d48');
-      gradient.addColorStop(0.5, '#f43f5e');
-      gradient.addColorStop(1, '#e11d48');
-      ctx.fillStyle = gradient;
+      const x = 14 + i * (barWidth + gap);
+      const y = centerY - barH;
 
+      // Gradient per bar
+      const grd = ctx.createLinearGradient(0, y, 0, y + barH * 2);
+      grd.addColorStop(0, '#e11d48');
+      grd.addColorStop(0.5, '#f43f5e');
+      grd.addColorStop(1, '#be123c');
+      ctx.fillStyle = grd;
+
+      // Rounded bar
+      const radius = Math.min(barWidth / 2, 4);
       ctx.beginPath();
-      ctx.roundRect(x, centerY - barH, barWidth, barH * 2, barWidth / 2);
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + barWidth - radius, y);
+      ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
+      ctx.lineTo(x + barWidth, y + barH * 2 - radius);
+      ctx.quadraticCurveTo(x + barWidth, y + barH * 2, x + barWidth - radius, y + barH * 2);
+      ctx.lineTo(x + radius, y + barH * 2);
+      ctx.quadraticCurveTo(x, y + barH * 2, x, y + barH * 2 - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
       ctx.fill();
     }
 
@@ -80,7 +111,6 @@ export default function AudioRecorder({ onSend, onClose }) {
       recorderRef.current = mr;
       chunksRef.current = [];
 
-      // Audio context for waveform
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(s);
       const analyser = audioCtx.createAnalyser();
@@ -88,11 +118,8 @@ export default function AudioRecorder({ onSend, onClose }) {
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      mr.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
 
-      // Start recording (without timeslice - ondataavailable fires on stop)
       mr.start();
       setState('recording');
       setDuration(0);
@@ -100,43 +127,34 @@ export default function AudioRecorder({ onSend, onClose }) {
 
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
     } catch (e) {
-      console.warn('Audio access denied:', e);
-      alert('No se pudo acceder al microfono. Permite acceso y vuelve a intentar.');
+      console.warn('Audio error:', e);
+      alert('No se pudo acceder al microfono. Revisa los permisos.');
       onClose?.();
     }
   };
 
   const handleSend = async () => {
     try {
-      // 1. Stop the recorder FIRST - this triggers ondataavailable with all data
-      if (recorderRef.current?.state === 'recording') {
-        recorderRef.current.stop();
-      }
-
-      // 2. Stop animation and timer
+      if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
       if (timerRef.current) clearInterval(timerRef.current);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       stopTracks();
 
-      // 3. Wait briefly for final ondataavailable to be processed
       await new Promise(r => setTimeout(r, 50));
 
-      // 4. Check we have data
       if (chunksRef.current.length === 0) {
-        alert('No se grabo ningun audio. Intenta de nuevo.');
+        alert('No se grabo audio. Intenta de nuevo.');
         onClose?.();
         return;
       }
 
       setState('sending');
 
-      // 5. Create blob and upload
       const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
       const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm;codecs=opus' });
 
       const { data } = await uploadChatFile(file);
 
-      // 6. Call onSend (encrypt + send message)
       onSend?.({
         url: data.url,
         fileName: data.name,
@@ -147,7 +165,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       onClose?.();
     } catch (e) {
       console.warn('Audio send error:', e);
-      alert('Error al enviar audio: ' + (e.message || e));
+      alert('Error: ' + (e.message || e));
       setState('recording');
     }
   };

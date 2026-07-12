@@ -1238,6 +1238,17 @@ export default function Chat() {
                           </div>
                         </div>
                       )}
+                      {/* Audio */}
+                      {isAudio && msg.media_url && (
+                        <div className={styles.audioBubble}>
+                          <audio controls preload="none" className={styles.audioElement}>
+                            <source src={msg.media_url} type={msg.mime_type || 'audio/webm;codecs=opus'} />
+                          </audio>
+                          {msg.duration && (
+                            <span className={styles.audioDuration}>{Math.floor(msg.duration / 60)}:{String(msg.duration % 60).padStart(2, '0')}</span>
+                          )}
+                        </div>
+                      )}
                       {/* Texto */}
                       {msgText && (
                         <div className={styles.messageBubble}>
