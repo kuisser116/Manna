@@ -16,10 +16,16 @@ export default function AudioRecorder({ onSend, onClose }) {
   const waveHistoryRef = useRef([]);
   const maxSamples = 200;
   const containerRef = useRef(null);
-  const canvasWidth = 280;
-  const canvasHeight = 50;
 
   useEffect(() => {
+    // Size canvas to match its display container
+    const canvas = canvasRef.current;
+    if (canvas && canvas.parentElement) {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = Math.floor(rect.width);
+      canvas.height = Math.floor(rect.height);
+    }
+
     startRecording();
     return () => {
       stopTracks();
@@ -273,7 +279,7 @@ export default function AudioRecorder({ onSend, onClose }) {
         </button>
 
         <div className={styles.waveWrap} ref={containerRef}>
-          <canvas ref={canvasRef} className={styles.waveform} width={canvasWidth} height={canvasHeight} />
+          <canvas ref={canvasRef} className={styles.waveform} />
         </div>
 
         <span className={styles.timer}>{formatTime(duration)}</span>

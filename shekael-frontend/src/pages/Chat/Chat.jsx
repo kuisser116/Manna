@@ -1097,7 +1097,7 @@ export default function Chat() {
                 </svg>
                 <span className={styles.pinnedText}>
                   {pinnedMessage.decryptedText ||
-                   pinnedMessage.media_url ? (<span className={styles.replyMediaInline}><img src={pinnedMessage.media_thumb_url||pinnedMessage.media_url} alt="" className={styles.replyThumb} /> Foto</span>) : (pinnedMessage.file_name || 'Mensaje fijado')}
+                   pinnedMessage.media_url && pinnedMessage.message_type !== 'audio' ? (<span className={styles.replyMediaInline}><img src={pinnedMessage.media_thumb_url||pinnedMessage.media_url} alt="" className={styles.replyThumb} /> Foto</span>) : (pinnedMessage.file_name || pinnedMessage.message_type === 'audio' ? 'Audio' : 'Mensaje fijado')}
                 </span>
                 <button className={styles.pinnedClose} onClick={(e) => { e.stopPropagation(); handleUnpinMsg(); }} title="Desfijar">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -1165,7 +1165,7 @@ export default function Chat() {
                 </div>
               ) : (
                 messages.filter(m => !m.deleted_at).map(msg => {
-                  const isImage = msg.message_type === 'image' || msg.media_url;
+                  const isImage = msg.message_type === 'image';
                   const isFile = msg.message_type === 'file';
                   const isAudio = msg.message_type === 'audio';
                   const isPoll = msg.message_type === 'poll';
@@ -1273,7 +1273,7 @@ export default function Chat() {
                     <span className={styles.replyPreviewText}>
                       {replyTo.decrypted
                         ? replyTo.decrypted.substring(0, 60)
-                        : replyTo.media_url ? (<span className={styles.replyMediaInline}><img src={replyTo.media_thumb_url||replyTo.media_url} alt="" className={styles.replyThumb} /> Foto</span>) : (replyTo.file_name || 'Mensaje')}
+                        : replyTo.media_url && replyTo.message_type !== 'audio' ? (<span className={styles.replyMediaInline}><img src={replyTo.media_thumb_url||replyTo.media_url} alt="" className={styles.replyThumb} /> Foto</span>) : (replyTo.file_name || replyTo.message_type === 'audio' ? 'Audio' : 'Mensaje')}
                     </span>
                   </div>
                   <button className={styles.removeFileBtn} onClick={cancelReply}>
