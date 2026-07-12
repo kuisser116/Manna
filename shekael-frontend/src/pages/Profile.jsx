@@ -40,7 +40,9 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('posts');
   const [coverUrl, setCoverUrl] = useState(null);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const coverInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
 
   const handleCoverChange = async (e) => {
     const file = e.target.files?.[0];
@@ -68,6 +70,22 @@ export default function Profile() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { data } = await updateAvatar(file);
+      if (data?.avatarUrl) {
+        setProfileData(prev => ({ ...prev, avatarUrl: data.avatarUrl }));
+        if (isOwnProfile) {
+          useStore.getState().setUser({ ...currentUser, avatarUrl: data.avatarUrl });
+        }
+      }
+    } catch {}
+    setAvatarUploading(false);
+  };
 
   const handleCopyWallet = () => {
     if (!profileData?.stellarPublicKey) return;
@@ -289,11 +307,21 @@ export default function Profile() {
                   <div className={styles.avatar} style={{ backgroundImage: `url(${profileData?.avatarUrl})` }}>
                     {!profileData?.avatarUrl && <span className={styles.avatarEmpty}>A</span>}
                     {isOwnProfile && (
-                      <div className={styles.avatarOverlay}>
-                        <Camera size={20} />
+                      <div
+                        className={`${styles.avatarOverlay} ${avatarUploading ? styles.avatarOverlayDisabled : ''}`}
+                        onClick={() => !avatarUploading && avatarInputRef.current?.click()}
+                      >
+                        {avatarUploading ? '...' : <Camera size={20} />}
                       </div>
                     )}
                   </div>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleAvatarChange}
+                  />
                 </div>
               </div>
               <div className={styles.info}>
