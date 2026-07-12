@@ -1,15 +1,17 @@
 .player {
+  padding: 2px 0;
+  max-width: 280px;
+}
+
+.controls {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 0;
-  min-width: 180px;
-  max-width: 240px;
+  gap: 5px;
 }
 
 .playBtn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -25,19 +27,25 @@
   transform: scale(1.12);
   background: rgba(225, 29, 72, 0.08);
 }
-
 .playing {
   color: var(--color-text);
+}
+
+.miniWave {
+  width: 48px;
+  height: 28px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .progressWrap {
   flex: 1;
   position: relative;
-  height: 24px;
+  height: 20px;
   display: flex;
   align-items: center;
   cursor: pointer;
-  min-width: 50px;
+  min-width: 30px;
 }
 
 .track {
@@ -55,25 +63,40 @@
   transition: width 0.1s linear;
 }
 
-.handle {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  opacity: 0;
-  transition: opacity 0.15s;
-  pointer-events: none;
-}
-
-.progressWrap:hover .handle { opacity: 1; }
-
 .time {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   opacity: 0.5;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+  min-width: 48px;
+}
+
+.speedWrap {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.speedBtn {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  opacity: 0.3;
+  font-size: 0.6rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s, background 0.15s;
+  line-height: 1;
+  font-family: var(--font-family);
+}
+.speedBtn:hover {
+  opacity: 0.7;
+  background: rgba(128,128,128,0.08);
+}
+.speedActive {
+  opacity: 0.9 !important;
+  color: var(--color-primary);
 }

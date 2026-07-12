@@ -17,7 +17,7 @@ export default function AudioRecorder({ onSend, onClose }) {
   const runningRef = useRef(false);
   const lastSampleRef = useRef(0);
   const pausedRef = useRef(false);
-  const maxSamples = 200;
+  const maxSamples = 500;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,17 +51,15 @@ export default function AudioRecorder({ onSend, onClose }) {
     }
   };
 
-  // 5-point moving average
+  // 3-point moving average (lighter smoothing with higher sample rate)
   const smoothData = (arr) => {
     const n = arr.length;
-    if (n < 5) return arr;
+    if (n < 3) return arr;
     const out = new Array(n);
     out[0] = arr[0];
-    out[1] = (arr[0] + arr[1] + arr[2]) / 3;
-    for (let i = 2; i < n - 2; i++) {
-      out[i] = (arr[i-2] + arr[i-1] + arr[i] + arr[i+1] + arr[i+2]) / 5;
+    for (let i = 1; i < n - 1; i++) {
+      out[i] = (arr[i-1] + arr[i] + arr[i+1]) / 3;
     }
-    out[n-2] = (arr[n-3] + arr[n-2] + arr[n-1]) / 3;
     out[n-1] = arr[n-1];
     return out;
   };
@@ -140,12 +138,12 @@ export default function AudioRecorder({ onSend, onClose }) {
 
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) sum += Math.abs(dataArray[i] - 128);
-      let avg = Math.min(sum / dataArray.length / 128, 1) * 4.0;
-      avg = Math.pow(Math.min(avg, 1), 0.7);
+      let avg = sum / dataArray.length / 128 * 3.5;
+      avg = Math.pow(Math.min(avg, 1), 0.75);
 
       // Throttled history
       const now = Date.now();
-      if (now - lastSampleRef.current > 120) {
+      if (now - lastSampleRef.current > 40) {
         lastSampleRef.current = now;
         waveHistoryRef.current.push(avg);
         if (waveHistoryRef.current.length > maxSamples) waveHistoryRef.current.shift();
