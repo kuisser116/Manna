@@ -17,7 +17,7 @@ export default function AudioRecorder({ onSend, onClose }) {
   const runningRef = useRef(false);
   const lastSampleRef = useRef(0);
   const pausedRef = useRef(false);
-  const maxSamples = 250;
+  const maxSamples = 200;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,7 +51,7 @@ export default function AudioRecorder({ onSend, onClose }) {
     }
   };
 
-  // Smooth data with 5-point moving average
+  // 5-point moving average
   const smoothData = (arr) => {
     const n = arr.length;
     if (n < 5) return arr;
@@ -66,28 +66,26 @@ export default function AudioRecorder({ onSend, onClose }) {
     return out;
   };
 
-  // Catmull-Rom → Bezier control points for super smooth curves
-  const catmullRomToBezier = (p0, p1, p2, p3) => {
-    return {
-      cp1: { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 },
-      cp2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }
-    };
-  };
+  // Catmull-Rom to Bezier
+  const catmullRomToBezier = (p0, p1, p2, p3) => ({
+    cp1: { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 },
+    cp2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }
+  });
 
-  const drawLineSmooth = (ctx, points, color, lineW) => {
-    if (points.length < 2) return;
+  const drawLineSmooth = (ctx, pts, color, lineW) => {
+    if (pts.length < 2) return;
     ctx.strokeStyle = color;
     ctx.lineWidth = lineW;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
+    ctx.moveTo(pts[0].x, pts[0].y);
 
-    for (let i = 1; i < points.length - 1; i++) {
-      const p0 = i > 1 ? points[i-2] : points[i-1];
-      const p1 = points[i-1];
-      const p2 = points[i];
-      const p3 = i < points.length - 2 ? points[i+1] : points[i];
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = i > 1 ? pts[i-2] : pts[i-1];
+      const p1 = pts[i-1];
+      const p2 = pts[i];
+      const p3 = i < pts.length - 1 ? pts[i+1] : pts[i];
       const { cp1, cp2 } = catmullRomToBezier(p0, p1, p2, p3);
       ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p2.x, p2.y);
     }
@@ -106,17 +104,25 @@ export default function AudioRecorder({ onSend, onClose }) {
       const width = canvas.width;
       const height = canvas.height;
 
-      // Read audio
+      // Read audio time-domain data
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteTimeDomainData(dataArray);
 
+      // Average deviation from silence (128)
       let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) sum += Math.abs(dataArray[i] - 128);
-      const avg = Math.min(sum / dataArray.length / 128, 1);
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += Math.abs(dataArray[i] - 128);
+      }
+      let avg = sum / dataArray.length / 128; // 0..1
 
-      // Throttled history
+      // Amplify! Quiet speech is ~0.05, we want it at ~0.3-0.5
+      avg = Math.min(avg * 4.0, 1.0);
+      // Apply a gentle power curve for natural feel
+      avg = Math.pow(avg, 0.7);
+
+      // Throttled history — 120ms between samples
       const now = Date.now();
-      if (now - lastSampleRef.current > 150) {
+      if (now - lastSampleRef.current > 120) {
         lastSampleRef.current = now;
         waveHistoryRef.current.push(avg);
         if (waveHistoryRef.current.length > maxSamples) waveHistoryRef.current.shift();
@@ -126,14 +132,14 @@ export default function AudioRecorder({ onSend, onClose }) {
       const history = smoothData(raw);
       const hLen = history.length;
       const centerY = height / 2;
-      const maxH = height * 0.85; // Tall oscillations
+      const maxH = height * 0.88;
 
-      // Background
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      // Dark background
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
       ctx.fillRect(0, 0, width, height);
 
-      // Faint center line
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      // Ultra-faint center guide
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, centerY);
@@ -141,24 +147,25 @@ export default function AudioRecorder({ onSend, onClose }) {
       ctx.stroke();
 
       if (hLen >= 2) {
-        // Build smooth points — RIGHT to LEFT (newest on right)
-        const linePoints = [];
+        // Build points — NEWEST on RIGHT
+        const ptsTop = [];
+        const ptsBot = [];
         for (let i = 0; i < hLen; i++) {
           const age = hLen - 1 - i;
           const x = width - (age * width) / maxSamples;
-          const barH = Math.min(history[i] * maxH, maxH / 2);
-          linePoints.push({ x, y: centerY - barH });
+          const dev = Math.min(history[i] * maxH, maxH / 2);
+          ptsTop.push({ x, y: centerY - dev });
+          ptsBot.push({ x, y: centerY + dev });
         }
 
-        // Draw single smooth red line (WhatsApp-style)
-        drawLineSmooth(ctx, linePoints, '#e11d48', 3);
+        // Main red line (top envelope)
+        drawLineSmooth(ctx, ptsTop, '#e11d48', 3);
 
-        // Add a subtle mirror line at 1px for depth
-        const mirrorPoints = linePoints.map(p => ({ x: p.x, y: centerY + (centerY - p.y) }));
-        drawLineSmooth(ctx, mirrorPoints, 'rgba(190, 18, 60, 0.4)', 1.5);
+        // Subtle mirror (bottom envelope)
+        drawLineSmooth(ctx, ptsBot, 'rgba(190, 18, 60, 0.3)', 1.5);
 
       } else {
-        ctx.strokeStyle = 'rgba(225,29,72,0.2)';
+        ctx.strokeStyle = 'rgba(225,29,72,0.15)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(0, centerY);
@@ -176,7 +183,14 @@ export default function AudioRecorder({ onSend, onClose }) {
 
   const startRecording = async () => {
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Disable audio processing for raw input
+      const s = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      });
       streamRef.current = s;
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
       const mr = new MediaRecorder(s, { mimeType: mime });
