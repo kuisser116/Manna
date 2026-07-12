@@ -41,9 +41,9 @@ export default function AudioRecorder({ onSend, onClose }) {
 
     // Clear with subtle gradient background
     const bg = ctx.createLinearGradient(0, 0, 0, height);
-    bg.addColorStop(0, 'rgba(225, 29, 72, 0.03)');
-    bg.addColorStop(0.5, 'rgba(225, 29, 72, 0.06)');
-    bg.addColorStop(1, 'rgba(225, 29, 72, 0.03)');
+    bg.addColorStop(0, 'rgba(255, 255, 255, 0.02)');
+    bg.addColorStop(0.5, 'rgba(255, 255, 255, 0.04)');
+    bg.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, width, height);
 
@@ -56,7 +56,7 @@ export default function AudioRecorder({ onSend, onClose }) {
     const smooth = smoothValsRef.current;
 
     // Draw center line
-    ctx.strokeStyle = 'rgba(225, 29, 72, 0.08)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(8, centerY);
@@ -77,9 +77,9 @@ export default function AudioRecorder({ onSend, onClose }) {
 
       // Gradient per bar
       const grd = ctx.createLinearGradient(0, y, 0, y + barH * 2);
-      grd.addColorStop(0, '#e11d48');
-      grd.addColorStop(0.5, '#f43f5e');
-      grd.addColorStop(1, '#be123c');
+      grd.addColorStop(0, 'rgba(255,255,255,0.9)');
+      grd.addColorStop(0.5, 'rgba(255,255,255,0.7)');
+      grd.addColorStop(1, 'rgba(255,255,255,0.5)');
       ctx.fillStyle = grd;
 
       // Rounded bar

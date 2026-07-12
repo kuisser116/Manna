@@ -1,0 +1,74 @@
+.player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  min-width: 200px;
+  max-width: 240px;
+}
+
+.playBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.12s, opacity 0.15s;
+}
+.playBtn:hover { transform: scale(1.08); opacity: 0.9; }
+
+.progressWrap {
+  flex: 1;
+  position: relative;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.track {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.15);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.progressWrap:hover .handle { opacity: 1; }
+
+.time {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}

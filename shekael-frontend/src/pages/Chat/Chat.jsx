@@ -20,6 +20,7 @@ import AudioRecorder from '../../components/AudioRecorder';
 import PollCreator from '../../components/PollCreator';
 import PollResults from '../../components/PollResults';
 import GroupCreateModal from '../../components/GroupCreateModal';
+import AudioPlayer from '../../components/AudioPlayer';
 import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../api/chats.api';
 
 export default function Chat() {
@@ -1168,7 +1169,7 @@ export default function Chat() {
                   const isFile = msg.message_type === 'file';
                   const isAudio = msg.message_type === 'audio';
                   const isPoll = msg.message_type === 'poll';
-                  const msgText = msg.decrypted || (isImage || isFile ? '' : '[Cifrado]');
+                  const msgText = msg.decrypted || (isImage || isFile || isAudio || isPoll ? '' : '[Cifrado]');
 
                   // Encontrar replied message para mostrar preview
                   const repliedMsg = msg.reply_to_id
@@ -1241,12 +1242,7 @@ export default function Chat() {
                       {/* Audio */}
                       {isAudio && msg.media_url && (
                         <div className={styles.audioBubble}>
-                          <audio controls preload="none" className={styles.audioElement}>
-                            <source src={msg.media_url} type={msg.mime_type || 'audio/webm;codecs=opus'} />
-                          </audio>
-                          {msg.duration && (
-                            <span className={styles.audioDuration}>{Math.floor(msg.duration / 60)}:{String(msg.duration % 60).padStart(2, '0')}</span>
-                          )}
+                          <AudioPlayer src={msg.media_url} mimeType={msg.mime_type} initialDuration={msg.duration} />
                         </div>
                       )}
                       {/* Texto */}
@@ -1604,7 +1600,7 @@ export default function Chat() {
               const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
               const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
               const ciphertext = _sodium.crypto_secretbox_easy(
-                _sodium.from_string('Audio'), nonce, msgKey
+                _sodium.from_string(''), nonce, msgKey
               );
               const res = await sendMessage(
                 activeConv.id, _sodium.to_base64(ciphertext), _sodium.to_base64(nonce),
