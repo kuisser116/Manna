@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import useStore from './store';
+import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
+import { updatePublicKey } from './api/chats.api';
 import logoImg from './assets/personaje_1.12.png';
 import styles from './App.module.css';
 
@@ -150,6 +152,79 @@ function App() {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
   }, [initAuth]);
+
+  // Inicializar E2EE keys si el usuario está autenticado (para toda la app)
+  useEffect(() => {
+    const token = useStore.getState().token;
+    if (!token) return;
+
+    let cancelled = false;
+
+    async function initE2EE() {
+      try {
+        await sodiumReady;
+        if (cancelled) return;
+
+        // Verificar si ya hay llaves
+        const db = await new Promise((resolve, reject) => {
+          const req = indexedDB.open('ShekaelKeys', 1);
+          req.onupgradeneeded = () => {
+            if (!req.result.objectStoreNames.contains('keys'))
+              req.result.createObjectStore('keys', { keyPath: 'id' });
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+
+        const tx = db.transaction('keys', 'readonly');
+        const store = tx.objectStore('keys');
+        const stored = await new Promise((resolve) => {
+          const req = store.get('main');
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        });
+        db.close();
+
+        if (stored) return; // Ya tiene llaves
+
+        // Generar nuevo par
+        const kp = _sodium.crypto_box_keypair();
+        const keyPair = {
+          publicKey: _sodium.to_base64(kp.publicKey),
+          privateKey: _sodium.to_base64(kp.privateKey)
+        };
+
+        // Guardar en IndexedDB
+        const db2 = await new Promise((resolve, reject) => {
+          const req = indexedDB.open('ShekaelKeys', 1);
+          req.onupgradeneeded = () => {
+            if (!req.result.objectStoreNames.contains('keys'))
+              req.result.createObjectStore('keys', { keyPath: 'id' });
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+        const tx2 = db2.transaction('keys', 'readwrite');
+        const store2 = tx2.objectStore('keys');
+        await new Promise((resolve, reject) => {
+          const req = store2.put({ id: 'main', ...keyPair });
+          req.onsuccess = resolve;
+          req.onerror = reject;
+        });
+        db2.close();
+
+        // Subir llave pública (best-effort)
+        try {
+          await updatePublicKey(keyPair.publicKey);
+        } catch { /* silencioso */ }
+      } catch (e) {
+        console.warn('E2EE init fallo:', e);
+      }
+    }
+
+    initE2EE();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <BrowserRouter>
