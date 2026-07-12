@@ -11,11 +11,11 @@
 
 .waveWrap {
   flex: 1;
-  height: 50px;
-  min-width: 60px;
-  border-radius: 6px;
+  height: 72px;
+  min-width: 80px;
+  border-radius: 8px;
   overflow: hidden;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.2);
 }
 
 .waveform {

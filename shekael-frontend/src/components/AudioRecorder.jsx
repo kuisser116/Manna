@@ -17,9 +17,8 @@ export default function AudioRecorder({ onSend, onClose }) {
   const runningRef = useRef(false);
   const lastSampleRef = useRef(0);
   const pausedRef = useRef(false);
-  const maxSamples = 150;
+  const maxSamples = 250;
 
-  // Size canvas to container
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !canvas.parentElement) return;
@@ -52,15 +51,47 @@ export default function AudioRecorder({ onSend, onClose }) {
     }
   };
 
-  // Simple 3-point moving average for smooth waveform
+  // Smooth data with 5-point moving average
   const smoothData = (arr) => {
-    if (arr.length < 3) return arr;
-    const out = [arr[0]];
-    for (let i = 1; i < arr.length - 1; i++) {
-      out.push((arr[i-1] + arr[i] + arr[i+1]) / 3);
+    const n = arr.length;
+    if (n < 5) return arr;
+    const out = new Array(n);
+    out[0] = arr[0];
+    out[1] = (arr[0] + arr[1] + arr[2]) / 3;
+    for (let i = 2; i < n - 2; i++) {
+      out[i] = (arr[i-2] + arr[i-1] + arr[i] + arr[i+1] + arr[i+2]) / 5;
     }
-    out.push(arr[arr.length - 1]);
+    out[n-2] = (arr[n-3] + arr[n-2] + arr[n-1]) / 3;
+    out[n-1] = arr[n-1];
     return out;
+  };
+
+  // Catmull-Rom → Bezier control points for super smooth curves
+  const catmullRomToBezier = (p0, p1, p2, p3) => {
+    return {
+      cp1: { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 },
+      cp2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }
+    };
+  };
+
+  const drawLineSmooth = (ctx, points, color, lineW) => {
+    if (points.length < 2) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineW;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    for (let i = 1; i < points.length - 1; i++) {
+      const p0 = i > 1 ? points[i-2] : points[i-1];
+      const p1 = points[i-1];
+      const p2 = points[i];
+      const p3 = i < points.length - 2 ? points[i+1] : points[i];
+      const { cp1, cp2 } = catmullRomToBezier(p0, p1, p2, p3);
+      ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p2.x, p2.y);
+    }
+    ctx.stroke();
   };
 
   const drawWaveform = () => {
@@ -75,16 +106,15 @@ export default function AudioRecorder({ onSend, onClose }) {
       const width = canvas.width;
       const height = canvas.height;
 
-      // Read audio data
+      // Read audio
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteTimeDomainData(dataArray);
 
-      // Average deviation
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) sum += Math.abs(dataArray[i] - 128);
       const avg = Math.min(sum / dataArray.length / 128, 1);
 
-      // Rolling history — throttle 150ms
+      // Throttled history
       const now = Date.now();
       if (now - lastSampleRef.current > 150) {
         lastSampleRef.current = now;
@@ -92,81 +122,43 @@ export default function AudioRecorder({ onSend, onClose }) {
         if (waveHistoryRef.current.length > maxSamples) waveHistoryRef.current.shift();
       }
 
-      const rawHistory = waveHistoryRef.current;
-      const history = smoothData(rawHistory);
+      const raw = waveHistoryRef.current;
+      const history = smoothData(raw);
       const hLen = history.length;
       const centerY = height / 2;
-      const maxH = height * 0.72;
+      const maxH = height * 0.85; // Tall oscillations
 
       // Background
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
       ctx.fillRect(0, 0, width, height);
 
-      // Center line
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      // Faint center line
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, centerY);
       ctx.lineTo(width, centerY);
       ctx.stroke();
 
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
       if (hLen >= 2) {
-        // Calculate x positions — NEWEST on RIGHT, oldest on LEFT
-        const xs = [];
-        const ysTop = [];
-        const ysBot = [];
-
+        // Build smooth points — RIGHT to LEFT (newest on right)
+        const linePoints = [];
         for (let i = 0; i < hLen; i++) {
-          const age = hLen - 1 - i; // 0 = newest, hLen-1 = oldest
+          const age = hLen - 1 - i;
           const x = width - (age * width) / maxSamples;
           const barH = Math.min(history[i] * maxH, maxH / 2);
-          xs.push(x);
-          ysTop.push(centerY - barH);
-          ysBot.push(centerY + barH);
+          linePoints.push({ x, y: centerY - barH });
         }
 
-        // Fill between upper/lower envelope
-        ctx.fillStyle = 'rgba(225, 29, 72, 0.12)';
-        ctx.beginPath();
-        ctx.moveTo(xs[0], centerY);
-        for (let i = 0; i < hLen; i++) ctx.lineTo(xs[i], ysTop[i]);
-        ctx.lineTo(xs[hLen-1], centerY);
-        for (let i = hLen - 1; i >= 0; i--) ctx.lineTo(xs[i], ysBot[i]);
-        ctx.closePath();
-        ctx.fill();
+        // Draw single smooth red line (WhatsApp-style)
+        drawLineSmooth(ctx, linePoints, '#e11d48', 3);
 
-        // Upper line (bright red) — smooth curve
-        ctx.strokeStyle = '#e11d48';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(xs[0], ysTop[0]);
-        for (let i = 1; i < hLen; i++) {
-          const prevX = xs[i-1], prevY = ysTop[i-1];
-          const midX = (prevX + xs[i]) / 2;
-          const midY = (prevY + ysTop[i]) / 2;
-          ctx.quadraticCurveTo(prevX, prevY, midX, midY);
-        }
-        ctx.stroke();
-
-        // Lower line (darker)
-        ctx.strokeStyle = '#be123c';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(xs[0], ysBot[0]);
-        for (let i = 1; i < hLen; i++) {
-          const prevX = xs[i-1], prevY = ysBot[i-1];
-          const midX = (prevX + xs[i]) / 2;
-          const midY = (prevY + ysBot[i]) / 2;
-          ctx.quadraticCurveTo(prevX, prevY, midX, midY);
-        }
-        ctx.stroke();
+        // Add a subtle mirror line at 1px for depth
+        const mirrorPoints = linePoints.map(p => ({ x: p.x, y: centerY + (centerY - p.y) }));
+        drawLineSmooth(ctx, mirrorPoints, 'rgba(190, 18, 60, 0.4)', 1.5);
 
       } else {
-        // Flat line placeholder
-        ctx.strokeStyle = 'rgba(225,29,72,0.3)';
+        ctx.strokeStyle = 'rgba(225,29,72,0.2)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(0, centerY);
@@ -207,7 +199,6 @@ export default function AudioRecorder({ onSend, onClose }) {
       setDuration(0);
       runningRef.current = true;
       drawWaveform();
-
       timerRef.current = setInterval(() => {
         if (!pausedRef.current) setDuration(d => d + 1);
       }, 1000);
@@ -259,15 +250,9 @@ export default function AudioRecorder({ onSend, onClose }) {
       const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
       const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm;codecs=opus' });
       const { data } = await uploadChatFile(file);
-      onSend?.({
-        url: data.url, fileName: data.name, fileSize: data.size,
-        mimeType: data.mime, duration: Math.round(duration)
-      });
+      onSend?.({ url: data.url, fileName: data.name, fileSize: data.size, mimeType: data.mime, duration: Math.round(duration) });
       onClose?.();
-    } catch (e) {
-      console.warn('Audio error:', e); alert('Error: ' + (e.message || e));
-      setState('recording');
-    }
+    } catch (e) { console.warn('Audio send err:', e); alert('Error: ' + (e.message || e)); setState('recording'); }
   };
 
   const handleCancel = () => {
@@ -285,9 +270,7 @@ export default function AudioRecorder({ onSend, onClose }) {
   if (state === 'sending') {
     return (
       <div className={styles.inlineBar}>
-        <div className={styles.statusRow}>
-          <span className={styles.spinner}></span> Enviando audio...
-        </div>
+        <div className={styles.statusRow}><span className={styles.spinner}></span> Enviando audio...</div>
       </div>
     );
   }
