@@ -95,6 +95,9 @@ export default function Chat() {
   // Filtro: 'all' | 'unread'
   const [convFilter, setConvFilter] = useState('all');
   const animatedMsgIdsRef = useRef(new Set());
+  const filteredConversations = convFilter === 'unread'
+    ? conversations.filter(c => c.lastReadAt && c.lastMessage?.created_at > c.lastReadAt)
+    : conversations;
 
   // ── GSAP: animar mensajes nuevos ──
   const messagesEndRefCallback = useCallback(() => {
@@ -274,11 +277,6 @@ export default function Chat() {
     sharedSecretCache.current[convId] = sharedSecret;
     return sharedSecret;
   }, [crypto]);
-
-  // Filter conversations
-  const filteredConversations = convFilter === 'unread'
-    ? conversations.filter(c => c.lastReadAt && c.lastMessage?.created_at > c.lastReadAt)
-    : conversations;
 
   // Load pinned message after selectConversation sets sharedSecretCache
   const loadPinnedMessage = useCallback(async (convId) => {
