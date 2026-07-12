@@ -327,7 +327,7 @@ export default function Profile() {
               <div className={styles.info}>
                 <div className={styles.nameRow}>
                   <h1 className={styles.name}>{profileData?.displayName || 'Usuario'}</h1>
-                  {isOwnProfile && (
+                  {isOwnProfile ? (
                     <>
                       <button
                         className={styles.editBtn}
@@ -347,6 +347,25 @@ export default function Profile() {
                         </svg>
                       </button>
                     </>
+                  ) : (
+                    <button
+                      className={styles.msgBtn}
+                      onClick={async () => {
+                        try {
+                          const { sendMessageRequest } = await import('../api/chats.api');
+                          await sendMessageRequest(profileData.id);
+                          navigate('/chats');
+                        } catch (err) {
+                          alert(err.response?.data?.message || 'Error al enviar solicitud');
+                        }
+                      }}
+                      title="Enviar mensaje"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Mensaje
+                    </button>
                   )}
                 </div>
 
