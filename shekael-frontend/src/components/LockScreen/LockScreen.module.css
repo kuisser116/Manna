@@ -134,10 +134,3 @@
   50% { opacity: 0.4; }
 }
 
-.pinDotExtra {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-border, #333);
-  transition: all 0.2s;
-}

@@ -289,7 +289,7 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
               <div key={i} className={styles.pinDot} />
             ))}
           {Array.from({ length: 6 - (step === 'enter' ? pin : step === 'confirm' ? confirmPin : pin).length }).map((_, i) => (
-            <div key={`e${i}`} className={i >= 4 ? styles.pinDotExtra : styles.pinDotEmpty} />
+            <div key={`e${i}`} className={styles.pinDotEmpty} />
           ))}
         </div>
 
