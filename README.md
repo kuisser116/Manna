@@ -1,6 +1,14 @@
 # Shekael — Red Social para tu Comunidad Local
 
-> **Shekael** (שֶׁקֶת): "La paz que Dios creó" — un espacio de quietud, conexión real y apoyo mutuo.
+> **Shekael** nace de la unión de tres palabras hebreas de la Biblia:
+>
+> **Sheket** (שֶׁקֶת) — "Paz, quietud, tranquilidad" — Jueces 3:11, 1 Crónicas 4:40
+> **Elkanah** (אֶלְקָנָה) — "Dios creó" — 1 Samuel 1
+> **El** (אֵל) — "Dios" — el Dios de la Biblia
+>
+> **She + Ka + El = "La paz que Dios creó / El lugar de quietud que Dios mismo creó para dar paz"**
+>
+> Un espacio de quietud, conexión real y apoyo mutuo.
 
 ## 🌾 Propósito
 
