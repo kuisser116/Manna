@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Type, Image, Sparkles, Upload, X, Video } from 'lucide-react';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -323,7 +324,7 @@ export default function CreatePost() {
     const maxLength = type === 'micro-text' ? 280 : 1000;
 
     return (
-        <div className={styles.layout}>
+        <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
             <main className={styles.main}>
                 <div className={styles.header}>
                     <h2 className={styles.title}>Nuevo post</h2>

@@ -3,6 +3,23 @@
     min-height: 100vh;
     width: 100%;
     background: var(--color-bg);
+    position: relative;
+}
+
+.layout::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: var(--color-pattern);
+    -webkit-mask-image: var(--pattern-url);
+    mask-image: var(--pattern-url);
+    -webkit-mask-repeat: repeat;
+    mask-repeat: repeat;
+    -webkit-mask-size: 104px 104px;
+    mask-size: 104px 104px;
+    opacity: var(--pattern-opacity);
+    pointer-events: none;
 }
 
 .main {
@@ -11,6 +28,8 @@
     padding: 28px 24px;
     border-right: 1px solid var(--color-border);
     background: var(--color-bg);
+    position: relative;
+    z-index: 1;
 }
 
 .header {
