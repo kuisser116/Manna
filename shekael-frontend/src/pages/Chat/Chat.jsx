@@ -862,7 +862,7 @@ export default function Chat() {
       <div className={styles.sidePanel}>
         <div className={styles.sideHeader}>
           <div className={styles.sideHeaderTop}>
-            <h2>Chats</h2>
+            <h2>{user?.displayName || user?.email?.split('@')[0] || 'Chats'}</h2>
             <div className={styles.headerActions}>
             <button
               className={`${styles.requestBtn} ${requests.length > 0 ? styles.hasRequests : ''}`}

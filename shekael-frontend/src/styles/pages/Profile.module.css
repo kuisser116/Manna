@@ -41,7 +41,7 @@
   position: relative;
   z-index: 1;
   max-width: 1148px;
-  margin: 0 auto;
+  margin: 24px auto 24px;
   background: var(--color-surface);
   border-radius: 20px;
   overflow: hidden;

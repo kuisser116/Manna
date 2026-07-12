@@ -162,6 +162,7 @@ router.post('/google', strictLimiter, async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
+                username: user.username,
                 displayName: user.display_name,
                 stellarPublicKey: user.stellar_public_key,
                 is_admin: !!user.is_admin,
@@ -252,6 +253,7 @@ router.get('/me', authMiddleware, async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
+                username: user.username,
                 displayName: user.display_name,
                 stellarPublicKey: user.stellar_public_key,
                 is_admin: !!user.is_admin,
