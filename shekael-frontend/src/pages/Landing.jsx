@@ -26,8 +26,11 @@ function LandingInner() {
   const { isDarkMode, toggleDarkMode } = useStore();
   const recaptchaLoaded = useRef(false);
 
-  // Redirigir a términos si hay token (la página de terms verifica si ya aceptó en BD)
+  // Redirigir a términos si hay token (salvo que se haya solicitado ver la landing)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('landing') === '1') return; // Forzar vista de landing
+
     const token = localStorage.getItem('Shekael_token');
     if (token && !window.location.pathname.startsWith('/terminos')) {
       navigate('/terminos');
