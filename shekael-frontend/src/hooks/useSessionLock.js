@@ -26,6 +26,7 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
 
   const unlock = useCallback(() => {
     setLocked(false);
+    // Una vez desbloqueado, iniciar timer de inactividad
     resetTimer();
   }, [resetTimer]);
 
@@ -37,11 +38,9 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
       return;
     }
 
-    // Verificar si ya hay PIN configurado
-    const hasPin = !!localStorage.getItem('shekael_pin_hash');
-    if (hasPin) {
-      setLocked(true);
-    }
+    // SIEMPRE bloquear al iniciar cuando hay token
+    // Si no hay PIN configurado, LockScreen entra en modo 'setup'
+    setLocked(true);
 
     const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
     const handler = () => resetTimer();

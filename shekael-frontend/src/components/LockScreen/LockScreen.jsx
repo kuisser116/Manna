@@ -146,6 +146,12 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
 
         {error && <p className={styles.error}>{error}</p>}
 
+        {step === 'create' && (
+          <button className={styles.skipBtn} onClick={() => onUnlock()}>
+            Omitir (no recomendado)
+          </button>
+        )}
+
         <div className={styles.keypad}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
             <button key={n} className={styles.key} onClick={() => handleDigit(String(n))}>

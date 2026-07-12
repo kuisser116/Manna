@@ -120,3 +120,20 @@
   opacity: 1;
   border-color: var(--color-primary, #e11d48);
 }
+
+.skipBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #666);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  margin-top: -8px;
+}
+
+.skipBtn:hover {
+  color: var(--color-text, #fff);
+  background: var(--color-surface-hover, #222);
+}

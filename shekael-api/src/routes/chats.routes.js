@@ -335,7 +335,7 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
 
         const { data: messages, error } = await supabase
             .from('chat_messages')
-            .select('id, sender_id, encrypted_content, nonce, created_at')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, created_at')
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
