@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 0;
-  background: transparent;
+  background: var(--color-bg);
   border-right: none;
   /* Sin overflow: el contenido (4 iconos) no necesita scroll,
      y queremos que los hover labels (::after) sean visibles

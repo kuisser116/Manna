@@ -9,7 +9,7 @@
 
 .layout::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
   background: var(--color-pattern);
@@ -20,6 +20,7 @@
   -webkit-mask-size: 104px 104px;
   mask-size: 104px 104px;
   opacity: var(--pattern-opacity);
+  pointer-events: none;
 }
 
 .layout,
