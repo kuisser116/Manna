@@ -72,15 +72,45 @@ export default function AudioRecorder({ onSend, onClose }) {
     cp2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }
   });
 
-  const drawLineSmooth = (ctx, pts, color, lineW) => {
+  // Draw smooth filled waveform (DaVinci-style)
+  const drawFilledWaveform = (ctx, pts, fillColor, centerY) => {
     if (pts.length < 2) return;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineW;
+
+    // 1. Draw the smooth top curved line
+    ctx.strokeStyle = fillColor;
+    ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+
+    // Build the fill path: top curve → right edge → center line → back to left
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
 
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = i > 1 ? pts[i-2] : pts[i-1];
+      const p1 = pts[i-1];
+      const p2 = pts[i];
+      const p3 = i < pts.length - 1 ? pts[i+1] : pts[i];
+      const { cp1, cp2 } = catmullRomToBezier(p0, p1, p2, p3);
+      ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p2.x, p2.y);
+    }
+
+    // Close at the center line
+    const lastX = pts[pts.length - 1].x;
+    ctx.lineTo(lastX, centerY);
+    ctx.lineTo(pts[0].x, centerY);
+    ctx.closePath();
+
+    // Gradient fill: more opaque at top, subtle at center
+    const grad = ctx.createLinearGradient(0, 0, 0, centerY);
+    grad.addColorStop(0, fillColor);
+    grad.addColorStop(1, 'rgba(225, 29, 72, 0.05)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Re-stroke just the top curve on top of the fill
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) {
       const p0 = i > 1 ? pts[i-2] : pts[i-1];
       const p1 = pts[i-1];
@@ -104,23 +134,16 @@ export default function AudioRecorder({ onSend, onClose }) {
       const width = canvas.width;
       const height = canvas.height;
 
-      // Read audio time-domain data
+      // Audio data
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteTimeDomainData(dataArray);
 
-      // Average deviation from silence (128)
       let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        sum += Math.abs(dataArray[i] - 128);
-      }
-      let avg = sum / dataArray.length / 128; // 0..1
+      for (let i = 0; i < dataArray.length; i++) sum += Math.abs(dataArray[i] - 128);
+      let avg = Math.min(sum / dataArray.length / 128, 1) * 4.0;
+      avg = Math.pow(Math.min(avg, 1), 0.7);
 
-      // Amplify! Quiet speech is ~0.05, we want it at ~0.3-0.5
-      avg = Math.min(avg * 4.0, 1.0);
-      // Apply a gentle power curve for natural feel
-      avg = Math.pow(avg, 0.7);
-
-      // Throttled history — 120ms between samples
+      // Throttled history
       const now = Date.now();
       if (now - lastSampleRef.current > 120) {
         lastSampleRef.current = now;
@@ -135,34 +158,25 @@ export default function AudioRecorder({ onSend, onClose }) {
       const maxH = height * 0.88;
 
       // Dark background
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.fillRect(0, 0, width, height);
 
-      // Ultra-faint center guide
-      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(width, centerY);
-      ctx.stroke();
-
       if (hLen >= 2) {
-        // Build points — NEWEST on RIGHT
+        // Build top points (deviation from center, upward)
         const ptsTop = [];
-        const ptsBot = [];
         for (let i = 0; i < hLen; i++) {
           const age = hLen - 1 - i;
           const x = width - (age * width) / maxSamples;
           const dev = Math.min(history[i] * maxH, maxH / 2);
           ptsTop.push({ x, y: centerY - dev });
-          ptsBot.push({ x, y: centerY + dev });
         }
 
-        // Main red line (top envelope)
-        drawLineSmooth(ctx, ptsTop, '#e11d48', 3);
+        // Draw DaVinci-style filled waveform (upper half)
+        drawFilledWaveform(ctx, ptsTop, '#e11d48', centerY);
 
-        // Subtle mirror (bottom envelope)
-        drawLineSmooth(ctx, ptsBot, 'rgba(190, 18, 60, 0.3)', 1.5);
+        // Lower half (mirror, slightly dimmer)
+        const ptsBot = ptsTop.map(p => ({ x: p.x, y: centerY + (centerY - p.y) }));
+        drawFilledWaveform(ctx, ptsBot, '#be123c', centerY);
 
       } else {
         ctx.strokeStyle = 'rgba(225,29,72,0.15)';
@@ -183,13 +197,8 @@ export default function AudioRecorder({ onSend, onClose }) {
 
   const startRecording = async () => {
     try {
-      // Disable audio processing for raw input
       const s = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        }
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
       });
       streamRef.current = s;
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
@@ -208,7 +217,6 @@ export default function AudioRecorder({ onSend, onClose }) {
 
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.start();
-
       setState('recording');
       setDuration(0);
       runningRef.current = true;
@@ -229,8 +237,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       recorderRef.current.stop();
       if (audioCtxRef.current) audioCtxRef.current.suspend();
       if (timerRef.current) clearInterval(timerRef.current);
-      pausedRef.current = true;
-      runningRef.current = false;
+      pausedRef.current = true; runningRef.current = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       setState('paused');
     } else if (state === 'paused') {
@@ -240,10 +247,8 @@ export default function AudioRecorder({ onSend, onClose }) {
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.start();
       if (audioCtxRef.current) audioCtxRef.current.resume();
-      pausedRef.current = false;
-      setState('recording');
-      runningRef.current = true;
-      drawWaveform();
+      pausedRef.current = false; setState('recording');
+      runningRef.current = true; drawWaveform();
       timerRef.current = setInterval(() => {
         if (!pausedRef.current) setDuration(d => d + 1);
       }, 1000);
@@ -314,7 +319,7 @@ export default function AudioRecorder({ onSend, onClose }) {
         )}
 
         <button className={styles.sendBtn} onClick={handleSend} title="Enviar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 9"/></svg>
         </button>
       </div>
     </div>
