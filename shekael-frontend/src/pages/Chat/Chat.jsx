@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../../store';
 import useChatCrypto from '../../hooks/useChatCrypto';
+import useRatchetSession from '../../hooks/useRatchetSession';
 import { getUserProfile } from '../../api/users.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import {
@@ -15,6 +16,7 @@ export default function Chat() {
   const navigate = useNavigate();
   const { user } = useStore();
   const crypto = useChatCrypto();
+  const ratchet = useRatchetSession();
 
   // Estado
   const [conversations, setConversations] = useState([]);
@@ -32,6 +34,8 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   const msgListRef = useRef(null);
   const otherUserCache = useRef({});
+  const sharedSecretCache = useRef({}); // { [convId]: Uint8Array } ECDH shared secret
+  const ratchetReadyRef = useRef(false); // si ya se recuperó la sesión del ratchet
 
   // Inicializar crypto — genera llaves con libsodium (import estático)
   useEffect(() => {
@@ -133,51 +137,131 @@ export default function Chat() {
     }
   };
 
+  // Derivar shared secret ECDH (permanente para la conversación)
+  const deriveEcdhSecret = useCallback(async (convId, theirPublicKey) => {
+    if (sharedSecretCache.current[convId]) return sharedSecretCache.current[convId];
+    if (!theirPublicKey) return null;
+
+    await sodiumReady;
+    const kp = await crypto.loadKeyPair();
+    if (!kp) return null;
+
+    const sharedSecret = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirPublicKey),
+      _sodium.from_base64(kp.privateKey)
+    );
+    sharedSecretCache.current[convId] = sharedSecret;
+    return sharedSecret;
+  }, [crypto]);
+
   // Cargar mensajes al seleccionar conversación
   const selectConversation = useCallback(async (conv) => {
     setActiveConv(conv);
     setShowSearch(false);
     setMessages([]);
+    ratchetReadyRef.current = false;
 
     try {
       const res = await getMessages(conv.id);
       const msgs = res.data.messages || [];
 
-      // Cachear llaves públicas y descifrar
+      // Cachear llaves públicas
       const otherUser = conv.otherUser;
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
       }
 
-      // Intentar descifrar mensajes
-      const decrypted = await decryptMessages(msgs, otherUser);
-      setMessages(decrypted || msgs);
+      // Derivar shared secret ECDH
+      if (!otherUser?.public_key) {
+        setMessages(msgs);
+        return;
+      }
+
+      const sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
+      if (!sharedSecret) {
+        setMessages(msgs);
+        return;
+      }
+
+      // Recuperar sesión del ratchet + descifrar mensajes
+      const keys = await ratchet.recoverSession(conv.id, sharedSecret, msgs);
+
+      // Descifrar cada mensaje con su llave derivada del ratchet
+      const decrypted = [];
+      for (const msg of msgs) {
+        const msgKey = msg.msg_index ? keys.get(msg.msg_index) : null;
+        if (msgKey) {
+          try {
+            const plaintext = _sodium.to_string(
+              _sodium.crypto_secretbox_open_easy(
+                _sodium.from_base64(msg.encrypted_content),
+                _sodium.from_base64(msg.nonce),
+                msgKey
+              )
+            );
+            decrypted.push({ ...msg, decrypted: plaintext });
+            continue;
+          } catch {
+            decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+            continue;
+          }
+        }
+        // Sin msgIndex o sin llave — intentar descifrado legacy
+        try {
+          const plaintext = await crypto.decrypt(
+            msg.encrypted_content,
+            msg.nonce,
+            otherUser.public_key
+          );
+          decrypted.push({ ...msg, decrypted: plaintext });
+        } catch {
+          decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+        }
+      }
+
+      ratchetReadyRef.current = true;
+      setMessages(decrypted);
     } catch (err) {
       console.error('Error loading messages:', err);
     }
-  }, []);
+  }, [crypto, ratchet, deriveEcdhSecret]);
 
-  // Descifrar lote de mensajes
-  const decryptMessages = async (msgs, otherUser) => {
+  // Descifrar mensajes entrantes nuevos (cuando se reciben sin recargar la página)
+  const decryptMessages = async (msgs, otherUser, convId) => {
     if (!otherUser?.public_key) return msgs;
     const decrypted = [];
+
     for (const msg of msgs) {
       try {
-        const plaintext = await crypto.decrypt(
-          msg.encrypted_content,
-          msg.nonce,
-          otherUser.public_key
-        );
-        decrypted.push({ ...msg, decrypted: plaintext });
+        // Si tiene msgIndex, usar ratchet
+        if (msg.msg_index && sharedSecretCache.current[convId]) {
+          const sharedSecret = sharedSecretCache.current[convId];
+          const msgKey = await ratchet.deriveKeyForIndex(convId, sharedSecret, msg.msg_index);
+          const plaintext = _sodium.to_string(
+            _sodium.crypto_secretbox_open_easy(
+              _sodium.from_base64(msg.encrypted_content),
+              _sodium.from_base64(msg.nonce),
+              msgKey
+            )
+          );
+          decrypted.push({ ...msg, decrypted: plaintext });
+        } else {
+          // Fallback legacy
+          const plaintext = await crypto.decrypt(
+            msg.encrypted_content,
+            msg.nonce,
+            otherUser.public_key
+          );
+          decrypted.push({ ...msg, decrypted: plaintext });
+        }
       } catch {
-        // Si falla descifrado, mostrar como cifrado
         decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
       }
     }
     return decrypted;
   };
 
-  // Enviar mensaje (siempre cifrado)
+  // Enviar mensaje con ratchet (forward secrecy)
   const handleSend = async () => {
     if (!inputText.trim() || sending || !activeConv) return;
     if (!keysReady) return;
@@ -201,10 +285,40 @@ export default function Chat() {
       return;
     }
 
+    // Asegurar shared secret
+    const sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
+    if (!sharedSecret) {
+      alert('Error al establecer el secreto compartido.');
+      return;
+    }
+
+    // Asegurar que la sesión del ratchet existe
+    if (!ratchetReadyRef.current) {
+      // Inicializar sesión si no hay mensajes previos
+      await ratchet.initSession(activeConv.id, sharedSecret);
+      ratchetReadyRef.current = true;
+    }
+
     setSending(true);
     try {
-      const { encryptedContent, nonce } = await crypto.encrypt(inputText, otherUser.public_key);
-      const res = await sendMessage(activeConv.id, encryptedContent, nonce);
+      // Obtener llave del ratchet para este mensaje
+      const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
+
+      // Cifrar con la llave derivada del ratchet, no con el shared secret directo
+      await sodiumReady;
+      const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
+      const ciphertext = _sodium.crypto_secretbox_easy(
+        _sodium.from_string(inputText),
+        nonce,
+        msgKey
+      );
+
+      const res = await sendMessage(
+        activeConv.id,
+        _sodium.to_base64(ciphertext),
+        _sodium.to_base64(nonce),
+        msgIndex
+      );
       setMessages(prev => [...prev, { ...res.data.message, decrypted: inputText }]);
       setInputText('');
       scrollToBottom();

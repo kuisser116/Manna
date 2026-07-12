@@ -365,7 +365,7 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
         const supabase = getDB();
         const userId = req.user.id;
         const conversationId = req.params.id;
-        const { encryptedContent, nonce } = req.body;
+        const { encryptedContent, nonce, msgIndex } = req.body;
 
         if (!encryptedContent || !nonce) {
             return res.status(400).json({ message: 'Contenido cifrado y nonce requeridos' });
@@ -391,9 +391,10 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
                 conversation_id: conversationId,
                 sender_id: userId,
                 encrypted_content: encryptedContent,
-                nonce
+                nonce,
+                msg_index: msgIndex || 1
             })
-            .select('id, sender_id, encrypted_content, nonce, created_at')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, created_at')
             .single();
 
         if (error) throw error;

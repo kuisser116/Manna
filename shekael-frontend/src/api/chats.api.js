@@ -21,8 +21,8 @@ export const getConversations = () => chatAPI.get('/chats/conversations');
 
 // Mensajes
 export const getMessages = (conversationId, page = 0) => chatAPI.get(`/chats/${conversationId}/messages?page=${page}`);
-export const sendMessage = (conversationId, encryptedContent, nonce) =>
-    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce });
+export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex) =>
+    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex });
 
 // Búsqueda de usuarios
 export const searchUsers = (q) => chatAPI.get(`/chats/users/search?q=${encodeURIComponent(q)}`);
