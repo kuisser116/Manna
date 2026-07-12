@@ -38,20 +38,23 @@ export default function Chat() {
         await crypto.loadKeyPair();
       } catch { /* IndexedDB puede fallar, se genera de nuevo */ }
 
-      let has = await crypto.hasKeys();
+      let has = false;
+      try {
+        has = await crypto.hasKeys();
+      } catch { /* ignorar */ }
+
       if (!has) {
         try {
           await crypto.generateKeyPair();
           has = true;
-          // Subir llave pública al servidor (best-effort)
           try {
             const kp = await crypto.loadKeyPair();
             await updatePublicKey(kp.publicKey);
           } catch {
-            console.warn('No se pudo subir la llave pública, se reintentará después');
+            console.warn('No se pudo subir la llave pública');
           }
-        } catch {
-          console.error('No se pudieron generar llaves de cifrado');
+        } catch (e) {
+          console.warn('No se pudieron generar llaves de cifrado:', e);
         }
       }
 
@@ -470,12 +473,11 @@ export default function Chat() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className={styles.messageInput}
-                disabled={!keysReady}
               />
               <button
                 className={styles.sendBtn}
                 onClick={handleSend}
-                disabled={!inputText.trim() || sending || !keysReady}
+                disabled={!inputText.trim() || sending}
               >
                 {sending ? '...' : (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
