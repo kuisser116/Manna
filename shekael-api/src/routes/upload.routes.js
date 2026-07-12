@@ -15,7 +15,20 @@ router.post('/image', authMiddleware, upload.single('image'), async (req, res) =
         if (!req.file) return res.status(400).json({ message: 'No file' });
 
         const filename = `img-${uuidv4()}-${req.file.originalname}`;
-        const fileUrl = await uploadToR2(req.file.buffer, filename, req.file.mimetype);
+        let fileUrl;
+        try {
+            fileUrl = await uploadToR2(req.file.buffer, filename, req.file.mimetype);
+        } catch {
+            const { writeFileSync, mkdirSync, existsSync } = await import('fs');
+            const { join, dirname } = await import('path');
+            const { fileURLToPath } = await import('url');
+            const __dir = dirname(fileURLToPath(import.meta.url));
+            const upDir = join(__dir, '..', 'uploads');
+            if (!existsSync(upDir)) mkdirSync(upDir, { recursive: true });
+            const localName = `img-${uuidv4()}.jpg`;
+            writeFileSync(join(upDir, localName), req.file.buffer);
+            fileUrl = `http://localhost:3001/uploads/${localName}`;
+        }
 
         const caption = req.body.caption || '';
         const content = `${fileUrl}|||${caption}`;
@@ -47,7 +60,20 @@ router.post('/video', authMiddleware, upload.fields([{ name: 'video', maxCount: 
         if (!videoFile) return res.status(400).json({ message: 'No video' });
 
         const filename = `video-${uuidv4()}.mp4`;
-        const fileUrl = await uploadToR2(videoFile.buffer, filename, videoFile.mimetype);
+        let fileUrl;
+        try {
+            fileUrl = await uploadToR2(videoFile.buffer, filename, videoFile.mimetype);
+        } catch {
+            const { writeFileSync, mkdirSync, existsSync } = await import('fs');
+            const { join, dirname } = await import('path');
+            const { fileURLToPath } = await import('url');
+            const __dir = dirname(fileURLToPath(import.meta.url));
+            const upDir = join(__dir, '..', 'uploads');
+            if (!existsSync(upDir)) mkdirSync(upDir, { recursive: true });
+            const localName = `video-${uuidv4()}.mp4`;
+            writeFileSync(join(upDir, localName), videoFile.buffer);
+            fileUrl = `http://localhost:3001/uploads/${localName}`;
+        }
 
         // Moderación local sobre título/descripción
         const textContent = `${req.body.title || ''} ${req.body.description || ''}`.trim();
@@ -61,7 +87,19 @@ router.post('/video', authMiddleware, upload.fields([{ name: 'video', maxCount: 
         const thumbFile = req.files?.thumbnail?.[0];
         if (thumbFile) {
             const thumbFilename = `thumb-${uuidv4()}-${thumbFile.originalname}`;
-            thumbnailUrl = await uploadToR2(thumbFile.buffer, thumbFilename, thumbFile.mimetype);
+            try {
+                thumbnailUrl = await uploadToR2(thumbFile.buffer, thumbFilename, thumbFile.mimetype);
+            } catch {
+                const { writeFileSync, mkdirSync, existsSync } = await import('fs');
+                const { join, dirname } = await import('path');
+                const { fileURLToPath } = await import('url');
+                const __dir = dirname(fileURLToPath(import.meta.url));
+                const upDir = join(__dir, '..', 'uploads');
+                if (!existsSync(upDir)) mkdirSync(upDir, { recursive: true });
+                const localName = `thumb-${uuidv4()}-${thumbFile.originalname}`;
+                writeFileSync(join(upDir, localName), thumbFile.buffer);
+                thumbnailUrl = `http://localhost:3001/uploads/${localName}`;
+            }
         }
 
         const supabase = getDB();
