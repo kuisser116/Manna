@@ -381,9 +381,12 @@ export default function Chat() {
       return;
     }
 
-    // Asegurar que la sesión del ratchet existe
+    // Asegurar que la sesión del ratchet existe (sin resetear si ya había estado)
     if (!ratchetReadyRef.current) {
-      await ratchet.initSession(activeConv.id, sharedSecret);
+      const existing = await ratchet.loadState(activeConv.id);
+      if (!existing) {
+        await ratchet.initSession(activeConv.id, sharedSecret);
+      }
       ratchetReadyRef.current = true;
     }
 
