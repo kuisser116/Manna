@@ -151,7 +151,7 @@ const useStore = create((set, get) => ({
     const valid = ['light', 'everforest', 'everforest-soft', 'navy', 'catppuccin', 'tokyo-night', 'dark'];
     if (stored && valid.includes(stored)) return stored;
     if (stored === 'dark') return 'dark';
-    return 'light';
+    return 'everforest-soft';
   })(),
   cycleTheme: () => set((state) => {
     const themes = ['light', 'everforest', 'everforest-soft', 'navy', 'catppuccin', 'tokyo-night', 'dark'];
