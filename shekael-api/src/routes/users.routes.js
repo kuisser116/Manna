@@ -53,7 +53,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('id, email, display_name, username, bio, stellar_public_key, avatar_url, cover_url, created_at')
+                .select('id, email, display_name, username, bio, stellar_public_key, public_key, avatar_url, cover_url, created_at')
                 .eq('id', targetUserId)
                 .maybeSingle();
             if (error) throw error;
@@ -62,7 +62,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
             // Si username column no existe aún, consultar sin ella
             const { data, error } = await supabase
                 .from('users')
-                .select('id, email, display_name, bio, stellar_public_key, avatar_url, cover_url, created_at')
+                .select('id, email, display_name, bio, stellar_public_key, public_key, avatar_url, cover_url, created_at')
                 .eq('id', targetUserId)
                 .maybeSingle();
             if (error) throw error;

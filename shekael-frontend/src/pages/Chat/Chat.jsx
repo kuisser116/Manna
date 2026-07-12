@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../../store';
 import useChatCrypto from '../../hooks/useChatCrypto';
+import { getUserProfile } from '../../api/users.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import {
   getConversations, getMessages, sendMessage,
@@ -181,9 +182,22 @@ export default function Chat() {
     if (!inputText.trim() || sending || !activeConv) return;
     if (!keysReady) return;
 
-    const otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
+    let otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
+    
+    // Si no tenemos la llave pública, intentar obtenerla del servidor
+    if (!otherUser?.public_key && otherUser?.id) {
+      try {
+        const res = await getUserProfile(otherUser.id);
+        const fresh = res.data?.user || res.data;
+        if (fresh?.public_key) {
+          otherUser = { ...otherUser, public_key: fresh.public_key };
+          otherUserCache.current[activeConv.id] = otherUser;
+        }
+      } catch { /* fallo, seguimos sin llave */ }
+    }
+
     if (!otherUser?.public_key) {
-      alert('El usuario aún no ha configurado el cifrado. Intenta más tarde.');
+      alert('El usuario aun no ha configurado el cifrado. Pidele que entre a la seccion de chats para activarlo.');
       return;
     }
 
