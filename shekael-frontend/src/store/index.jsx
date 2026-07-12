@@ -148,13 +148,13 @@ const useStore = create((set, get) => ({
   // â”€â”€ Tema / Theme Cycling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   themeName: (() => {
     const stored = localStorage.getItem('Shekael_theme');
-    const valid = ['light', 'everforest', 'navy', 'catppuccin', 'tokyo-night'];
+    const valid = ['light', 'everforest', 'everforest-soft', 'navy', 'catppuccin', 'tokyo-night', 'dark'];
     if (stored && valid.includes(stored)) return stored;
-    if (stored === 'dark') return 'everforest';
+    if (stored === 'dark') return 'dark';
     return 'light';
   })(),
   cycleTheme: () => set((state) => {
-    const themes = ['light', 'everforest', 'navy', 'catppuccin', 'tokyo-night'];
+    const themes = ['light', 'everforest', 'everforest-soft', 'navy', 'catppuccin', 'tokyo-night', 'dark'];
     const currentIdx = themes.indexOf(state.themeName);
     const nextTheme = themes[(currentIdx + 1) % themes.length];
     localStorage.setItem('Shekael_theme', nextTheme);
