@@ -31,7 +31,7 @@ export default function Chat() {
   const msgListRef = useRef(null);
   const otherUserCache = useRef({});
 
-  // Inicializar crypto — genera llaves automáticamente si no existen
+  // Inicializar crypto — genera llaves OBLIGATORIAMENTE
   useEffect(() => {
     async function init() {
       try {
@@ -54,7 +54,7 @@ export default function Chat() {
             console.warn('No se pudo subir la llave pública');
           }
         } catch (e) {
-          console.warn('No se pudieron generar llaves de cifrado:', e);
+          console.error('Error grave: no se pudieron generar llaves de cifrado:', e);
         }
       }
 
@@ -133,24 +133,14 @@ export default function Chat() {
     return decrypted;
   };
 
-  // Enviar mensaje
+  // Enviar mensaje (siempre cifrado)
   const handleSend = async () => {
     if (!inputText.trim() || sending || !activeConv) return;
+    if (!keysReady) return;
 
     const otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
     if (!otherUser?.public_key) {
-      // Si no hay llave pública, guardar como texto plano (fallback)
-      try {
-        const res = await sendMessage(
-          activeConv.id,
-          btoa(inputText),
-          'plain'
-        );
-        setMessages(prev => [...prev, { ...res.data.message, decrypted: inputText }]);
-        setInputText('');
-      } catch (err) {
-        console.error('Error:', err);
-      }
+      alert('El usuario aún no ha configurado el cifrado. Intenta más tarde.');
       return;
     }
 
@@ -163,6 +153,7 @@ export default function Chat() {
       scrollToBottom();
     } catch (err) {
       console.error('Error sending:', err);
+      alert('Error al enviar el mensaje cifrado. Intenta de nuevo.');
     } finally {
       setSending(false);
     }
@@ -439,6 +430,12 @@ export default function Chat() {
               </span>
             </div>
 
+            {!keysReady && (
+              <div className={styles.keysWarning}>
+                <span>⚠️ Generando llaves de cifrado...</span>
+              </div>
+            )}
+
             <div className={styles.messagesList} ref={msgListRef}>
               {messages.length === 0 ? (
                 <div className={styles.noMessages}>
@@ -473,11 +470,12 @@ export default function Chat() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className={styles.messageInput}
+                disabled={!keysReady}
               />
               <button
                 className={styles.sendBtn}
                 onClick={handleSend}
-                disabled={!inputText.trim() || sending}
+                disabled={!inputText.trim() || sending || !keysReady}
               >
                 {sending ? '...' : (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
