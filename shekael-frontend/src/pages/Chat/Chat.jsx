@@ -228,18 +228,18 @@ export default function Chat() {
     ? conversations.filter(c => c.lastReadAt && c.lastMessage?.created_at > c.lastReadAt)
     : conversations;
 
-  // Load pinned message and try to decrypt it
-  useEffect(() => {
-    if (!activeConv) { setPinnedMessage(null); return; }
-    getPinnedMessage(activeConv.id).then(async (res) => {
+  // Load pinned message after selectConversation sets sharedSecretCache
+  const loadPinnedMessage = useCallback(async (convId) => {
+    try {
+      const res = await getPinnedMessage(convId);
       const pm = res.data.pinnedMessage;
       if (!pm) { setPinnedMessage(null); return; }
 
-      // Try to decrypt using ratchet or fallback
       let decryptedText = null;
-      if (pm.msg_index && sharedSecretCache.current[activeConv.id]) {
+      const ss = sharedSecretCache.current[convId];
+      if (ss && pm.msg_index) {
         try {
-          const msgKey = await ratchet.deriveKeyForIndex(activeConv.id, sharedSecretCache.current[activeConv.id], pm.msg_index);
+          const msgKey = await ratchet.deriveKeyForIndex(convId, ss, pm.msg_index);
           decryptedText = _sodium.to_string(
             _sodium.crypto_secretbox_open_easy(
               _sodium.from_base64(pm.encrypted_content),
@@ -247,26 +247,13 @@ export default function Chat() {
               msgKey
             )
           );
-        } catch (e) {
-          // Try legacy
-          try {
-            const sharedSecret = sharedSecretCache.current[activeConv.id];
-            if (sharedSecret && pm.nonce && pm.encrypted_content) {
-              const key = await ratchet.deriveKeyForIndex(activeConv.id, sharedSecret, pm.msg_index || 1);
-              decryptedText = _sodium.to_string(
-                _sodium.crypto_secretbox_open_easy(
-                  _sodium.from_base64(pm.encrypted_content),
-                  _sodium.from_base64(pm.nonce),
-                  key
-                )
-              );
-            }
-          } catch { /* no se puede descifrar */ }
-        }
+        } catch { /* falló descifrado */ }
       }
       setPinnedMessage({ ...pm, decryptedText });
-    }).catch(() => setPinnedMessage(null));
-  }, [activeConv]);
+    } catch {
+      setPinnedMessage(null);
+    }
+  }, [ratchet]);
 
   // Cargar mensajes al seleccionar conversación
   const selectConversation = useCallback(async (conv) => {
@@ -393,10 +380,12 @@ export default function Chat() {
 
       ratchetReadyRef.current = true;
       setMessages(decrypted);
+      // Cargar mensaje fijado ahora que sharedSecretCache está listo
+      loadPinnedMessage(conv.id);
     } catch (err) {
       console.error('Error loading messages:', err);
     }
-  }, [crypto, ratchet, deriveEcdhSecret]);
+  }, [crypto, ratchet, deriveEcdhSecret, loadPinnedMessage]);
 
   // Descifrar mensajes entrantes nuevos (cuando se reciben sin recargar la página)
   const decryptMessages = async (msgs, otherUser, convId) => {
@@ -564,8 +553,10 @@ export default function Chat() {
         fileMeta.mimeType
       );
 
-      // Update the message with reply info via PATCH since sendMessage doesn't support it inline yet
+      // Set reply info locally FIRST (optimistic), then try to persist on server
       if (replyTo && res.data.message?.id) {
+        res.data.message.reply_to_id = replyTo.id;
+        res.data.message.reply_preview = replyPreview;
         try {
           const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
           const { default: axios } = await import('axios');
@@ -574,10 +565,8 @@ export default function Chat() {
             reply_to_id: replyTo.id,
             reply_preview: replyPreview
           }, { headers: { Authorization: `Bearer ${token}` } });
-          res.data.message.reply_to_id = replyTo.id;
-          res.data.message.reply_preview = replyPreview;
         } catch (patchErr) {
-          console.warn('Could not add reply info:', patchErr);
+          console.warn('Reply PATCH failed but local state already has the data');
         }
       }
 
