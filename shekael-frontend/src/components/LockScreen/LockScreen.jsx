@@ -172,7 +172,7 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
       const newPin = pin + d;
       if (newPin.length <= 6) {
         setPin(newPin);
-        if (newPin.length >= 4) {
+        if (newPin.length === 6) {
           setTimeout(() => verifyPin(newPin), 100);
         }
       }
@@ -180,7 +180,7 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
       const newPin = pin + d;
       if (newPin.length <= 6) {
         setPin(newPin);
-        if (newPin.length >= 4) {
+        if (newPin.length === 6) {
           setTimeout(() => setStep('confirm'), 200);
         }
       }
@@ -188,7 +188,7 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
       const newPin = confirmPin + d;
       if (newPin.length <= 6) {
         setConfirmPin(newPin);
-        if (newPin.length >= 4) {
+        if (newPin.length === 6) {
           setTimeout(() => checkConfirm(newPin), 100);
         }
       }
@@ -262,8 +262,8 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
             </h2>
             <p className={styles.subtitle}>
               {hasPinHash
-                ? 'Ingresa tu PIN para continuar'
-                : 'Elige un PIN de 4-6 dígitos para proteger tu cuenta'}
+                ? 'Ingresa tu PIN de 6 dígitos'
+                : 'Elige un PIN de 6 dígitos para proteger tu cuenta'}
             </p>
           </>
         )}
@@ -271,7 +271,7 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
         {step === 'create' && (
           <>
             <h2 className={styles.title}>Crear PIN de seguridad</h2>
-            <p className={styles.subtitle}>Elige un PIN de 4-6 dígitos</p>
+            <p className={styles.subtitle}>Elige un PIN de 6 dígitos</p>
           </>
         )}
 
