@@ -173,6 +173,128 @@ export function useRatchetSession() {
     return msgKey;
   }, [hmac256, saveState]);
 
+  // ── X3DH: derivar shared secret desde pre-key ──
+  // Para cuando el otro usuario no tiene public_key (no ha generado identity key)
+  // Usamos: SK = HKDF(ECDH(identity, preKey) || ECDH(ephemeral, identity))
+  // La función devuelve el sharedSecret y la llave efímera pública para enviar
+  const deriveFromPreKey = useCallback(async (myPrivateKey, theirPreKeyPublicBase64) => {
+    const { default: _sodium, ready } = await import('libsodium-wrappers');
+    await ready;
+
+    // ECDH con identity + pre-key
+    const dh1 = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirPreKeyPublicBase64),
+      _sodium.from_base64(myPrivateKey)
+    );
+
+    // Generar llave efímera
+    const ephKp = _sodium.crypto_box_keypair();
+    const ephPriv = _sodium.to_base64(ephKp.privateKey);
+    const ephPub = _sodium.to_base64(ephKp.publicKey);
+
+    // ECDH(llave efímera, su identity key) — pero si no tenemos su identity,
+    // solo usamos DH1. Si tenemos su identity, podemos hacer DH2 también.
+    const sharedSecret = dh1;
+
+    return { sharedSecret, ephemeralPublicKey: ephPub, ephemeralPrivateKey: ephPriv };
+  }, []);
+
+  // ── X3DH 2-DH completo (identity + pre-key) ──
+  const deriveFullX3DH = useCallback(async (myPrivateKey, theirIdentityPublicKey, theirPreKeyPublicBase64) => {
+    const { default: _sodium, ready } = await import('libsodium-wrappers');
+    await ready;
+
+    // DH1 = ECDH(identity, pre-key)
+    const dh1 = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirPreKeyPublicBase64),
+      _sodium.from_base64(myPrivateKey)
+    );
+
+    // Generar llave efímera
+    const ephKp = _sodium.crypto_box_keypair();
+    const ephPriv = _sodium.from_base64(_sodium.to_base64(ephKp.privateKey));
+    const ephPub = _sodium.to_base64(ephKp.publicKey);
+
+    // DH2 = ECDH(efímera, identity del otro)
+    const dh2 = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirIdentityPublicKey),
+      ephPriv
+    );
+
+    // DH3 = ECDH(efímera, pre-key del otro)
+    const dh3 = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirPreKeyPublicBase64),
+      ephPriv
+    );
+
+    // SK = HKDF(DH1 || DH2 || DH3)
+    const combined = new Uint8Array(dh1.length + dh2.length + dh3.length);
+    combined.set(dh1, 0);
+    combined.set(dh2, dh1.length);
+    combined.set(dh3, dh1.length + dh2.length);
+    const sharedSecret = await hmac256(combined, 'shekael-x3dh-v1');
+
+    return { sharedSecret, ephemeralPublicKey: ephPub };
+  }, [hmac256]);
+
+  // ── Recuperar sesión desde pre-key (para el receptor) ──
+  // Cuando alguien usó una pre-key nuestra para iniciar la conversación
+  const recoverFromPreKey = useCallback(async (convId, myPreKeyPrivate, ephemeralPublicKey, theirIdentityPublicKey) => {
+    const { default: _sodium, ready } = await import('libsodium-wrappers');
+    await ready;
+
+    // DH1 = ECDH(nuestra pre-key, identity del otro)
+    const dh1 = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirIdentityPublicKey),
+      _sodium.from_base64(myPreKeyPrivate)
+    );
+
+    // DH2 = ECDH(nuestra identity, efímera del otro)
+    const kp = await getMyKeyPair();
+    const dh2 = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(ephemeralPublicKey),
+      _sodium.from_base64(kp.privateKey)
+    );
+
+    // DH3 = ECDH(nuestra pre-key, efímera del otro)
+    const dh3 = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(ephemeralPublicKey),
+      _sodium.from_base64(myPreKeyPrivate)
+    );
+
+    const combined = new Uint8Array(dh1.length + dh2.length + dh3.length);
+    combined.set(dh1, 0);
+    combined.set(dh2, dh1.length);
+    combined.set(dh3, dh1.length + dh2.length);
+    const sharedSecret = await hmac256(combined, 'shekael-x3dh-v1');
+
+    await initSession(convId, sharedSecret);
+    return sharedSecret;
+  }, [hmac256, initSession]);
+
+  // ── Helper: obtener keypair de IndexedDB ──
+  const getMyKeyPair = useCallback(async () => {
+    try {
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('ShekaelKeys', 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains('keys'))
+            req.result.createObjectStore('keys', { keyPath: 'id' });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const tx = db.transaction('keys', 'readonly');
+      const stored = await new Promise((resolve) => {
+        const req = tx.objectStore('keys').get('main');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      });
+      db.close();
+      return stored;
+    } catch { return null; }
+  }, []);
+
   // ── Limpiar sesión (logout) ──
   const clearSession = useCallback(async (convId) => {
     delete cacheRef.current[convId];
@@ -195,6 +317,10 @@ export function useRatchetSession() {
     recoverSession,
     nextKey,
     deriveKeyForIndex,
+    deriveFromPreKey,
+    deriveFullX3DH,
+    recoverFromPreKey,
+    getMyKeyPair,
     clearSession
   };
 }

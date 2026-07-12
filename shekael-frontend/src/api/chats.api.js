@@ -21,13 +21,19 @@ export const getConversations = () => chatAPI.get('/chats/conversations');
 
 // Mensajes
 export const getMessages = (conversationId, page = 0) => chatAPI.get(`/chats/${conversationId}/messages?page=${page}`);
-export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex) =>
-    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex });
+export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId) =>
+    chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId });
 
 // Búsqueda de usuarios
 export const searchUsers = (q) => chatAPI.get(`/chats/users/search?q=${encodeURIComponent(q)}`);
 
 // Actualizar llave pública
 export const updatePublicKey = (publicKey) => chatAPI.put('/users/me/public-key', { publicKey });
+
+// Pre-keys (mensajes offline)
+export const uploadPreKeys = (preKeys, signedPreKey) =>
+    chatAPI.post('/chats/pre-keys', { preKeys, signedPreKey });
+export const fetchPreKey = (userId) => chatAPI.get(`/chats/pre-keys/${userId}`);
+export const preKeyCount = (userId) => chatAPI.get(`/chats/pre-keys/${userId}/count`);
 
 export default chatAPI;

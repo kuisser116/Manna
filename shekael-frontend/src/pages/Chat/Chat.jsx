@@ -171,13 +171,61 @@ export default function Chat() {
         otherUserCache.current[conv.id] = otherUser;
       }
 
-      // Derivar shared secret ECDH
-      if (!otherUser?.public_key) {
-        setMessages(msgs);
-        return;
+      // Buscar si hay mensajes con pre-key (X3DH — mensajes offline)
+      const x3dhMsg = msgs.find(m => m.sender_ephemeral_key && m.pre_key_used_id != null);
+      let sharedSecret;
+
+      if (x3dhMsg) {
+        // Este mensaje se cifró con una pre-key nuestra → recuperar shared secret via X3DH
+        try {
+          await sodiumReady;
+          // Buscar la pre-key privada en IndexedDB
+          const pdb = await new Promise((resolve, reject) => {
+            const req = indexedDB.open('ShekaelPreKeys', 1);
+            req.onupgradeneeded = () => {
+              if (!req.result.objectStoreNames.contains('prekeys'))
+                req.result.createObjectStore('prekeys', { keyPath: 'id' });
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+          const ptx = pdb.transaction('prekeys', 'readonly');
+          const pstore = ptx.objectStore('prekeys');
+          // Intentar one-time pre-key primero
+          const storedKey = await new Promise((resolve) => {
+            const req = pstore.get(`otpk_${x3dhMsg.pre_key_used_id}`);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          });
+          const myPreKey = storedKey || await new Promise((resolve) => {
+            const req = pstore.get('signed');
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          });
+          pdb.close();
+
+          if (myPreKey) {
+            sharedSecret = await ratchet.recoverFromPreKey(
+              conv.id,
+              myPreKey.privateKey,
+              x3dhMsg.sender_ephemeral_key,
+              otherUser?.public_key || x3dhMsg.sender_id // fallback
+            );
+          }
+        } catch (e) {
+          console.warn('X3DH recovery failed:', e);
+        }
       }
 
-      const sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
+      if (!sharedSecret) {
+        // Modo normal: derivar shared secret ECDH
+        if (!otherUser?.public_key) {
+          setMessages(msgs);
+          return;
+        }
+        sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
+      }
+
       if (!sharedSecret) {
         setMessages(msgs);
         return;
@@ -261,12 +309,16 @@ export default function Chat() {
     return decrypted;
   };
 
-  // Enviar mensaje con ratchet (forward secrecy)
+  // Enviar mensaje con ratchet (forward secrecy) + soporte offline vía pre-keys
   const handleSend = async () => {
     if (!inputText.trim() || sending || !activeConv) return;
     if (!keysReady) return;
 
     let otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
+    let usingPreKey = false;
+    let ephemeralPubB64 = null;
+    let preKeyUsedId = null;
+    let sharedSecret;
     
     // Si no tenemos la llave pública, intentar obtenerla del servidor
     if (!otherUser?.public_key && otherUser?.id) {
@@ -281,30 +333,54 @@ export default function Chat() {
     }
 
     if (!otherUser?.public_key) {
-      alert('El usuario aun no ha configurado el cifrado. Pidele que entre a la seccion de chats para activarlo.');
-      return;
+      // Intento 2: usar pre-key para mensaje offline
+      try {
+        const { fetchPreKey } = await import('../../api/chats.api');
+        const pkRes = await fetchPreKey(otherUser.id);
+        const pkData = pkRes.data;
+
+        if (pkData.preKey) {
+          // Tenemos una pre-key — hacer X3DH
+          await sodiumReady;
+          const kp = await crypto.loadKeyPair();
+          if (!kp) throw new Error('No keypair');
+
+          const x3dhResult = await ratchet.deriveFullX3DH(
+            kp.privateKey,
+            pkData.identityKey || pkData.preKey.publicKey,
+            pkData.preKey.publicKey
+          );
+          sharedSecret = x3dhResult.sharedSecret;
+          ephemeralPubB64 = x3dhResult.ephemeralPublicKey;
+          preKeyUsedId = pkData.preKey.key_id;
+          usingPreKey = true;
+        } else if (pkData.identityKey) {
+          // Solo identity key disponible
+          sharedSecret = await deriveEcdhSecret(activeConv.id, pkData.identityKey);
+          otherUser = { ...otherUser, public_key: pkData.identityKey };
+          otherUserCache.current[activeConv.id] = otherUser;
+        }
+      } catch { /* sin pre-keys ni identity */ }
+    } else {
+      // Tiene public_key, derivar shared secret normal
+      sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
     }
 
-    // Asegurar shared secret
-    const sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
     if (!sharedSecret) {
-      alert('Error al establecer el secreto compartido.');
+      alert('El usuario aun no ha configurado el cifrado. Pidele que entre a la seccion de chats para activarlo.');
       return;
     }
 
     // Asegurar que la sesión del ratchet existe
     if (!ratchetReadyRef.current) {
-      // Inicializar sesión si no hay mensajes previos
       await ratchet.initSession(activeConv.id, sharedSecret);
       ratchetReadyRef.current = true;
     }
 
     setSending(true);
     try {
-      // Obtener llave del ratchet para este mensaje
       const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
 
-      // Cifrar con la llave derivada del ratchet, no con el shared secret directo
       await sodiumReady;
       const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
       const ciphertext = _sodium.crypto_secretbox_easy(
@@ -317,7 +393,9 @@ export default function Chat() {
         activeConv.id,
         _sodium.to_base64(ciphertext),
         _sodium.to_base64(nonce),
-        msgIndex
+        msgIndex,
+        ephemeralPubB64,
+        preKeyUsedId
       );
       setMessages(prev => [...prev, { ...res.data.message, decrypted: inputText }]);
       setInputText('');

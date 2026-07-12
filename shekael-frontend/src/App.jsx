@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useEffect, useState } from 'react';
 import useStore from './store';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
-import { updatePublicKey } from './api/chats.api';
+import { updatePublicKey, uploadPreKeys } from './api/chats.api';
 import logoImg from './assets/personaje_1.12.png';
 import styles from './App.module.css';
 
@@ -216,6 +216,65 @@ function App() {
         // Subir llave pública (best-effort)
         try {
           await updatePublicKey(keyPair.publicKey);
+        } catch { /* silencioso */ }
+
+        // Generar y subir pre-keys (para mensajes offline)
+        try {
+          const identityPriv = _sodium.from_base64(keyPair.privateKey);
+
+          // Signed pre-key: un par firmado con la identity key
+          const spkKp = _sodium.crypto_box_keypair();
+          const spkPub = _sodium.to_base64(spkKp.publicKey);
+          const spkPriv = _sodium.to_base64(spkKp.privateKey);
+          const spkSig = _sodium.to_base64(
+            _sodium.crypto_sign_detached(spkKp.publicKey, identityPriv)
+          );
+
+          // One-time pre-keys: 50 pares
+          const preKeys = [];
+          const preKeyPrivates = [];
+          for (let i = 1; i <= 50; i++) {
+            const kp2 = _sodium.crypto_box_keypair();
+            const pubB64 = _sodium.to_base64(kp2.publicKey);
+            preKeys.push({
+              keyId: i,
+              publicKey: pubB64,
+              signature: _sodium.to_base64(
+                _sodium.crypto_sign_detached(kp2.publicKey, identityPriv)
+              )
+            });
+            preKeyPrivates.push({ keyId: i, privateKey: _sodium.to_base64(kp2.privateKey) });
+          }
+
+          // Guardar pre-keys privadas en IndexedDB
+          const pdb = await new Promise((resolve, reject) => {
+            const req = indexedDB.open('ShekaelPreKeys', 1);
+            req.onupgradeneeded = () => {
+              if (!req.result.objectStoreNames.contains('prekeys'))
+                req.result.createObjectStore('prekeys', { keyPath: 'id' });
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+          const ptx = pdb.transaction('prekeys', 'readwrite');
+          const pstore = ptx.objectStore('prekeys');
+          // Guardar signed pre-key
+          pstore.put({ id: 'signed', publicKey: spkPub, privateKey: spkPriv });
+          // Guardar one-time pre-keys
+          for (const pk of preKeyPrivates) {
+            pstore.put({ id: `otpk_${pk.keyId}`, ...pk });
+          }
+          await new Promise((resolve, reject) => {
+            ptx.oncomplete = resolve;
+            ptx.onerror = reject;
+          });
+          pdb.close();
+
+          // Subir pre-keys públicas al servidor
+          await uploadPreKeys(preKeys, {
+            publicKey: spkPub,
+            signature: spkSig
+          });
         } catch { /* silencioso */ }
       } catch (e) {
         console.warn('E2EE init fallo:', e);
