@@ -24,6 +24,30 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
     inputRef.current?.focus();
   }, [step]);
 
+  // Keyboard support: regular digits + numpad + backspace
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (processing) return;
+      const digit = e.code.startsWith('Digit') ? e.code.slice(-1)
+        : e.code.startsWith('Numpad') ? e.code.slice(-1)
+        : null;
+      if (digit !== null && digit >= '0' && digit <= '9') {
+        e.preventDefault();
+        handleDigit(digit);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        handleDelete();
+      } else if (e.key === 'Enter' || e.key === 'NumpadEnter') {
+        e.preventDefault();
+        if (step === 'enter' && pin.length > 0) {
+          verifyPin(pin);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [processing, pin, confirmPin, step]);
+
   // ── Crypto helpers ──
 
   // Derivar AES-256 key del PIN usando PBKDF2
