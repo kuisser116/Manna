@@ -3,7 +3,7 @@ import { uploadChatFile } from '../api/chats.api';
 import styles from './AudioRecorder.module.css';
 
 export default function AudioRecorder({ onSend, onClose }) {
-  const [state, setState] = useState('starting'); // starting | recording | paused | sending
+  const [state, setState] = useState('starting');
   const [duration, setDuration] = useState(0);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -13,9 +13,8 @@ export default function AudioRecorder({ onSend, onClose }) {
   const animFrameRef = useRef(null);
   const analyserRef = useRef(null);
   const audioCtxRef = useRef(null);
-  const sourceRef = useRef(null);
-  const smoothValsRef = useRef(new Float32Array(40).fill(0));
-  const pauseTimerRef = useRef(0);
+  const waveHistoryRef = useRef([]);
+  const maxSamples = 200;
 
   useEffect(() => {
     startRecording();
@@ -43,55 +42,96 @@ export default function AudioRecorder({ onSend, onClose }) {
     const dataArray = new Uint8Array(bufferLength);
     analyserRef.current.getByteTimeDomainData(dataArray);
 
-    ctx.clearRect(0, 0, width, height);
+    // Calculate average amplitude
+    let sum = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      sum += Math.abs(dataArray[i] - 128);
+    }
+    const avg = sum / bufferLength / 128; // 0..1
 
-    // Dark background
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    // Store in history
+    waveHistoryRef.current.push(avg);
+    if (waveHistoryRef.current.length > maxSamples) {
+      waveHistoryRef.current.shift();
+    }
+
+    const history = waveHistoryRef.current;
+    const len = history.length;
+
+    // Clear
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.beginPath();
     ctx.roundRect(0, 0, width, height, 8);
     ctx.fill();
 
-    const barCount = 40;
-    const barWidth = (width - 28) / barCount;
-    const gap = 3;
+    // Center line
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.stroke();
+
+    // Draw waveform from left to right (oldest to newest)
     const centerY = height / 2;
-    const maxH = height * 0.7;
-    const smoothFactor = 0.3;
-    const smooth = smoothValsRef.current;
+    const maxH = height * 0.75;
 
-    for (let i = 0; i < barCount; i++) {
-      const idx = Math.floor((i / barCount) * bufferLength);
-      const value = (dataArray[idx] - 128) / 128;
+    ctx.strokeStyle = '#e11d48';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
 
-      smooth[i] += (Math.abs(value) - smooth[i]) * smoothFactor;
-      const barH = Math.min(smooth[i] * maxH, maxH / 2);
-      if (barH < 1.5) continue;
+    for (let i = 0; i < len; i++) {
+      const x = (i / maxSamples) * width;
+      const barH = Math.min(history[i] * maxH, maxH / 2);
 
-      const x = 14 + i * (barWidth + gap);
-      const y = centerY - barH;
-
-      const grd = ctx.createLinearGradient(0, y, 0, y + barH * 2);
-      grd.addColorStop(0, '#7f1d1d');
-      grd.addColorStop(0.5, '#e11d48');
-      grd.addColorStop(1, '#9f1239');
-      ctx.fillStyle = grd;
-
-      const radius = Math.min(barWidth / 2, 4);
-      ctx.beginPath();
-      ctx.moveTo(x + radius, y);
-      ctx.lineTo(x + barWidth - radius, y);
-      ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
-      ctx.lineTo(x + barWidth, y + barH * 2 - radius);
-      ctx.quadraticCurveTo(x + barWidth, y + barH * 2, x + barWidth - radius, y + barH * 2);
-      ctx.lineTo(x + radius, y + barH * 2);
-      ctx.quadraticCurveTo(x, y + barH * 2, x, y + barH * 2 - radius);
-      ctx.lineTo(x, y + radius);
-      ctx.quadraticCurveTo(x, y, x + radius, y);
-      ctx.closePath();
-      ctx.fill();
+      if (i === 0) {
+        ctx.moveTo(x, centerY - barH);
+      } else {
+        ctx.lineTo(x, centerY - barH);
+      }
     }
+    ctx.stroke();
 
-    if (state === 'recording' || state === 'paused') {
+    // Bottom half (mirror)
+    ctx.strokeStyle = '#be123c';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < len; i++) {
+      const x = (i / maxSamples) * width;
+      const barH = Math.min(history[i] * maxH, maxH / 2);
+
+      if (i === 0) {
+        ctx.moveTo(x, centerY + barH);
+      } else {
+        ctx.lineTo(x, centerY + barH);
+      }
+    }
+    ctx.stroke();
+
+    // Fill between lines (subtle gradient)
+    ctx.fillStyle = 'rgba(225, 29, 72, 0.15)';
+    ctx.beginPath();
+    ctx.moveTo(0, centerY);
+    for (let i = 0; i < len; i++) {
+      const x = (i / maxSamples) * width;
+      const barH = Math.min(history[i] * maxH, maxH / 2);
+      ctx.lineTo(x, centerY - barH);
+    }
+    for (let i = len - 1; i >= 0; i--) {
+      const x = (i / maxSamples) * width;
+      const barH = Math.min(history[i] * maxH, maxH / 2);
+      ctx.lineTo(x, centerY + barH);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Recording indicator dot
+    ctx.fillStyle = '#e11d48';
+    ctx.beginPath();
+    ctx.arc(width - 8, 10, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (state === 'recording') {
       animFrameRef.current = requestAnimationFrame(drawWaveform);
     }
   };
@@ -105,11 +145,11 @@ export default function AudioRecorder({ onSend, onClose }) {
       const mr = new MediaRecorder(s, { mimeType: mime });
       recorderRef.current = mr;
       chunksRef.current = [];
+      waveHistoryRef.current = [];
 
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(s);
-      sourceRef.current = source;
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 128;
       source.connect(analyser);
@@ -120,7 +160,6 @@ export default function AudioRecorder({ onSend, onClose }) {
       mr.start();
       setState('recording');
       setDuration(0);
-      pauseTimerRef.current = 0;
       drawWaveform();
 
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
@@ -134,13 +173,13 @@ export default function AudioRecorder({ onSend, onClose }) {
   const togglePause = () => {
     if (!recorderRef.current) return;
     if (state === 'recording') {
-      recorderRef.current.stop(); // pausa
+      recorderRef.current.stop();
       if (audioCtxRef.current) audioCtxRef.current.suspend();
       if (timerRef.current) clearInterval(timerRef.current);
-      pauseTimerRef.current = duration;
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       setState('paused');
     } else if (state === 'paused') {
-      // Reanudar
+      // Resume - create new MediaRecorder
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
       const mr = new MediaRecorder(streamRef.current, { mimeType: mime });
       recorderRef.current = mr;
@@ -205,7 +244,7 @@ export default function AudioRecorder({ onSend, onClose }) {
   if (state === 'sending') {
     return (
       <div className={styles.inlineBar}>
-        <div className={styles.sendingRow}>
+        <div className={styles.statusRow}>
           <span className={styles.spinner}></span>
           Enviando audio...
         </div>
@@ -220,7 +259,7 @@ export default function AudioRecorder({ onSend, onClose }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
 
-        <canvas ref={canvasRef} className={styles.waveform} width="180" height="46" />
+        <canvas ref={canvasRef} className={styles.waveform} width="180" height="50" />
 
         <span className={styles.timer}>{formatTime(duration)}</span>
 

@@ -1615,8 +1615,7 @@ export default function Chat() {
         />
       )}
 
-      {/* Audio recorder */}
-      {showAudioRecorder && (
+order && (
         <AudioRecorder
           onSend={async (audio) => {
             try {

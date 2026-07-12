@@ -1,5 +1,4 @@
 .inlineBar {
-  border-top: 1px solid rgba(128,128,128,0.12);
   padding: 8px 12px;
   background: var(--color-bg);
 }
@@ -54,6 +53,25 @@
 .sendBtn:hover {
   background: var(--color-primary);
   opacity: 0.9;
+}
+
+.playPauseBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.12s, background 0.15s;
+  background: rgba(128,128,128,0.08);
+  color: var(--color-text);
+}
+.playPauseBtn:hover {
+  transform: scale(1.08);
+  background: rgba(128,128,128,0.15);
 }
 
 .sendingRow {
