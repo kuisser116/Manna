@@ -215,6 +215,17 @@ function LandingInner() {
         </section>
       </main>
 
+      <p className="recaptcha-notice">
+        Este sitio está protegido por reCAPTCHA de Google.{' '}
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
+          Política de Privacidad
+        </a>{' '}
+        y{' '}
+        <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">
+          Términos del Servicio
+        </a>.
+      </p>
+
       <FeedbackModal
         isOpen={modalState.isOpen}
         onClose={hideModal}
