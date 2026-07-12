@@ -1072,7 +1072,9 @@ export default function Chat() {
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
                 <span className={styles.pinnedText}>
-                  {pinnedMessage.decryptedText || (pinnedMessage.file_name || 'Mensaje fijado')}
+                  {pinnedMessage.decryptedText ||
+                   (pinnedMessage.message_type === 'image' || pinnedMessage.media_url ? '📷 Foto' :
+                    pinnedMessage.file_name || 'Mensaje fijado')}
                 </span>
                 <button className={styles.pinnedClose} onClick={(e) => { e.stopPropagation(); handleUnpinMsg(); }} title="Desfijar">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -1152,6 +1154,7 @@ export default function Chat() {
                   return (
                     <div
                       key={msg.id}
+                      id={`msg-${msg.id}`}
                       className={`${styles.message} ${msg.sender_id === user?.id ? styles.ownMessage : styles.otherMessage}`}
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
@@ -1170,7 +1173,9 @@ export default function Chat() {
                               {repliedMsg?.sender_id === user?.id ? 'Tú' : 'Respondiendo'}
                             </span>
                             <span className={styles.replyText}>
-                              {msg.reply_preview?.substring(0, 60) || 'Mensaje original'}
+                              {msg.reply_preview?.substring(0, 60) ||
+                               (msg.media_url && !msg.decrypted ? '📷 Foto' :
+                                msg.media_url ? '📷 Foto' : 'Mensaje original')}
                             </span>
                           </div>
                         </div>
@@ -1208,7 +1213,7 @@ export default function Chat() {
                       )}
                       {/* Texto */}
                       {msgText && (
-                        <div className={styles.messageBubble} id={`msg-${msg.id}`}>
+                        <div className={styles.messageBubble}>
                           {msgText}
                         </div>
                       )}
@@ -1232,7 +1237,9 @@ export default function Chat() {
                   <div className={styles.replyPreviewContent}>
                     <span className={styles.replyPreviewLabel}>Respondiendo</span>
                     <span className={styles.replyPreviewText}>
-                      {(replyTo.decrypted || '').substring(0, 60)}
+                      {replyTo.decrypted
+                        ? replyTo.decrypted.substring(0, 60)
+                        : replyTo.media_url ? '📷 Foto' : (replyTo.file_name || 'Mensaje')}
                     </span>
                   </div>
                   <button className={styles.removeFileBtn} onClick={cancelReply}>
