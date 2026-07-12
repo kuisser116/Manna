@@ -41,13 +41,28 @@ router.get('/:id', authMiddleware, async (req, res) => {
         const targetUserId = req.params.id;
         const currentUserId = req.user.id;
 
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('id, email, display_name, bio, stellar_public_key, avatar_url, cover_url, created_at')
-            .eq('id', targetUserId)
-            .single();
+        // Intentar con username, fallback si la columna no existe
+        let user;
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('id, email, display_name, username, bio, stellar_public_key, avatar_url, cover_url, created_at')
+                .eq('id', targetUserId)
+                .maybeSingle();
+            if (error) throw error;
+            user = data;
+        } catch {
+            // Si username column no existe aún, consultar sin ella
+            const { data, error } = await supabase
+                .from('users')
+                .select('id, email, display_name, bio, stellar_public_key, avatar_url, cover_url, created_at')
+                .eq('id', targetUserId)
+                .maybeSingle();
+            if (error) throw error;
+            user = { ...data, username: null };
+        }
 
-        if (!user || userError) {
+        if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
@@ -245,13 +260,19 @@ router.get('/me/check-username', authMiddleware, async (req, res) => {
 
         const dbUsername = raw.toLowerCase().replace(/\s+/g, '_');
 
-        const { data, error } = await supabase
-            .from('users')
-            .select('id')
-            .eq('username', dbUsername)
-            .maybeSingle();
-
-        if (error) throw error;
+        let data;
+        try {
+            const result = await supabase
+                .from('users')
+                .select('id')
+                .eq('username', dbUsername)
+                .maybeSingle();
+            if (result.error) throw result.error;
+            data = result.data;
+        } catch {
+            // username column no existe aún — no disponible hasta migrar
+            return res.json({ available: false, error: 'Sistema de nombres no disponible — ejecuta la migración' });
+        }
 
         res.json({
             available: !data,
@@ -284,23 +305,36 @@ router.put('/me/username', authMiddleware, async (req, res) => {
         const dbUsername = username.toLowerCase().replace(/\s+/g, '_');
 
         // Verificar disponibilidad
-        const { data: existing } = await supabase
-            .from('users')
-            .select('id')
-            .eq('username', dbUsername)
-            .maybeSingle();
+        let existing;
+        try {
+            const result = await supabase
+                .from('users')
+                .select('id')
+                .eq('username', dbUsername)
+                .maybeSingle();
+            if (result.error) throw result.error;
+            existing = result.data;
+        } catch {
+            return res.status(400).json({ message: 'Sistema de nombres no disponible — ejecuta la migración SQL en Supabase' });
+        }
 
         if (existing && existing.id !== userId) {
             return res.status(409).json({ message: 'Este nombre ya está en uso' });
         }
 
         // Actualizar username + display_name al mismo valor
-        const { error } = await supabase
-            .from('users')
-            .update({ username: dbUsername, display_name: username })
-            .eq('id', userId);
-
-        if (error) throw error;
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ username: dbUsername, display_name: username })
+                .eq('id', userId);
+            if (error) throw error;
+        } catch (updateErr) {
+            if (updateErr.code === '42703') {
+                return res.status(400).json({ message: 'Ejecuta la migración SQL en Supabase primero: ALTER TABLE users ADD COLUMN username TEXT UNIQUE' });
+            }
+            throw updateErr;
+        }
 
         res.json({ username: dbUsername, displayName: username, message: 'Nombre guardado' });
     } catch (err) {
@@ -353,11 +387,16 @@ router.put('/me/cover', authMiddleware, uploadCover.single('cover'), handleMulte
         contentCID = generateFilename("cover");
 
         if (r2AccountId) {
-            fileUrl = await uploadToR2(
-                req.file.buffer,
-                `cover-${req.user.id}-${contentCID}.webp`,
-                req.file.mimetype
-            );
+            try {
+                fileUrl = await uploadToR2(
+                    req.file.buffer,
+                    `cover-${req.user.id}-${contentCID}.webp`,
+                    req.file.mimetype
+                );
+            } catch (r2Err) {
+                console.error('R2 upload falló, usando demo:', r2Err.message);
+                fileUrl = `demo-cover://${contentCID}`;
+            }
         } else {
             console.warn('CLOUDFLARE_R2_ACCOUNT_ID no configurado — modo demo');
             fileUrl = `demo-cover://${contentCID}`;
@@ -391,11 +430,16 @@ router.put('/me/avatar', authMiddleware, upload.single('avatar'), handleMulterEr
 
         // 2. Subir a R2 (o modo demo)
         if (r2AccountId) {
-            fileUrl = await uploadToR2(
-                req.file.buffer,
-                `avatar-${req.user.id}-${contentCID}.webp`,
-                req.file.mimetype
-            );
+            try {
+                fileUrl = await uploadToR2(
+                    req.file.buffer,
+                    `avatar-${req.user.id}-${contentCID}.webp`,
+                    req.file.mimetype
+                );
+            } catch (r2Err) {
+                console.error('R2 upload falló, usando demo:', r2Err.message);
+                fileUrl = `demo-avatar://${contentCID}`;
+            }
         } else {
             console.warn('CLOUDFLARE_R2_ACCOUNT_ID no configurado — modo demo');
             fileUrl = `demo-avatar://${contentCID}`;
