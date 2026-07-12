@@ -187,14 +187,22 @@ function App() {
 
         const tx = db.transaction('keys', 'readonly');
         const store = tx.objectStore('keys');
-        const stored = await new Promise((resolve) => {
-          const req = store.get('main');
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => resolve(null);
-        });
+        // Buscar tanto 'main' (plana) como 'main_encrypted' (cifrada con PIN)
+        const [storedPlain, storedEnc] = await Promise.all([
+          new Promise((resolve) => {
+            const req = store.get('main');
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          }),
+          new Promise((resolve) => {
+            const req = store.get('main_encrypted');
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          })
+        ]);
         db.close();
 
-        if (stored) return; // Ya tiene llaves
+        if (storedPlain || storedEnc) return; // Ya tiene llaves (planas o cifradas con PIN)
 
         // Generar nuevo par
         const kp = _sodium.crypto_box_keypair();

@@ -55,9 +55,32 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
     };
   }, [token, resetTimer]);
 
-  // Bloquear manualmente
-  const lock = useCallback(() => {
+  // Bloquear manualmente y limpiar llave descifrada
+  const lock = useCallback(async () => {
     setLocked(true);
+
+    // Notificar a todos los hooks que la app se bloqueó
+    window.dispatchEvent(new CustomEvent('Shekael:lock'));
+
+    // Limpiar la llave descifrada temporal de IndexedDB
+    try {
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('ShekaelKeys', 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains('keys'))
+            req.result.createObjectStore('keys', { keyPath: 'id' });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const tx = db.transaction('keys', 'readwrite');
+      tx.objectStore('keys').delete('main_unlocked');
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = resolve;
+        tx.onerror = reject;
+      });
+      db.close();
+    } catch {}
   }, []);
 
   return { locked, unlock, lock, resetTimer };

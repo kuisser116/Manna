@@ -30,6 +30,13 @@ export function useChatCrypto() {
     return () => { mounted = false; };
   }, []);
 
+  // Escuchar evento de bloqueo — limpiar cache en memoria
+  useEffect(() => {
+    const handler = () => { keyPairRef.current = null; };
+    window.addEventListener('Shekael:lock', handler);
+    return () => window.removeEventListener('Shekael:lock', handler);
+  }, []);
+
   // Cargar llave privada desde IndexedDB
   const loadKeyPair = useCallback(async () => {
     if (keyPairRef.current) return keyPairRef.current;
@@ -38,6 +45,24 @@ export function useChatCrypto() {
       const db = await openKeyDB();
       const tx = db.transaction('keys', 'readonly');
       const store = tx.objectStore('keys');
+
+      // Buscar primero la versión descifrada (main_unlocked, puesta por LockScreen)
+      const unlocked = await new Promise((resolve) => {
+        const req = store.get('main_unlocked');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      });
+
+      if (unlocked && unlocked.privateKey) {
+        keyPairRef.current = {
+          privateKey: unlocked.privateKey,
+          publicKey: unlocked.publicKey
+        };
+        db.close();
+        return keyPairRef.current;
+      }
+
+      // Fallback: versión plana original (para usuarios sin PIN)
       const stored = await new Promise((resolve) => {
         const req = store.get('main');
         req.onsuccess = () => resolve(req.result);
@@ -152,6 +177,11 @@ export function useChatCrypto() {
     return sodium.to_string(plaintext);
   }, [deriveSharedSecret]);
 
+  // Limpiar cache en memoria (al bloquear la app con PIN)
+  const clearKeyCache = useCallback(() => {
+    keyPairRef.current = null;
+  }, []);
+
   // Verificar si el usuario ya tiene llaves
   const hasKeys = useCallback(async () => {
     const kp = await loadKeyPair();
@@ -164,6 +194,7 @@ export function useChatCrypto() {
     encrypt,
     decrypt,
     hasKeys,
+    clearKeyCache,
     ready: !!sodiumRef.current
   };
 }
