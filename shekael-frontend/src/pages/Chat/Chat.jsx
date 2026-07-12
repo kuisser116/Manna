@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import gsap from 'gsap';
 import useStore from '../../store';
 import useChatCrypto from '../../hooks/useChatCrypto';
 import useRatchetSession from '../../hooks/useRatchetSession';
@@ -22,6 +23,7 @@ import PollResults from '../../components/PollResults';
 import GroupCreateModal from '../../components/GroupCreateModal';
 import AudioPlayer from '../../components/AudioPlayer';
 import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../api/chats.api';
+import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -92,6 +94,40 @@ export default function Chat() {
 
   // Filtro: 'all' | 'unread'
   const [convFilter, setConvFilter] = useState('all');
+  const animatedMsgIdsRef = useRef(new Set());
+
+  // ── GSAP: animar mensajes nuevos ──
+  const messagesEndRefCallback = useCallback(() => {
+    // Se ejecuta después de cada render con mensajes
+    const msgEls = msgListRef.current?.querySelectorAll(`.${styles.message}`);
+    if (!msgEls?.length) return;
+    const toAnimate = [];
+    msgEls.forEach(el => {
+      const id = el.id?.replace('msg-', '');
+      if (id && !animatedMsgIdsRef.current.has(id)) {
+        toAnimate.push(el);
+      }
+    });
+    if (toAnimate.length === 0) return;
+    gsap.fromTo(toAnimate,
+      { opacity: 0, y: 16, scale: 0.97 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }
+    );
+    toAnimate.forEach(el => {
+      const id = el.id?.replace('msg-', '');
+      if (id) animatedMsgIdsRef.current.add(id);
+    });
+  }, []);
+
+  // ── GSAP: animar lista de conversaciones ──
+  useEffect(() => {
+    const items = msgListRef.current?.parentElement?.querySelectorAll(`.${styles.convItem}`);
+    if (!items?.length) return;
+    gsap.fromTo(items,
+      { opacity: 0, x: -10 },
+      { opacity: 1, x: 0, duration: 0.3, stagger: 0.025, ease: 'power2.out', overwrite: 'auto' }
+    );
+  }, [filteredConversations]);
 
   // Cerrar emoji picker al hacer click fuera
   useEffect(() => {
@@ -603,6 +639,12 @@ export default function Chat() {
     }
   };
 
+  // ── Efecto: animar mensajes nuevos ──
+  useEffect(() => {
+    if (messages.length === 0) return;
+    requestAnimationFrame(() => messagesEndRefCallback());
+  }, [messages, messagesEndRefCallback]);
+
   const scrollToBottom = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -816,7 +858,7 @@ export default function Chat() {
   };
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       {/* Panel izquierdo: conversaciones */}
       <div className={styles.sidePanel}>
         <div className={styles.sideHeader}>
