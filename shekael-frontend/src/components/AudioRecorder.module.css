@@ -10,47 +10,38 @@
 
 .recorder {
   background: var(--color-bg);
-  border-radius: 16px 16px 0 0;
+  border-radius: 20px 20px 0 0;
   width: 100%;
-  max-width: 400px;
-  padding: 24px 20px;
+  max-width: 380px;
+  padding: 24px 20px 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+  gap: 16px;
+  box-shadow: 0 -4px 30px rgba(0,0,0,0.25);
 }
 
-.visualizer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  animation: pulse 1s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
-}
-
-.time {
-  font-size: 1.4rem;
-  font-weight: 600;
+.timer {
+  font-size: 2rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.waveform {
+  width: 100%;
+  max-width: 280px;
+  height: 80px;
+  border-radius: 12px;
+  background: var(--color-surface);
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 32px;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 240px;
 }
 
 .cancelBtn, .sendBtn {
@@ -62,14 +53,60 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, background 0.2s;
+  flex-shrink: 0;
 }
-.cancelBtn { background: rgba(128,128,128,0.1); color: var(--color-text); }
-.sendBtn { background: var(--color-primary); color: white; }
-.cancelBtn:hover, .sendBtn:hover { transform: scale(1.1); }
+.cancelBtn {
+  background: rgba(128,128,128,0.1);
+  color: var(--color-text);
+}
+.cancelBtn:hover { transform: scale(1.1); background: rgba(128,128,128,0.2); }
+.sendBtn {
+  background: var(--color-primary);
+  color: white;
+}
+.sendBtn:hover { transform: scale(1.1); opacity: 0.9; }
 
-.sending {
+.recordingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.recDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.starting, .sending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
   font-size: 0.9rem;
   opacity: 0.6;
-  padding: 24px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(128,128,128,0.2);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

@@ -3,21 +3,63 @@ import { uploadChatFile } from '../api/chats.api';
 import styles from './AudioRecorder.module.css';
 
 export default function AudioRecorder({ onSend, onClose }) {
-  const [state, setState] = useState('starting'); // starting | recording | sending
+  const [state, setState] = useState('starting');
   const [duration, setDuration] = useState(0);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
   const streamRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animFrameRef = useRef(null);
+  const analyserRef = useRef(null);
 
   useEffect(() => {
     startRecording();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     };
   }, []);
+
+  const drawWaveform = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !analyserRef.current) return;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    const bufferLength = analyserRef.current.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyserRef.current.getByteTimeDomainData(dataArray);
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = 'rgba(225, 29, 72, 0.08)';
+    ctx.fillRect(0, 0, width, height);
+
+    const barCount = Math.min(40, Math.floor(width / 8));
+    const barWidth = width / barCount;
+    const centerY = height / 2;
+    const maxHeight = height * 0.8;
+
+    for (let i = 0; i < barCount; i++) {
+      const idx = Math.floor((i / barCount) * bufferLength);
+      const value = dataArray[idx] / 128.0;
+      const barH = Math.min((value - 1) * maxHeight, maxHeight / 2);
+
+      const x = i * barWidth + 2;
+      const gradient = ctx.createLinearGradient(0, centerY - barH, 0, centerY + barH);
+      gradient.addColorStop(0, '#e11d48');
+      gradient.addColorStop(0.5, '#f43f5e');
+      gradient.addColorStop(1, '#e11d48');
+      ctx.fillStyle = gradient;
+
+      ctx.beginPath();
+      ctx.roundRect(x, centerY - barH, barWidth - 4, barH * 2, 3);
+      ctx.fill();
+    }
+
+    animFrameRef.current = requestAnimationFrame(drawWaveform);
+  };
 
   const startRecording = async () => {
     try {
@@ -28,11 +70,23 @@ export default function AudioRecorder({ onSend, onClose }) {
       recorderRef.current = mr;
       chunksRef.current = [];
 
+      // Setup analyser for waveform
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(s);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
 
       mr.start();
       setState('recording');
       setDuration(0);
+
+      // Start waveform animation
+      drawWaveform();
+
       timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
     } catch (e) {
       console.warn('Audio access denied:', e);
@@ -42,17 +96,12 @@ export default function AudioRecorder({ onSend, onClose }) {
 
   const handleSend = async () => {
     if (chunksRef.current.length === 0) return;
-
-    // Stop recording
-    if (recorderRef.current?.state === 'recording') {
-      recorderRef.current.stop();
-    }
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     if (timerRef.current) clearInterval(timerRef.current);
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
 
     setState('sending');
-
-    // Small delay to ensure ondataavailable fires after stop
     await new Promise(r => setTimeout(r, 100));
 
     const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
@@ -77,6 +126,7 @@ export default function AudioRecorder({ onSend, onClose }) {
   const handleCancel = () => {
     if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     if (timerRef.current) clearInterval(timerRef.current);
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     onClose?.();
   };
@@ -92,22 +142,34 @@ export default function AudioRecorder({ onSend, onClose }) {
       <div className={styles.recorder} onClick={e => e.stopPropagation()}>
         {state === 'recording' && (
           <>
-            <div className={styles.visualizer}>
-              <span className={styles.dot}></span>
-              <span className={styles.time}>{formatTime(duration)}</span>
-            </div>
+            <div className={styles.timer}>{formatTime(duration)}</div>
+            <canvas ref={canvasRef} className={styles.waveform} width="280" height="80" />
             <div className={styles.actions}>
               <button className={styles.cancelBtn} onClick={handleCancel} title="Cancelar">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
-              <button className={styles.sendBtn} onClick={handleSend} title="Enviar audio">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              <div className={styles.recordingIndicator}>
+                <span className={styles.recDot}></span>
+                Grabando
+              </div>
+              <button className={styles.sendBtn} onClick={handleSend} title="Enviar">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
           </>
         )}
-        {state === 'starting' && <div className={styles.sending}>Iniciando...</div>}
-        {state === 'sending' && <div className={styles.sending}>Enviando audio...</div>}
+        {state === 'starting' && (
+          <div className={styles.starting}>
+            <span className={styles.spinner}></span>
+            Iniciando grabacion...
+          </div>
+        )}
+        {state === 'sending' && (
+          <div className={styles.sending}>
+            <span className={styles.spinner}></span>
+            Enviando audio...
+          </div>
+        )}
       </div>
     </div>
   );
