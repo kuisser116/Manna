@@ -505,8 +505,6 @@
 
 /* ── Messages ── */
 
-.noMessages {
-
 .messagesList {
   flex: 1;
   overflow-y: auto;
