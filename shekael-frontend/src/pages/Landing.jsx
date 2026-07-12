@@ -1,6 +1,6 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, ShieldCheck, Compass, Moon, Sun } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
@@ -22,10 +22,7 @@ function LandingInner() {
   const navigate = useNavigate();
   const { loginWithGoogle } = useAuth();
   const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
-  const [termsAccepted, setTermsAccepted] = useState(
-    localStorage.getItem('shekael_terms_v1.0_accepted') === 'true' ||
-    !!localStorage.getItem('Shekael_token')
-  );
+  // Términos se aceptan en /terminos después del login, no aquí
   const { isDarkMode, toggleDarkMode } = useStore();
   const recaptchaLoaded = useRef(false);
 
@@ -114,7 +111,7 @@ function LandingInner() {
             </p>
 
             <div className={styles.ctaBlock}>
-              <div className={`${styles.googleWrap} ${!termsAccepted ? styles.googleDisabled : ''}`}>
+              <div className={styles.googleWrap}>
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={() => showError('Error', 'No se pudo conectar con Google')}
@@ -123,20 +120,7 @@ function LandingInner() {
                   text="continue_with"
                   width={320}
                 />
-                {!termsAccepted && <div className={styles.btnBlock} />}
               </div>
-
-              <label className={styles.terms}>
-                <input
-                  type="checkbox"
-                  className={styles.checkbox}
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                />
-                <span>
-                  Acepto los <Link to="/terminos" target="_blank" className={styles.termsLink}>Terminos de Servicio</Link>.
-                </span>
-              </label>
             </div>
           </motion.div>
         </div>
