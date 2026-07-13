@@ -19,7 +19,7 @@ import { useQuests } from '../../hooks/useQuests';
 import ReportModal from '../ReportModal/ReportModal';
 
 const PINATA_GATEWAY = import.meta.env.VITE_PINATA_GATEWAY || 'https://gateway.pinata.cloud';
-const TYPE_LABELS = { 'micro-text': null, image: 'ðŸ“· Imagen', video: 'ðŸŽ¥ Video', capsule: 'âœ¨ CÃ¡psula de Shekael' };
+const TYPE_LABELS = { 'micro-text': null, image: '📷 Imagen', video: '🎥 Video', capsule: '✨ Cápsula de Shekael' };
 
 // Se usa isValidCID desde stringUtils.js
 
@@ -136,7 +136,7 @@ export function PostCard({ post, isDetail = false }) {
             }
         } else {
             navigator.clipboard.writeText(postUrl);
-            addToast('success', 'Â¡Compartido!', 'Enlace copiado al portapapeles');
+            addToast('success', 'Compartido', 'Enlace copiado al portapapeles');
         }
     };
     
@@ -178,14 +178,14 @@ export function PostCard({ post, isDetail = false }) {
             });
 
             if (res.ok) {
-                addToast('success', 'Reporte enviado', 'Nuestros sistemas revisarÃ¡n esta publicaciÃ³n.');
+                addToast('success', 'Reporte enviado', 'Nuestros sistemas revisarán esta publicación.');
                 setIsReportModalOpen(false);
             } else {
                 addToast('error', 'Error', 'No se pudo enviar el reporte');
             }
         } catch (error) {
             console.error('Report error:', error);
-            showError('Error', 'Error de conexiÃ³n al reportar');
+            addToast('error', 'Error', 'Error de conexión al reportar');
         } finally {
             setIsReporting(false);
         }
