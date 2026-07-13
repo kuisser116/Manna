@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, X, ChevronDown, Sparkles } from 'lucide-react';
 import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
-import useFeedbackModal from '../FeedbackModal/useFeedbackModal';
-import FeedbackModal from '../FeedbackModal/FeedbackModal';
+
 import PinModal from '../PinModal/PinModal';
 import styles from './SupportButton.module.css';
 
@@ -36,9 +35,8 @@ function Particles({ show, originX, originY }) {
 }
 
 export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
-    const { user, mxneBalance } = useStore();
+    const { user, mxneBalance, addToast } = useStore();
     const { sendSupport } = useWallet();
-    const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
     const [supported, setSupported] = useState(false);
     const [count, setCount] = useState(supportsCount);
     const [showParticles, setShowParticles] = useState(false);
@@ -77,13 +75,13 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
         const amountToDonate = parseFloat(customAmount || '0');
 
         if (isNaN(amountToDonate) || amountToDonate <= 0) {
-            showError('Monto inválido', 'Ingresa un monto mayor a 0');
+            addToast('error', 'Monto inválido', 'Ingresa un monto mayor a 0');
             setModalOpen(false);
             return;
         }
 
         if (currentBalance < amountToDonate) {
-            showError('Fondos insuficientes', `Tu saldo es ${currentBalance.toFixed(2)} MXne y quieres enviar ${amountToDonate} MXne.`);
+            addToast('error', 'Fondos insuficientes', `Tu saldo es ${currentBalance.toFixed(2)} MXne y quieres enviar ${amountToDonate} MXne.`);
             setModalOpen(false);
             return;
         }
@@ -96,7 +94,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
     const handlePinVerified = async () => {
         setLoading(true);
         try {
-            showLoading('Enviando apoyo...', 'Firmando en Stellar Testnet...');
+            addToast('success', 'Enviando apoyo...', 'Firmando en Stellar Testnet...');
             const result = await sendSupport(recipientKey, postId, customAmount.toString());
             setSupported(true);
             setCount((c) => c + 1);
@@ -109,15 +107,14 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                 ? `TX confirmada · Ver en Stellar Explorer`
                 : `${customAmount} MXne enviado al creador`;
 
-            showSuccess('¡Apoyo enviado!', explorerMsg, true);
+            addToast('success', '¡Apoyo enviado!', explorerMsg);
         } catch (err) {
-            hideModal();
             setLoading(false);
             const errorCode = err.response?.data?.code || err.code;
             if (errorCode === 'WALLET_NOT_ACTIVE') {
-                showError('Billetera Inactiva', 'El creador necesita completar sus tareas para recibir fondos reales.', true);
+                addToast('error', 'Billetera Inactiva', 'El creador necesita completar sus tareas para recibir fondos reales.');
             } else {
-                showError('Error', err.response?.data?.message || err.message || 'Inténtalo de nuevo', true);
+                addToast('error', 'Error', err.response?.data?.message || err.message || 'Inténtalo de nuevo');
             }
         }
     };
@@ -257,17 +254,6 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                 onVerified={handlePinVerified}
                 title="Confirmar transacción"
                 description={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
-            />
-
-            <FeedbackModal
-                isOpen={modalState.isOpen}
-                onClose={hideModal}
-                type={modalState.type}
-                title={modalState.title}
-                message={modalState.message}
-                showCloseButton={modalState.showCloseButton}
-                autoClose={modalState.autoClose}
-                autoCloseDelay={modalState.autoCloseDelay}
             />
         </div>
     );

@@ -7,8 +7,7 @@ import SupportButton from '../SupportButton/SupportButton';
 import SmartVideoPlayer from '../SmartVideoPlayer/SmartVideoPlayer';
 import StandardVideoPlayer from '../StandardVideoPlayer/StandardVideoPlayer';
 import VideoThumbnailCard from '../VideoThumbnailCard/VideoThumbnailCard';
-import useFeedbackModal from '../FeedbackModal/useFeedbackModal';
-import FeedbackModal from '../FeedbackModal/FeedbackModal';
+
 import ImageModal from '../ImageModal/ImageModal';
 import Avatar from '../Avatar/Avatar';
 import { cleanTitle, isValidCID } from '../../utils/stringUtils';
@@ -63,7 +62,6 @@ export function PostCard({ post, isDetail = false }) {
     const { verifyCompletion } = useQuests();
     const { token, user, addToast } = useStore();
     const isOwner = user?.id === author_id;
-    const { modalState, showSuccess, showError, showWarning, hideModal } = useFeedbackModal();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -503,17 +501,6 @@ export function PostCard({ post, isDetail = false }) {
                     <AlertTriangle size={16} />
                 </button>
             </div>
-
-            <FeedbackModal
-                isOpen={modalState.isOpen}
-                onClose={hideModal}
-                type={modalState.type}
-                title={modalState.title}
-                message={modalState.message}
-                showCloseButton={modalState.showCloseButton}
-                autoClose={modalState.autoClose}
-                autoCloseDelay={modalState.autoCloseDelay}
-            />
 
             <ReportModal
                 isOpen={isReportModalOpen}

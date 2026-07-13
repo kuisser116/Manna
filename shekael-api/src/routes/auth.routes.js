@@ -235,65 +235,6 @@ router.get('/terms/current', (req, res) => {
 });
 
 // GET /auth/me — Restaurar sesión
-// POST /auth/set-pin — Establecer/actualizar PIN de transacciones
-router.post('/set-pin', authMiddleware, async (req, res) => {
-    try {
-        const { pin } = req.body;
-        if (!pin || !/^\d{4,6}$/.test(pin)) {
-            return res.status(400).json({ message: 'El PIN debe tener entre 4 y 6 dígitos' });
-        }
-
-        const supabase = getDB();
-        const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
-
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ pin_hash: pinHash })
-            .eq('id', req.user.id);
-
-        if (updateError) throw updateError;
-        res.json({ message: 'PIN establecido correctamente' });
-    } catch (err) {
-        console.error('Set PIN error:', err);
-        res.status(500).json({ message: 'Error al establecer PIN' });
-    }
-});
-
-// POST /auth/verify-pin — Verificar PIN de transacciones
-router.post('/verify-pin', authMiddleware, async (req, res) => {
-    try {
-        const { pin } = req.body;
-        if (!pin) {
-            return res.status(400).json({ message: 'PIN requerido' });
-        }
-
-        const supabase = getDB();
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('pin_hash')
-            .eq('id', req.user.id)
-            .single();
-
-        if (error || !user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-
-        if (!user.pin_hash) {
-            return res.status(400).json({ message: 'No has configurado un PIN. Configúralo primero en tu perfil.' });
-        }
-
-        const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
-        if (pinHash !== user.pin_hash) {
-            return res.status(403).json({ message: 'PIN incorrecto' });
-        }
-
-        res.json({ verified: true });
-    } catch (err) {
-        console.error('Verify PIN error:', err);
-        res.status(500).json({ message: 'Error al verificar PIN' });
-    }
-});
-
 router.get('/me', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
