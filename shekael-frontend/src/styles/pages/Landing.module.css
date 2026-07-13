@@ -224,6 +224,23 @@
   text-align: center;
 }
 
+.closingMission {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.closingVision {
+  margin: 0 0 28px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+  letter-spacing: -0.5px;
+}
+
 .bandEyebrow {
   display: inline-block;
   font-size: 11px;

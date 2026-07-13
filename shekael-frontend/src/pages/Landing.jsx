@@ -548,7 +548,9 @@ function LandingInner() {
       {/* ═══ CLOSING ═══ */}
       <section className={`${styles.band} ${styles.bandDark} ${styles.bandClosing}`} ref={closingRef}>
         <div className={styles.bandInner}>
+          <p className={styles.closingMission}>Una aplicacion. Un ecosistema.</p>
           <h2 className={styles.bandTitle}>Shekael te espera</h2>
+          <p className={styles.closingVision}>La super app de Mexico</p>
           <div className={styles.closingCta}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
