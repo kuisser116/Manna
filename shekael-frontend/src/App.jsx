@@ -61,6 +61,7 @@ function AppLayout({ children }) {
   const { videoMode, qrScannerOpen, setQrScannerOpen, myQRModalOpen, setMyQRModalOpen } = useStore();
   const isTheaterMode = videoMode === 'theater';
   const isProfileRoute = location.pathname.startsWith('/profile');
+  const isChatRoute = location.pathname.startsWith('/chat');
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -126,7 +127,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isProfileRoute && <WalletWidget variant="floating" />}
+        {!isProfileRoute && !isChatRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />

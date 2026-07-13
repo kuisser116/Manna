@@ -318,13 +318,16 @@ export default function Chat() {
     setFilePreview(null);
     ratchetReadyRef.current = false;
 
+    if (!conv?.id) return;
+
     let msgs = [];
+    let otherUser = conv.otherUser;
+
     try {
       const res = await getMessages(conv.id);
-      msgs = res.data.messages || [];
+      msgs = (res?.data?.messages) || [];
 
       // Cachear llaves públicas
-      const otherUser = conv.otherUser;
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
       }
@@ -334,11 +337,9 @@ export default function Chat() {
       let sharedSecret;
 
       if (x3dhMsg) {
-        // Este mensaje se cifró con una pre-key nuestra → recuperar shared secret via X3DH
         try {
           await sodiumReady;
-          // Buscar la pre-key privada en IndexedDB
-          const pdb = await new Promise((resolve, reject) => {
+          const keysDb = await new Promise((resolve, reject) => {
             const req = indexedDB.open('ShekaelPreKeys', 1);
             req.onupgradeneeded = () => {
               if (!req.result.objectStoreNames.contains('prekeys'))
@@ -347,37 +348,22 @@ export default function Chat() {
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
           });
-          const ptx = pdb.transaction('prekeys', 'readonly');
-          const pstore = ptx.objectStore('prekeys');
-          // Intentar one-time pre-key primero
-          const storedKey = await new Promise((resolve) => {
-            const req = pstore.get(`otpk_${x3dhMsg.pre_key_used_id}`);
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => resolve(null);
-          });
-          const myPreKey = storedKey || await new Promise((resolve) => {
-            const req = pstore.get('signed');
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => resolve(null);
-          });
-          pdb.close();
+          const tx = keysDb.transaction('prekeys', 'readonly');
+          const store = tx.objectStore('prekeys');
+          const storedKey = await new Promise(r => { const q = store.get(`otpk_${x3dhMsg.pre_key_used_id}`); q.onsuccess = () => r(q.result); q.onerror = () => r(null); });
+          const myPreKey = storedKey || await new Promise(r => { const q = store.get('signed'); q.onsuccess = () => r(q.result); q.onerror = () => r(null); });
+          keysDb.close();
 
           if (myPreKey) {
-            // Necesitamos la identity key del remitente
             let senderPubKey = otherUser?.public_key;
             if (!senderPubKey) {
               try {
-                const senderRes = await getUserProfile(x3dhMsg.sender_id);
-                senderPubKey = (senderRes.data?.user || senderRes.data)?.public_key;
+                const sRes = await getUserProfile(x3dhMsg.sender_id);
+                senderPubKey = (sRes.data?.user || sRes.data)?.public_key;
               } catch {}
             }
             if (senderPubKey) {
-              sharedSecret = await ratchet.recoverFromPreKey(
-                conv.id,
-                myPreKey.privateKey,
-                x3dhMsg.sender_ephemeral_key,
-                senderPubKey
-              );
+              sharedSecret = await ratchet.recoverFromPreKey(conv.id, myPreKey.privateKey, x3dhMsg.sender_ephemeral_key, senderPubKey);
             }
           }
         } catch (e) {
@@ -386,25 +372,18 @@ export default function Chat() {
       }
 
       if (!sharedSecret) {
-        // Modo normal: derivar shared secret ECDH
         if (!otherUser?.public_key) {
-          setMessages(msgs);
-          scrollToBottom();
-          return;
+          setMessages(msgs); scrollToBottom(); return;
         }
         sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
       }
 
       if (!sharedSecret) {
-        setMessages(msgs);
-        scrollToBottom();
-        return;
+        setMessages(msgs); scrollToBottom(); return;
       }
 
-      // Recuperar sesión del ratchet + descifrar mensajes
       const keys = await ratchet.recoverSession(conv.id, sharedSecret, msgs);
 
-      // Descifrar cada mensaje con su llave derivada del ratchet
       const decrypted = [];
       for (const msg of msgs) {
         const msgKey = msg.msg_index ? keys.get(msg.msg_index) : null;
@@ -424,13 +403,8 @@ export default function Chat() {
             continue;
           }
         }
-        // Sin msgIndex o sin llave — intentar descifrado legacy
         try {
-          const plaintext = await crypto.decrypt(
-            msg.encrypted_content,
-            msg.nonce,
-            otherUser.public_key
-          );
+          const plaintext = await crypto.decrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
           decrypted.push({ ...msg, decrypted: plaintext });
         } catch {
           decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
@@ -440,18 +414,14 @@ export default function Chat() {
       ratchetReadyRef.current = true;
       setMessages(decrypted);
       scrollToBottom();
-      // Cargar mensaje fijado ahora que sharedSecretCache está listo
       loadPinnedMessage(conv.id);
     } catch (err) {
       console.error('Error loading messages:', err);
-      // Si falla el descifrado, mostrar los mensajes aunque sea cifrados
-      try {
-        if (msgs && msgs.length > 0) {
-          const fallback = msgs.map(m => ({ ...m, decrypted: '[Mensaje cifrado]' }));
-          setMessages(fallback);
-          scrollToBottom();
-        }
-      } catch {}
+      // Mostrar raw si hay mensajes
+      if (msgs.length > 0) {
+        setMessages(msgs.map(m => ({ ...m, decrypted: '[Mensaje cifrado]' })));
+        scrollToBottom();
+      }
     }
   }, [crypto, ratchet, deriveEcdhSecret, loadPinnedMessage]);
 
