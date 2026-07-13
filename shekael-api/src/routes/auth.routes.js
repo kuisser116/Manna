@@ -35,16 +35,56 @@ async function verifyRecaptcha(token) {
 }
 
 // ── Configuración de Términos y Condiciones ──
-const TERMS_VERSION = 'v1.0';
+const TERMS_VERSION = 'v1.1';
 const TERMS_CONTENT_HASH = crypto.createHash('sha256').update(`
-Términos y Condiciones de Shekael v1.0
-Última actualización: 10 de Julio de 2026
+Términos y Condiciones de Shekael v1.1
+Última actualización: 12 de Julio de 2026
 
-Shekael es una red social que ofrece un sistema de puntos de lealtad (MXNe).
-MXNe no es dinero real, no tiene valor fuera de la app, y no puede ser canjeado por efectivo.
+1. NATURALEZA DE LA PLATAFORMA
+Shekael es una red social descentralizada que opera sobre la red Stellar (testnet).
+MXNe es un token digital (asset) emitido en la blockchain de Stellar. MXNe no es
+una moneda fiduciaria, no está respaldado por ningún gobierno ni entidad financiera,
+y no cuenta con seguro de depósitos ni garantía de convertibilidad a moneda fiduciaria.
+
+2. RIESGOS
+El valor de MXNe depende de la oferta y demanda dentro del ecosistema Shekael y,
+en el futuro, de la integración con anchors de Stellar. El uso de tecnología blockchain
+implica riesgos técnicos: pérdida de llaves privadas, errores de smart contract,
+y volatilidad de red. Shekael no se responsabiliza por pérdidas derivadas de estos
+riesgos. El usuario es el único custodio de su llave privada.
+
+3. PROHIBICIONES
+- No está permitido el lavado de dinero, evasión fiscal, fraude, o cualquier
+  actividad ilícita usando MXNe.
+- No está permitido presentar MXNe como una inversión, acción, bono, o cualquier
+  valor financiero regulado.
+- No está permitido operar MXNe en mercados secundarios no autorizados.
+- No está permitido el uso de la plataforma por menores de 13 años.
+
+4. NATURALEZA DIGITAL, NO SERVICIO FINANCIERO
+Shekael es una plataforma de contenido social. No es una institución de dinero
+electrónico, casa de cambio, banco, ni proveedor de servicios financieros.
+La transferencia de MXNe entre usuarios es una transferencia directa en la
+blockchain de Stellar, no un servicio de pagos regulado.
+
+5. PRIVACIDAD Y DATOS
+Shekael almacena la información mínima necesaria para el funcionamiento del servicio
+(email, nombre, avatar). Las llaves privadas de Stellar se cifran con el PIN
+del usuario y se almacenan localmente (IndexedDB) y en servidor de forma cifrada.
+Shekael no comparte datos personales con terceros sin consentimiento explícito.
+
+6. MODIFICACIONES
+Shekael se reserva el derecho de modificar estos términos. Los cambios serán
+notificados en la app y requieren aceptación explícita para continuar usando
+el servicio.
+
+7. LEY APLICABLE
+Estos términos se rigen por las leyes de México. Cualquier disputa será
+resuelta en los tribunales de la Ciudad de México.
+
 Al usar Shekael aceptas estos términos.
 `).digest('hex');
-const TERMS_LAST_UPDATED = '2026-07-10T00:00:00.000Z';
+const TERMS_LAST_UPDATED = '2026-07-12T00:00:00.000Z';
 
 const router = Router({ strict: false });
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -230,7 +270,7 @@ router.get('/terms/current', (req, res) => {
         version: TERMS_VERSION,
         last_updated: TERMS_LAST_UPDATED,
         hash: TERMS_CONTENT_HASH,
-        summary: 'Al usar Shekael aceptas estos términos. MXNe no es dinero real, no tiene valor fuera de la app.'
+        summary: 'Al usar Shekael aceptas estos términos. MXNe es un token digital en Stellar, no una moneda fiduciaria ni un servicio financiero regulado.'
     });
 });
 
