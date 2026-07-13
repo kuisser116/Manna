@@ -26,7 +26,7 @@
 }
 
 .refreshBtn:hover {
-    color: var(--color-primary);
+    color: var(--color-text);
 }
 
 .refreshBtn:disabled {
@@ -39,19 +39,14 @@
 }
 
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 
 .iconWrap {
     width: 32px;
     height: 32px;
-    background: var(--color-primary-glow);
+    background: var(--color-surface-3);
     border-radius: var(--border-radius-sm);
     display: flex;
     align-items: center;
@@ -59,17 +54,16 @@
     transition: background 0.4s ease, box-shadow 0.4s ease;
 }
 
-/* Activado por Ehise:ad-reward — brillo dorado sutil por 3 segundos */
 .iconGlow {
-    background: var(--color-primary);
-    box-shadow: 0 0 14px var(--color-primary);
+    background: var(--color-surface-2);
+    box-shadow: 0 0 14px var(--color-text-dim);
     animation: glowFade 3s ease forwards;
 }
 
 @keyframes glowFade {
-    0%   { box-shadow: 0 0 0 var(--color-primary); }
-    20%  { box-shadow: 0 0 16px var(--color-primary); }
-    80%  { box-shadow: 0 0 10px var(--color-primary); }
+    0%   { box-shadow: 0 0 0 transparent; }
+    20%  { box-shadow: 0 0 16px var(--color-text-dim); }
+    80%  { box-shadow: 0 0 10px var(--color-text-dim); }
     100% { box-shadow: 0 0 0 transparent; }
 }
 
@@ -98,19 +92,12 @@
     line-height: 1;
 }
 
-.currency {
-    font-size: 16px;
-    font-weight: 600;
-}
-
 .skeleton {
     width: 120px;
     height: 36px;
     background: var(--color-surface-3);
-    animation: pulse 1.5s ease-in-out infinite;
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
     border-radius: var(--border-radius-sm);
+    animation: shimmer 1.5s infinite;
 }
 
 .amount {
@@ -147,7 +134,7 @@
     justify-content: center;
     gap: 6px;
     flex-wrap: wrap;
-    line-height: 1.1;
+    line-height: 1;
     word-break: break-word;
     text-align: center;
 }
@@ -155,7 +142,7 @@
 .currency {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-text-secondary);
     font-family: var(--font-family);
 }
 
@@ -186,7 +173,7 @@
 .mxnValue {
     font-size: 14px;
     font-weight: 600;
-    color: var(--color-primary);
+    color: var(--color-text-secondary);
     opacity: 0.9;
     letter-spacing: 0.5px;
 }
@@ -234,18 +221,18 @@
 }
 
 .historyBtn:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+    border-color: var(--color-text-muted);
+    color: var(--color-text);
 }
 
-/* Nuevos Estilos para el Progress Bar */
+/* ── Progress Bar ── */
 .progressSection {
     margin-top: 10px;
 }
 
 .progressTitle {
     font-size: 13px;
-    color: var(--color-primary);
+    color: var(--color-text-secondary);
     font-weight: 700;
     margin-bottom: 4px;
     text-transform: uppercase;
@@ -302,7 +289,7 @@
 
 .questIcon {
     position: absolute;
-    color: var(--color-primary);
+    color: var(--color-text-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -352,13 +339,12 @@
 
 .progressBarFill {
     height: 100%;
-    background: linear-gradient(90deg, var(--color-text), var(--color-primary));
+    background: linear-gradient(90deg, var(--color-text-secondary), var(--color-text));
     border-radius: 10px;
     position: relative;
     overflow: hidden;
 }
 
-/* Brillo animado de la barra */
 .progressBarFill::after {
     content: '';
     position: absolute;
@@ -368,7 +354,7 @@
     bottom: 0;
     background: linear-gradient(90deg,
             rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.4) 50%,
+            rgba(255, 255, 255, 0.15) 50%,
             rgba(255, 255, 255, 0) 100%);
     animation: shimmer 2s infinite;
     transform: skewX(-20deg);
@@ -388,7 +374,7 @@
 
 @media (max-width: 700px) {
     .floatingWrapper {
-        bottom: 72px; /* Subir para no tapar el Navbar (56px + gap) */
+        bottom: 72px;
         right: 16px;
     }
 
@@ -414,8 +400,8 @@
 }
 
 .floatingButton.active {
-    background: var(--color-primary);
-    color: var(--color-bg);
+    background: var(--color-surface-2);
+    color: var(--color-text);
 }
 
 .buttonBalance {
@@ -438,7 +424,7 @@
     background: color-mix(in srgb, var(--color-surface) 90%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border: 1px solid var(--color-border);
     border-radius: 20px;
     padding: 20px;
     box-shadow: var(--shadow-xl);
@@ -456,7 +442,7 @@
 }
 
 .miniIcon {
-    color: var(--color-primary);
+    color: var(--color-text-muted);
 }
 
 .miniBalance {
@@ -472,7 +458,7 @@
     font-family: var(--font-family);
 }
 
-/* Brillo animado genérico */
+/* ── Misc ── */
 .repairLink {
     display: block;
     width: 100%;
@@ -489,15 +475,15 @@
 }
 
 .repairLink:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+    border-color: var(--color-text-muted);
+    color: var(--color-text);
+    background: var(--color-surface-2);
 }
 
 .rampBtn {
     width: 100%;
     margin-top: 12px;
-    background: var(--color-primary);
+    background: var(--color-text);
     color: var(--color-bg);
     font-size: 13px;
     font-weight: 700;
@@ -507,15 +493,15 @@
     cursor: pointer;
     transition: all var(--transition);
     text-align: center;
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 30%, transparent);
+    box-shadow: 0 4px 12px var(--color-shadow);
 }
 
 .rampBtn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px color-mix(in srgb, var(--color-primary) 50%, transparent);
+    box-shadow: 0 6px 15px var(--color-shadow);
 }
 
 @keyframes shimmer {
-    0% { transform: translateX(-100%) skewX(-20deg); }
+    0%   { transform: translateX(-100%) skewX(-20deg); }
     100% { transform: translateX(200%) skewX(-20deg); }
 }
