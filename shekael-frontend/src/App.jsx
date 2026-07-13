@@ -26,6 +26,7 @@ import Chat from './pages/Chat/Chat';
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
 import CommentModal from './components/CommentModal/CommentModal';
+import ToastContainer from './components/Toast/Toast';
 import QRScanner from './components/QRScanner/QRScanner';
 import MyQRModal from './components/MyQRModal/MyQRModal';
 import WalletWidget from './components/WalletWidget/WalletWidget';
@@ -128,6 +129,7 @@ function AppLayout({ children }) {
         {isMobile && !isProfileRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
+      <ToastContainer />
       <QRScanner
         isOpen={qrScannerOpen}
         onClose={() => {

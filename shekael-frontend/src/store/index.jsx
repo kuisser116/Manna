@@ -194,6 +194,15 @@ const useStore = create((set, get) => ({
     }
   },
 
+  // â”€â”€ Toast global â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  toasts: [],
+  addToast: (type, title, message) => set((state) => ({
+    toasts: [...state.toasts, { id: Date.now(), type, title, message }]
+  })),
+  removeToast: (id) => set((state) => ({
+    toasts: state.toasts.filter(t => t.id !== id)
+  })),
+
 }));
 
 export default useStore;

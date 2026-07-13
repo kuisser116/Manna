@@ -311,6 +311,11 @@ export default function Chat() {
     setActiveConv(conv);
     setShowSearch(false);
     setMessages([]);
+    setInputText('');
+    setShowReply(false);
+    setReplyTo(null);
+    setSelectedFile(null);
+    setFilePreview(null);
     ratchetReadyRef.current = false;
 
     try {

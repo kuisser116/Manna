@@ -61,7 +61,7 @@ export function PostCard({ post, isDetail = false }) {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [isReporting, setIsReporting] = useState(false);
     const { verifyCompletion } = useQuests();
-    const { token, user } = useStore();
+    const { token, user, addToast } = useStore();
     const isOwner = user?.id === author_id;
     const { modalState, showSuccess, showError, showWarning, hideModal } = useFeedbackModal();
     const navigate = useNavigate();
@@ -136,7 +136,7 @@ export function PostCard({ post, isDetail = false }) {
             }
         } else {
             navigator.clipboard.writeText(postUrl);
-            showSuccess('Â¡Compartido!', 'Enlace copiado al portapapeles', true);
+            addToast('success', 'Â¡Compartido!', 'Enlace copiado al portapapeles');
         }
     };
     
@@ -178,10 +178,10 @@ export function PostCard({ post, isDetail = false }) {
             });
 
             if (res.ok) {
-                showSuccess('Reporte enviado', 'Nuestros sistemas de IA y comunidad revisarÃ¡n esta publicaciÃ³n.', true);
+                addToast('success', 'Reporte enviado', 'Nuestros sistemas revisarÃ¡n esta publicaciÃ³n.');
                 setIsReportModalOpen(false);
             } else {
-                showError('Error', 'No se pudo enviar el reporte');
+                addToast('error', 'Error', 'No se pudo enviar el reporte');
             }
         } catch (error) {
             console.error('Report error:', error);
