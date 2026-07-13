@@ -51,17 +51,10 @@
   align-items: center;
   padding: 40px 24px 20px;
   background:
-    radial-gradient(ellipse at 70% 40%, rgba(225,29,72,0.05) 0%, transparent 50%),
-    radial-gradient(ellipse at 30% 70%, rgba(245,204,0,0.04) 0%, transparent 40%),
-    linear-gradient(160deg, #fefcf8 0%, #fdf8f4 40%, #faf5f0 100%);
+    radial-gradient(ellipse at 70% 40%, color-mix(in srgb, var(--color-accent) 8%, transparent) 0%, transparent 50%),
+    radial-gradient(ellipse at 30% 70%, color-mix(in srgb, var(--color-warning) 5%, transparent) 0%, transparent 40%),
+    linear-gradient(160deg, var(--color-surface) 0%, var(--color-bg) 40%, var(--color-surface-2) 100%);
   overflow: hidden;
-}
-
-:root[data-theme='dark'] .hero {
-  background:
-    radial-gradient(ellipse at 70% 40%, rgba(225,29,72,0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 30% 70%, rgba(225,29,72,0.05) 0%, transparent 40%),
-    linear-gradient(160deg, #1a1a1e 0%, #18181b 40%, #16161a 100%);
 }
 
 /* ─── Grecas pattern overlay (igual que Profile) ─── */
