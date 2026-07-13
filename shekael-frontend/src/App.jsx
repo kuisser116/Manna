@@ -126,7 +126,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {isMobile && !isProfileRoute && <WalletWidget variant="floating" />}
+        {!isProfileRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
