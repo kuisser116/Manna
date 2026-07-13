@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, X, ChevronDown, Sparkles } from 'lucide-react';
 import useStore from '../../store';
@@ -129,7 +130,8 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                 {count > 0 && <span className={styles.count}>{count}</span>}
             </motion.button>
 
-            <AnimatePresence>
+            {createPortal(
+                <AnimatePresence>
                 {modalOpen && (
                     <motion.div
                         className={styles.overlay}
@@ -238,7 +240,9 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                         </motion.div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+            )}
 
             <FeedbackModal
                 isOpen={modalState.isOpen}
