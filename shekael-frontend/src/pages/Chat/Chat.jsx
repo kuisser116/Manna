@@ -312,7 +312,7 @@ export default function Chat() {
     setShowSearch(false);
     setMessages([]);
     setInputText('');
-    setShowReply(false);
+    // setShowReply removed - not declared;
     setReplyTo(null);
     setSelectedFile(null);
     setFilePreview(null);
