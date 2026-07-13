@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import styles from '../styles/pages/Terms.module.css';
 import useStore from '../store';
 
-const TERMS_VERSION = 'v1.1';
+const TERMS_VERSION = 'v1.2';
 const LAST_UPDATED = '12 de Julio de 2026';
 
 export default function Terms() {
@@ -112,8 +112,9 @@ export default function Terms() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <div className={styles.summary}>
-            <strong>Resumen:</strong> Shekael es una red social que ofrece un sistema de puntos de lealtad (MXNe). 
-            MXNe no es dinero real, no tiene valor fuera de la app, y no puede ser canjeado por efectivo. 
+            <strong>Resumen:</strong> Shekael es una red social con un ecosistema digital propio (MXNe). 
+            MXNe es un token digital emitido en la red Stellar (testnet). No está garantizado, asegurado 
+            ni regulado por ninguna autoridad financiera. Su valor depende del mercado y de la comunidad. 
             Al usar Shekael aceptas estos términos.
           </div>
 
@@ -138,32 +139,54 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>3. Naturaleza de MXNe (Puntos de Lealtad)</h2>
-            <p className={styles.highlight}>
-              <strong>MXNe NO es dinero real, una criptomoneda, un activo financiero, ni una inversión.</strong>
+            <h2>3. Naturaleza de MXNe (Token Digital)</h2>
+            <p>
+              MXNe es un <strong>token digital</strong> emitido en la red Stellar (actualmente en testnet), 
+              con código de activo <strong>MXNe</strong>. A diferencia de sistemas de puntos de lealtad 
+              tradicionales, MXNe opera sobre una blockchain pública y puede ser transferido entre 
+              usuarios dentro de la Plataforma.
             </p>
-            <p>MXNe es un sistema de puntos de lealtad virtual que funciona exclusivamente dentro del ecosistema Shekael. Al aceptar estos términos, reconoces y aceptas que:</p>
+            <p className={styles.highlight}>
+              <strong>MXNe NO es una moneda de curso legal, no está respaldado por ningún gobierno, 
+              no está asegurado por ninguna institución financiera (incluyendo FDIC o IPAB), 
+              y no está registrado como valor (security) ante ninguna autoridad regulatoria.</strong>
+            </p>
+            <p>Al aceptar estos términos, reconoces y aceptas expresamente que:</p>
             <ul>
-              <li>MXNe <strong>no tiene valor monetario</strong> fuera de la Plataforma.</li>
-              <li>MXNe <strong>no puede ser canjeado por efectivo, pesos mexicanos, ni ninguna moneda fiduciaria</strong>.</li>
-              <li>MXNe <strong>no puede ser transferido a cuentas bancarias, tarjetas, ni ningún sistema de pago externo</strong>.</li>
-              <li>MXNe solo puede ser utilizado para pagar productos y servicios en comercios afiliados que acepten MXNe como método de pago.</li>
-              <li>Shekael no es una institución financiera, banco, casa de cambio, ni proveedor de servicios de pago electrónico regulado.</li>
-              <li>Shekael no otorga créditos, préstamos, ni garantías financieras de ningún tipo.</li>
-              <li>Los saldos de MXNe no generan intereses, rendimientos, ni ganancias de capital.</li>
+              <li>MXNe <strong>no tiene un valor garantizado</strong>. Su valor percibido depende exclusivamente 
+              de la oferta y demanda dentro del ecosistema Shekael y del mercado secundario voluntario.</li>
+              <li>MXNe <strong>no está pegado 1:1 a ninguna moneda fiduciaria</strong>. Cualquier referencia a 
+              un valor equivalente en MXN es aspiracional y no constituye una obligación contractual.</li>
+              <li>La red Stellar es una red pública descentralizada. Shekael no controla, no garantiza 
+              y no se hace responsable por fallas, congestiones, ataques o pérdidas ocurridas en dicha red.</li>
+              <li>Eres el <strong>único responsable de tus claves privadas</strong> y de la seguridad de tu 
+              cuenta en la red Stellar. Shekael no tiene acceso a tus claves ni puede recuperarlas.</li>
+              <li>Los tokens MXNe están sujetos a <strong>volatilidad de mercado</strong>. Su valor puede 
+              incrementarse o reducirse drásticamente, incluso hasta cero.</li>
+              <li>Shekael <strong>no es una institución financiera</strong>, banco, casa de bolsa, casa de cambio, 
+              fondo de inversión, ni proveedor de servicios de activos virtuales regulado.</li>
+              <li>Shekael <strong>no otorga créditos, préstamos, rendimientos, intereses ni garantías financieras</strong> 
+              de ningún tipo.</li>
+              <li>Los saldos de MXNe <strong>no generan intereses ni rendimientos</strong> de ninguna naturaleza.</li>
+              <li>MXNe <strong>no puede ser canjeado por efectivo</strong> directamente a través de Shekael. 
+              Cualquier intercambio MXNe/MXN deberá ocurrir a través de servicios externos no afiliados 
+              y bajo tu propio riesgo.</li>
+              <li>En caso de suspensión definitiva de tu cuenta por violación de estos Términos, 
+              los MXNe acumulados serán redirigidos al Fondo Regional de Shekael sin compensación.</li>
             </ul>
           </section>
 
           <section className={styles.section}>
-            <h2>4. Descuento del 5% en Comercios</h2>
+            <h2>4. Descuento Promocional en Comercios</h2>
             <p>
-              Shekael ofrece un beneficio promocional de <strong>5% de descuento</strong> (con tope de $50 MXNe por transacción) 
-              en compras realizadas en comercios afiliados mediante pago con QR. Este descuento:
+              Shekael puede ofrecer un beneficio promocional de descuento (actualmente <strong>5%</strong> con tope de 
+              <strong>50 MXNe por transacción</strong>) en compras realizadas en comercios afiliados mediante pago con 
+              QR dentro de la Plataforma. Este descuento:
             </p>
             <ul>
-              <li>Es un beneficio promocional, no un derecho adquirido.</li>
+              <li>Es un beneficio promocional, no un derecho adquirido ni un rendimiento financiero.</li>
               <li>Puede ser modificado, suspendido o cancelado en cualquier momento sin responsabilidad para Shekael.</li>
-              <li>Está sujeto a disponibilidad del Fondo Regional correspondiente.</li>
+              <li>Está sujeto a disponibilidad de fondos en el Fondo Regional correspondiente.</li>
               <li>No aplica en combinación con otras promociones u ofertas.</li>
             </ul>
           </section>
@@ -238,7 +261,31 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>9. Limitación de Responsabilidad</h2>
+            <h2>9. Riesgos Asociados a Tokens Digitales</h2>
+            <p className={styles.highlight}>
+              Al usar MXNe, reconoces que los tokens digitales y las redes blockchain conllevan 
+              riesgos inherentes. Shekael <strong>no garantiza</strong> la estabilidad, disponibilidad 
+              o valor futuro de MXNe. Aceptas expresamente que:
+            </p>
+            <ul>
+              <li>El valor de MXNe puede <strong>volverse cero</strong> en cualquier momento debido a 
+              condiciones de mercado, cambios regulatorios, fallas técnicas o decisiones de la comunidad.</li>
+              <li>Las transacciones en la red Stellar son <strong>irreversibles</strong>. No existe 
+              chargeback, reembolso forzoso ni reversión de transacciones confirmadas.</li>
+              <li>La red Stellar puede experimentar <strong>congestión, bifurcaciones (forks), 
+              ataques de seguridad o fallas</strong> que afecten la disponibilidad o integridad de los tokens.</li>
+              <li>El marco regulatorio mexicano e internacional sobre tokens digitales y activos 
+              virtuales está en evolución. Cambios regulatorios podrían afectar la operación de MXNe 
+              o su clasificación legal.</li>
+              <li>No existe <strong>ningún seguro, fondo de garantía ni protección al consumidor</strong> 
+              que cubra pérdidas relacionadas con MXNe.</li>
+              <li>La pérdida de acceso a tu cuenta de Google o a tus claves Stellar resultará en la 
+              <strong>pérdida permanente</strong> del acceso a tus tokens MXNe.</li>
+            </ul>
+          </section>
+
+          <section className={styles.section}>
+            <h2>10. Limitación de Responsabilidad</h2>
             <p className={styles.highlight}>
               Shekael NO será responsable por:
             </p>
@@ -257,7 +304,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>10. Terminación</h2>
+            <h2>11. Terminación</h2>
             <p>
               Puedes dejar de usar Shekael en cualquier momento. Shekael puede suspender o terminar tu acceso 
               si violas estos Términos. Al terminar tu relación con Shekael:
@@ -270,7 +317,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>11. Ley Aplicable y Jurisdicción</h2>
+            <h2>12. Ley Aplicable y Jurisdicción</h2>
             <p>
               Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia 
  relacionada con estos Términos será sometida a la jurisdicción de los tribunales competentes de la 
@@ -279,7 +326,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>12. Contacto</h2>
+            <h2>13. Contacto</h2>
             <p>
               Para preguntas, aclaraciones o notificaciones relacionadas con estos Términos, puedes 
               contactarnos a través de los medios dispuestos en la Plataforma.
