@@ -628,10 +628,15 @@ export default function Chat() {
   }, [messages, messagesEndRefCallback]);
 
   const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   };
+
+  // Scroll instantáneo al fondo cuando cambian los mensajes (antes del paint)
+  useLayoutEffect(() => {
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [messages]);
 
   // Búsqueda de usuarios
   const handleSearch = async (q) => {
