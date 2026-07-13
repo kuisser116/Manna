@@ -318,9 +318,10 @@ export default function Chat() {
     setFilePreview(null);
     ratchetReadyRef.current = false;
 
+    let msgs = [];
     try {
       const res = await getMessages(conv.id);
-      const msgs = res.data.messages || [];
+      msgs = res.data.messages || [];
 
       // Cachear llaves públicas
       const otherUser = conv.otherUser;
