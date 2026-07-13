@@ -582,7 +582,7 @@ router.post('/:postId/comments', authMiddleware, async (req, res) => {
             })
             .select(`
                 *,
-                author:users!post_comments_author_id_fkey (display_name, stellar_public_key)
+                author:users!post_comments_author_id_fkey (display_name, stellar_public_key, avatar_url)
             `)
             .single();
 
@@ -591,7 +591,8 @@ router.post('/:postId/comments', authMiddleware, async (req, res) => {
         const formattedComment = {
             ...newComment,
             display_name: newComment.author.display_name,
-            stellar_public_key: newComment.author.stellar_public_key
+            stellar_public_key: newComment.author.stellar_public_key,
+            avatar_url: newComment.author.avatar_url
         };
 
         // Notificación (Comment)

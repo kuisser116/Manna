@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPostDetail, createComment, getFeed } from '../api/posts.api';
-import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
-import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
+
 import PostCard from '../components/PostCard/PostCard';
 import VideoDetailLayout from '../components/VideoDetailLayout/VideoDetailLayout';
 import ImageDetailLayout from '../components/ImageDetailLayout/ImageDetailLayout';
@@ -36,7 +35,7 @@ export default function PostDetail() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
 
-    const { modalState, showSuccess, showError, hideModal } = useFeedbackModal();
+    const { addToast } = useStore();
     const { verifyCompletion } = useQuests();
 
     useEffect(() => {
@@ -51,7 +50,7 @@ export default function PostDetail() {
                 setLikesCount(data.post?.likes_count || 0);
             } catch (err) {
                 console.error(err);
-                showError('Error', 'No se pudo cargar la publicaciÃ³n');
+                addToast('error', 'Error', 'No se pudo cargar la publicación');
             } finally {
                 setLoading(false);
             }
@@ -63,7 +62,7 @@ export default function PostDetail() {
         return () => {
             setVideoMode('default');
         };
-    }, [id, setVideoMode, showError]);
+    }, [id, setVideoMode]);
 
     // Cargar posts recomendados (videos)
     useEffect(() => {
@@ -166,10 +165,10 @@ export default function PostDetail() {
             const { data } = await createComment(id, commentText);
             setComments((prev) => [...prev, data.comment]);
             setCommentText('');
-            showSuccess('Â¡Comentario enviado!', '', true);
+            addToast('success', 'Comentario enviado');
         } catch (err) {
             console.error(err);
-            showError('Error', 'No se pudo enviar el comentario');
+            addToast('error', 'Error', 'No se pudo enviar el comentario');
         } finally {
             setIsSubmitting(false);
         }
@@ -188,14 +187,14 @@ export default function PostDetail() {
             });
 
             if (res.ok) {
-                showSuccess('PublicaciÃ³n eliminada', 'Tu contenido ha sido borrado permanentemente.', true);
+                addToast('success', 'Publicación eliminada', 'Tu contenido ha sido borrado permanentemente.');
                 setTimeout(() => navigate('/feed'), 2000);
             } else {
                 const data = await res.json();
-                showError('Error', data.message || 'No se pudo eliminar la publicaciÃ³n');
+                addToast('error', 'Error', data.message || 'No se pudo eliminar la publicación');
             }
         } catch (err) {
-            showError('Error', 'Fallo de conexiÃ³n');
+            addToast('error', 'Error', 'Fallo de conexión');
         }
     };
 
@@ -247,22 +246,12 @@ export default function PostDetail() {
                     registerView={registerView}
                     onDelete={handleDeletePost}
                 />
-                <FeedbackModal
-                    isOpen={modalState.isOpen}
-                    onClose={hideModal}
-                    type={modalState.type}
-                    title={modalState.title}
-                    message={modalState.message}
-                    showCloseButton={modalState.showCloseButton}
-                    autoClose={modalState.autoClose}
-                    autoCloseDelay={modalState.autoCloseDelay}
-                />
                 <ConfirmationModal
                     isOpen={isDeleteModalOpen}
                     onClose={() => setIsDeleteModalOpen(false)}
                     onConfirm={confirmDelete}
-                    title="Â¿Eliminar publicaciÃ³n?"
-                    message="Esta acciÃ³n no se puede deshacer y borrarÃ¡ permanentemente tu contenido y sus interacciones."
+                    title="¿Eliminar publicación?"
+                    message="Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones."
                     confirmText="Eliminar permanentemente"
                 />
             </>
@@ -287,22 +276,12 @@ export default function PostDetail() {
                     onBack={() => navigate(-1)}
                     onDelete={handleDeletePost}
                 />
-                <FeedbackModal
-                    isOpen={modalState.isOpen}
-                    onClose={hideModal}
-                    type={modalState.type}
-                    title={modalState.title}
-                    message={modalState.message}
-                    showCloseButton={modalState.showCloseButton}
-                    autoClose={modalState.autoClose}
-                    autoCloseDelay={modalState.autoCloseDelay}
-                />
                 <ConfirmationModal
                     isOpen={isDeleteModalOpen}
                     onClose={() => setIsDeleteModalOpen(false)}
                     onConfirm={confirmDelete}
-                    title="Â¿Eliminar publicaciÃ³n?"
-                    message="Esta acciÃ³n no se puede deshacer y borrarÃ¡ permanentemente tu contenido y sus interacciones."
+                    title="¿Eliminar publicación?"
+                    message="Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones."
                     confirmText="Eliminar permanentemente"
                 />
             </>
@@ -325,22 +304,12 @@ export default function PostDetail() {
                 onLike={handleLike}
                 onDelete={handleDeletePost}
             />
-            <FeedbackModal
-                isOpen={modalState.isOpen}
-                onClose={hideModal}
-                type={modalState.type}
-                title={modalState.title}
-                message={modalState.message}
-                showCloseButton={modalState.showCloseButton}
-                autoClose={modalState.autoClose}
-                autoCloseDelay={modalState.autoCloseDelay}
-            />
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
-                title="Â¿Eliminar publicaciÃ³n?"
-                message="Esta acciÃ³n no se puede deshacer y borrarÃ¡ permanentemente tu contenido y sus interacciones."
+                title="¿Eliminar publicación?"
+                message="Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones."
                 confirmText="Eliminar permanentemente"
             />
         </>
