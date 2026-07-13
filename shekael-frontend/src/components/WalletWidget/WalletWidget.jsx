@@ -187,7 +187,7 @@ export function WalletWidget({ variant = 'default' }) {
                 </div>
             ) : (
                 <>
-                    <div className={styles.balanceRow} onClick={() => fetchBalance()}>
+                    <div className={styles.balanceRow}>
                         {balanceLoading ? (
                             <div className={styles.skeleton} />
                         ) : (

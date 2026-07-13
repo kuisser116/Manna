@@ -20,7 +20,7 @@ export const blockRequester = (requestId) => chatAPI.post(`/chats/requests/${req
 export const getConversations = () => chatAPI.get('/chats/conversations');
 
 // Mensajes
-export const getMessages = (conversationId, page = 0) => chatAPI.get(`/chats/${conversationId}/messages?page=${page}`);
+export const getMessages = (conversationId, page = 0) => chatAPI.get(`/chats/${conversationId}/messages?page=${page}&limit=200`);
 export const sendMessage = (conversationId, encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType, duration, pollId) =>
     chatAPI.post(`/chats/${conversationId}/messages`, { encryptedContent, nonce, msgIndex, senderEphemeralKey, preKeyUsedId, messageType, mediaUrl, mediaThumbUrl, fileName, fileSize, mimeType, duration, pollId });
 

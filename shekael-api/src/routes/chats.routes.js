@@ -348,7 +348,7 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
         }
 
         const page = parseInt(req.query.page) || 0;
-        const limit = 50;
+        const limit = parseInt(req.query.limit) || 100;
         const offset = page * limit;
 
         const { data: messages, error } = await supabase
