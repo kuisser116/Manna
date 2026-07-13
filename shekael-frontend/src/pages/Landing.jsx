@@ -217,31 +217,112 @@ function LandingInner() {
           );
         }
 
-        // ── 5. FEATURES: hover slide-in from sides ──
-        const featWrap = tagsRef.current;
-        const featItems = featWrap?.querySelectorAll(`.${styles.featItem}`);
-        if (featItems?.length && featWrap) {
-          // Set initial positions off-screen
-          gsap.set(featItems, { opacity: 0, x: (i) => i % 2 === 0 ? -60 : 60 });
+        // ── 5. FEATURES: scatter → assemble → type ──
+        const featGrid = tagsRef.current;
+        const featItems = featGrid?.querySelectorAll(`.${styles.featItem}`);
+        const featDots = featGrid?.querySelectorAll(`.${styles.featDot}`);
+        const featLines = featGrid?.querySelectorAll(`.${styles.featLine}`);
+        const featTexts = featGrid?.querySelectorAll(`.${styles.featTyped}`);
+        const featInner = featGrid?.querySelector(`.${styles.featInner}`);
 
-          featWrap.addEventListener('mouseenter', () => {
-            gsap.to(featItems, {
-              opacity: 1, x: 0,
-              stagger: 0.06,
-              duration: 0.5,
-              ease: 'back.out(1.7)',
-              overwrite: 'auto'
+        if (featItems?.length && featInner) {
+          // Save original texts for scramble
+          const originalTexts = [];
+          featTexts?.forEach(t => originalTexts.push(t.textContent || ''));
+
+          // Measure container
+          const rect = featInner.getBoundingClientRect();
+          const cw = rect.width - 60;
+          const ch = rect.height - 40;
+          const centers = [
+            { x: cw * 0.12, y: ch * 0.2 },
+            { x: cw * 0.38, y: ch * 0.2 },
+            { x: cw * 0.64, y: ch * 0.2 },
+            { x: cw * 0.12, y: ch * 0.58 },
+            { x: cw * 0.38, y: ch * 0.58 },
+            { x: cw * 0.64, y: ch * 0.58 }
+          ];
+
+          // Scatter items at random positions
+          featItems.forEach((el, i) => {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 80 + Math.random() * 100;
+            gsap.set(el, {
+              opacity: 0,
+              x: centers[i].x + Math.cos(angle) * dist - centers[i].x + 30,
+              y: centers[i].y + Math.sin(angle) * dist - centers[i].y + 20,
+              scale: 0.4,
+              rotation: gsap.utils.random(-25, 25)
+            });
+            // Hide typed text initially
+            if (featTexts[i]) gsap.set(featTexts[i], { opacity: 0 });
+            if (featLines[i]) gsap.set(featLines[i], { scaleX: 0, opacity: 0 });
+          });
+
+          // Assemble on scroll
+          ScrollTrigger.create({
+            trigger: featGrid,
+            start: 'top 80%',
+            onEnter: () => {
+              featItems.forEach((el, i) => {
+                // Fly to center position
+                gsap.to(el, {
+                  x: 0, y: 0, opacity: 1, scale: 1, rotation: 0,
+                  duration: 0.6,
+                  delay: i * 0.1,
+                  ease: 'back.out(2.5)',
+                  overwrite: 'auto',
+                  onStart: () => {
+                    // Simultaneously draw the dot and line
+                    if (featDots[i]) {
+                      gsap.fromTo(featDots[i], { scale: 0 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' });
+                    }
+                    if (featLines[i]) {
+                      gsap.to(featLines[i], { scaleX: 1, opacity: 1, duration: 0.3, ease: 'power2.out' });
+                    }
+                    // ScrambleText the description
+                    if (featTexts[i] && originalTexts[i]) {
+                      gsap.to(featTexts[i], {
+                        opacity: 1,
+                        duration: 0.8,
+                        delay: 0.2,
+                        scrambleText: {
+                          text: originalTexts[i],
+                          chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                          revealDelay: 0.1,
+                          speed: 0.5,
+                          tweenLength: true
+                        },
+                        ease: 'none'
+                      });
+                    }
+                  }
+                });
+              });
+            },
+            once: true
+          });
+
+          // Gentle floating after assembly
+          featGrid.addEventListener('mouseenter', () => {
+            featItems.forEach((el, i) => {
+              gsap.to(el, {
+                y: gsap.utils.random(-4, 4),
+                rotation: gsap.utils.random(-1, 1),
+                duration: 2 + Math.random(),
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut',
+                overwrite: 'auto',
+                delay: i * 0.1
+              });
             });
           });
 
-          featWrap.addEventListener('mouseleave', () => {
-            gsap.to(featItems, {
-              opacity: 0,
-              x: (i) => i % 2 === 0 ? -40 : 40,
-              stagger: 0.04,
-              duration: 0.35,
-              ease: 'power2.in',
-              overwrite: 'auto'
+          featGrid.addEventListener('mouseleave', () => {
+            featItems.forEach(el => {
+              gsap.killTweensOf(el, 'y,rotation');
+              gsap.to(el, { y: 0, rotation: 0, duration: 0.4, ease: 'power2.out' });
             });
           });
         }
@@ -409,15 +490,50 @@ function LandingInner() {
             Chatea con cifrado de extremo a extremo. Comparte fotos, videos, audio y encuestas.
             Construye tu perfil unico. Todo esto ya funciona, todo esto es tuyo.
           </p>
-          <div className={styles.featHover} ref={tagsRef}>
-            <span className={styles.featHint}>Pasa el cursor para descubrir</span>
-            <div className={styles.featTrack}>
-              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M8 10h8M8 14h5"/></svg> Feed inteligente</span>
-              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Chat cifrado</span>
-              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg> Perfiles unicos</span>
-              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> Fotos y videos</span>
-              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Audio y encuestas</span>
-              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Comunidad real</span>
+          <div className={styles.featGrid} ref={tagsRef}>
+            <div className={styles.featInner}>
+              <div className={styles.featItem} style={{ '--idx': 0 }}>
+                <span className={styles.featDot} />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M8 10h8M8 14h5"/></svg>
+                <span className={styles.featLabel}>Feed inteligente</span>
+                <span className={styles.featLine} />
+                <span className={styles.featTyped}>Contenido que suma, no que distrae</span>
+              </div>
+              <div className={styles.featItem} style={{ '--idx': 1 }}>
+                <span className={styles.featDot} />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                <span className={styles.featLabel}>Chat cifrado</span>
+                <span className={styles.featLine} />
+                <span className={styles.featTyped}>Mensajes privados E2E con audio e imagenes</span>
+              </div>
+              <div className={styles.featItem} style={{ '--idx': 2 }}>
+                <span className={styles.featDot} />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+                <span className={styles.featLabel}>Perfiles unicos</span>
+                <span className={styles.featLine} />
+                <span className={styles.featTyped}>Tu identidad, tu espacio personal</span>
+              </div>
+              <div className={styles.featItem} style={{ '--idx': 3 }}>
+                <span className={styles.featDot} />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span className={styles.featLabel}>Fotos y videos</span>
+                <span className={styles.featLine} />
+                <span className={styles.featTyped}>Comparte tu mundo visualmente</span>
+              </div>
+              <div className={styles.featItem} style={{ '--idx': 4 }}>
+                <span className={styles.featDot} />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <span className={styles.featLabel}>Audio y encuestas</span>
+                <span className={styles.featLine} />
+                <span className={styles.featTyped}>Voz, musica y decisiones en grupo</span>
+              </div>
+              <div className={styles.featItem} style={{ '--idx': 5 }}>
+                <span className={styles.featDot} />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                <span className={styles.featLabel}>Comunidad real</span>
+                <span className={styles.featLine} />
+                <span className={styles.featTyped}>Gente real, conexiones reales</span>
+              </div>
             </div>
           </div>
         </div>

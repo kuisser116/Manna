@@ -280,75 +280,62 @@
   max-width: 620px;
 }
 
-/* ─── Feature hover reveal ─── */
-.featHover {
+/* ─── Features scatter → assemble grid ─── */
+.featGrid {
   margin-top: 32px;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px dashed var(--color-border);
-  transition: border-color 0.3s ease, background 0.3s ease;
-  cursor: default;
-  min-height: 60px;
+  min-height: 280px;
   position: relative;
-  overflow: hidden;
 }
 
-.featHover:hover {
-  border-color: var(--color-text-muted);
-  background: color-mix(in srgb, var(--color-primary) 3%, transparent);
-}
-
-.featHint {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.featHover:hover .featHint {
-  opacity: 0;
-}
-
-.featTrack {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  min-height: 50px;
+.featInner {
+  position: relative;
+  width: 100%;
+  height: 260px;
 }
 
 .featItem {
-  display: inline-flex;
+  position: absolute;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
-  padding: 6px 14px;
-  border-radius: 8px;
-  letter-spacing: 0.3px;
+  gap: 8px;
   white-space: nowrap;
-  transition: background 0.2s ease;
+  cursor: default;
 }
 
-.featItem svg {
-  width: 14px;
-  height: 14px;
+.featDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
   flex-shrink: 0;
 }
 
-.featItem:hover {
-  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+.featItem svg {
+  width: 15px;
+  height: 15px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.featLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.2px;
+}
+
+.featLine {
+  width: 24px;
+  height: 1px;
+  background: var(--color-border);
+  transform-origin: left center;
+}
+
+.featTyped {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.2px;
 }
 
 /* ══════════════════════════════════════════════
