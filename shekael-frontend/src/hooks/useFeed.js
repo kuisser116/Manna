@@ -22,8 +22,11 @@ export function useFeed() {
     }
     setFeedError(null);
 
+    const activeFilter = useStore.getState().activeFilter;
+    const sortParam = activeFilter === 'supported' ? 'supported' : undefined;
+
     try {
-      const { data } = await getFeed(page);
+      const { data } = await getFeed(page, sortParam);
       const postsData = data.posts || data;
       const moreAvailable = !!(data.hasMore && postsData.length > 0);
       setHasMore(moreAvailable);

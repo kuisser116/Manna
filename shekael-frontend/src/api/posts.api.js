@@ -24,7 +24,10 @@ postsAPI.interceptors.response.use(
     }
 );
 
-export const getFeed = (page = 0) => postsAPI.get(`/posts/feed?page=${page}`);
+export const getFeed = (page = 0, sort) => {
+    const params = `page=${page}` + (sort ? `&sort=${sort}` : '');
+    return postsAPI.get(`/posts/feed?${params}`);
+};
 export const createPost = (data) => postsAPI.post('/posts/create', data);
 export const getUserPosts = (userId) => postsAPI.get(`/posts/user/${userId}`);
 export const uploadPost = (formData) =>

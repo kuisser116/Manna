@@ -32,9 +32,10 @@ router.get('/feed', authMiddleware, async (req, res) => {
         const offset = page * limit;
         const currentUserId = req.user.id;
         const supabase = getDB();
+        const sortBy = req.query.sort || 'recent';
 
         // 1. Obtener posts regulares (No cápsulas) con seen_at
-        const { data: regularPosts, error: regError } = await supabase
+        let regularQuery = supabase
             .from('posts')
             .select(`
                 *,
@@ -45,9 +46,15 @@ router.get('/feed', authMiddleware, async (req, res) => {
                 post_views!left (seen_at, user_id)
             `)
             .eq('is_banned', false)
-            .neq('type', 'capsule')
-            .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1);
+            .neq('type', 'capsule');
+
+        if (sortBy === 'supported') {
+            regularQuery = regularQuery.order('likes_count', { ascending: false }).order('video_view_count', { ascending: false });
+        } else {
+            regularQuery = regularQuery.order('created_at', { ascending: false });
+        }
+
+        const { data: regularPosts, error: regError } = await regularQuery.range(offset, offset + limit - 1);
 
         if (regError) throw regError;
 

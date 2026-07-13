@@ -21,7 +21,7 @@ export default function Feed() {
 
   useEffect(() => {
     if (token) fetchFeed();
-  }, [token]);
+  }, [token, activeFilter]);
 
   // ── Scroll infinito ──
   const scrollLockRef = useRef(false);
