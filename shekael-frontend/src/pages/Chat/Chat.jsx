@@ -443,6 +443,14 @@ export default function Chat() {
       loadPinnedMessage(conv.id);
     } catch (err) {
       console.error('Error loading messages:', err);
+      // Si falla el descifrado, mostrar los mensajes aunque sea cifrados
+      try {
+        if (msgs && msgs.length > 0) {
+          const fallback = msgs.map(m => ({ ...m, decrypted: '[Mensaje cifrado]' }));
+          setMessages(fallback);
+          scrollToBottom();
+        }
+      } catch {}
     }
   }, [crypto, ratchet, deriveEcdhSecret, loadPinnedMessage]);
 

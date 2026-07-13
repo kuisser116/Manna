@@ -3,7 +3,6 @@
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
     padding: 20px;
-    animation: pulse-gold 4s ease-in-out infinite;
 }
 
 .header {
@@ -151,7 +150,7 @@
     background: var(--color-surface-2);
     padding: 2px 8px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid var(--color-border);
 }
 
 .mxnRow {
@@ -249,7 +248,7 @@
     padding: 8px 12px;
     background: var(--color-surface-3);
     border-radius: var(--border-radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border);
     transition: all 0.3s ease;
 }
 
@@ -328,8 +327,7 @@
 
 .progressBarFill {
     height: 100%;
-    /* Gradient dorado a blanco para combinar con el entorno de la app */
-    background: linear-gradient(90deg, #FFFFFF, var(--color-primary));
+    background: linear-gradient(90deg, var(--color-text), var(--color-primary));
     border-radius: 10px;
     position: relative;
     overflow: hidden;
@@ -376,7 +374,7 @@
 }
 
 .floatingButton {
-    background: rgba(28, 28, 40, 0.8);
+    background: color-mix(in srgb, var(--color-surface) 85%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--color-primary);
@@ -392,7 +390,7 @@
 
 .floatingButton.active {
     background: var(--color-primary);
-    color: #000;
+    color: var(--color-bg);
 }
 
 .buttonBalance {
@@ -411,10 +409,10 @@
 
 .floatingPanel {
     width: 280px;
-    background: rgba(28, 28, 40, 0.9);
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(201, 168, 76, 0.3);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
     border-radius: 20px;
     padding: 20px;
     box-shadow: var(--shadow-xl);
@@ -428,7 +426,7 @@
     padding: 4px 10px;
     background: var(--color-surface-3);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border);
 }
 
 .miniIcon {
@@ -463,16 +461,16 @@
 }
 
 .repairLink:hover {
-    border-color: var(--color-primary-glow);
+    border-color: var(--color-primary);
     color: var(--color-primary);
-    background: rgba(201, 168, 76, 0.05);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .rampBtn {
     width: 100%;
     margin-top: 12px;
     background: var(--color-primary);
-    color: #000;
+    color: var(--color-bg);
     font-size: 13px;
     font-weight: 700;
     padding: 10px;
@@ -481,12 +479,12 @@
     cursor: pointer;
     transition: all var(--transition);
     text-align: center;
-    box-shadow: 0 4px 12px rgba(184, 146, 64, 0.2);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .rampBtn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(184, 146, 64, 0.4);
+    box-shadow: 0 6px 15px color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
 @keyframes shimmer {
