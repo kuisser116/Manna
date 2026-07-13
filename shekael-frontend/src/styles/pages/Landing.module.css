@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════
-   Shekael Landing v2 — Banner style
+   Shekael Landing v3 — GSAP heavy, morphing blob, crazy animations
    ══════════════════════════════════════════════ */
 
 .page {
@@ -9,6 +9,25 @@
   color: var(--color-text);
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* ─── Morphing Blob ─── */
+.blobWrap {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 600px;
+  height: 600px;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+.blobSvg {
+  width: 100%;
+  height: 100%;
 }
 
 /* ─── Theme Toggle ─── */
@@ -52,12 +71,6 @@
   align-items: center;
   padding: 60px 24px 40px;
   overflow: hidden;
-}
-
-.heroBg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
   background:
     radial-gradient(ellipse at 75% 30%, color-mix(in srgb, var(--color-accent) 10%, transparent) 0%, transparent 55%),
     radial-gradient(ellipse at 25% 70%, color-mix(in srgb, var(--color-warning) 7%, transparent) 0%, transparent 45%),
@@ -65,8 +78,7 @@
     linear-gradient(160deg, var(--color-surface) 0%, var(--color-bg) 40%, var(--color-surface-2) 100%);
 }
 
-.hero::before {
-  content: '';
+.patternOverlay {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -78,14 +90,6 @@
   -webkit-mask-size: 104px 104px;
   mask-size: 104px 104px;
   opacity: var(--pattern-opacity);
-  pointer-events: none;
-}
-
-.heroOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(180deg, transparent 0%, transparent 60%, var(--color-bg) 100%);
   pointer-events: none;
 }
 
@@ -195,6 +199,7 @@
 .band {
   padding: 100px 24px;
   position: relative;
+  z-index: 1;
 }
 
 .bandInner {
@@ -219,7 +224,6 @@
   text-align: center;
 }
 
-/* ─── Eyebrow labels ─── */
 .bandEyebrow {
   display: inline-block;
   font-size: 11px;
@@ -240,7 +244,6 @@
   margin-bottom: 12px;
 }
 
-/* ─── Titles ─── */
 .bandTitle {
   margin: 0 0 16px;
   font-size: clamp(30px, 4.5vw, 52px);
@@ -259,7 +262,6 @@
   color: var(--color-white);
 }
 
-/* ─── Text ─── */
 .bandText {
   margin: 0;
   font-size: 17px;
@@ -299,12 +301,7 @@
    ECONOMY
    ══════════════════════════════════════════════ */
 .econLine {
-  width: 60px;
-  height: 3px;
-  background: var(--color-primary);
-  border-radius: 2px;
   margin: 24px 0;
-  transform-origin: left;
 }
 
 .econSteps {
@@ -459,6 +456,8 @@
   padding: 16px 24px 32px;
   margin: 0;
   line-height: 1.6;
+  z-index: 1;
+  position: relative;
 }
 
 .recaptcha a {
@@ -470,6 +469,7 @@
    RESPONSIVE
    ══════════════════════════════════════════════ */
 @media (max-width: 700px) {
+  .blobWrap { display: none; }
   .hero { padding: 40px 20px 32px; }
   .band { padding: 64px 20px; }
 
@@ -482,7 +482,6 @@
 }
 
 @media print {
-  .themeToggle, .scrollHint { display: none !important; }
-  .hero { min-height: auto; padding: 40px 24px; }
-  .heroBg { display: none !important; }
+  .themeToggle, .scrollHint, .blobWrap { display: none !important; }
+  .hero { min-height: auto; padding: 40px 24px; min-height: auto; }
 }

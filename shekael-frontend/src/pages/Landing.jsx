@@ -1,8 +1,12 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { MorphSVGPlugin } from 'gsap/MorphSVGPlugin.js';
+import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin.js';
+import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin.js';
+import { CustomEase } from 'gsap/CustomEase.js';
 import { Palette } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useStore from '../store';
@@ -11,9 +15,21 @@ import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
 import styles from '../styles/pages/Landing.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, MorphSVGPlugin, ScrambleTextPlugin, DrawSVGPlugin, CustomEase);
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+// ── Blob shapes for morphing background ──
+const BLOBS = {
+  hero: 'M200,34.5Q177,69,189,113Q201,157,168.5,191Q136,225,104.5,208Q73,191,53.5,161.5Q34,132,29.5,92.5Q25,53,65,35Q105,17,149.5,20.5Q194,24,200,34.5Z',
+  features: 'M192,33Q168,66,185,113Q202,160,163,187Q124,214,86,197Q48,180,47,139Q46,98,69,61Q92,24,144,27Q196,30,192,33Z',
+  economy: 'M187,28Q142,56,154,97Q166,138,130,177Q94,216,63,180.5Q32,145,43,101.5Q54,58,107,44.5Q160,31,187,28Z',
+  future: 'M205,40Q189,80,175,119Q161,158,131.5,188Q102,218,61.5,194.5Q21,171,30.5,126.5Q40,82,83,52.5Q126,23,164,21.5Q202,20,205,40Z',
+  principles: 'M195,37Q157,74,156,117Q155,160,119,189Q83,218,56,184.5Q29,151,33,106Q37,61,97.5,40.5Q158,20,195,37Z',
+  closing: 'M178,32Q149,64,144,105Q139,146,102,173Q65,200,45.5,165Q26,130,50,89Q74,48,119,30.5Q164,13,178,32Z'
+};
+
+const BLEND_MODES = ['hero', 'features', 'economy', 'future', 'principles', 'closing'];
 
 const PRINCIPLES = [
   { label: 'Contenido que suma', text: 'Priorizamos piezas que inspiran, ensenan o hacen reir sin destruir el foco ni la paz mental.' },
@@ -33,18 +49,14 @@ function LandingInner() {
   const band2Ref = useRef(null);
   const band3Ref = useRef(null);
   const band4Ref = useRef(null);
-  const principlesRef = useRef(null);
   const closingRef = useRef(null);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('landing') === '1') return;
-    const token = localStorage.getItem('Shekael_token');
-    if (token && !window.location.pathname.startsWith('/terminos')) {
-      navigate('/terminos');
-    }
-  }, [navigate]);
+  const blobRef = useRef(null);
+  const mainRef = useRef(null);
+  const tagsRef = useRef(null);
+  const econStepsRef = useRef(null);
+  const futureListRef = useRef(null);
+  const principleListRef = useRef(null);
+  const tl = useRef(null);
 
   // Load reCAPTCHA
   useEffect(() => {
@@ -65,74 +77,15 @@ function LandingInner() {
     }
   }, [themeName]);
 
-  // GSAP animations
+  // Redirect logged-in users
   useEffect(() => {
-    if (!heroRef.current) return;
-    const ctx = gsap.context(() => {
-
-      // Hero: stagger text reveal
-      const heroWords = heroRef.current.querySelectorAll(`.${styles.heroWord}`);
-      if (heroWords.length) {
-        gsap.fromTo(heroWords,
-          { opacity: 0, y: 40, rotateX: -20 },
-          { opacity: 1, y: 0, rotateX: 0, stagger: 0.08, duration: 0.7, ease: 'power3.out', delay: 0.3 }
-        );
-      }
-
-      const heroSub = heroRef.current.querySelector(`.${styles.heroSub}`);
-      if (heroSub) {
-        gsap.fromTo(heroSub,
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6, delay: 0.9, ease: 'power2.out' }
-        );
-      }
-
-      const heroCta = heroRef.current.querySelector(`.${styles.heroCta}`);
-      if (heroCta) {
-        gsap.fromTo(heroCta,
-          { opacity: 0, y: 20 },
-          { opacity: 1, y: 0, duration: 0.6, delay: 1.2, ease: 'power2.out' }
-        );
-      }
-
-      // Bands: fade-up reveal on scroll
-      const bands = [band1Ref, band2Ref, band3Ref, band4Ref, principlesRef, closingRef];
-      bands.forEach(ref => {
-        const el = ref.current;
-        if (!el) return;
-        gsap.fromTo(el,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1, y: 0, duration: 0.6, ease: 'power2.out',
-            scrollTrigger: {
-              trigger: el,
-              start: 'top 85%',
-              toggleActions: 'play none none none'
-            }
-          }
-        );
-      });
-
-      // Economy line animation
-      const econLine = band3Ref.current?.querySelector(`.${styles.econLine}`);
-      if (econLine) {
-        gsap.fromTo(econLine,
-          { scaleX: 0 },
-          {
-            scaleX: 1, duration: 0.7, ease: 'power3.out',
-            scrollTrigger: {
-              trigger: band3Ref.current,
-              start: 'top 80%',
-              toggleActions: 'play none none none'
-            }
-          }
-        );
-      }
-
-    });
-
-    return () => ctx.revert();
-  }, []);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('landing') === '1') return;
+    const token = localStorage.getItem('Shekael_token');
+    if (token && !window.location.pathname.startsWith('/terminos')) {
+      navigate('/terminos');
+    }
+  }, [navigate]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     showLoading('Entrando a Shekael...', 'Verificando seguridad');
@@ -155,10 +108,234 @@ function LandingInner() {
     }
   };
 
+  // ─── GSAP: The crazy stuff ───
+  useEffect(() => {
+    CustomEase.create('shekael-bounce', 'M0,0 C0.3,0.9 0.4,1.2 0.5,1 C0.6,0.8 0.7,1.1 1,1');
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
+
+      // Only run on desktop (too wild for mobile)
+      mm.add('(min-width: 701px)', () => {
+
+        // ── 1. MORPHING BLOB ──
+        const blobPath = blobRef.current?.querySelector('path');
+        if (blobPath) {
+          // Create a timeline that morphs through all blob shapes on scroll
+          const sections = [heroRef, band1Ref, band2Ref, band3Ref, band4Ref, closingRef];
+          const st = ScrollTrigger.create({
+            trigger: mainRef.current,
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: 1.5,
+            onUpdate: (self) => {
+              const progress = self.progress;
+              // Map progress to blob shapes
+              const totalShapes = BLEND_MODES.length - 1;
+              const rawIdx = progress * totalShapes;
+              const idx = Math.min(Math.floor(rawIdx), totalShapes - 1);
+              const frac = rawIdx - idx;
+              const fromId = BLEND_MODES[idx];
+              const toId = BLEND_MODES[Math.min(idx + 1, totalShapes)];
+              if (fromId && toId && BLOBS[fromId] !== BLOBS[toId]) {
+                gsap.set(blobPath, {
+                  morphSVG: { shape: BLOBS[toId], progress: frac }
+                });
+              }
+            }
+          });
+        }
+
+        // ── 2. HERO: 3D word stagger + scramble ──
+        const heroWords = heroRef.current?.querySelectorAll(`.${styles.heroWord}`);
+        if (heroWords?.length) {
+          gsap.fromTo(heroWords,
+            { opacity: 0, y: 60, rotateX: -40, scale: 0.8, filter: 'blur(8px)' },
+            {
+              opacity: 1, y: 0, rotateX: 0, scale: 1, filter: 'blur(0px)',
+              stagger: 0.1, duration: 0.8, ease: 'shekael-bounce', delay: 0.4
+            }
+          );
+        }
+
+        const heroSub = heroRef.current?.querySelector(`.${styles.heroSub}`);
+        if (heroSub) {
+          gsap.fromTo(heroSub,
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, duration: 0.6, delay: 1.1, ease: 'power2.out' }
+          );
+        }
+
+        const heroCta = heroRef.current?.querySelector(`.${styles.heroCta}`);
+        if (heroCta) {
+          gsap.fromTo(heroCta,
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, duration: 0.6, delay: 1.4, ease: 'power2.out' }
+          );
+        }
+
+        // ── 3. SCRAMBLE TEXT on section headlines ──
+        const bandTitles = mainRef.current?.querySelectorAll(`.${styles.bandTitle}, .${styles.bandTitleWhite}`);
+        if (bandTitles?.length) {
+          bandTitles.forEach(title => {
+            const originalText = title.textContent || '';
+            if (title.closest(`.${styles.bandAccent}`)) return; // Skip accent band (it has white title that looks weird scrambling)
+
+            ScrollTrigger.create({
+              trigger: title.closest(`.${styles.band}`) || title.parentElement,
+              start: 'top 75%',
+              onEnter: () => {
+                gsap.to(title, {
+                  duration: 1.2,
+                  scrambleText: {
+                    text: originalText,
+                    chars: '!@#$%^&*()_+ABCXYZ0123456789',
+                    revealDelay: 0.3,
+                    tweenLength: false
+                  },
+                  ease: 'power2.out'
+                });
+              },
+              once: true
+            });
+          });
+        }
+
+        // ── 4. DRAW LINE on economy section ──
+        const econLine = band2Ref.current?.querySelector(`.${styles.econLine}`);
+        if (econLine?.tagName === 'path' || econLine?.tagName === 'svg') {
+          gsap.fromTo(econLine,
+            { drawSVG: '0%' },
+            {
+              drawSVG: '100%', duration: 1.2, ease: 'power3.inOut',
+              scrollTrigger: {
+                trigger: band2Ref.current,
+                start: 'top 70%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // ── 5. FEATURE TAGS: stagger from alternate directions ──
+        const tags = tagsRef.current?.querySelectorAll(`.${styles.tag}`);
+        if (tags?.length) {
+          gsap.fromTo(tags,
+            { opacity: 0, y: 20, scale: 0.8 },
+            {
+              opacity: 1, y: 0, scale: 1,
+              stagger: { each: 0.06, from: 'start' },
+              duration: 0.4, ease: 'back.out(2)',
+              scrollTrigger: {
+                trigger: tagsRef.current,
+                start: 'top 85%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // ── 6. ECONOMY STEPS: staggered arrows with custom bounce ──
+        const econSteps = econStepsRef.current?.querySelectorAll(`.${styles.econStep}, .${styles.econArrow}`);
+        if (econSteps?.length) {
+          gsap.fromTo(econSteps,
+            { opacity: 0, x: -40, rotate: -10 },
+            {
+              opacity: 1, x: 0, rotate: 0,
+              stagger: 0.15, duration: 0.5, ease: 'shekael-bounce',
+              scrollTrigger: {
+                trigger: econStepsRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // ── 7. FUTURE ITEMS: staggered from right ──
+        const futureItems = futureListRef.current?.querySelectorAll(`.${styles.futureItem}`);
+        if (futureItems?.length) {
+          gsap.fromTo(futureItems,
+            { opacity: 0, x: 60, rotate: 2 },
+            {
+              opacity: 1, x: 0, rotate: 0,
+              stagger: 0.15, duration: 0.55, ease: 'power3.out',
+              scrollTrigger: {
+                trigger: futureListRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // ── 8. PRINCIPLES: staggered with 3D effect ──
+        const principles = principleListRef.current?.querySelectorAll(`.${styles.principleItem}`);
+        if (principles?.length) {
+          gsap.fromTo(principles,
+            { opacity: 0, y: 40, rotateY: -15, transformOrigin: 'left center' },
+            {
+              opacity: 1, y: 0, rotateY: 0,
+              stagger: 0.12, duration: 0.5, ease: 'power3.out',
+              scrollTrigger: {
+                trigger: principleListRef.current,
+                start: 'top 82%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // ── 9. CLOSING: float up with overshoot ──
+        const closingInner = closingRef.current?.querySelector(`.${styles.bandInner}`);
+        if (closingInner) {
+          gsap.fromTo(closingInner.children,
+            { opacity: 0, y: 50 },
+            {
+              opacity: 1, y: 0,
+              stagger: 0.15, duration: 0.5, ease: 'back.out(1.7)',
+              scrollTrigger: {
+                trigger: closingRef.current,
+                start: 'top 82%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+      }); // end matchMedia desktop
+
+      // Mobile: simpler animations
+      mm.add('(max-width: 700px)', () => {
+        const bands = [band1Ref, band2Ref, band3Ref, band4Ref, closingRef];
+        bands.forEach(ref => {
+          const el = ref.current;
+          if (!el) return;
+          gsap.fromTo(el,
+            { opacity: 0, y: 20 },
+            {
+              opacity: 1, y: 0, duration: 0.5, ease: 'power2.out',
+              scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' }
+            }
+          );
+        });
+      });
+
+    }, mainRef);
+
+    return () => ctx.revert();
+  }, []);
+
   const headlineWords = "Vuelve a crear, compartir y pertenecer".split(' ');
 
   return (
-    <div className={styles.page} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
+    <div className={styles.page} style={{ '--pattern-url': `url(${bgPatternUrl})` }} ref={mainRef}>
+      {/* ─── Morphing Blob Background ─── */}
+      <div className={styles.blobWrap} ref={blobRef}>
+        <svg viewBox="0 0 250 250" preserveAspectRatio="xMidYMid slice" className={styles.blobSvg}>
+          <path d={BLOBS.hero} fill="var(--color-primary)" opacity="0.06" />
+        </svg>
+      </div>
+
       {/* Theme Toggle */}
       <button className={styles.themeToggle} onClick={cycleTheme} aria-label="Cambiar tema" title={`Tema: ${themeName}`}>
         <Palette size={18} />
@@ -166,8 +343,7 @@ function LandingInner() {
 
       {/* ═══ HERO ═══ */}
       <section className={styles.hero} ref={heroRef}>
-        <div className={styles.heroBg} />
-        <div className={styles.heroOverlay} />
+        <div className={styles.patternOverlay} />
 
         <div className={styles.heroInner}>
           <div className={styles.heroContent}>
@@ -211,7 +387,7 @@ function LandingInner() {
         </div>
       </section>
 
-      {/* ═══ BAND 1: QUE ES ═══ */}
+      {/* ═══ BAND 1: FEATURES ═══ */}
       <section className={`${styles.band} ${styles.bandLight}`} ref={band1Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Tu red, tu espacio</span>
@@ -221,7 +397,7 @@ function LandingInner() {
             Chatea con cifrado de extremo a extremo. Comparte fotos, videos, audio y encuestas.
             Construye tu perfil unico. Todo esto ya funciona, todo esto es tuyo.
           </p>
-          <div className={styles.featureTags}>
+          <div className={styles.featureTags} ref={tagsRef}>
             <span className={styles.tag}>Feed inteligente</span>
             <span className={styles.tag}>Chat cifrado</span>
             <span className={styles.tag}>Perfiles unicos</span>
@@ -232,7 +408,7 @@ function LandingInner() {
         </div>
       </section>
 
-      {/* ═══ BAND 2: ECONOMIA ═══ */}
+      {/* ═══ BAND 2: ECONOMY ═══ */}
       <section className={`${styles.band} ${styles.bandDark}`} ref={band2Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Economia MXNe</span>
@@ -243,8 +419,12 @@ function LandingInner() {
             Pagas en comercios afiliados con QR y obtienes hasta 5% de descuento.
             No es una promesa, es una economia funcionando dentro de tu red social.
           </p>
-          <div className={styles.econLine} />
-          <div className={styles.econSteps}>
+          <div className={styles.econLine}>
+            <svg width="60" height="3" viewBox="0 0 60 3">
+              <path d="M0 1.5h60" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className={styles.econSteps} ref={econStepsRef}>
             <div className={styles.econStep}>
               <span className={styles.econNum}>01</span>
               <span className={styles.econLabel}>Ganas MXNe</span>
@@ -271,16 +451,16 @@ function LandingInner() {
         </div>
       </section>
 
-      {/* ═══ BAND 3: PROXIMAMENTE ═══ */}
+      {/* ═══ BAND 3: FUTURE ═══ */}
       <section className={`${styles.band} ${styles.bandAccent}`} ref={band3Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebright}>Proximamente</span>
           <h2 className={styles.bandTitleWhite}>Lo que viene para ti</h2>
           <p className={styles.bandTextWhite}>
-            Shekael crece con su comunidad. Estamos construyendo las herramientas para que
-            puedas generar ingresos reales desde la plataforma.
+            Shekael crece con su comunidad. Estamos construyendo herramientas para que
+            generes ingresos reales desde la plataforma.
           </p>
-          <div className={styles.futureList}>
+          <div className={styles.futureList} ref={futureListRef}>
             <div className={styles.futureItem}>
               <div className={styles.futureIcon}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -325,12 +505,12 @@ function LandingInner() {
         </div>
       </section>
 
-      {/* ═══ BAND 4: PRINCIPIOS ═══ */}
-      <section className={`${styles.band} ${styles.bandLight}`} ref={principlesRef}>
+      {/* ═══ BAND 4: PRINCIPLES ═══ */}
+      <section className={`${styles.band} ${styles.bandLight}`} ref={band4Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Nuestros principios</span>
           <h2 className={styles.bandTitle}>Como construimos Shekael</h2>
-          <div className={styles.principlesList}>
+          <div className={styles.principlesList} ref={principleListRef}>
             {PRINCIPLES.map((item, i) => (
               <article key={i} className={styles.principleItem}>
                 <div className={styles.principleNum}>0{i + 1}</div>
