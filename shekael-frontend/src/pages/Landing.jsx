@@ -217,68 +217,56 @@ function LandingInner() {
           );
         }
 
-        // ── 5. FEATURES: scatter → assemble → type ──
+        // ── 5. FEATURES: scatter from grid → assemble → type ──
         const featGrid = tagsRef.current;
         const featItems = featGrid?.querySelectorAll(`.${styles.featItem}`);
         const featDots = featGrid?.querySelectorAll(`.${styles.featDot}`);
         const featLines = featGrid?.querySelectorAll(`.${styles.featLine}`);
         const featTexts = featGrid?.querySelectorAll(`.${styles.featTyped}`);
-        const featInner = featGrid?.querySelector(`.${styles.featInner}`);
 
-        if (featItems?.length && featInner) {
+        if (featItems?.length) {
           // Save original texts for scramble
           const originalTexts = [];
           featTexts?.forEach(t => originalTexts.push(t.textContent || ''));
 
-          // Measure container
-          const rect = featInner.getBoundingClientRect();
-          const cw = rect.width - 60;
-          const ch = rect.height - 40;
-          const centers = [
-            { x: cw * 0.12, y: ch * 0.2 },
-            { x: cw * 0.38, y: ch * 0.2 },
-            { x: cw * 0.64, y: ch * 0.2 },
-            { x: cw * 0.12, y: ch * 0.58 },
-            { x: cw * 0.38, y: ch * 0.58 },
-            { x: cw * 0.64, y: ch * 0.58 }
-          ];
-
-          // Scatter items at random positions
-          featItems.forEach((el, i) => {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 80 + Math.random() * 100;
-            gsap.set(el, {
-              opacity: 0,
-              x: centers[i].x + Math.cos(angle) * dist - centers[i].x + 30,
-              y: centers[i].y + Math.sin(angle) * dist - centers[i].y + 20,
-              scale: 0.4,
-              rotation: gsap.utils.random(-25, 25)
+          // Wait one frame so grid positions settle, then scatter
+          requestAnimationFrame(() => {
+            featItems.forEach((el, i) => {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = 120 + Math.random() * 180;
+              gsap.set(el, {
+                opacity: 0,
+                x: Math.cos(angle) * dist,
+                y: Math.sin(angle) * dist,
+                scale: 0.3,
+                rotation: gsap.utils.random(-35, 35)
+              });
+              // Hide typed text and line
+              if (featTexts[i]) gsap.set(featTexts[i], { opacity: 0 });
+              if (featLines[i]) gsap.set(featLines[i], { scaleX: 0, opacity: 0 });
             });
-            // Hide typed text initially
-            if (featTexts[i]) gsap.set(featTexts[i], { opacity: 0 });
-            if (featLines[i]) gsap.set(featLines[i], { scaleX: 0, opacity: 0 });
           });
 
           // Assemble on scroll
           ScrollTrigger.create({
             trigger: featGrid,
-            start: 'top 80%',
+            start: 'top 82%',
             onEnter: () => {
               featItems.forEach((el, i) => {
-                // Fly to center position
                 gsap.to(el, {
                   x: 0, y: 0, opacity: 1, scale: 1, rotation: 0,
-                  duration: 0.6,
+                  duration: 0.7,
                   delay: i * 0.1,
                   ease: 'back.out(2.5)',
                   overwrite: 'auto',
                   onStart: () => {
-                    // Simultaneously draw the dot and line
+                    // Pop the dot
                     if (featDots[i]) {
-                      gsap.fromTo(featDots[i], { scale: 0 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' });
+                      gsap.fromTo(featDots[i], { scale: 0 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' });
                     }
+                    // Draw the line
                     if (featLines[i]) {
-                      gsap.to(featLines[i], { scaleX: 1, opacity: 1, duration: 0.3, ease: 'power2.out' });
+                      gsap.to(featLines[i], { scaleX: 1, opacity: 1, duration: 0.25, ease: 'power2.out' });
                     }
                     // ScrambleText the description
                     if (featTexts[i] && originalTexts[i]) {
@@ -303,7 +291,7 @@ function LandingInner() {
             once: true
           });
 
-          // Gentle floating after assembly
+          // Gentle floating on hover
           featGrid.addEventListener('mouseenter', () => {
             featItems.forEach((el, i) => {
               gsap.to(el, {
