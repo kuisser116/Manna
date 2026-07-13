@@ -423,13 +423,14 @@
     align-items: center;
     gap: 8px;
     font-weight: 700;
-    font-family: var(--font-display);
+    font-family: var(--font-family);
     font-size: 15px;
 }
 
 .btnCurrency {
     font-size: 10px;
     opacity: 0.8;
+    font-family: var(--font-family);
 }
 
 .floatingPanel {
