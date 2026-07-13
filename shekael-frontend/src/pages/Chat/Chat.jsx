@@ -324,10 +324,8 @@ export default function Chat() {
     let otherUser = conv.otherUser;
 
     try {
-      console.log('🔍 selectConversation for conv:', conv.id, 'otherUser pubKey:', otherUser?.public_key?.slice(0,10));
       const res = await getMessages(conv.id);
       msgs = (res?.data?.messages) || [];
-      console.log('📥 API returned messages:', msgs.length, 'hasMore:', res?.data?.hasMore);
 
       // Cachear llaves públicas
       if (otherUser?.public_key) {
@@ -418,18 +416,12 @@ export default function Chat() {
       scrollToBottom();
       loadPinnedMessage(conv.id);
     } catch (err) {
-      console.error('🛑 Error loading messages:', err?.response?.status, err?.message);
-      console.log('📊 msgs length:', msgs?.length, 'conv.id:', conv?.id);
-      // Mostrar raw si hay mensajes
+      console.error('Error loading messages:', err);
       if (msgs && msgs.length > 0) {
-        console.log('✅ Setting fallback messages:', msgs.length);
         setMessages(msgs.map(m => ({ ...m, decrypted: '[Mensaje cifrado]' })));
         scrollToBottom();
-      } else {
-        console.log('❌ No messages to show');
       }
     }
-    console.log('📝 Messages state after selectConversation:', msgs?.length || 0, 'msgs');
   }, [crypto, ratchet, deriveEcdhSecret, loadPinnedMessage]);
 
   // Descifrar mensajes entrantes nuevos (cuando se reciben sin recargar la página)

@@ -360,11 +360,6 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
 
         if (error) throw error;
 
-        console.log('📊 Backend messages query for conv', conversationId, ':', messages?.length || 0, 'messages');
-        if (messages?.length > 0) {
-            console.log('   First msg created_at:', messages[0].created_at, 'sender:', messages[0].sender_id);
-        }
-
         // Actualizar last_read_at
         await supabase
             .from('conversation_participants')
