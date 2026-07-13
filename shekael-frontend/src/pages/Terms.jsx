@@ -5,8 +5,8 @@ import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import styles from '../styles/pages/Terms.module.css';
 import useStore from '../store';
 
-const TERMS_VERSION = 'v1.0';
-const LAST_UPDATED = '10 de Julio de 2026';
+const TERMS_VERSION = 'v1.1';
+const LAST_UPDATED = '12 de Julio de 2026';
 
 export default function Terms() {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ export default function Terms() {
 
   // Verificar aceptación: solo confiar en BD, no en localStorage
   // (localStorage persiste entre cuentas y da falso positivo)
-  const hasAccepted = user ? !!user.terms_accepted_at : false;
+  const hasAccepted = user ? user.terms_version === TERMS_VERSION : false;
 
   // Bloquear navegación hacia atrás si no ha aceptado
   useEffect(() => {

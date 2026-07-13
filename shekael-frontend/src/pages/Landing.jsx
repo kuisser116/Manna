@@ -66,7 +66,7 @@ function LandingInner() {
       const data = await loginWithGoogle(credentialResponse.credential, recaptchaToken);
       hideModal();
       showSuccess('Ya estas dentro!', 'Bienvenido. Aqui si hay algo real.', true);
-      if (!data.user?.terms_accepted_at) {
+      if (!data.user?.terms_accepted_at || data.user?.terms_version !== 'v1.1') {
         navigate('/terminos');
       } else {
         navigate('/feed');
