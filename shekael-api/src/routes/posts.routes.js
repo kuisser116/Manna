@@ -432,8 +432,10 @@ router.post('/:postId/view', authMiddleware, async (req, res) => {
             });
         }
 
-        if (post.type === 'video') {
-            // Si no hay duración (videoDuration = 0 o undefined), usamos un mínimo default de 10s
+        const isVideo = post.type === 'video';
+        const isImage = post.type === 'image';
+
+        if (isVideo) {
             const duration = Number(videoDuration) || post.video_duration || 0;
             const minRequired = duration > 0 
                 ? Math.min(30, duration * 0.8)

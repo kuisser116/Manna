@@ -87,7 +87,7 @@ export function ImageDetailLayout({
         supports_count = 0,
         stellar_public_key,
         created_at,
-        image_view_count = 0, // Asumiendo que existe o se registra similar al video
+        video_view_count = 0,
         avatar_url,
     } = post;
 
@@ -153,7 +153,7 @@ export function ImageDetailLayout({
                         <div className={styles.viewsRow}>
                             <span className={styles.viewsCount}>
                                 <Eye size={16} className={styles.viewsIcon} />
-                                {formatViews(image_view_count)} vistas
+                                {formatViews(video_view_count)} vistas
                             </span>
                             <span className={styles.dateText}>{formattedDate}</span>
                         </div>

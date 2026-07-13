@@ -244,7 +244,7 @@ export function PostCard({ post, isDetail = false }) {
 
 
     const registerView = async (watchedSeconds = 0, videoDuration = 0) => {
-        if (viewRegistered || type !== 'video') return;
+        if (viewRegistered) return;
         setViewRegistered(true);
         try {
             const API_URL = (import.meta.env.VITE_API_URL || location.origin);
@@ -397,7 +397,7 @@ export function PostCard({ post, isDetail = false }) {
                             <span className={styles.displayName}>{display_name || 'Usuario'}</span>
                         </Link>
                         <span className={styles.dateText}>
-                            {isVideo && video_view_count > 0 && (
+                            {video_view_count > 0 && (
                                 <>
                                     {formatViews(video_view_count)} vistas Â·{' '}
                                 </>
