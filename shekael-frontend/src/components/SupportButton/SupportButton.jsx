@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, X, ChevronDown, Sparkles } from 'lucide-react';
 import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
 import useFeedbackModal from '../FeedbackModal/useFeedbackModal';
 import FeedbackModal from '../FeedbackModal/FeedbackModal';
-import ConfirmModal from '../ConfirmModal/ConfirmModal';
 import styles from './SupportButton.module.css';
 
-// Partículas al hacer clic
+const PRESETS = [5, 10, 25, 50, 100];
+
 function Particles({ show, originX, originY }) {
     const particles = Array.from({ length: 8 }, (_, i) => i);
     return (
@@ -33,72 +34,73 @@ function Particles({ show, originX, originY }) {
 }
 
 export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
-    const { user, balance, mxneBalance, balanceMXN } = useStore();
+    const { user, mxneBalance } = useStore();
     const { sendSupport } = useWallet();
     const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
     const [supported, setSupported] = useState(false);
     const [count, setCount] = useState(supportsCount);
     const [showParticles, setShowParticles] = useState(false);
     const [origin, setOrigin] = useState({ x: 0, y: 0 });
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [confirmLoading, setConfirmLoading] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [customAmount, setCustomAmount] = useState('10');
+    const [showCustom, setShowCustom] = useState(false);
 
-    const currentBalance = parseFloat(mxneBalance || balanceMXN || balance || '0');
+    const currentBalance = parseFloat(mxneBalance || '0');
 
     const handleClick = (e) => {
-        if (supported || !user) return;
-
+        if (supported || !user || loading) return;
         const rect = e.currentTarget.getBoundingClientRect();
         setOrigin({ x: rect.width / 2, y: rect.height / 2 });
-        setConfirmOpen(true);
+        setModalOpen(true);
+    };
+
+    const selectPreset = (val) => {
+        setCustomAmount(String(val));
+        setShowCustom(false);
     };
 
     const handleConfirm = async () => {
         const amountToDonate = parseFloat(customAmount || '0');
 
         if (isNaN(amountToDonate) || amountToDonate <= 0) {
-            showError('Monto inválido', 'Por favor ingresa un monto válido mayor a 0');
-            setConfirmOpen(false);
+            showError('Monto inválido', 'Ingresa un monto mayor a 0');
+            setModalOpen(false);
             return;
         }
 
         if (currentBalance < amountToDonate) {
-            showError('Fondos insuficientes', `No tienes fondos suficientes. Tu saldo es ${currentBalance} MXne y quieres donar ${amountToDonate} MXne.`);
-            setConfirmOpen(false);
+            showError('Fondos insuficientes', `Tu saldo es ${currentBalance.toFixed(2)} MXne y quieres enviar ${amountToDonate} MXne.`);
+            setModalOpen(false);
             return;
         }
 
-        setConfirmLoading(true);
+        setLoading(true);
         try {
-            showLoading('Enviando apoyo...', '⛓️ Firmando en Stellar Testnet...');
+            showLoading('Enviando apoyo...', 'Firmando en Stellar Testnet...');
             const result = await sendSupport(recipientKey, postId, customAmount.toString());
             setSupported(true);
             setCount((c) => c + 1);
             setShowParticles(true);
+            setLoading(false);
+            setModalOpen(false);
             setTimeout(() => setShowParticles(false), 700);
 
             const hash = result?.hash;
             const explorerMsg = hash && !hash.startsWith('demo-')
-                ? `✅ TX confirmada · Ver en Stellar Explorer\nhttps://stellar.expert/explorer/testnet/tx/${hash}`
+                ? `TX confirmada · Ver en Stellar Explorer`
                 : `${customAmount} MXne enviado al creador`;
 
             showSuccess('¡Apoyo enviado!', explorerMsg, true);
         } catch (err) {
             hideModal();
+            setLoading(false);
             const errorCode = err.response?.data?.code || err.code;
             if (errorCode === 'WALLET_NOT_ACTIVE') {
-                showError(
-                    'Billetera Inactiva', 
-                    'El creador aún no tiene su billetera activa. Necesita completar sus tareas del tutorial para poder recibir fondos reales.',
-                    true
-                );
+                showError('Billetera Inactiva', 'El creador necesita completar sus tareas para recibir fondos reales.', true);
             } else {
                 showError('Error', err.response?.data?.message || err.message || 'Inténtalo de nuevo', true);
             }
-        } finally {
-            setConfirmLoading(false);
-            setConfirmOpen(false);
         }
     };
 
@@ -112,36 +114,121 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                 disabled={supported}
             >
                 <Particles show={showParticles} originX={origin.x} originY={origin.y} />
-                <span className={styles.icon}>{supported ? '★' : '☆'}</span>
-                <span className={styles.label}>{supported ? 'Apoyado' : 'Apoyar'}</span>
+                <Heart size={14} className={styles.heartIcon} />
+                <span>{supported ? 'Apoyado' : 'Apoyar'}</span>
                 {count > 0 && <span className={styles.count}>{count}</span>}
             </motion.button>
 
-            <ConfirmModal
-                isOpen={confirmOpen}
-                onConfirm={handleConfirm}
-                onCancel={() => setConfirmOpen(false)}
-                title="¿Enviar apoyo?"
-                description="Ingresa la cantidad que deseas enviar a este creador como muestra de reconocimiento. La transacción se registrará en la blockchain de Stellar."
-                confirmLabel="Sí, apoyar"
-                loading={confirmLoading}
-            >
-                <div className={styles.modalInputWrapper}>
-                    <div className={styles.balanceInfo}>
-                        Fondos disponibles: <span className={styles.balanceValue}>{currentBalance.toFixed(2)} MXne</span>
-                    </div>
-                    <label className={styles.modalInputLabel}>Monto a enviar (MXne)</label>
-                    <input 
-                        type="number" 
-                        value={customAmount} 
-                        onChange={(e) => setCustomAmount(e.target.value)} 
-                        min="1"
-                        step="1"
-                        placeholder="MXne"
-                        className={styles.modalInput}
-                    />
-                </div>
-            </ConfirmModal>
+            <AnimatePresence>
+                {modalOpen && (
+                    <motion.div
+                        className={styles.overlay}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => { if (!loading) setModalOpen(false); }}
+                    >
+                        <motion.div
+                            className={styles.supportModal}
+                            initial={{ opacity: 0, scale: 0.92, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 30 }}
+                            transition={{ type: 'spring', damping: 24, stiffness: 300 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button className={styles.modalClose} onClick={() => setModalOpen(false)} disabled={loading}>
+                                <X size={18} />
+                            </button>
+
+                            <div className={styles.modalIcon}>
+                                <Heart size={28} />
+                            </div>
+
+                            <h3 className={styles.modalTitle}>Apoyar contenido</h3>
+                            <p className={styles.modalDesc}>
+                                Elige cuánto MXne enviar a este creador como reconocimiento.
+                            </p>
+
+                            <div className={styles.balance}>
+                                <span className={styles.balanceLabel}>Disponible</span>
+                                <span className={styles.balanceValue}>{currentBalance.toFixed(2)} MXne</span>
+                            </div>
+
+                            <div className={styles.presets}>
+                                {PRESETS.map((val) => (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        className={`${styles.presetBtn} ${customAmount === String(val) && !showCustom ? styles.presetActive : ''}`}
+                                        onClick={() => selectPreset(val)}
+                                    >
+                                        {val} MXne
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    className={`${styles.presetBtn} ${styles.presetCustom} ${showCustom ? styles.presetActive : ''}`}
+                                    onClick={() => { setShowCustom(true); setCustomAmount(''); }}
+                                >
+                                    <Sparkles size={13} />
+                                    Personalizado
+                                </button>
+                            </div>
+
+                            {showCustom && (
+                                <motion.div
+                                    className={styles.customField}
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                >
+                                    <div className={styles.inputWrap}>
+                                        <input
+                                            type="number"
+                                            value={customAmount}
+                                            onChange={(e) => setCustomAmount(e.target.value)}
+                                            min="1"
+                                            step="1"
+                                            placeholder="0"
+                                            className={styles.amountInput}
+                                            autoFocus
+                                        />
+                                        <span className={styles.inputSuffix}>MXne</span>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            <div className={styles.modalActions}>
+                                <button
+                                    className={styles.cancelBtn}
+                                    onClick={() => setModalOpen(false)}
+                                    disabled={loading}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    className={styles.confirmBtn}
+                                    onClick={handleConfirm}
+                                    disabled={loading || !customAmount || parseFloat(customAmount) <= 0}
+                                >
+                                    {loading ? (
+                                        <span className={styles.spinner} />
+                                    ) : (
+                                        <>
+                                            <Heart size={15} />
+                                            Apoyar con {customAmount || '0'} MXne
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            <p className={styles.stellarNote}>
+                                Transacción en Stellar Testnet · irreversible
+                            </p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <FeedbackModal
                 isOpen={modalState.isOpen}
