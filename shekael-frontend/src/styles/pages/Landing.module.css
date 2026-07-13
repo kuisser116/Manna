@@ -290,8 +290,8 @@
 
 .featInner {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
   align-items: start;
 }
 
