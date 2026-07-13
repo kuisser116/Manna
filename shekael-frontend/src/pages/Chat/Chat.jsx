@@ -628,13 +628,15 @@ export default function Chat() {
   }, [messages, messagesEndRefCallback]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    if (msgListRef.current) {
+      msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+    }
   };
 
   // Scroll instantáneo al fondo cuando cambian los mensajes (antes del paint)
   useLayoutEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    if (messages.length > 0 && msgListRef.current) {
+      msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
     }
   }, [messages]);
 
