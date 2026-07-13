@@ -251,6 +251,7 @@
   letter-spacing: -1.5px;
   font-weight: 800;
   color: var(--color-text);
+  white-space: nowrap;
 }
 
 .bandTitleWhite {
@@ -260,6 +261,7 @@
   letter-spacing: -1.5px;
   font-weight: 800;
   color: var(--color-white);
+  white-space: nowrap;
 }
 
 .bandText {
@@ -278,23 +280,75 @@
   max-width: 620px;
 }
 
-/* ─── Feature tags ─── */
-.featureTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 24px;
+/* ─── Feature hover reveal ─── */
+.featHover {
+  margin-top: 32px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px dashed var(--color-border);
+  transition: border-color 0.3s ease, background 0.3s ease;
+  cursor: default;
+  min-height: 60px;
+  position: relative;
+  overflow: hidden;
 }
 
-.tag {
-  font-size: 12px;
+.featHover:hover {
+  border-color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-primary) 3%, transparent);
+}
+
+.featHint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.featHover:hover .featHint {
+  opacity: 0;
+}
+
+.featTrack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+}
+
+.featItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-primary);
   background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
-  padding: 5px 14px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  border-radius: 8px;
   letter-spacing: 0.3px;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.featItem svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.featItem:hover {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
 /* ══════════════════════════════════════════════

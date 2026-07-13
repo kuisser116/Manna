@@ -145,8 +145,8 @@ function LandingInner() {
           });
         }
 
-        // ── 2. HERO: 3D word stagger + scramble ──
-        const heroWords = heroRef.current?.querySelectorAll(`.${styles.heroWord}`);
+        // ── 2. HERO: 3D word stagger including period ──
+        const heroWords = heroRef.current?.querySelectorAll(`.${styles.heroWord}, .${styles.headlinePeriod}`);
         if (heroWords?.length) {
           gsap.fromTo(heroWords,
             { opacity: 0, y: 60, rotateX: -40, scale: 0.8, filter: 'blur(8px)' },
@@ -188,11 +188,12 @@ function LandingInner() {
                   duration: 1.2,
                   scrambleText: {
                     text: originalText,
-                    chars: '!@#$%^&*()_+ABCXYZ0123456789',
-                    revealDelay: 0.3,
-                    tweenLength: false
+                    chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                    revealDelay: 0.2,
+                    tweenLength: true,
+                    speed: 0.6
                   },
-                  ease: 'power2.out'
+                  ease: 'none'
                 });
               },
               once: true
@@ -216,22 +217,33 @@ function LandingInner() {
           );
         }
 
-        // ── 5. FEATURE TAGS: stagger from alternate directions ──
-        const tags = tagsRef.current?.querySelectorAll(`.${styles.tag}`);
-        if (tags?.length) {
-          gsap.fromTo(tags,
-            { opacity: 0, y: 20, scale: 0.8 },
-            {
-              opacity: 1, y: 0, scale: 1,
-              stagger: { each: 0.06, from: 'start' },
-              duration: 0.4, ease: 'back.out(2)',
-              scrollTrigger: {
-                trigger: tagsRef.current,
-                start: 'top 85%',
-                toggleActions: 'play none none none'
-              }
-            }
-          );
+        // ── 5. FEATURES: hover slide-in from sides ──
+        const featWrap = tagsRef.current;
+        const featItems = featWrap?.querySelectorAll(`.${styles.featItem}`);
+        if (featItems?.length && featWrap) {
+          // Set initial positions off-screen
+          gsap.set(featItems, { opacity: 0, x: (i) => i % 2 === 0 ? -60 : 60 });
+
+          featWrap.addEventListener('mouseenter', () => {
+            gsap.to(featItems, {
+              opacity: 1, x: 0,
+              stagger: 0.06,
+              duration: 0.5,
+              ease: 'back.out(1.7)',
+              overwrite: 'auto'
+            });
+          });
+
+          featWrap.addEventListener('mouseleave', () => {
+            gsap.to(featItems, {
+              opacity: 0,
+              x: (i) => i % 2 === 0 ? -40 : 40,
+              stagger: 0.04,
+              duration: 0.35,
+              ease: 'power2.in',
+              overwrite: 'auto'
+            });
+          });
         }
 
         // ── 6. ECONOMY STEPS: staggered arrows with custom bounce ──
@@ -397,13 +409,16 @@ function LandingInner() {
             Chatea con cifrado de extremo a extremo. Comparte fotos, videos, audio y encuestas.
             Construye tu perfil unico. Todo esto ya funciona, todo esto es tuyo.
           </p>
-          <div className={styles.featureTags} ref={tagsRef}>
-            <span className={styles.tag}>Feed inteligente</span>
-            <span className={styles.tag}>Chat cifrado</span>
-            <span className={styles.tag}>Perfiles unicos</span>
-            <span className={styles.tag}>Fotos y videos</span>
-            <span className={styles.tag}>Audio y encuestas</span>
-            <span className={styles.tag}>Comunidad real</span>
+          <div className={styles.featHover} ref={tagsRef}>
+            <span className={styles.featHint}>Pasa el cursor para descubrir</span>
+            <div className={styles.featTrack}>
+              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M8 10h8M8 14h5"/></svg> Feed inteligente</span>
+              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Chat cifrado</span>
+              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg> Perfiles unicos</span>
+              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> Fotos y videos</span>
+              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Audio y encuestas</span>
+              <span className={styles.featItem}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Comunidad real</span>
+            </div>
           </div>
         </div>
       </section>
