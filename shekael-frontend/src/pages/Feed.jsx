@@ -130,7 +130,7 @@ export default function Feed() {
       <div className={styles.main}>
         {feedError && (
           <div className={styles.errorBanner}>
-            ⚠️ {feedError}
+            {feedError}
           </div>
         )}
 

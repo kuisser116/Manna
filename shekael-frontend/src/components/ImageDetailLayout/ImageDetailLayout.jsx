@@ -41,7 +41,7 @@ function ImageRecommendCard({ post }) {
             <div className={styles.recommendThumb}>
                 {imgUrl
                     ? <img src={imgUrl} alt={caption || 'Imagen'} className={styles.recommendImg} />
-                    : <div className={styles.recommendImgFallback}>📷</div>
+                    : <div className={styles.recommendImgFallback}></div>
                 }
             </div>
             <div className={styles.recommendInfo}>
@@ -137,7 +137,7 @@ export function ImageDetailLayout({
                     <div className={styles.imageWrapper} onClick={() => setIsModalOpen(true)}>
                         {imgUrl
                             ? <img src={imgUrl} alt={title} className={styles.mainImage} />
-                            : <div className={styles.imageFallback}>📷 Sin imagen</div>
+                            : <div className={styles.imageFallback}>Sin imagen</div>
                         }
                         <div className={styles.zoomHint}>
                             <ZoomIn size={16} />
@@ -257,7 +257,7 @@ export function ImageDetailLayout({
                             <AnimatePresence>
                                 {comments.length === 0 ? (
                                     <p className={styles.emptyComments}>
-                                        Sin comentarios aún. ¡Sé el primero en responder! 🌾
+                                        Sin comentarios aún. ¡Sé el primero en responder!
                                     </p>
                                 ) : (
                                     comments.map((comment) => (

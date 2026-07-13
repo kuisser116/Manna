@@ -298,7 +298,7 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
         >
             {useHlsFallback && (
                 <div className={styles.statusBadge} style={{ background: 'rgba(224, 36, 94, 0.2)', border: '1px solid #e0245e' }}>
-                    <span style={{ color: '#e0245e' }}>⚠️ Fallback MP4</span>
+                    <span style={{ color: '#e0245e' }}>Fallback MP4</span>
                 </div>
             )}
 

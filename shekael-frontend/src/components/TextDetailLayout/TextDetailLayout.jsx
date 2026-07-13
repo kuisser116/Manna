@@ -162,7 +162,7 @@ export function TextDetailLayout({
                             <AnimatePresence>
                                 {comments.length === 0 ? (
                                     <p className={styles.emptyComments}>
-                                        Sin respuestas aún. ¡Sé el primero! 🌾
+                                        Sin respuestas aún. ¡Sé el primero!
                                     </p>
                                 ) : (
                                     comments.map((comment) => (

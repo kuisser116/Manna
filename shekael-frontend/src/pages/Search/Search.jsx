@@ -84,7 +84,7 @@ export default function Search() {
 
                         {!loading && results.users.length === 0 && results.posts.length === 0 && (
                             <div className={styles.emptyState}>
-                                <span style={{fontSize: '40px'}}>🔍</span>
+                                <span></span>
                                 <p>No encontramos nada que coincida con "{query}"</p>
                             </div>
                         )}

@@ -277,7 +277,7 @@ export function VideoDetailLayout({
                             <AnimatePresence>
                                 {comments.length === 0 ? (
                                     <p className={styles.emptyComments}>
-                                        Sin comentarios aún. ¡Sé el primero en responder! 🌾
+                                        Sin comentarios aún. ¡Sé el primero en responder!
                                     </p>
                                 ) : (
                                     comments.map((comment) => (

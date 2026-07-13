@@ -217,7 +217,7 @@ export function WalletWidget({ variant = 'default' }) {
 
                     <div className={styles.todayRow}>
                         <TrendingUp size={13} color="var(--color-success)" />
-                        <span className={styles.todayText}>Stellar Testnet ✨</span>
+                        <span className={styles.todayText}>Stellar Testnet</span>
                     </div>
 
                     <div className={styles.pubKey}>{shortKey}</div>

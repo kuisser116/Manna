@@ -57,7 +57,7 @@ export function VideoThumbnailCard({ post }) {
                     />
                 ) : (
                     <div className={styles.thumbnailPlaceholder}>
-                        <span className={styles.placeholderIcon}>🌾</span>
+                        <span className={styles.placeholderIcon}></span>
                     </div>
                 )}
             </div>

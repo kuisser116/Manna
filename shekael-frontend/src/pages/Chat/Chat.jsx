@@ -1209,7 +1209,7 @@ export default function Chat() {
 
             {!keysReady && (
               <div className={styles.keysWarning}>
-                <span>⚠️ Generando llaves de cifrado...</span>
+                <span>Generando llaves de cifrado...</span>
               </div>
             )}
             </div>

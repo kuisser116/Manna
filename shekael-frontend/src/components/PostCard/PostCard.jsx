@@ -18,7 +18,7 @@ import { useQuests } from '../../hooks/useQuests';
 import ReportModal from '../ReportModal/ReportModal';
 
 const PINATA_GATEWAY = import.meta.env.VITE_PINATA_GATEWAY || 'https://gateway.pinata.cloud';
-const TYPE_LABELS = { 'micro-text': null, image: '📷 Imagen', video: '🎥 Video', capsule: '✨ Cápsula de Shekael' };
+const TYPE_LABELS = { 'micro-text': null, image: 'Imagen', video: 'Video', capsule: 'Cápsula de Shekael' };
 
 // Se usa isValidCID desde stringUtils.js
 
