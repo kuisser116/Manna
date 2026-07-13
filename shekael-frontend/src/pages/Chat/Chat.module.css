@@ -1102,7 +1102,7 @@
   flex-direction: column;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  padding: 0 0 16px;
+  padding: 0;
   position: relative;
   z-index: 1;
 }
@@ -1561,7 +1561,7 @@
   }
 
   .messagesList {
-    padding: 0 0 12px;
+    padding: 0;
   }
 
   .messagesContent {
