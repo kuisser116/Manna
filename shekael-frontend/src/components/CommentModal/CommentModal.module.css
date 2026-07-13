@@ -272,3 +272,27 @@
         max-height: 90vh;
     }
 }
+
+/* ── Emoji picker ── */
+.emojiPicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--color-border);
+}
+
+.emojiBtn {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s;
+    line-height: 1;
+}
+
+.emojiBtn:hover {
+    background: var(--color-surface-2);
+}

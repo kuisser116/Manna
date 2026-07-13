@@ -54,6 +54,7 @@ export function PostCard({ post, isDetail = false }) {
     const [isSaved, setIsSaved] = useState(has_saved);
     const [isSaving, setIsSaving] = useState(false);
     const [viewRegistered, setViewRegistered] = useState(false);
+    const [commentsCount, setCommentsCount] = useState(comments_count);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [modalImageUrl, setModalImageUrl] = useState('');
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -69,7 +70,19 @@ export function PostCard({ post, isDetail = false }) {
         setIsLiked(has_liked);
         setLikesCount(likes_count);
         setIsSaved(has_saved);
-    }, [has_liked, likes_count, has_saved]);
+        setCommentsCount(comments_count);
+    }, [has_liked, likes_count, has_saved, comments_count]);
+
+    // Escuchar nuevos comentarios para actualizar contador
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.detail?.postId === id) {
+                setCommentsCount((prev) => prev + 1);
+            }
+        };
+        window.addEventListener('Shekael:comment-created', handler);
+        return () => window.removeEventListener('Shekael:comment-created', handler);
+    }, [id]);
 
     const handleLike = async (e) => {
         if (e) e.stopPropagation();
@@ -110,7 +123,7 @@ export function PostCard({ post, isDetail = false }) {
 
     const handleShare = async (e) => {
         if (e) e.stopPropagation();
-        const postUrl = `${window.location.origin}/`; // En MVP mandamos a la raÃ­z o feed general
+        const postUrl = `${window.location.origin}/post/${id}`;
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -460,15 +473,17 @@ export function PostCard({ post, isDetail = false }) {
                 )}
                 <button className={styles.actionBtn} onClick={handleComment}>
                     <MessageCircle size={16} />
-                    <span>{comments_count}</span>
+                    <span>{commentsCount}</span>
                 </button>
                 <button className={styles.actionBtn} onClick={handleShare}>
                     <Share2 size={16} />
                 </button>
+                {isVideo && (
                 <div className={styles.actionBtn} style={{ cursor: 'default' }} title="Vistas">
                     <Eye size={16} />
                     <span>{formatViews(video_view_count || 0)}</span>
                 </div>
+                )}
                 <button 
                     className={`${styles.actionBtn} ${isSaved ? styles.savedBtn : ''}`}
                     onClick={handleSave}

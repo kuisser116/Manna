@@ -33,6 +33,10 @@ export const uploadPost = (formData) =>
     });
 export const getPostDetail = (id) => postsAPI.get(`/posts/${id}`);
 export const createComment = (id, content) => postsAPI.post(`/posts/${id}/comments`, { content });
+export const uploadCommentImage = (formData) =>
+    postsAPI.post('/posts/comment-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
 export const getLikedPosts = (userId) => postsAPI.get(`/posts/liked/${userId}`);
 export const getSavedPosts = () => postsAPI.get('/posts/bookmarks/me');
 export const toggleSavePost = (postId) => postsAPI.post(`/posts/${postId}/save`);

@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { checkAndFundQuest } from '../services/quest.service.js';
 import { analyzeContentWithAI } from '../services/moderation.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
-import { deleteFromR2 } from '../services/ipfs.service.js';
+import { deleteFromR2, uploadToR2 } from '../services/ipfs.service.js';
 
 const router = Router({ strict: false });
 
@@ -807,6 +808,24 @@ router.delete('/:postId', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Delete post error:', err);
         res.status(500).json({ message: 'Error al eliminar la publicación' });
+    }
+});
+
+// ─── Comment image upload ───
+const commentUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+router.post('/comment-image', authMiddleware, commentUpload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No se envió ninguna imagen' });
+
+        const ext = req.file.originalname.split('.').pop() || 'jpg';
+        const filename = `comments/${uuidv4()}.${ext}`;
+        const imageUrl = await uploadToR2(req.file.buffer, filename, req.file.mimetype);
+
+        res.json({ url: imageUrl });
+    } catch (err) {
+        console.error('Comment image upload error:', err);
+        res.status(500).json({ message: 'Error al subir imagen' });
     }
 });
 
