@@ -283,7 +283,7 @@
 /* ─── Features scatter → assemble grid ─── */
 .featGrid {
   margin-top: 32px;
-  min-height: 180px;
+  min-height: 140px;
   position: relative;
   overflow: visible;
 }
@@ -291,55 +291,31 @@
 .featInner {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px 24px;
-  align-items: start;
+  gap: 20px 32px;
+  align-items: center;
 }
 
 .featItem {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   white-space: nowrap;
   cursor: default;
   will-change: transform, opacity;
 }
 
-.featDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  flex-shrink: 0;
-}
-
 .featItem svg {
-  width: 14px;
-  height: 14px;
+  width: 28px;
+  height: 28px;
   color: var(--color-primary);
   flex-shrink: 0;
 }
 
 .featLabel {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
-  letter-spacing: -0.2px;
-}
-
-.featLine {
-  width: 20px;
-  height: 1px;
-  background: var(--color-border);
-  transform-origin: left center;
-  flex-shrink: 0;
-}
-
-.featTyped {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  letter-spacing: 0.2px;
-  white-space: nowrap;
+  letter-spacing: -0.3px;
 }
 
 /* ══════════════════════════════════════════════
@@ -410,11 +386,6 @@
   color: var(--color-white);
 }
 
-.futureContent {
-  flex: 1;
-  padding-top: 4px;
-}
-
 .futureBadge {
   display: inline-block;
   font-size: 9px;
@@ -425,21 +396,14 @@
   border: 1px solid rgba(255,255,255,0.25);
   padding: 2px 10px;
   border-radius: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .futureTitle {
-  margin: 0 0 4px;
-  font-size: 17px;
+  margin: 0;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-white);
-}
-
-.futureDesc {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.65;
-  color: rgba(255,255,255,0.8);
 }
 
 /* ══════════════════════════════════════════════
@@ -468,22 +432,11 @@
   padding-top: 2px;
 }
 
-.principleContent {
-  flex: 1;
-}
-
 .principleLabel {
-  margin: 0 0 4px;
+  margin: 2px 0 0;
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
-}
-
-.principleText {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--color-text-secondary);
 }
 
 /* ══════════════════════════════════════════════

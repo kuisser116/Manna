@@ -32,9 +32,9 @@ const BLOBS = {
 const BLEND_MODES = ['hero', 'features', 'economy', 'future', 'principles', 'closing'];
 
 const PRINCIPLES = [
-  { label: 'Contenido que suma', text: 'Priorizamos piezas que inspiran, ensenan o hacen reir sin destruir el foco ni la paz mental.' },
-  { label: 'Libertad de expresion real', text: 'Aqui no premiamos el miedo. Hay reglas claras contra lo danino, sin censura arbitraria a las ideas.' },
-  { label: 'Comunidad antes que algoritmo', text: 'Disenamos para personas y familias que quieren crecer juntas, no para metricas vacias.' }
+  'Contenido que suma',
+  'Libertad de expresion',
+  'Comunidad > algoritmo'
 ];
 
 function LandingInner() {
@@ -217,21 +217,14 @@ function LandingInner() {
           );
         }
 
-        // ── 5. FEATURES: scatter from grid → assemble → type ──
+        // ── 5. FEATURES: scatter from grid → assemble ──
         const featGrid = tagsRef.current;
         const featItems = featGrid?.querySelectorAll(`.${styles.featItem}`);
-        const featDots = featGrid?.querySelectorAll(`.${styles.featDot}`);
-        const featLines = featGrid?.querySelectorAll(`.${styles.featLine}`);
-        const featTexts = featGrid?.querySelectorAll(`.${styles.featTyped}`);
 
         if (featItems?.length) {
-          // Save original texts for scramble
-          const originalTexts = [];
-          featTexts?.forEach(t => originalTexts.push(t.textContent || ''));
-
           // Wait one frame so grid positions settle, then scatter
           requestAnimationFrame(() => {
-            featItems.forEach((el, i) => {
+            featItems.forEach((el) => {
               const angle = Math.random() * Math.PI * 2;
               const dist = 120 + Math.random() * 180;
               gsap.set(el, {
@@ -241,9 +234,6 @@ function LandingInner() {
                 scale: 0.3,
                 rotation: gsap.utils.random(-35, 35)
               });
-              // Hide typed text and line
-              if (featTexts[i]) gsap.set(featTexts[i], { opacity: 0 });
-              if (featLines[i]) gsap.set(featLines[i], { scaleX: 0, opacity: 0 });
             });
           });
 
@@ -258,60 +248,11 @@ function LandingInner() {
                   duration: 0.7,
                   delay: i * 0.1,
                   ease: 'back.out(2.5)',
-                  overwrite: 'auto',
-                  onStart: () => {
-                    // Pop the dot
-                    if (featDots[i]) {
-                      gsap.fromTo(featDots[i], { scale: 0 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' });
-                    }
-                    // Draw the line
-                    if (featLines[i]) {
-                      gsap.to(featLines[i], { scaleX: 1, opacity: 1, duration: 0.25, ease: 'power2.out' });
-                    }
-                    // ScrambleText the description
-                    if (featTexts[i] && originalTexts[i]) {
-                      gsap.to(featTexts[i], {
-                        opacity: 1,
-                        duration: 0.8,
-                        delay: 0.2,
-                        scrambleText: {
-                          text: originalTexts[i],
-                          chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-                          revealDelay: 0.1,
-                          speed: 0.5,
-                          tweenLength: true
-                        },
-                        ease: 'none'
-                      });
-                    }
-                  }
+                  overwrite: 'auto'
                 });
               });
             },
             once: true
-          });
-
-          // Gentle floating on hover
-          featGrid.addEventListener('mouseenter', () => {
-            featItems.forEach((el, i) => {
-              gsap.to(el, {
-                y: gsap.utils.random(-4, 4),
-                rotation: gsap.utils.random(-1, 1),
-                duration: 2 + Math.random(),
-                repeat: -1,
-                yoyo: true,
-                ease: 'sine.inOut',
-                overwrite: 'auto',
-                delay: i * 0.1
-              });
-            });
-          });
-
-          featGrid.addEventListener('mouseleave', () => {
-            featItems.forEach(el => {
-              gsap.killTweensOf(el, 'y,rotation');
-              gsap.to(el, { y: 0, rotation: 0, duration: 0.4, ease: 'power2.out' });
-            });
           });
         }
 
@@ -473,54 +414,31 @@ function LandingInner() {
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Tu red, tu espacio</span>
           <h2 className={styles.bandTitle}>Lo que ya puedes hacer</h2>
-          <p className={styles.bandText}>
-            Shekael no es promesa, es realidad. Alimenta un feed que suma, no que distrae.
-            Chatea con cifrado de extremo a extremo. Comparte fotos, videos, audio y encuestas.
-            Construye tu perfil unico. Todo esto ya funciona, todo esto es tuyo.
-          </p>
           <div className={styles.featGrid} ref={tagsRef}>
             <div className={styles.featInner}>
-              <div className={styles.featItem} style={{ '--idx': 0 }}>
-                <span className={styles.featDot} />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M8 10h8M8 14h5"/></svg>
-                <span className={styles.featLabel}>Feed inteligente</span>
-                <span className={styles.featLine} />
-                <span className={styles.featTyped}>Contenido que suma, no que distrae</span>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M8 10h8M8 14h5"/></svg>
+                <span className={styles.featLabel}>Feed</span>
               </div>
-              <div className={styles.featItem} style={{ '--idx': 1 }}>
-                <span className={styles.featDot} />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span className={styles.featLabel}>Chat cifrado</span>
-                <span className={styles.featLine} />
-                <span className={styles.featTyped}>Mensajes privados E2E con audio e imagenes</span>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                <span className={styles.featLabel}>Chat</span>
               </div>
-              <div className={styles.featItem} style={{ '--idx': 2 }}>
-                <span className={styles.featDot} />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
-                <span className={styles.featLabel}>Perfiles unicos</span>
-                <span className={styles.featLine} />
-                <span className={styles.featTyped}>Tu identidad, tu espacio personal</span>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+                <span className={styles.featLabel}>Perfil</span>
               </div>
-              <div className={styles.featItem} style={{ '--idx': 3 }}>
-                <span className={styles.featDot} />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                <span className={styles.featLabel}>Fotos y videos</span>
-                <span className={styles.featLine} />
-                <span className={styles.featTyped}>Comparte tu mundo visualmente</span>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span className={styles.featLabel}>Fotos</span>
               </div>
-              <div className={styles.featItem} style={{ '--idx': 4 }}>
-                <span className={styles.featDot} />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                <span className={styles.featLabel}>Audio y encuestas</span>
-                <span className={styles.featLine} />
-                <span className={styles.featTyped}>Voz, musica y decisiones en grupo</span>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <span className={styles.featLabel}>Audio</span>
               </div>
-              <div className={styles.featItem} style={{ '--idx': 5 }}>
-                <span className={styles.featDot} />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                <span className={styles.featLabel}>Comunidad real</span>
-                <span className={styles.featLine} />
-                <span className={styles.featTyped}>Gente real, conexiones reales</span>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                <span className={styles.featLabel}>Gente</span>
               </div>
             </div>
           </div>
@@ -532,12 +450,6 @@ function LandingInner() {
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Economia MXNe</span>
           <h2 className={styles.bandTitle}>Gana mientras formas parte</h2>
-          <p className={styles.bandText}>
-            MXNe es el token digital de Shekael en la red Stellar. Creas contenido y ganas.
-            Completas misiones y ganas. Apoyas a creadores directo, sin intermediarios.
-            Pagas en comercios afiliados con QR y obtienes hasta 5% de descuento.
-            No es una promesa, es una economia funcionando dentro de tu red social.
-          </p>
           <div className={styles.econLine}>
             <svg width="60" height="3" viewBox="0 0 60 3">
               <path d="M0 1.5h60" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" />
@@ -575,49 +487,42 @@ function LandingInner() {
         <div className={styles.bandInner}>
           <span className={styles.bandEyebright}>Proximamente</span>
           <h2 className={styles.bandTitleWhite}>Lo que viene para ti</h2>
-          <p className={styles.bandTextWhite}>
-            Shekael crece con su comunidad. Estamos construyendo herramientas para que
-            generes ingresos reales desde la plataforma.
-          </p>
           <div className={styles.futureList} ref={futureListRef}>
             <div className={styles.futureItem}>
               <div className={styles.futureIcon}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M14 16H9m10 0h3v-3.15a1 1 0 00-.84-.99L16 11l-2.7-3.6a1 1 0 00-.8-.4H5.24a2 2 0 00-1.8 1.1l-.8 1.63A6 6 0 006 18h.5"/>
                   <circle cx="4.5" cy="19.5" r="1.5"/><circle cx="15.5" cy="19.5" r="1.5"/>
                 </svg>
               </div>
-              <div className={styles.futureContent}>
+              <div>
                 <span className={styles.futureBadge}>PROXIMAMENTE</span>
                 <h3 className={styles.futureTitle}>Conductores</h3>
-                <p className={styles.futureDesc}>Solicita o brinda transporte seguro dentro de tu comunidad. Viajes con personas de confianza, no con extraños.</p>
               </div>
             </div>
             <div className={styles.futureItem}>
               <div className={styles.futureIcon}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
                   <path d="M7 9V5c0-1.1.9-2 2-2h6a2 2 0 012 2v4"/>
                   <circle cx="8" cy="16" r="1"/><circle cx="16" cy="16" r="1"/>
                 </svg>
               </div>
-              <div className={styles.futureContent}>
+              <div>
                 <span className={styles.futureBadge}>PROXIMAMENTE</span>
                 <h3 className={styles.futureTitle}>Repartidores</h3>
-                <p className={styles.futureDesc}>Envia y recibe paquetes, comida y productos entre usuarios de la comunidad. Rapido, local y confiable.</p>
               </div>
             </div>
             <div className={styles.futureItem}>
               <div className={styles.futureIcon}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M12 2l3 7h7l-5.5 4 2 7L12 16.5 5.5 20l2-7L2 9h7z"/>
                   <path d="M9 12h6M12 9v6"/>
                 </svg>
               </div>
-              <div className={styles.futureContent}>
+              <div>
                 <span className={styles.futureBadge}>PROXIMAMENTE</span>
                 <h3 className={styles.futureTitle}>Multiples formas de ganar</h3>
-                <p className={styles.futureDesc}>Conduce, reparte, crea contenido o refiere amigos. Multiples formas de generar ingresos dentro de Shekael.</p>
               </div>
             </div>
           </div>
@@ -633,10 +538,7 @@ function LandingInner() {
             {PRINCIPLES.map((item, i) => (
               <article key={i} className={styles.principleItem}>
                 <div className={styles.principleNum}>0{i + 1}</div>
-                <div className={styles.principleContent}>
-                  <h3 className={styles.principleLabel}>{item.label}</h3>
-                  <p className={styles.principleText}>{item.text}</p>
-                </div>
+                <h3 className={styles.principleLabel}>{item}</h3>
               </article>
             ))}
           </div>
@@ -647,10 +549,6 @@ function LandingInner() {
       <section className={`${styles.band} ${styles.bandDark} ${styles.bandClosing}`} ref={closingRef}>
         <div className={styles.bandInner}>
           <h2 className={styles.bandTitle}>Shekael te espera</h2>
-          <p className={styles.bandText}>
-            Una red hecha para construir, no para confundir. Donde tu talento,
-            tu tiempo y tu presencia valen algo real.
-          </p>
           <div className={styles.closingCta}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
