@@ -6,6 +6,7 @@ import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
 import useFeedbackModal from '../FeedbackModal/useFeedbackModal';
 import FeedbackModal from '../FeedbackModal/FeedbackModal';
+import PinModal from '../PinModal/PinModal';
 import styles from './SupportButton.module.css';
 
 const PRESETS = [5, 10, 25, 50, 100];
@@ -46,6 +47,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
     const [loading, setLoading] = useState(false);
     const [customAmount, setCustomAmount] = useState('10');
     const [showCustom, setShowCustom] = useState(false);
+    const [pinModalOpen, setPinModalOpen] = useState(false);
 
     // Bloquear scroll del body cuando el modal está abierto
     useEffect(() => {
@@ -86,6 +88,12 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             return;
         }
 
+        // Cerrar modal de apoyo y abrir modal de PIN
+        setModalOpen(false);
+        setPinModalOpen(true);
+    };
+
+    const handlePinVerified = async () => {
         setLoading(true);
         try {
             showLoading('Enviando apoyo...', 'Firmando en Stellar Testnet...');
@@ -94,7 +102,6 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             setCount((c) => c + 1);
             setShowParticles(true);
             setLoading(false);
-            setModalOpen(false);
             setTimeout(() => setShowParticles(false), 700);
 
             const hash = result?.hash;
@@ -243,6 +250,14 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             </AnimatePresence>,
             document.body
             )}
+
+            <PinModal
+                isOpen={pinModalOpen}
+                onClose={() => setPinModalOpen(false)}
+                onVerified={handlePinVerified}
+                title="Confirmar transacción"
+                description={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
+            />
 
             <FeedbackModal
                 isOpen={modalState.isOpen}
