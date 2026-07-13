@@ -71,6 +71,8 @@
     align-items: center;
     justify-content: center;
     padding: 16px;
+    user-select: none;
+    overscroll-behavior: none;
 }
 
 .supportModal {

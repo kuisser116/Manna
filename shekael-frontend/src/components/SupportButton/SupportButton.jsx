@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, X, ChevronDown, Sparkles } from 'lucide-react';
 import useStore from '../../store';
@@ -45,6 +45,16 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
     const [loading, setLoading] = useState(false);
     const [customAmount, setCustomAmount] = useState('10');
     const [showCustom, setShowCustom] = useState(false);
+
+    // Bloquear scroll del body cuando el modal está abierto
+    useEffect(() => {
+        if (modalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [modalOpen]);
 
     const currentBalance = parseFloat(mxneBalance || '0');
 
