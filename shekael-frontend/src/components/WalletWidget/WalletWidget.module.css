@@ -460,13 +460,15 @@
 
 .miniBalance {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-text);
+    font-family: var(--font-family);
 }
 
 .miniCurrency {
     font-size: 9px;
     opacity: 0.6;
+    font-family: var(--font-family);
 }
 
 /* Brillo animado genérico */
