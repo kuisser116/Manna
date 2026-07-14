@@ -4,6 +4,7 @@ import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { uploadToR2 } from '../services/ipfs.service.js';
+import { emitToConversation } from '../services/socket.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
@@ -457,7 +458,14 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
             .update({ updated_at: new Date().toISOString() })
             .eq('id', conversationId);
 
-        res.json({ message: msg });
+        // Notificar via WebSocket
+        emitToConversation(conversationId, 'message:sent', msg);
+        emitToConversation(conversationId, 'conversation:updated', {
+            conversationId,
+            lastMessage: msg
+        });
+
+    res.json({ message: msg });
     } catch (err) {
         console.error('Error sending message:', err);
         res.status(500).json({ message: 'Error al enviar mensaje' });
@@ -850,7 +858,7 @@ router.delete('/messages/:id', authMiddleware, async (req, res) => {
 
         const { data: msg } = await supabase
             .from('chat_messages')
-            .select('id, sender_id')
+            .select('id, sender_id, conversation_id')
             .eq('id', messageId)
             .single();
 
@@ -873,9 +881,75 @@ router.delete('/messages/:id', authMiddleware, async (req, res) => {
 
         if (error) throw error;
 
+        emitToConversation(msg.conversation_id, 'message:deleted', { messageId });
+
         res.json({ deleted: true });
     } catch (err) {
         console.error('[Chat Delete Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PUT /chats/messages/:id/edit — Editar mensaje (ventana de 15 min)
+router.put('/messages/:id/edit', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const messageId = req.params.id;
+        const { encryptedContent, nonce } = req.body;
+
+        if (!encryptedContent || !nonce) {
+            return res.status(400).json({ message: 'Contenido cifrado y nonce requeridos' });
+        }
+
+        // Verificar que el mensaje pertenece al usuario
+        const { data: msg } = await supabase
+            .from('chat_messages')
+            .select('id, sender_id, conversation_id, created_at')
+            .eq('id', messageId)
+            .single();
+
+        if (!msg) {
+            return res.status(404).json({ message: 'Mensaje no encontrado' });
+        }
+
+        if (msg.sender_id !== userId) {
+            return res.status(403).json({ message: 'No puedes editar este mensaje' });
+        }
+
+        // Verificar ventana de 15 minutos
+        const now = new Date();
+        const createdAt = new Date(msg.created_at);
+        const diffMinutes = (now - createdAt) / (1000 * 60);
+
+        if (diffMinutes > 15) {
+            return res.status(403).json({ message: 'Solo puedes editar mensajes dentro de los primeros 15 minutos' });
+        }
+
+        const editedAt = now.toISOString();
+
+        const { error } = await supabase
+            .from('chat_messages')
+            .update({
+                encrypted_content: encryptedContent,
+                nonce: nonce,
+                edited_at: editedAt
+            })
+            .eq('id', messageId);
+
+        if (error) throw error;
+
+        // Notificar via WebSocket
+        emitToConversation(msg.conversation_id, 'message:edited', {
+            messageId,
+            encrypted_content: encryptedContent,
+            nonce: nonce,
+            edited_at: editedAt
+        });
+
+        res.json({ edited: true, edited_at: editedAt });
+    } catch (err) {
+        console.error('[Edit Error]:', err);
         res.status(500).json({ message: err.message });
     }
 });

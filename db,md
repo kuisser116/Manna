@@ -1,0 +1,423 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.users (
+  id text NOT NULL,
+  email text UNIQUE,
+  display_name text,
+  stellar_public_key text,
+  stellar_secret_key_encrypted text,
+  reputation_level integer DEFAULT 1,
+  target_watch_seconds integer DEFAULT 120,
+  target_likes integer DEFAULT 5,
+  target_follows integer DEFAULT 1,
+  current_watch_seconds integer DEFAULT 0,
+  current_likes integer DEFAULT 0,
+  current_follows integer DEFAULT 0,
+  bonus_claimed boolean DEFAULT false,
+  is_admin boolean DEFAULT false,
+  avatar_url text,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  state text,
+  bio text,
+  cover_url text,
+  terms_accepted_at timestamp with time zone,
+  terms_version text DEFAULT 'v1.0'::text,
+  public_key text,
+  username text UNIQUE,
+  private_key_blob text,
+  pin_hash text,
+  encrypted_private_key text,
+  signed_pre_key_id integer,
+  last_pre_key_upload_at timestamp with time zone,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.posts (
+  id text NOT NULL,
+  author_id text,
+  type text,
+  content text,
+  trust_deposit_locked boolean DEFAULT true,
+  supports_count integer DEFAULT 0,
+  likes_count integer DEFAULT 0,
+  is_banned boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  video_title text,
+  video_description text,
+  video_thumbnail_url text,
+  video_tags text,
+  video_visibility text DEFAULT 'public'::text,
+  video_scheduled_at timestamp with time zone,
+  video_status text DEFAULT 'none'::text,
+  video_r2_url text,
+  video_playback_id text,
+  video_asset_id text,
+  video_hls_r2_url text,
+  video_livepeer_delete_at timestamp with time zone,
+  video_view_count integer DEFAULT 0,
+  reports_count integer DEFAULT 0,
+  CONSTRAINT posts_pkey PRIMARY KEY (id),
+  CONSTRAINT posts_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.post_likes (
+  user_id text NOT NULL,
+  post_id text NOT NULL,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT post_likes_pkey PRIMARY KEY (user_id, post_id),
+  CONSTRAINT post_likes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT post_likes_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id)
+);
+CREATE TABLE public.transactions (
+  id text NOT NULL,
+  stellar_hash text,
+  from_user text,
+  to_user text,
+  amount numeric,
+  type text,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT transactions_pkey PRIMARY KEY (id),
+  CONSTRAINT transactions_from_user_fkey FOREIGN KEY (from_user) REFERENCES public.users(id),
+  CONSTRAINT transactions_to_user_fkey FOREIGN KEY (to_user) REFERENCES public.users(id)
+);
+CREATE TABLE public.regional_causes (
+  id text NOT NULL,
+  title text,
+  description text,
+  recipient_wallet text,
+  vote_count integer DEFAULT 0,
+  month_year text,
+  community_id text,
+  state text,
+  image_url text,
+  goal_usdc numeric,
+  current_usdc numeric DEFAULT 0,
+  status text DEFAULT 'active'::text,
+  CONSTRAINT regional_causes_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.video_views (
+  id text NOT NULL,
+  post_id text,
+  user_id text,
+  watched_seconds integer DEFAULT 0,
+  viewed_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT video_views_pkey PRIMARY KEY (id),
+  CONSTRAINT video_views_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id),
+  CONSTRAINT video_views_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.post_comments (
+  id text NOT NULL,
+  post_id text,
+  author_id text,
+  content text,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT post_comments_pkey PRIMARY KEY (id),
+  CONSTRAINT post_comments_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id),
+  CONSTRAINT post_comments_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.followers (
+  follower_id text NOT NULL,
+  followed_id text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT followers_pkey PRIMARY KEY (follower_id, followed_id),
+  CONSTRAINT followers_follower_id_fkey FOREIGN KEY (follower_id) REFERENCES public.users(id),
+  CONSTRAINT followers_followed_id_fkey FOREIGN KEY (followed_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.post_saves (
+  user_id text NOT NULL,
+  post_id text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT post_saves_pkey PRIMARY KEY (user_id, post_id),
+  CONSTRAINT post_saves_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT post_saves_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id)
+);
+CREATE TABLE public.post_reports (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  post_id text,
+  reporter_user_id text,
+  reason text NOT NULL,
+  status text DEFAULT 'pending'::text,
+  ai_verdict text,
+  ai_confidence double precision,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT post_reports_pkey PRIMARY KEY (id),
+  CONSTRAINT post_reports_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id),
+  CONSTRAINT post_reports_reporter_user_id_fkey FOREIGN KEY (reporter_user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.regional_votes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text,
+  cause_id text,
+  month_year text,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT regional_votes_pkey PRIMARY KEY (id),
+  CONSTRAINT regional_votes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT regional_votes_cause_id_fkey FOREIGN KEY (cause_id) REFERENCES public.regional_causes(id)
+);
+CREATE TABLE public.notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text,
+  actor_id text,
+  type text NOT NULL,
+  post_id text,
+  is_read boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT notifications_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id),
+  CONSTRAINT notifications_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id)
+);
+CREATE TABLE public.ads (
+  id uuid NOT NULL,
+  advertiser_id text NOT NULL,
+  community_id text,
+  title text NOT NULL,
+  description text,
+  media_url text NOT NULL,
+  media_type text DEFAULT 'banner'::text,
+  budget_usdc numeric NOT NULL CHECK (budget_usdc > 0::numeric),
+  spent_usdc numeric DEFAULT 0,
+  cpm numeric DEFAULT 1.0,
+  target_audience text DEFAULT 'all'::text,
+  status text DEFAULT 'pending_review'::text,
+  start_date timestamp with time zone,
+  end_date timestamp with time zone,
+  alt_text text,
+  cta_label text,
+  cta_url text,
+  impressions integer DEFAULT 0,
+  stellar_escrow_tx text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  promo_text text,
+  promo_code text,
+  CONSTRAINT ads_pkey PRIMARY KEY (id),
+  CONSTRAINT ads_advertiser_id_fkey FOREIGN KEY (advertiser_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.ad_views (
+  id uuid NOT NULL,
+  ad_id uuid,
+  viewer_user_id text,
+  post_id text,
+  creator_id text,
+  view_seconds integer NOT NULL,
+  proof_token text,
+  view_day date NOT NULL,
+  distribution_status text DEFAULT 'pending'::text,
+  ad_context text DEFAULT 'feed'::text,
+  stellar_distribution_tx text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT ad_views_pkey PRIMARY KEY (id),
+  CONSTRAINT ad_views_ad_id_fkey FOREIGN KEY (ad_id) REFERENCES public.ads(id),
+  CONSTRAINT ad_views_viewer_user_id_fkey FOREIGN KEY (viewer_user_id) REFERENCES public.users(id),
+  CONSTRAINT ad_views_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.user_coupons (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text,
+  ad_id uuid,
+  promo_text text NOT NULL,
+  promo_code text NOT NULL,
+  claimed_at timestamp with time zone DEFAULT now(),
+  is_used boolean DEFAULT false,
+  CONSTRAINT user_coupons_pkey PRIMARY KEY (id),
+  CONSTRAINT user_coupons_ad_id_fkey FOREIGN KEY (ad_id) REFERENCES public.ads(id),
+  CONSTRAINT user_coupons_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.terms_acceptance_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  terms_version text NOT NULL,
+  accepted_at timestamp with time zone NOT NULL DEFAULT now(),
+  ip_address text,
+  user_agent text,
+  terms_hash text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT terms_acceptance_log_pkey PRIMARY KEY (id),
+  CONSTRAINT terms_acceptance_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.post_views (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  post_id text NOT NULL,
+  seen_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT post_views_pkey PRIMARY KEY (id),
+  CONSTRAINT post_views_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT post_views_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id)
+);
+CREATE TABLE public.conversations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_group boolean DEFAULT false,
+  group_name text,
+  group_photo_url text,
+  group_description text,
+  group_theme text,
+  group_created_by text,
+  CONSTRAINT conversations_pkey PRIMARY KEY (id),
+  CONSTRAINT conversations_group_created_by_fkey FOREIGN KEY (group_created_by) REFERENCES public.users(id)
+);
+CREATE TABLE public.conversation_participants (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL,
+  user_id text NOT NULL,
+  accepted boolean NOT NULL DEFAULT false,
+  last_read_at timestamp with time zone,
+  is_pinned boolean DEFAULT false,
+  pinned_at timestamp with time zone,
+  nickname text,
+  custom_bg_url text,
+  is_admin boolean DEFAULT false,
+  joined_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT conversation_participants_pkey PRIMARY KEY (id),
+  CONSTRAINT conversation_participants_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES public.conversations(id),
+  CONSTRAINT conversation_participants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.chat_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL,
+  sender_id text NOT NULL,
+  encrypted_content text NOT NULL,
+  nonce text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  msg_index integer DEFAULT 1,
+  sender_ephemeral_key text,
+  pre_key_used_id integer,
+  deleted_at timestamp with time zone,
+  deleted_by text,
+  reply_to_id uuid,
+  reply_preview text,
+  message_type text DEFAULT 'text'::text,
+  media_url text,
+  media_thumb_url text,
+  file_name text,
+  file_size integer,
+  mime_type text,
+  duration real,
+  location_lat real,
+  location_lng real,
+  location_name text,
+  forwarded_from text,
+  forwarded_at timestamp with time zone,
+  poll_id uuid,
+  delivered_at timestamp with time zone,
+  read_at timestamp with time zone,
+  CONSTRAINT chat_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES public.conversations(id),
+  CONSTRAINT chat_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id),
+  CONSTRAINT chat_messages_reply_to_id_fkey FOREIGN KEY (reply_to_id) REFERENCES public.chat_messages(id),
+  CONSTRAINT chat_messages_poll_id_fkey FOREIGN KEY (poll_id) REFERENCES public.chat_polls(id)
+);
+CREATE TABLE public.message_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  from_user_id text NOT NULL,
+  to_user_id text NOT NULL,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text, 'blocked'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT message_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT message_requests_from_user_id_fkey FOREIGN KEY (from_user_id) REFERENCES public.users(id),
+  CONSTRAINT message_requests_to_user_id_fkey FOREIGN KEY (to_user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.user_sessions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  device_name text,
+  device_id text NOT NULL,
+  last_active_at timestamp with time zone DEFAULT now(),
+  is_current boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_sessions_pkey PRIMARY KEY (id),
+  CONSTRAINT user_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.chat_pinned_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL,
+  message_id uuid NOT NULL,
+  pinned_by text NOT NULL,
+  pinned_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT chat_pinned_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_pinned_messages_message_id_fkey FOREIGN KEY (message_id) REFERENCES public.chat_messages(id)
+);
+CREATE TABLE public.chat_stickers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  image_url text NOT NULL,
+  emoji text DEFAULT '😊'::text,
+  is_default boolean DEFAULT false,
+  is_favorite boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT chat_stickers_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_stickers_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.chat_polls (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL,
+  message_id uuid NOT NULL,
+  question text NOT NULL,
+  created_by text NOT NULL,
+  is_multiple_choice boolean DEFAULT false,
+  is_closed boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT chat_polls_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_polls_message_id_fkey FOREIGN KEY (message_id) REFERENCES public.chat_messages(id)
+);
+CREATE TABLE public.chat_poll_options (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  poll_id uuid NOT NULL,
+  option_text text NOT NULL,
+  CONSTRAINT chat_poll_options_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_poll_options_poll_id_fkey FOREIGN KEY (poll_id) REFERENCES public.chat_polls(id)
+);
+CREATE TABLE public.chat_poll_votes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  poll_id uuid NOT NULL,
+  option_id uuid NOT NULL,
+  user_id text NOT NULL,
+  voted_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT chat_poll_votes_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_poll_votes_poll_id_fkey FOREIGN KEY (poll_id) REFERENCES public.chat_polls(id),
+  CONSTRAINT chat_poll_votes_option_id_fkey FOREIGN KEY (option_id) REFERENCES public.chat_poll_options(id)
+);
+CREATE TABLE public.chat_saved_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  message_id uuid NOT NULL,
+  saved_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT chat_saved_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT chat_saved_messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT chat_saved_messages_message_id_fkey FOREIGN KEY (message_id) REFERENCES public.chat_messages(id)
+);
+CREATE TABLE public.group_invite_links (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL,
+  code text NOT NULL UNIQUE,
+  created_by text NOT NULL,
+  max_uses integer DEFAULT 0,
+  use_count integer DEFAULT 0,
+  expires_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT group_invite_links_pkey PRIMARY KEY (id),
+  CONSTRAINT group_invite_links_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
+);
+CREATE TABLE public.group_join_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL,
+  user_id text NOT NULL,
+  status text DEFAULT 'pending'::text,
+  requested_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT group_join_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT group_join_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.pre_keys (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  key_id integer NOT NULL,
+  key_type text NOT NULL CHECK (key_type = ANY (ARRAY['signed'::text, 'one-time'::text])),
+  public_key text NOT NULL,
+  signature text,
+  is_used boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT pre_keys_pkey PRIMARY KEY (id)
+);

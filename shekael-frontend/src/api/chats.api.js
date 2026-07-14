@@ -56,6 +56,9 @@ export const searchChatMessages = (conversationId, q) =>
 export const deleteMessage = (messageId) =>
     chatAPI.delete(`/chats/messages/${messageId}`);
 
+export const editMessage = (messageId, encryptedContent, nonce) =>
+    chatAPI.put(`/chats/messages/${messageId}/edit`, { encryptedContent, nonce });
+
 // Reenviar mensaje
 export const forwardMessage = (messageId, toConversationId) =>
     chatAPI.post(`/chats/messages/${messageId}/forward`, { toConversationId });

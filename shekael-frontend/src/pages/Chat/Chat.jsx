@@ -12,7 +12,7 @@ import {
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
   searchUsers, sendMessageRequest, updatePublicKey,
   uploadChatFile,
-  searchChatMessages, deleteMessage, forwardMessage,
+  searchChatMessages, deleteMessage, forwardMessage, editMessage,
   togglePinConversation, setChatNickname, setChatBackground,
   togglePinMessage, getPinnedMessage
 } from '../../api/chats.api';
@@ -24,6 +24,11 @@ import PollResults from '../../components/PollResults';
 import GroupCreateModal from '../../components/GroupCreateModal';
 import AudioPlayer from '../../components/AudioPlayer';
 import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../api/chats.api';
+import {
+  connectSocket, disconnectSocket, joinConversation, leaveConversation, emitTyping,
+  onMessageSent, onMessageEdited, onMessageDeleted, clearCallbacks, onTyping,
+  onConversationUpdated
+} from '../../services/socket';
 
 
 export default function Chat() {
@@ -80,6 +85,14 @@ export default function Chat() {
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [showGroupCreate, setShowGroupCreate] = useState(false);
+
+  // Typing indicator
+  const [typingUsers, setTypingUsers] = useState({});
+  const typingTimersRef = useRef({});
+  const messageInputRef = useRef(null);
+
+  // Edit message
+  const [editingMessage, setEditingMessage] = useState(null); // message object being edited or null
 
   // Pin
   const [pinnedMessage, setPinnedMessage] = useState(null);
@@ -205,16 +218,124 @@ export default function Chat() {
     });
   }
 
+  // ── Socket.IO: conectar cuando hay usuario ──
+  const decryptRef = useRef(null);
+  const activeConvRef = useRef(activeConv);
+  activeConvRef.current = activeConv;
+
+  useEffect(() => {
+    const token = localStorage.getItem('Shekael_token')?.replace(/["']/g, '');
+    if (!token) return;
+
+    connectSocket(token);
+
+    // Listeners para eventos en tiempo real
+    onMessageSent(async (msg) => {
+      const conv = activeConvRef.current;
+      if (!conv?.id || msg.conversation_id !== conv.id) return;
+
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, { ...msg, decrypted: null }];
+      });
+
+      // Intentar descifrar
+      const otherUser = otherUserCache.current[conv.id];
+      const decryptFn = decryptRef.current;
+      if (otherUser?.public_key && decryptFn) {
+        try {
+          const pt = await decryptFn(msg.encrypted_content, msg.nonce, otherUser.public_key);
+          setMessages(prev => prev.map(m =>
+            m.id === msg.id ? { ...m, decrypted: pt } : m
+          ));
+          scrollToBottom();
+        } catch {
+          setMessages(prev => prev.map(m =>
+            m.id === msg.id ? { ...m, decrypted: '[Mensaje cifrado]' } : m
+          ));
+        }
+      }
+    });
+
+    onMessageEdited((data) => {
+      setMessages(prev => prev.map(m =>
+        m.id === data.messageId
+          ? { ...m, encrypted_content: data.encrypted_content, nonce: data.nonce, edited_at: data.edited_at }
+          : m
+      ));
+    });
+
+    onMessageDeleted((data) => {
+      setMessages(prev => prev.map(m =>
+        m.id === data.messageId ? { ...m, deleted_at: new Date().toISOString(), encrypted_content: null } : m
+      ));
+    });
+
+    onConversationUpdated((data) => {
+      setConversations(prev => prev.map(c =>
+        c.id === data.conversationId
+          ? { ...c, lastMessage: data.lastMessage, updated_at: new Date().toISOString() }
+          : c
+      ).sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0)));
+    });
+
+    onTyping(async ({ userId, conversationId, typing }) => {
+      const conv = activeConvRef.current;
+      if (!conv?.id || conversationId !== conv.id || userId === user?.id) return;
+
+      if (typing) {
+        setTypingUsers(prev => ({ ...prev, [userId]: Date.now() }));
+        // Auto-limpiar después de 4s (timeout de seguridad)
+        if (typingTimersRef.current[userId]) {
+          clearTimeout(typingTimersRef.current[userId]);
+        }
+        typingTimersRef.current[userId] = setTimeout(() => {
+          setTypingUsers(prev => {
+            const next = { ...prev };
+            delete next[userId];
+            return next;
+          });
+        }, 4000);
+      } else {
+        setTypingUsers(prev => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+        if (typingTimersRef.current[userId]) {
+          clearTimeout(typingTimersRef.current[userId]);
+        }
+      }
+    });
+
+    return () => {
+      clearCallbacks();
+      disconnectSocket();
+    };
+  }, []); // Solo al montar
+
+  // ── Unirse/salir de room al cambiar conversación ──
+  useEffect(() => {
+    if (activeConv?.id) {
+      joinConversation(activeConv.id);
+    }
+    return () => {
+      if (activeConv?.id) {
+        leaveConversation(activeConv.id);
+      }
+    };
+  }, [activeConv?.id]);
+
   // Cargar conversaciones y solicitudes al montar, sin esperar crypto
   useEffect(() => {
     loadData();
-    // Polling de conversaciones cada 6s
+    // Fallback polling de conversaciones cada 60s (solo si WS falla)
     const convPoll = setInterval(async () => {
       try {
         const convRes = await getConversations();
         setConversations(convRes.data.conversations || []);
       } catch {}
-    }, 15000);
+    }, 60000);
     return () => clearInterval(convPoll);
   }, []);
 
@@ -276,6 +397,7 @@ export default function Chat() {
       )
     );
   }, []);
+  decryptRef.current = legacyDecrypt;
 
   // Legacy encrypt (ECDH directo) para compatibilidad con sistema anterior
   const legacyEncrypt = useCallback(async (plaintext, theirPublicKey) => {
@@ -445,7 +567,7 @@ export default function Chat() {
     }
   }, [deriveEcdhSecret, loadPinnedMessage]);
 
-  // Polling: buscar mensajes nuevos cada 4s
+  // Polling: buscar mensajes nuevos (fallback 60s, solo si WS falla)
   const prevMsgIdsRef = useRef(new Set());
   useEffect(() => {
     if (!activeConv?.id || !user?.id) return;
@@ -472,21 +594,19 @@ export default function Chat() {
           try {
             const pk = otherUser?.public_key;
             const myKp = getKeyPair();
-            console.log('[POLL_DECRYPT] conv:', convId.substring(0,8), 'msg:', msg.id.substring(0,8), 'hasKeyPair:', !!myKp, 'hasOtherKey:', !!pk, 'otherKeyStart:', pk?.substring(0,20), 'otherUser exists:', !!otherUser);
+            console.log('[POLL_DECRYPT] conv:', convId.substring(0,8), 'msg:', msg.id.substring(0,8), 'hasKeyPair:', !!myKp, 'hasOtherKey:', !!pk);
             const pt = pk
               ? await legacyDecrypt(msg.encrypted_content, msg.nonce, pk)
               : null;
             if (pt !== null && pt !== undefined) {
               decrypted.push({ ...msg, decrypted: pt });
             } else if (msg.message_type === 'audio') {
-              // Audio: si no se puede descifrar (keys stale), mostrar igual el player
               decrypted.push({ ...msg, decrypted: '' });
             } else {
               decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
             }
-            if (!pt) { console.warn('[Poll] pt was null for msg', msg.id, 'type:', msg.message_type); }
           } catch (e) {
-            console.warn('[Poll] decrypt failed for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
+            console.warn('[Poll] decrypt failed for msg', msg.id, 'type:', msg.message_type);
             if (msg.message_type === 'audio') {
               decrypted.push({ ...msg, decrypted: '' });
             }
@@ -496,7 +616,7 @@ export default function Chat() {
         setMessages(prev => [...prev, ...decrypted]);
         scrollToBottom();
       } catch { /* polling falló */ }
-    }, 10000);
+    }, 60000);
 
     return () => clearInterval(poll);
   }, [activeConv?.id, user?.id, legacyDecrypt]);
@@ -552,6 +672,48 @@ export default function Chat() {
     if (!inputText.trim() && !hasFile) return;
     if (sending || uploading || !activeConv) return;
     if (!keysReady) return;
+
+    // ── Edit mode ──
+    if (editingMessage) {
+      const otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
+      if (!otherUser?.public_key) {
+        // Intentar obtener llave pública
+        try {
+          const res = await getUserProfile(otherUser?.id);
+          const fresh = res.data?.user || res.data;
+          if (fresh?.public_key) {
+            otherUserCache.current[activeConv.id] = { ...otherUser, public_key: fresh.public_key };
+          }
+        } catch {}
+      }
+
+      try {
+        setSending(true);
+        let encryptedContent, nonce;
+
+        // Re-cifrar con legacy ECDH (más simple para edits)
+        const result = await legacyEncrypt(inputText, otherUser?.public_key || '');
+        encryptedContent = result.encryptedContent;
+        nonce = result.nonce;
+
+        const res = await editMessage(editingMessage.id, encryptedContent, nonce);
+        if (res.data?.edited) {
+          setMessages(prev => prev.map(m =>
+            m.id === editingMessage.id
+              ? { ...m, decrypted: inputText, encrypted_content: encryptedContent, nonce, edited_at: res.data.edited_at }
+              : m
+          ));
+        }
+        setEditingMessage(null);
+        setInputText('');
+        cancelReply();
+      } catch (err) {
+        console.error('Error editing message:', err);
+        alert('Error al editar el mensaje');
+      }
+      setSending(false);
+      return;
+    }
 
     // Subir archivo primero si hay
     let uploadedUrl = null, uploadedThumb = null;
@@ -915,6 +1077,19 @@ export default function Chat() {
     }
   };
 
+  const handleStartEdit = (msg) => {
+    setContextMenu(null);
+    setEditingMessage(msg);
+    setInputText(msg.decrypted || msg.encrypted_content || '');
+    // Focus input
+    setTimeout(() => messageInputRef.current?.focus(), 100);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+    setInputText('');
+  };
+
   // ── Nickname ──
 
   const handleNicknameSave = async () => {
@@ -1240,6 +1415,14 @@ export default function Chat() {
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                   </span>
+                  {typingUsers[activeConv.otherUser?.id] && (
+                    <div className={styles.typingIndicator}>
+                      <span className={styles.typingDots}>
+                        <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
+                      </span>
+                      Escribiendo...
+                    </div>
+                  )}
                 </div>
               </div>
               <div className={styles.chatHeaderActions}>
@@ -1454,6 +1637,7 @@ export default function Chat() {
                         </div>
                       )}
                       <span className={styles.messageTime}>
+                        {msg.edited_at && <span className={styles.editedIndicator}>editado </span>}
                         {new Date(msg.created_at).toLocaleTimeString('es-MX', {
                           hour: '2-digit', minute: '2-digit'
                         })}
@@ -1482,6 +1666,23 @@ export default function Chat() {
             </div>
 
             <div className={styles.inputArea}>
+              {/* Edit indicator */}
+              {editingMessage && (
+                <div className={styles.replyPreview}>
+                  <div className={styles.replyPreviewBar} style={{background: 'var(--color-primary, #3b82f6)'}} />
+                  <div className={styles.replyPreviewContent}>
+                    <span className={styles.replyPreviewLabel}>Editando mensaje</span>
+                    <span className={styles.replyPreviewText}>
+                      {editingMessage.decrypted?.substring(0, 60) || '...'}
+                    </span>
+                  </div>
+                  <button className={styles.removeFileBtn} onClick={() => { setEditingMessage(null); setInputText(''); }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
               {/* Reply preview */}
               {replyTo && (
                 <div className={styles.replyPreview}>
@@ -1640,12 +1841,16 @@ export default function Chat() {
                 )}
                 <input
                   type="text"
-                  placeholder={selectedFile ? 'Agrega un pie de foto...' : replyTo ? 'Escribe una respuesta...' : 'Escribe un mensaje...'}
+                  placeholder={editingMessage ? 'Editar mensaje...' : selectedFile ? 'Agrega un pie de foto...' : replyTo ? 'Escribe una respuesta...' : 'Escribe un mensaje...'}
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
+                    if (activeConv?.id && !editingMessage) emitTyping(activeConv.id, true);
+                  }}
                   onKeyDown={handleKeyDown}
                   className={styles.messageInput}
                   disabled={!keysReady || uploading}
+                  ref={messageInputRef}
                 />
                 <button
                   className={styles.sendBtn}
@@ -1688,6 +1893,13 @@ export default function Chat() {
           </button>
           {contextMenu.message.sender_id === user?.id && (
             <>
+              <button className={styles.contextMenuItem} onClick={() => handleStartEdit(contextMenu.message)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Editar
+              </button>
               <button className={styles.contextMenuItem} onClick={() => handlePinMsg(contextMenu.message.id)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>

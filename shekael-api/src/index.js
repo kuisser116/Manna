@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ override: true });
+import http from 'http';
 import express from 'express';
 
 import authRoutes from './routes/auth.routes.js';
@@ -14,6 +15,8 @@ import searchRoutes from './routes/search.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import anchorRoutes from './routes/anchor.routes.js';
 import chatRoutes from './routes/chats.routes.js';
+
+import { initSocketIO } from './services/socket.js';
 
 import getDB from './database/db.js';
 
@@ -100,8 +103,12 @@ app.use((err, req, res, _next) => {
     res.status(500).json({ message: 'Error interno del servidor' });
 });
 
+// ── HTTP Server + WebSocket ─────────────────────────────
+const server = http.createServer(app);
+const io = initSocketIO(server);
+
 // ── Iniciar ───────────────────────────────────────────────
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`
   🌾  ──────────────────────────────────────── 🌾
        Shekael API Gateway v0.4.0 · Puerto ${PORT}
@@ -111,4 +118,5 @@ app.listen(PORT, () => {
   `);
 });
 
+export { io };
 export default app;

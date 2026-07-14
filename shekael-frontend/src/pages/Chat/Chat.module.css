@@ -499,6 +499,51 @@
   color: var(--color-text);
 }
 
+/* ── Typing Indicator ── */
+
+.typingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--color-primary, #3b82f6);
+  margin-top: 1px;
+  animation: fadeIn 0.2s ease;
+}
+
+.typingDots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary, #3b82f6);
+  animation: typingBounce 1.2s infinite ease-in-out;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Key Warning ── */
 
 
@@ -1199,6 +1244,14 @@
   margin-top: 3px;
   padding: 0 4px;
   font-weight: 500;
+}
+
+.editedIndicator {
+  font-size: 0.68rem;
+  color: var(--color-text-dim);
+  font-style: italic;
+  margin-right: 2px;
+  opacity: 0.8;
 }
 
 .ownMessage .messageTime {
