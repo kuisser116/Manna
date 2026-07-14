@@ -1702,3 +1702,15 @@
   display: block;
 }
 
+.sendingIndicator {
+  font-size: 0.8rem;
+  color: var(--color-text-dim);
+  opacity: 0.7;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+

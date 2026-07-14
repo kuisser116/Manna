@@ -8,7 +8,7 @@ import { getUserProfile } from '../../api/users.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import { getKeyPair } from '../../crypto/keyStore';
 import {
-  getConversations, getMessages, sendMessage, markAsRead,
+  getConversations, getMessages, sendMessage,
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
   searchUsers, sendMessageRequest, updatePublicKey,
   uploadChatFile,
@@ -214,7 +214,7 @@ export default function Chat() {
         const convRes = await getConversations();
         setConversations(convRes.data.conversations || []);
       } catch {}
-    }, 6000);
+    }, 15000);
     return () => clearInterval(convPoll);
   }, []);
 
@@ -496,7 +496,7 @@ export default function Chat() {
         setMessages(prev => [...prev, ...decrypted]);
         scrollToBottom();
       } catch { /* polling falló */ }
-    }, 4000);
+    }, 10000);
 
     return () => clearInterval(poll);
   }, [activeConv?.id, user?.id, legacyDecrypt]);
@@ -661,8 +661,32 @@ export default function Chat() {
       setSending(false);
       return;
     }
+    const messageType = hasFile ? (selectedFile.type?.startsWith("image/") ? "image" : "file") : "text";
+    let replyPreview = null;
+    if (replyTo) {
+      replyPreview = (replyTo.decrypted || "").substring(0, 80);
+    }
 
+    const displayText = hasFile ? (inputText || "") : inputText;
     setSending(true);
+    // Optimistic: mostrar mensaje al instante
+    const tempId = "temp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+    setMessages(prev => [...prev, {
+      id: tempId,
+      conversation_id: activeConv.id,
+      sender_id: user?.id,
+      message_type: messageType,
+      encrypted_content: "", nonce: "",
+      media_url: uploadedUrl,
+      media_thumb_url: uploadedThumb,
+      file_name: fileMeta.fileName,
+      file_size: fileMeta.fileSize,
+      mime_type: fileMeta.mimeType,
+      created_at: new Date().toISOString(),
+      decrypted: displayText,
+      _sending: true,
+    }]);
+    scrollToBottom();
     try {
       let encryptedContent, nonce, result;
       
@@ -682,13 +706,6 @@ export default function Chat() {
         nonce = legacyResult.nonce;
       }
 
-      const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
-
-      let replyPreview = null;
-      if (replyTo) {
-        replyPreview = (replyTo.decrypted || '').substring(0, 80);
-      }
-
       const res = await sendMessage(
         activeConv.id,
         encryptedContent,
@@ -704,153 +721,43 @@ export default function Chat() {
         fileMeta.mimeType
       );
 
-      // Set reply info locally FIRST (optimistic), then try to persist on server
+      // Set reply info locally FIRST, then try to persist on server
       if (replyTo && res.data.message?.id) {
         res.data.message.reply_to_id = replyTo.id;
         res.data.message.reply_preview = replyPreview;
         try {
-          const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
-          const { default: axios } = await import('axios');
+          const token = localStorage.getItem("Shekael_token")?.replace(/\"/g, "");
+          const { default: axios } = await import("axios");
           const API_URL = import.meta.env.VITE_API_URL || location.origin;
           await axios.patch(`${API_URL}/chats/messages/${res.data.message.id}`, {
             reply_to_id: replyTo.id,
             reply_preview: replyPreview
           }, { headers: { Authorization: `Bearer ${token}` } });
         } catch (patchErr) {
-          console.warn('Reply PATCH failed but local state already has the data');
+          console.warn("Reply PATCH failed but local state already has the data");
         }
       }
 
-      const displayText = hasFile ? (inputText || '') : inputText;
-      setMessages(prev => [...prev, { ...res.data.message, decrypted: displayText }]);
+      // Reemplazar mensaje optimista con el real
+      setMessages(prev => prev.map(m =>
+        m.id === tempId
+          ? { ...res.data.message, decrypted: displayText }
+          : m
+      ));
       prevMsgIdsRef.current.add(res.data.message.id);
-      setInputText('');
+      setInputText("");
       handleRemoveFile();
       cancelReply();
       scrollToBottom();
     } catch (err) {
-      console.error('Error sending:', err);
-      alert('Error al enviar el mensaje cifrado. Intenta de nuevo.');
+      console.error("Error sending:", err);
+      setMessages(prev => prev.map(m =>
+        m.id === tempId ? { ...m, _sending: false, _error: true, decrypted: m.decrypted || "Error al enviar" } : m
+      ));
     } finally {
       setSending(false);
     }
-  };
-
-  // ── Efecto: animar mensajes nuevos ──
-  useEffect(() => {
-    if (messages.length === 0) return;
-    requestAnimationFrame(() => messagesEndRefCallback());
-  }, [messages, messagesEndRefCallback]);
-
-  // ── IntersectionObserver: marcar mensajes como leídos ──
-  const reportedReadRef = useRef(new Set());
-  useEffect(() => {
-    if (!activeConv?.id) return;
-    const observer = new IntersectionObserver((entries) => {
-      const toReport = entries
-        .filter(e => e.isIntersecting)
-        .map(e => e.target.dataset.msgid)
-        .filter(id => id && !reportedReadRef.current.has(id));
-      if (!toReport.length) return;
-      toReport.forEach(id => reportedReadRef.current.add(id));
-      markAsRead(activeConv.id, toReport).catch(() => {});
-    }, { threshold: 0.5 });
-
-    const msgElements = document.querySelectorAll('[data-msgid]');
-    msgElements.forEach(el => observer.observe(el));
-
-    // Re-observar cuando cambien los mensajes
-    const reobserve = () => {
-      document.querySelectorAll('[data-msgid]').forEach(el => observer.observe(el));
-    };
-    const mo = new MutationObserver(reobserve);
-    const container = document.querySelector('[data-msgs-container]');
-    if (container) mo.observe(container, { childList: true, subtree: true });
-
-    return () => { observer.disconnect(); mo.disconnect(); };
-  }, [activeConv?.id]);
-
-  const scrollToBottom = () => {
-    if (msgListRef.current) {
-      msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
-    }
-  };
-
-  // Scroll instantáneo al fondo cuando cambian los mensajes (antes del paint)
-  useLayoutEffect(() => {
-    if (messages.length > 0 && msgListRef.current) {
-      msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Búsqueda de usuarios
-  const handleSearch = async (q) => {
-    setSearchQuery(q);
-    if (q.length < 2) { setSearchResults([]); return; }
-    try {
-      const res = await searchUsers(q);
-      setSearchResults(res.data.users || []);
-    } catch { setSearchResults([]); }
-  };
-
-  // Enviar solicitud de mensaje
-  const handleSendRequest = async (toUserId) => {
-    try {
-      await sendMessageRequest(toUserId);
-      setSearchResults(prev => prev.map(u =>
-        u.id === toUserId ? { ...u, requestStatus: 'pending', isRequester: true } : u
-      ));
-    } catch (err) {
-      console.error('Error sending request:', err);
-    }
-  };
-
-  // Aceptar/rechazar/bloquear solicitud
-  const handleAccept = async (reqId) => {
-    try {
-      const res = await acceptRequest(reqId);
-      setRequests(prev => prev.filter(r => r.id !== reqId));
-      loadData(); // Recargar conversaciones
-      if (res.data.conversationId) {
-        // Entrar a la nueva conversación
-        const newConv = { id: res.data.conversationId, otherUser: res.data.otherUser };
-        selectConversation(newConv);
-        setShowRequests(false);
-      }
-    } catch (err) { console.error(err); }
-  };
-
-  const handleReject = async (reqId) => {
-    try {
-      await rejectRequest(reqId);
-      setRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) { console.error(err); }
-  };
-
-  const handleBlock = async (reqId) => {
-    try {
-      await blockRequester(reqId);
-      setRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) { console.error(err); }
-  };
-
-  // Calcular no leídos
-  const unreadCount = 0; // Se puede implementar después con last_read_at
-
-  // ── Reply ──
-
-  const startReply = (msg) => {
-    setReplyTo(msg);
-    setInputText('');
-    if (fileInputRef.current) fileInputRef.current.focus();
-  };
-
-  const cancelReply = () => setReplyTo(null);
-
-  // ── Context Menu ──
-
-  const handleContextMenu = (e, msg) => {
-    e.preventDefault();
+  };lt();
     setContextMenu({ x: e.clientX, y: e.clientY, message: msg });
   };
 
@@ -1217,7 +1124,7 @@ export default function Chat() {
           </div>
         ) : (
           <>
-            <div className={styles.messagesList} ref={msgListRef} data-msgs-container>
+            <div className={styles.messagesList} ref={msgListRef}>
               <div className={styles.stickyGroup}>
               <div className={styles.chatHeader}>
               <div className={styles.chatHeaderUser}>
@@ -1364,7 +1271,6 @@ export default function Chat() {
                     <div
                       key={msg.id}
                       id={`msg-${msg.id}`}
-                      data-msgid={msg.id}
                       className={`${styles.message} ${msg.sender_id === user?.id ? styles.ownMessage : styles.otherMessage}`}
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
@@ -1465,13 +1371,11 @@ export default function Chat() {
                         })}
                         {msg.sender_id === user?.id && (
                           <span className={styles.statusIcon}>
-                            {msg.read_at ? (
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="#34B7F1" stroke="none">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                              </svg>
+                            {msg._sending ? (
+                              <span className={styles.sendingIndicator}>◌</span>
                             ) : msg.delivered_at ? (
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="none">
-                                <path d="M23.5 17.5l-5 5-3.5-3.5 1.5-1.5 2 2 3.5-3.5 1.5 1.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.1 0 2.19-.17 3.24-.5l-1.73-1.73c-.5.15-1 .23-1.51.23-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8c0 .51-.08 1.01-.23 1.51L20.5 8.76c.33-1.05.5-2.14.5-3.24 0-5.52-4.48-10-10-10S2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-1.1-.17-2.19-.5-3.24z"/>
+                                <path d="M23.5 17.5l-5 5-3.5-3.5 1.5-1.5 2 2 3.5-3.5 1.5 1.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 13.5l-4-4 1.41-1.41L10 12.67l6.59-6.59L18 7.5l-8 8z"/>
                               </svg>
                             ) : (
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="none">
