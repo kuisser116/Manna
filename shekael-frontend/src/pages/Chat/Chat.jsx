@@ -420,7 +420,8 @@ export default function Chat() {
           const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
           decrypted.push({ ...msg, decrypted: plaintext });
           continue;
-        } catch {
+        } catch (e) {
+          console.warn('[Chat] decrypt fail for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
           decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
         }
       }
@@ -468,8 +469,9 @@ export default function Chat() {
               ? await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key)
               : null;
             decrypted.push({ ...msg, decrypted: pt ?? '[Mensaje cifrado]' });
-          } catch {
-            decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+            if (!pt) { console.warn('[Poll] pt was null for msg', msg.id, 'type:', msg.message_type); }
+          } catch (e) {
+            console.warn('[Poll] decrypt failed for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
           }
         }
 
