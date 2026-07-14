@@ -366,10 +366,9 @@ export default function Chat() {
           setMessages(msgs); scrollToBottom(); return;
         }
         sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
-      }
-
-      if (!sharedSecret) {
-        setMessages(msgs); scrollToBottom(); return;
+        if (!sharedSecret) {
+          setMessages(msgs); scrollToBottom(); return;
+        }
       }
 
       const decrypted = [];
@@ -380,7 +379,8 @@ export default function Chat() {
           continue;
         }
       // Intentar Signal Protocol primero (Double Ratchet)
-        if (await signalProtocol.hasSession(conv.id)) {
+        // Solo para mensajes que fueron cifrados con ratchet (msg_index >= 0)
+        if (msg.msg_index >= 0 && await signalProtocol.hasSession(conv.id)) {
           try {
             const plaintext = await signalProtocol.decrypt(conv.id, {
               encryptedContent: msg.encrypted_content,
@@ -426,7 +426,8 @@ export default function Chat() {
         continue;
       }
       // Intentar Signal Protocol primero
-      if (await signalProtocol.hasSession(convId)) {
+      // Solo para mensajes cifrados con ratchet (msg_index >= 0)
+      if (msg.msg_index >= 0 && await signalProtocol.hasSession(convId)) {
         try {
           const plaintext = await signalProtocol.decrypt(convId, {
             encryptedContent: msg.encrypted_content,
@@ -564,11 +565,11 @@ export default function Chat() {
 
     setSending(true);
     try {
-      let encryptedContent, nonce;
+      let encryptedContent, nonce, result;
       
       if (sigSession) {
         // Signal Protocol: Double Ratchet encrypt
-        const result = await signalProtocol.encrypt(activeConv.id, inputText);
+        result = await signalProtocol.encrypt(activeConv.id, inputText);
         encryptedContent = result.encryptedContent;
         nonce = result.nonce;
         // Si el mensaje trae nueva llave efímera del ratchet, enviarla
@@ -593,7 +594,7 @@ export default function Chat() {
         activeConv.id,
         encryptedContent,
         nonce,
-        -1,
+        sigSession ? (result.msgIndex ?? -1) : -1,
         ephemeralPubB64,
         preKeyUsedId,
         messageType,
