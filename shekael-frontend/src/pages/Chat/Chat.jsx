@@ -441,9 +441,8 @@ export default function Chat() {
       try {
         const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
         decrypted.push({ ...msg, decrypted: plaintext });
-        } catch {
-          decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
-        }
+      } catch {
+        decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
       }
     }
     return decrypted;
@@ -581,6 +580,38 @@ export default function Chat() {
         encryptedContent = legacyResult.encryptedContent;
         nonce = legacyResult.nonce;
       }
+
+      const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
+
+      let replyPreview = null;
+      if (replyTo) {
+        replyPreview = (replyTo.decrypted || '').substring(0, 80);
+      }
+
+      const res = await sendMessage(
+        activeConv.id,
+        encryptedContent,
+        nonce,
+        -1,
+        ephemeralPubB64,
+        preKeyUsedId,
+        messageType,
+        uploadedUrl,
+        uploadedThumb,
+        fileMeta.fileName,
+        fileMeta.fileSize,
+        fileMeta.mimeType
+      );
+
+      // Set reply info locally FIRST (optimistic), then try to persist on server
+      if (replyTo && res.data.message?.id) {
+        res.data.message.reply_to_id = replyTo.id;
+        res.data.message.reply_preview = replyPreview;
+        try {
+          const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
+          const { default: axios } = await import('axios');
+          const API_URL = import.meta.env.VITE_API_URL || location.origin;
+          await axios.patch(`${API_URL}/chats/messages/${res.data.message.id}`, {
             reply_to_id: replyTo.id,
             reply_preview: replyPreview
           }, { headers: { Authorization: `Bearer ${token}` } });
