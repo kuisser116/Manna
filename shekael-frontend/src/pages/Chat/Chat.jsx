@@ -331,6 +331,8 @@ export default function Chat() {
     setFilePreview(null);
     if (!conv?.id) return;
 
+    prevMsgIdsRef.current = new Set();
+
     let msgs = [];
     let otherUser = conv.otherUser;
 
@@ -441,7 +443,6 @@ export default function Chat() {
   useEffect(() => {
     if (!activeConv?.id || !user?.id) return;
     const convId = activeConv.id;
-    prevMsgIdsRef.current = new Set();
 
     const poll = setInterval(async () => {
       try {
@@ -627,6 +628,7 @@ export default function Chat() {
         );
         if (res.data?.message) {
           setMessages(prev => [...prev, { ...res.data.message, decrypted: inputText }]);
+          prevMsgIdsRef.current.add(res.data.message.id);
         }
         setInputText('');
         handleRemoveFile();
@@ -700,6 +702,7 @@ export default function Chat() {
 
       const displayText = hasFile ? (inputText || '') : inputText;
       setMessages(prev => [...prev, { ...res.data.message, decrypted: displayText }]);
+      prevMsgIdsRef.current.add(res.data.message.id);
       setInputText('');
       handleRemoveFile();
       cancelReply();
@@ -1474,6 +1477,7 @@ export default function Chat() {
                       );
                       if (res.data?.message) {
                         setMessages(prev => [...prev, { ...res.data.message, decrypted: '' }]);
+                        prevMsgIdsRef.current.add(res.data.message.id);
                       }
                     } catch (e) { console.error('Audio send err:', e); alert('Error:\n' + (e.message || e)); }
                     setSending(false);
@@ -1727,6 +1731,7 @@ export default function Chat() {
               );
               if (res.data?.message) {
                 setMessages(prev => [...prev, { ...res.data.message, decrypted: '' }]);
+                prevMsgIdsRef.current.add(res.data.message.id);
               }
             } catch (e) { console.error('Sticker send err:', e); alert('Error al enviar sticker:\n' + (e.message || e)); }
             setSending(false);
@@ -1744,16 +1749,15 @@ export default function Chat() {
           onCreated={async (poll) => {
             // Enviar mensaje del sistema con el poll_id
             try {
-              const convKey = await deriveEcdhSecret(activeConv.id);
-              if (!convKey) return;
               const { encryptedContent, nonce } = await legacyEncrypt('Encuesta: ' + poll?.question, otherUserCache.current[activeConv.id]?.public_key);
               const res = await sendMessage(
-                activeConv.id, encrypted.encryptedContent, encrypted.nonce,
-                msgIndex, null, null, 'poll', null, null,
+                activeConv.id, encryptedContent, nonce,
+                -1, null, null, 'poll', null, null,
                 null, null, null, null, poll?.id
               );
               if (res.data?.message) {
                 setMessages(prev => [...prev, { ...res.data.message, decrypted: 'Encuesta: ' + poll?.question, poll_id: poll?.id }]);
+                prevMsgIdsRef.current.add(res.data.message.id);
               }
             } catch (e) { console.error('Poll msg send err:', e); }
             loadData();
