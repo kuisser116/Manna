@@ -339,7 +339,18 @@ export default function Chat() {
     try {
       const res = await getMessages(conv.id);
       msgs = (res?.data?.messages) || [];
-      // Cachear llaves públicas
+
+      // Obtener la llave pública MÁS RECIENTE del otro usuario
+      if (otherUser?.id) {
+        try {
+          const profRes = await getUserProfile(otherUser.id);
+          const fresh = profRes.data?.user || profRes.data;
+          if (fresh?.public_key) {
+            otherUser = { ...otherUser, public_key: fresh.public_key };
+          }
+        } catch {}
+      }
+      // Cachear siempre (sea desde conv.otherUser o desde fresh)
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
       }
@@ -370,17 +381,6 @@ export default function Chat() {
       }
 
       // Asegurar que tenemos public_key para fallback ECDH (mensajes legacy y audio)
-      if (!otherUser?.public_key && otherUser?.id) {
-        try {
-          const res = await getUserProfile(otherUser.id);
-          const fresh = res.data?.user || res.data;
-          if (fresh?.public_key) {
-            otherUser = { ...otherUser, public_key: fresh.public_key };
-            otherUserCache.current[conv.id] = otherUser;
-          }
-        } catch {}
-      }
-
       if (!otherUser?.public_key) {
         msgs.forEach(m => prevMsgIdsRef.current.add(m.id));
         setMessages(msgs); scrollToBottom(); return;
