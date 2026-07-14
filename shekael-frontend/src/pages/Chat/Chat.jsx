@@ -208,6 +208,14 @@ export default function Chat() {
   // Cargar conversaciones y solicitudes al montar, sin esperar crypto
   useEffect(() => {
     loadData();
+    // Polling de conversaciones cada 6s
+    const convPoll = setInterval(async () => {
+      try {
+        const convRes = await getConversations();
+        setConversations(convRes.data.conversations || []);
+      } catch {}
+    }, 6000);
+    return () => clearInterval(convPoll);
   }, []);
 
   const loadData = async () => {
@@ -359,12 +367,24 @@ export default function Chat() {
         }
       }
 
+      // Asegurar que tenemos public_key para fallback ECDH (mensajes legacy y audio)
+      if (!otherUser?.public_key && otherUser?.id) {
+        try {
+          const res = await getUserProfile(otherUser.id);
+          const fresh = res.data?.user || res.data;
+          if (fresh?.public_key) {
+            otherUser = { ...otherUser, public_key: fresh.public_key };
+          }
+        } catch {}
+      }
+
+      if (!otherUser?.public_key) {
+        setMessages(msgs); scrollToBottom(); return;
+      }
+
       // No hacemos X3DH recovery — los mensajes viejos se descifran con ECDH fallback
       let sharedSecret;
       if (!hasSigSession) {
-        if (!otherUser?.public_key) {
-          setMessages(msgs); scrollToBottom(); return;
-        }
         sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
         if (!sharedSecret) {
           setMessages(msgs); scrollToBottom(); return;
@@ -403,6 +423,8 @@ export default function Chat() {
       }
 
       setMessages(decrypted);
+      // Inicializar ref de IDs para el polling
+      decrypted.forEach(m => prevMsgIdsRef.current.add(m.id));
       scrollToBottom();
       loadPinnedMessage(conv.id);
     } catch (err) {
@@ -413,6 +435,60 @@ export default function Chat() {
       }
     }
   }, [deriveEcdhSecret, loadPinnedMessage]);
+
+  // Polling: buscar mensajes nuevos cada 4s
+  const prevMsgIdsRef = useRef(new Set());
+  useEffect(() => {
+    if (!activeConv?.id || !user?.id) return;
+    const convId = activeConv.id;
+    prevMsgIdsRef.current = new Set();
+
+    const poll = setInterval(async () => {
+      try {
+        const res = await getMessages(convId, 0);
+        const raw = res.data.messages || [];
+        if (!raw.length) return;
+
+        // Filtrar solo los nuevos
+        const newMsgs = raw.filter(m => !prevMsgIdsRef.current.has(m.id));
+        if (!newMsgs.length) return;
+
+        const otherUser = otherUserCache.current[convId];
+        const decrypted = [];
+        for (const msg of newMsgs) {
+          prevMsgIdsRef.current.add(msg.id);
+          if (msg.nonce === 'plaintext') {
+            decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
+            continue;
+          }
+          try {
+            const pt = otherUser?.public_key
+              ? await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key)
+              : null;
+            decrypted.push({ ...msg, decrypted: pt ?? '[Mensaje cifrado]' });
+          } catch {
+            decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+          }
+        }
+
+        setMessages(prev => [...prev, ...decrypted]);
+        scrollToBottom();
+      } catch { /* polling falló */ }
+    }, 4000);
+
+    return () => clearInterval(poll);
+  }, [activeConv?.id, user?.id, legacyDecrypt]);
+
+  // Reintentar cargar llaves si están pendientes
+  useEffect(() => {
+    if (keysReady) return;
+    const retry = setInterval(() => {
+      if (getKeyPair()?.privateKey) {
+        setKeysReady(true);
+      }
+    }, 2000);
+    return () => clearInterval(retry);
+  }, [keysReady]);
 
   // Descifrar mensajes entrantes nuevos (cuando se reciben sin recargar la página)
   const decryptMessages = async (msgs, otherUser, convId) => {
