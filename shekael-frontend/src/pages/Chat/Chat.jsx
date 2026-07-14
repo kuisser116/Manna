@@ -757,7 +757,95 @@ export default function Chat() {
     } finally {
       setSending(false);
     }
-  };lt();
+  };
+
+  // ── Efecto: animar mensajes nuevos ──
+  useEffect(() => {
+    if (messages.length === 0) return;
+    requestAnimationFrame(() => messagesEndRefCallback());
+  }, [messages, messagesEndRefCallback]);
+
+  const scrollToBottom = () => {
+    if (msgListRef.current) {
+      msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+    }
+  };
+
+  // Scroll instantáneo al fondo cuando cambian los mensajes (antes del paint)
+  useLayoutEffect(() => {
+    if (messages.length > 0 && msgListRef.current) {
+      msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Búsqueda de usuarios
+  const handleSearch = async (q) => {
+    setSearchQuery(q);
+    if (q.length < 2) { setSearchResults([]); return; }
+    try {
+      const res = await searchUsers(q);
+      setSearchResults(res.data.users || []);
+    } catch { setSearchResults([]); }
+  };
+
+  // Enviar solicitud de mensaje
+  const handleSendRequest = async (toUserId) => {
+    try {
+      await sendMessageRequest(toUserId);
+      setSearchResults(prev => prev.map(u =>
+        u.id === toUserId ? { ...u, requestStatus: 'pending', isRequester: true } : u
+      ));
+    } catch (err) {
+      console.error('Error sending request:', err);
+    }
+  };
+
+  // Aceptar/rechazar/bloquear solicitud
+  const handleAccept = async (reqId) => {
+    try {
+      const res = await acceptRequest(reqId);
+      setRequests(prev => prev.filter(r => r.id !== reqId));
+      loadData(); // Recargar conversaciones
+      if (res.data.conversationId) {
+        // Entrar a la nueva conversación
+        const newConv = { id: res.data.conversationId, otherUser: res.data.otherUser };
+        selectConversation(newConv);
+        setShowRequests(false);
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleReject = async (reqId) => {
+    try {
+      await rejectRequest(reqId);
+      setRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) { console.error(err); }
+  };
+
+  const handleBlock = async (reqId) => {
+    try {
+      await blockRequester(reqId);
+      setRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) { console.error(err); }
+  };
+
+  // Calcular no leídos
+  const unreadCount = 0; // Se puede implementar después con last_read_at
+
+  // ── Reply ──
+
+  const startReply = (msg) => {
+    setReplyTo(msg);
+    setInputText('');
+    if (fileInputRef.current) fileInputRef.current.focus();
+  };
+
+  const cancelReply = () => setReplyTo(null);
+
+  // ── Context Menu ──
+
+  const handleContextMenu = (e, msg) => {
+    e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, message: msg });
   };
 
