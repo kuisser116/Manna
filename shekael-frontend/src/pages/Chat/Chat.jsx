@@ -382,6 +382,7 @@ export default function Chat() {
       }
 
       if (!otherUser?.public_key) {
+        msgs.forEach(m => prevMsgIdsRef.current.add(m.id));
         setMessages(msgs); scrollToBottom(); return;
       }
 
@@ -390,6 +391,7 @@ export default function Chat() {
       if (!hasSigSession) {
         sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
         if (!sharedSecret) {
+          msgs.forEach(m => prevMsgIdsRef.current.add(m.id));
           setMessages(msgs); scrollToBottom(); return;
         }
       }
@@ -1308,6 +1310,11 @@ export default function Chat() {
                   const isAudio = msg.message_type === 'audio';
                   const isPoll = msg.message_type === 'poll';
                   const msgText = msg.decrypted || (isImage || isFile || isAudio || isPoll ? '' : '[Cifrado]');
+                  
+                  // DEBUG: ver qué valor tiene decrypted para el audio fantasma
+                  if (msg.message_type === 'audio') {
+                    console.log('[AUDIO_DEBUG] msg id:', msg.id, 'decrypted:', JSON.stringify(msg.decrypted), 'msgText:', JSON.stringify(msgText));
+                  }
 
                   // Encontrar replied message para mostrar preview
                   const repliedMsg = msg.reply_to_id
