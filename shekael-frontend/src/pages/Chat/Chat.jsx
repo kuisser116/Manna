@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
-import useChatCrypto from '../../hooks/useChatCrypto';
-import useRatchetSession from '../../hooks/useRatchetSession';
+import * as signalProtocol from '../../crypto/signalProtocol';
 import { getUserProfile } from '../../api/users.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import {
@@ -29,8 +28,7 @@ import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../
 export default function Chat() {
   const navigate = useNavigate();
   const { user } = useStore();
-  const crypto = useChatCrypto();
-  const ratchet = useRatchetSession();
+  // signalProtocol usa keyStore singleton — no necesita hook
 
   // Estado
   const [conversations, setConversations] = useState([]);
@@ -154,6 +152,7 @@ export default function Chat() {
   }, [contextMenu]);
 
   // Escape para cerrar lightbox
+    // Escape para cerrar lightbox
   useEffect(() => {
     if (!lightboxUrl) return;
     const handler = (e) => { if (e.key === 'Escape') setLightboxUrl(null); };
@@ -161,60 +160,25 @@ export default function Chat() {
     return () => window.removeEventListener('keydown', handler);
   }, [lightboxUrl]);
 
-  // Inicializar crypto — genera llaves con libsodium (import estático)
+  // Inicializar crypto — verificar keyStore (puesto por LockScreen)
   useEffect(() => {
     let cancelled = false;
-
-    // Helper: keyId por usuario
-    const currentUserId = user?.id;
-    function keyId(base) {
-      return currentUserId ? `${base}_${currentUserId}` : base;
-    }
 
     async function init() {
       try {
         await sodiumReady;
         if (cancelled) return;
 
-        // Verificar si ya hay llaves locales para ESTE usuario
-        await crypto.loadKeyPair();
-        let has = await crypto.hasKeys().catch(() => false);
-
-        if (has) {
+        // Verificar si ya hay llaves en keyStore (puestas por LockScreen)
+        const existingKp = getKeyPair();
+        if (existingKp && existingKp.privateKey) {
           setKeysReady(true);
           return;
         }
 
-        // Generar nuevo par de llaves
-        const kp = _sodium.crypto_box_keypair();
-        const keyPair = {
-          publicKey: _sodium.to_base64(kp.publicKey),
-          privateKey: _sodium.to_base64(kp.privateKey)
-        };
-
-        // Guardar en IndexedDB (per-user)
-        try {
-          const db = await openKeyDB();
-          const tx = db.transaction('keys', 'readwrite');
-          const store = tx.objectStore('keys');
-          await new Promise((resolve, reject) => {
-            const req = store.put({ id: keyId('main'), ...keyPair });
-            req.onsuccess = resolve;
-            req.onerror = reject;
-          });
-          db.close();
-        } catch (e) {
-          console.warn('No se pudo guardar en IndexedDB:', e);
-        }
-
-        // Subir llave pública al servidor (best-effort)
-        try {
-          await updatePublicKey(keyPair.publicKey);
-        } catch {
-          console.warn('No se pudo subir la llave pública');
-        }
-
-        if (!cancelled) setKeysReady(true);
+        // No hay llaves — el LockScreen las pedirá al desbloquear
+        // Mientras tanto, no podemos cifrar mensajes
+        setKeysReady(false);
       } catch (e) {
         console.error('Error al inicializar cifrado:', e);
         if (!cancelled) setKeysReady(false);
@@ -223,9 +187,9 @@ export default function Chat() {
 
     init();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, []);
 
-  // Helper IndexedDB
+  // Legacy IndexedDB functions (mantenidas por si hay migración)
   function openKeyDB() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open('ShekaelKeys', 1);
@@ -276,7 +240,7 @@ export default function Chat() {
     }
 
     await sodiumReady;
-    const kp = await crypto.loadKeyPair();
+    const kp = getKeyPair();
     if (!kp) {
       return null;
     }
@@ -287,7 +251,38 @@ export default function Chat() {
     );
     sharedSecretCache.current[convId] = sharedSecret;
     return sharedSecret;
-  }, [crypto]);
+  }, []);
+
+  // Legacy decrypt (ECDH directo) para mensajes viejos sin ratchet
+  const legacyDecrypt = useCallback(async (encryptedContent, nonceB64, theirPublicKey) => {
+    const ss = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirPublicKey),
+      _sodium.from_base64(getKeyPair().privateKey)
+    );
+    return _sodium.to_string(
+      _sodium.crypto_secretbox_open_easy(
+        _sodium.from_base64(encryptedContent),
+        _sodium.from_base64(nonceB64),
+        ss
+      )
+    );
+  }, []);
+
+  // Legacy encrypt (ECDH directo) para compatibilidad con sistema anterior
+  const legacyEncrypt = useCallback(async (plaintext, theirPublicKey) => {
+    const ss = _sodium.crypto_box_beforenm(
+      _sodium.from_base64(theirPublicKey),
+      _sodium.from_base64(getKeyPair().privateKey)
+    );
+    const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
+    const ciphertext = _sodium.crypto_secretbox_easy(
+      _sodium.from_string(plaintext), nonce, ss
+    );
+    return {
+      encryptedContent: _sodium.to_base64(ciphertext),
+      nonce: _sodium.to_base64(nonce)
+    };
+  }, []);
 
   // Load pinned message after selectConversation sets sharedSecretCache
   const loadPinnedMessage = useCallback(async (convId) => {
@@ -300,12 +295,11 @@ export default function Chat() {
       const ss = sharedSecretCache.current[convId];
       if (ss && pm.msg_index) {
         try {
-          const msgKey = await ratchet.deriveKeyForIndex(convId, ss, pm.msg_index);
           decryptedText = _sodium.to_string(
             _sodium.crypto_secretbox_open_easy(
               _sodium.from_base64(pm.encrypted_content),
               _sodium.from_base64(pm.nonce),
-              msgKey
+              ss
             )
           );
         } catch { /* falló descifrado */ }
@@ -314,7 +308,7 @@ export default function Chat() {
     } catch {
       setPinnedMessage(null);
     }
-  }, [ratchet]);
+  }, []);
 
   // Cargar mensajes al seleccionar conversación
   const selectConversation = useCallback(async (conv) => {
@@ -339,47 +333,34 @@ export default function Chat() {
         otherUserCache.current[conv.id] = otherUser;
       }
 
-      // Buscar si hay mensajes con pre-key (X3DH — mensajes offline)
-      const x3dhMsg = msgs.find(m => m.sender_ephemeral_key && m.pre_key_used_id != null);
-      let sharedSecret;
-
-      if (x3dhMsg) {
+      // Intentar inicializar sesión Signal Protocol si no existe
+      const hasSigSession = await signalProtocol.hasSession(conv.id);
+      if (!hasSigSession && otherUser?.public_key) {
+        // fetch pre-key bundle del otro usuario
         try {
-          await sodiumReady;
-          const preKeyDbName = user?.id ? `ShekaelPreKeys_${user.id}` : 'ShekaelPreKeys';
-          const keysDb = await new Promise((resolve, reject) => {
-            const req = indexedDB.open(preKeyDbName, 1);
-            req.onupgradeneeded = () => {
-              if (!req.result.objectStoreNames.contains('prekeys'))
-                req.result.createObjectStore('prekeys', { keyPath: 'id' });
-            };
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
+          const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
+          const { default: axios } = await import('axios');
+          const API_URL = import.meta.env.VITE_API_URL || location.origin;
+          const bundleRes = await axios.get(`${API_URL}/auth/pre-keys/bundle/${otherUser.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
           });
-          const tx = keysDb.transaction('prekeys', 'readonly');
-          const store = tx.objectStore('prekeys');
-          const storedKey = await new Promise(r => { const q = store.get(`otpk_${x3dhMsg.pre_key_used_id}`); q.onsuccess = () => r(q.result); q.onerror = () => r(null); });
-          const myPreKey = storedKey || await new Promise(r => { const q = store.get('signed'); q.onsuccess = () => r(q.result); q.onerror = () => r(null); });
-          keysDb.close();
-
-          if (myPreKey) {
-            let senderPubKey = otherUser?.public_key;
-            if (!senderPubKey) {
-              try {
-                const sRes = await getUserProfile(x3dhMsg.sender_id);
-                senderPubKey = (sRes.data?.user || sRes.data)?.public_key;
-              } catch {}
-            }
-            if (senderPubKey) {
-              sharedSecret = await ratchet.recoverFromPreKey(conv.id, myPreKey.privateKey, x3dhMsg.sender_ephemeral_key, senderPubKey);
+          const bundle = bundleRes.data;
+          
+          if (bundle.identityKey && bundle.signedPreKey) {
+            const kp = getKeyPair();
+            if (kp) {
+              await signalProtocol.initSessionAsAlice(conv.id, bundle, kp);
+              console.log('[Signal] Session initialized for', conv.id.substring(0,8));
             }
           }
         } catch (e) {
-          console.warn('X3DH recovery failed:', e);
+          console.warn('[Signal] Could not init session:', e.message);
         }
       }
 
-      if (!sharedSecret) {
+      // No hacemos X3DH recovery — los mensajes viejos se descifran con ECDH fallback
+      let sharedSecret;
+      if (!hasSigSession) {
         if (!otherUser?.public_key) {
           setMessages(msgs); scrollToBottom(); return;
         }
@@ -397,30 +378,25 @@ export default function Chat() {
           decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
           continue;
         }
-        // Intentar ECDH directo primero (msgIndex = -1 = nuevo sistema)
+      // Intentar Signal Protocol primero (Double Ratchet)
+        if (await signalProtocol.hasSession(conv.id)) {
+          try {
+            const plaintext = await signalProtocol.decrypt(conv.id, {
+              encryptedContent: msg.encrypted_content,
+              nonce: msg.nonce,
+              ephemeralPubKey: msg.sender_ephemeral_key,
+              msgIndex: msg.msg_index || 0
+            });
+            decrypted.push({ ...msg, decrypted: plaintext });
+            continue;
+          } catch { /* fallback a ECDH */ }
+        }
+        // Fallback: ECDH directo (para mensajes del sistema anterior)
         try {
-          const plaintext = await crypto.decrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
+          const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
           decrypted.push({ ...msg, decrypted: plaintext });
           continue;
         } catch {
-          // Si ECDH falla: probar ratchet (mensajes viejos con msg_index > 0)
-          if (msg.msg_index > 0) {
-            try {
-              const keys = await ratchet.recoverSession(conv.id, sharedSecret, msgs);
-              const msgKey = keys.get(msg.msg_index);
-              if (msgKey) {
-                const plaintext = _sodium.to_string(
-                  _sodium.crypto_secretbox_open_easy(
-                    _sodium.from_base64(msg.encrypted_content),
-                    _sodium.from_base64(msg.nonce),
-                    msgKey
-                  )
-                );
-                decrypted.push({ ...msg, decrypted: plaintext });
-                continue;
-              }
-            } catch {}
-          }
           decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
         }
       }
@@ -435,7 +411,7 @@ export default function Chat() {
         scrollToBottom();
       }
     }
-  }, [crypto, ratchet, deriveEcdhSecret, loadPinnedMessage]);
+  }, [deriveEcdhSecret, loadPinnedMessage]);
 
   // Descifrar mensajes entrantes nuevos (cuando se reciben sin recargar la página)
   const decryptMessages = async (msgs, otherUser, convId) => {
@@ -448,27 +424,23 @@ export default function Chat() {
         decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
         continue;
       }
-      // Intentar ECDH directo primero
-      try {
-        const plaintext = await crypto.decrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
-        decrypted.push({ ...msg, decrypted: plaintext });
-      } catch {
-        // Fallback: ratchet (mensajes viejos)
+      // Intentar Signal Protocol primero
+      if (await signalProtocol.hasSession(convId)) {
         try {
-          if (msg.msg_index && sharedSecretCache.current[convId]) {
-            const sharedSecret = sharedSecretCache.current[convId];
-            const msgKey = await ratchet.deriveKeyForIndex(convId, sharedSecret, msg.msg_index);
-            const plaintext = _sodium.to_string(
-              _sodium.crypto_secretbox_open_easy(
-                _sodium.from_base64(msg.encrypted_content),
-                _sodium.from_base64(msg.nonce),
-                msgKey
-              )
-            );
-            decrypted.push({ ...msg, decrypted: plaintext });
-          } else {
-            throw new Error('no secret');
-          }
+          const plaintext = await signalProtocol.decrypt(convId, {
+            encryptedContent: msg.encrypted_content,
+            nonce: msg.nonce,
+            ephemeralPubKey: msg.sender_ephemeral_key,
+            msgIndex: msg.msg_index || 0
+          });
+          decrypted.push({ ...msg, decrypted: plaintext });
+          continue;
+        } catch { /* fallback a ECDH */ }
+      }
+      // Fallback: ECDH directo (para mensajes del sistema anterior)
+      try {
+        const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
+        decrypted.push({ ...msg, decrypted: plaintext });
         } catch {
           decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
         }
@@ -476,8 +448,6 @@ export default function Chat() {
     }
     return decrypted;
   };
-
-  // Enviar mensaje con ratchet (forward secrecy) + soporte offline vía pre-keys
   const handleSend = async () => {
     const hasFile = !!selectedFile;
     if (!inputText.trim() && !hasFile) return;
@@ -525,45 +495,42 @@ export default function Chat() {
       } catch { /* fallo, seguimos sin llave */ }
     }
 
-    if (!otherUser?.public_key) {
-      // Intento 2: usar pre-key para mensaje offline
+    // Intentar usar Signal Protocol (Double Ratchet)
+    let sigSession = await signalProtocol.hasSession(activeConv.id);
+    
+    if (!sigSession && otherUser?.public_key) {
+      // No hay sesión — intentar iniciar X3DH
       try {
-        const { fetchPreKey } = await import('../../api/chats.api');
-        const pkRes = await fetchPreKey(otherUser.id);
-        const pkData = pkRes.data;
-
-        if (pkData.preKey) {
-          // Tenemos una pre-key — hacer X3DH
-          await sodiumReady;
-          const kp = await crypto.loadKeyPair();
-          if (!kp) throw new Error('No keypair');
-
-          const x3dhResult = await ratchet.deriveFullX3DH(
-            kp.privateKey,
-            pkData.identityKey || pkData.preKey.publicKey,
-            pkData.preKey.publicKey
-          );
-          sharedSecret = x3dhResult.sharedSecret;
-          ephemeralPubB64 = x3dhResult.ephemeralPublicKey;
-          preKeyUsedId = pkData.preKey.key_id;
-          usingPreKey = true;
-        } else if (pkData.identityKey) {
-          // Solo identity key disponible
-          sharedSecret = await deriveEcdhSecret(activeConv.id, pkData.identityKey);
-          otherUser = { ...otherUser, public_key: pkData.identityKey };
-          otherUserCache.current[activeConv.id] = otherUser;
+        const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
+        const { default: axios } = await import('axios');
+        const API_URL = import.meta.env.VITE_API_URL || location.origin;
+        const bundleRes = await axios.get(`${API_URL}/auth/pre-keys/bundle/${otherUser.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const bundle = bundleRes.data;
+        
+        if (bundle.identityKey && bundle.signedPreKey) {
+          const kp = getKeyPair();
+          if (kp) {
+            const result = await signalProtocol.initSessionAsAlice(activeConv.id, bundle, kp);
+            sigSession = true;
+            ephemeralPubB64 = result.ephemeralPubB64;
+            preKeyUsedId = result.preKeyUsedId;
+            await sodiumReady;
+            console.log('[Signal] Session established for', activeConv.id.substring(0,8));
+          }
         }
-      } catch { /* sin pre-keys ni identity */ }
-    } else {
-      // Tiene public_key, derivar shared secret normal
-      sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
+      } catch (e) {
+        console.warn('[Signal] Could not init session, trying ECDH:', e.message);
+        // Fallback a ECDH
+        if (otherUser?.public_key) {
+          sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
+        }
+      }
     }
 
-    if (!sharedSecret) {
-      // El otro usuario no tiene llaves aún — enviar sin cifrar
-      // El mensaje se muestra normal para el remitente, y como "[Sin cifrar]"
-      // para el receptor hasta que genere llaves.
-      // No usamos el ratchet para no corromper la cadena.
+    if (!sigSession && !sharedSecret) {
+      // No hay forma de cifrar — enviar sin cifrar
       setSending(true);
       try {
         const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
@@ -597,40 +564,23 @@ export default function Chat() {
 
     setSending(true);
     try {
-      // Usar ECDH directo para cada mensaje (NO ratchet — elimina problemas de sincronización)
-      const { encryptedContent, nonce } = await crypto.encrypt(inputText, otherUser.public_key);
-
-      const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
-
-      let replyPreview = null;
-      if (replyTo) {
-        replyPreview = (replyTo.decrypted || '').substring(0, 80);
+      let encryptedContent, nonce;
+      
+      if (sigSession) {
+        // Signal Protocol: Double Ratchet encrypt
+        const result = await signalProtocol.encrypt(activeConv.id, inputText);
+        encryptedContent = result.encryptedContent;
+        nonce = result.nonce;
+        // Si el mensaje trae nueva llave efímera del ratchet, enviarla
+        if (result.ephemeralPubKey) {
+          ephemeralPubB64 = result.ephemeralPubKey;
+        }
+      } else {
+        // Legacy: ECDH directo
+        const legacyResult = await legacyEncrypt(inputText, otherUser.public_key);
+        encryptedContent = legacyResult.encryptedContent;
+        nonce = legacyResult.nonce;
       }
-
-      const res = await sendMessage(
-        activeConv.id,
-        encryptedContent,
-        nonce,
-        -1, // msgIndex -1 = ECDH directo (no ratchet)
-        ephemeralPubB64,
-        preKeyUsedId,
-        messageType,
-        uploadedUrl,
-        uploadedThumb,
-        fileMeta.fileName,
-        fileMeta.fileSize,
-        fileMeta.mimeType
-      );
-
-      // Set reply info locally FIRST (optimistic), then try to persist on server
-      if (replyTo && res.data.message?.id) {
-        res.data.message.reply_to_id = replyTo.id;
-        res.data.message.reply_preview = replyPreview;
-        try {
-          const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
-          const { default: axios } = await import('axios');
-          const API_URL = import.meta.env.VITE_API_URL || location.origin;
-          await axios.patch(`${API_URL}/chats/messages/${res.data.message.id}`, {
             reply_to_id: replyTo.id,
             reply_preview: replyPreview
           }, { headers: { Authorization: `Bearer ${token}` } });
@@ -1407,7 +1357,7 @@ export default function Chat() {
                     try {
                       setSending(true);
                       const otherUser = otherUserCache.current[activeConv.id];
-                      const { encryptedContent, nonce } = await crypto.encrypt('', otherUser?.public_key);
+                      const { encryptedContent, nonce } = await legacyEncrypt('', otherUser?.public_key);
                       const res = await sendMessage(
                         activeConv.id, encryptedContent, nonce,
                         -1, null, null, 'audio', audio.url, null,
@@ -1660,7 +1610,7 @@ export default function Chat() {
             setShowStickerPicker(false);
             try {
               setSending(true);
-              const { encryptedContent, nonce } = await crypto.encrypt('', otherUser?.public_key);
+              const { encryptedContent, nonce } = await legacyEncrypt('', otherUser?.public_key);
               const res = await sendMessage(
                 activeConv.id, encryptedContent, nonce,
                 -1, null, null, 'image', imageUrl, imageUrl,
@@ -1686,9 +1636,8 @@ export default function Chat() {
             // Enviar mensaje del sistema con el poll_id
             try {
               const convKey = await deriveEcdhSecret(activeConv.id);
-              if (!convKey || !ratchet) return;
-              const msgIndex = await ratchet.getNextIndex(activeConv.id, convKey);
-              const encrypted = await crypto.encrypt('Encuesta: ' + poll?.question, convKey);
+              if (!convKey) return;
+              const { encryptedContent, nonce } = await legacyEncrypt('Encuesta: ' + poll?.question, otherUserCache.current[activeConv.id]?.public_key);
               const res = await sendMessage(
                 activeConv.id, encrypted.encryptedContent, encrypted.nonce,
                 msgIndex, null, null, 'poll', null, null,
