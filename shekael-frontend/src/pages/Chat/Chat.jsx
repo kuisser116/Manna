@@ -376,6 +376,7 @@ export default function Chat() {
           const fresh = res.data?.user || res.data;
           if (fresh?.public_key) {
             otherUser = { ...otherUser, public_key: fresh.public_key };
+            otherUserCache.current[conv.id] = otherUser;
           }
         } catch {}
       }
@@ -419,8 +420,7 @@ export default function Chat() {
           const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
           decrypted.push({ ...msg, decrypted: plaintext });
           continue;
-        } catch (e) {
-          console.warn('[Chat] legacyDecrypt FAILED for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
+        } catch {
           decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
         }
       }

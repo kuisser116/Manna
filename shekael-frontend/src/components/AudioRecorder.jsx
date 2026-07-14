@@ -40,7 +40,7 @@ export default function AudioRecorder({ onSend, onClose }) {
       stopTracks();
       if (timerRef.current) clearInterval(timerRef.current);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (audioCtxRef.current) audioCtxRef.current.close();
+      if (audioCtxRef.current?.state !== 'closed') audioCtxRef.current?.close();
     };
   }, []);
 
