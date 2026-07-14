@@ -427,7 +427,7 @@ export default function Chat() {
           continue;
         } catch (e) {
           console.warn('[Chat] decrypt fail for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
-          decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+          decrypted.push({ ...msg, decrypted: msg.message_type === 'audio' ? '' : '[Mensaje cifrado]' });
         }
       }
 
@@ -439,7 +439,7 @@ export default function Chat() {
     } catch (err) {
       console.error('Error loading messages:', err);
       if (msgs && msgs.length > 0) {
-        setMessages(msgs.map(m => ({ ...m, decrypted: '[Mensaje cifrado]' })));
+        setMessages(msgs.map(m => ({ ...m, decrypted: m.message_type === 'audio' ? '' : '[Mensaje cifrado]' })));
         scrollToBottom();
       }
     }
@@ -476,10 +476,20 @@ export default function Chat() {
             const pt = pk
               ? await legacyDecrypt(msg.encrypted_content, msg.nonce, pk)
               : null;
-            decrypted.push({ ...msg, decrypted: pt ?? '[Mensaje cifrado]' });
+            if (pt !== null && pt !== undefined) {
+              decrypted.push({ ...msg, decrypted: pt });
+            } else if (msg.message_type === 'audio') {
+              // Audio: si no se puede descifrar (keys stale), mostrar igual el player
+              decrypted.push({ ...msg, decrypted: '' });
+            } else {
+              decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+            }
             if (!pt) { console.warn('[Poll] pt was null for msg', msg.id, 'type:', msg.message_type); }
           } catch (e) {
             console.warn('[Poll] decrypt failed for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
+            if (msg.message_type === 'audio') {
+              decrypted.push({ ...msg, decrypted: '' });
+            }
           }
         }
 
