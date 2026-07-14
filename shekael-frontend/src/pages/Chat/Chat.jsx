@@ -346,6 +346,9 @@ export default function Chat() {
           const profRes = await getUserProfile(otherUser.id);
           const fresh = profRes.data?.user || profRes.data;
           if (fresh?.public_key) {
+            if (conv.otherUser?.public_key && conv.otherUser.public_key !== fresh.public_key) {
+              console.warn('[KEY_ROTATE] otherUser public_key changed from', conv.otherUser.public_key.substring(0,20), 'to', fresh.public_key.substring(0,20));
+            }
             otherUser = { ...otherUser, public_key: fresh.public_key };
           }
         } catch {}
