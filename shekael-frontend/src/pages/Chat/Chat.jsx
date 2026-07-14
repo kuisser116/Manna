@@ -419,7 +419,8 @@ export default function Chat() {
           const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
           decrypted.push({ ...msg, decrypted: plaintext });
           continue;
-        } catch {
+        } catch (e) {
+          console.warn('[Chat] legacyDecrypt FAILED for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
           decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
         }
       }
