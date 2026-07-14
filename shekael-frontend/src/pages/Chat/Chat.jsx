@@ -467,8 +467,11 @@ export default function Chat() {
             continue;
           }
           try {
-            const pt = otherUser?.public_key
-              ? await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key)
+            const pk = otherUser?.public_key;
+            const myKp = getKeyPair();
+            console.log('[POLL_DECRYPT] conv:', convId.substring(0,8), 'msg:', msg.id.substring(0,8), 'hasKeyPair:', !!myKp, 'hasOtherKey:', !!pk, 'otherKeyStart:', pk?.substring(0,20), 'otherUser exists:', !!otherUser);
+            const pt = pk
+              ? await legacyDecrypt(msg.encrypted_content, msg.nonce, pk)
               : null;
             decrypted.push({ ...msg, decrypted: pt ?? '[Mensaje cifrado]' });
             if (!pt) { console.warn('[Poll] pt was null for msg', msg.id, 'type:', msg.message_type); }
