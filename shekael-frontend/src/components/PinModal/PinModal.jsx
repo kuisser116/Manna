@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { Lock, X } from 'lucide-react';
+import { verifyPin as apiVerifyPin } from '../../api/auth.api';
 import styles from './PinModal.module.css';
 
-// Mismo hash que LockScreen
 function computePinHash(p) {
     let hash = 0;
     for (let i = 0; i < p.length; i++) {
@@ -57,39 +57,33 @@ export default function PinModal({ isOpen, onClose, onVerified, title = 'Confirm
         setPin(newPin);
         setError('');
 
-        // Auto-advance al siguiente slot
         const nextIdx = pin.findIndex((d, i) => i > index && !d);
         if (nextIdx !== -1) {
             inputRefs.current[nextIdx]?.focus();
         } else if (index === pinLen - 1) {
-            // Último dígito — verificar automáticamente
             setTimeout(() => verifyPin([...newPin.slice(0, index), digit]), 100);
         } else {
             inputRefs.current[index + 1]?.focus();
         }
     };
 
-    const verifyPin = (fullPin) => {
+    const verifyPin = async (fullPin) => {
         const pinStr = fullPin.join('');
         if (pinStr.length !== pinLen) return;
 
-        const stored = localStorage.getItem('shekael_pin_hash');
-        if (!stored) {
-            setError('No has configurado un PIN. Configúralo en la pantalla de bloqueo.');
-            return;
-        }
-
         const enteredHash = computePinHash(pinStr);
-        if (enteredHash !== stored) {
-            setError('PIN incorrecto');
+
+        try {
+            await apiVerifyPin(enteredHash);
+            // PIN correcto
+            onVerified?.();
+            onClose();
+        } catch (e) {
+            const msg = e.response?.data?.message || 'PIN incorrecto';
+            setError(msg);
             setPin(Array(pinLen).fill(''));
             inputRefs.current[0]?.focus();
-            return;
         }
-
-        // PIN correcto
-        onVerified?.();
-        onClose();
     };
 
     const handleSubmit = () => {

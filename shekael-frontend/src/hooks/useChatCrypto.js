@@ -1,195 +1,191 @@
 import { useEffect, useRef, useCallback } from 'react';
 import useStore from '../store';
+import { updatePublicKey } from '../api/chats.api';
+import { setPin } from '../api/auth.api';
+import { setKeyPair, getKeyPair, clearKeyPair } from '../crypto/keyStore';
 
 /**
  * Hook para cifrado E2EE con libsodium.
- * 
- * Los mensajes se cifran/descifran en el navegador usando un secreto compartido
- * derivado de la llave privada del usuario + llave pública del destinatario.
+ *
+ * ARQUITECTURA: Nada en IndexedDB. La llave privada viaja cifrada desde/hacia
+ * Supabase, descifrada solo en RAM con el PIN del usuario.
+ *
+ * Flujo LockScreen (Setup): generar keypair → cifrar private_key con PIN →
+ *   enviar encrypted_private_key + public_key + pin_hash al server.
+ * Flujo LockScreen (Unlock): verificar PIN → server devuelve encrypted_private_key →
+ *   descifrar con PIN → guardar en memoria (useRef).
+ * Flujo Logout/Lock: limpiar ref → llave desaparece de RAM.
  */
 export function useChatCrypto() {
-  const { user } = useStore();
+  const user = useStore(s => s.user);
+  const userId = user?.id;
   const sodiumRef = useRef(null);
-  const keyPairRef = useRef(null);
+  // keyPairRef ya no se usa — ahora se usa keyStore singleton
+  // para que LockScreen y Chat compartan la misma llave
 
-  // Inicializar libsodium
+  // Inicializar libsodium — OJO: await import() devuelve { default: sodiumObj, ready }
   useEffect(() => {
     let mounted = true;
     async function init() {
       try {
-        const sodium = await import('libsodium-wrappers');
-        await sodium.ready;
-        if (mounted) {
-          sodiumRef.current = sodium;
-        }
+        const mod = await import('libsodium-wrappers');
+        await mod.ready;
+        if (mounted) sodiumRef.current = mod.default; // ← usar .default!
       } catch (err) {
-        console.warn('libsodium not available, falling back to IndexedDB key loading');
+        console.warn('libsodium not available:', err);
       }
     }
     init();
     return () => { mounted = false; };
   }, []);
 
-  // Escuchar evento de bloqueo — limpiar cache en memoria
+  // Escuchar eventos de lock/logout — limpiar cache del keyStore singleton
   useEffect(() => {
-    const handler = () => { keyPairRef.current = null; };
+    const handler = () => { clearKeyPair(); };
     window.addEventListener('Shekael:lock', handler);
-    return () => window.removeEventListener('Shekael:lock', handler);
-  }, []);
-
-  // Cargar llave privada desde IndexedDB
-  const loadKeyPair = useCallback(async () => {
-    if (keyPairRef.current) return keyPairRef.current;
-
-    try {
-      const db = await openKeyDB();
-      const tx = db.transaction('keys', 'readonly');
-      const store = tx.objectStore('keys');
-
-      // Buscar primero la versión descifrada (main_unlocked, puesta por LockScreen)
-      const unlocked = await new Promise((resolve) => {
-        const req = store.get('main_unlocked');
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(null);
-      });
-
-      if (unlocked && unlocked.privateKey) {
-        keyPairRef.current = {
-          privateKey: unlocked.privateKey,
-          publicKey: unlocked.publicKey
-        };
-        db.close();
-        return keyPairRef.current;
-      }
-
-      // Fallback: versión plana original (para usuarios sin PIN)
-      const stored = await new Promise((resolve) => {
-        const req = store.get('main');
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(null);
-      });
-      db.close();
-
-      if (stored) {
-        keyPairRef.current = {
-          privateKey: stored.privateKey,
-          publicKey: stored.publicKey
-        };
-        return keyPairRef.current;
-      }
-    } catch (err) {
-      console.warn('Could not load keys from IndexedDB:', err);
-    }
-    return null;
-  }, []);
-
-  // Generar nuevo par de llaves (Curve25519)
-  const generateKeyPair = useCallback(async () => {
-    if (!sodiumRef.current) {
-      const sodium = await import('libsodium-wrappers');
-      await sodium.ready;
-      sodiumRef.current = sodium;
-    }
-    const sodium = sodiumRef.current;
-
-    const kp = sodium.crypto_box_keypair();
-    const keyPair = {
-      publicKey: sodium.to_base64(kp.publicKey),
-      privateKey: sodium.to_base64(kp.privateKey)
+    window.addEventListener('Shekael:logout', handler);
+    return () => {
+      window.removeEventListener('Shekael:lock', handler);
+      window.removeEventListener('Shekael:logout', handler);
     };
-
-    // Guardar en IndexedDB
-    try {
-      const db = await openKeyDB();
-      const tx = db.transaction('keys', 'readwrite');
-      const store = tx.objectStore('keys');
-      await new Promise((resolve, reject) => {
-        const req = store.put({ id: 'main', ...keyPair });
-        req.onsuccess = resolve;
-        req.onerror = reject;
-      });
-      db.close();
-    } catch (err) {
-      console.warn('Could not save keys to IndexedDB:', err);
-    }
-
-    keyPairRef.current = keyPair;
-    return keyPair;
   }, []);
 
-  // Derivar secreto compartido (para cifrar mensajes con otro usuario)
+  // Asegurar sodium listo
+  const ensureSodium = useCallback(async () => {
+    if (sodiumRef.current) return sodiumRef.current;
+    const mod = await import('libsodium-wrappers');
+    await mod.ready;
+    sodiumRef.current = mod.default; // ← .default!
+    return sodiumRef.current;
+  }, []);
+
+  // Derivar llave simétrica a partir del PIN (SHA-256)
+  const deriveKeyFromPin = useCallback(async (pin, sodium) => {
+    const hash = sodium.crypto_generichash(sodium.crypto_secretbox_KEYBYTES, sodium.from_string(pin));
+    return hash;
+  }, []);
+
+  // Cargar llave desde el keyStore singleton
+  const loadKeyPair = useCallback(async () => {
+    const kp = getKeyPair();
+    if (kp) return kp;
+    return null; // No hay llave → app bloqueada
+  }, []);
+
+  // Descifrar private_key recibida del servidor con el PIN y guardar en RAM
+  const unlockWithPin = useCallback(async (encryptedPrivateKeyB64, pin) => {
+    const sodium = await ensureSodium();
+    const key = await deriveKeyFromPin(pin, sodium);
+
+    const ciphertext = sodium.from_base64(encryptedPrivateKeyB64);
+    const nonce = ciphertext.slice(0, sodium.crypto_secretbox_NONCEBYTES);
+    const actualCipher = ciphertext.slice(sodium.crypto_secretbox_NONCEBYTES);
+
+    const plaintext = sodium.crypto_secretbox_open_easy(actualCipher, nonce, key);
+    const privateKey = sodium.to_string(plaintext);
+
+    // Recuperar public_key desde el store (ya cargada del server en initAuth)
+    const currentUser = useStore.getState().user;
+    const publicKey = currentUser?.public_key || '';
+
+    // Derivar shared secret a partir del private key para validar
+    // (no guardamos el keypair típico, guardamos privateKey raw)
+    const actualPrivateKey = sodium.from_base64(privateKey);
+    
+    setKeyPair({ privateKey, publicKey });
+    return { privateKey, publicKey };
+  }, [ensureSodium, deriveKeyFromPin]);
+
+  // Generar keypair, cifrar private_key con PIN, subir todo al server
+  const generateAndSetupKeypair = useCallback(async (pin, pinHash) => {
+    const sodium = await ensureSodium();
+
+    // Generar keypair Curve25519
+    const kp = sodium.crypto_box_keypair();
+    const publicKeyB64 = sodium.to_base64(kp.publicKey);
+    const privateKeyB64 = sodium.to_base64(kp.privateKey);
+
+    // Cifrar private_key con PIN
+    const key = await deriveKeyFromPin(pin, sodium);
+    const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+    const ciphertext = sodium.crypto_secretbox_easy(
+      sodium.from_string(privateKeyB64),
+      nonce,
+      key
+    );
+
+    // Almacenar: nonce || ciphertext (para enviar como un solo campo)
+    const payload = new Uint8Array(nonce.length + ciphertext.length);
+    payload.set(nonce);
+    payload.set(ciphertext, nonce.length);
+    const encryptedPrivateKeyB64 = sodium.to_base64(payload);
+
+    // Subir public_key al server (updatePublicKey)
+    await updatePublicKey(publicKeyB64);
+
+    // Subir PIN hash + encrypted private key
+    await setPin(pinHash, encryptedPrivateKeyB64);
+
+    // Cache en RAM (vía keyStore singleton)
+    setKeyPair({ privateKey: privateKeyB64, publicKey: publicKeyB64 });
+    return { privateKey: privateKeyB64, publicKey: publicKeyB64 };
+  }, [ensureSodium, deriveKeyFromPin]);
+
+  // Derivar secreto compartido (ECDH: myPriv + theirPub)
   const deriveSharedSecret = useCallback(async (theirPublicKeyBase64) => {
-    if (!sodiumRef.current) {
-      const sodium = await import('libsodium-wrappers');
-      await sodium.ready;
-      sodiumRef.current = sodium;
-    }
-    const sodium = sodiumRef.current;
-
+    const sodium = await ensureSodium();
     const kp = await loadKeyPair();
-    if (!kp) throw new Error('No key pair available');
+    if (!kp) throw new Error('App bloqueada — no hay llave en RAM');
 
-    const theirPublicKey = sodium.from_base64(theirPublicKeyBase64);
-    const myPrivateKey = sodium.from_base64(kp.privateKey);
-
-    // Diffie-Hellman: shared secret = scalar multiplication
-    const sharedSecret = sodium.crypto_box_beforenm(theirPublicKey, myPrivateKey);
-    return sharedSecret;
-  }, [loadKeyPair]);
+    const ss = sodium.crypto_box_beforenm(
+      sodium.from_base64(theirPublicKeyBase64),
+      sodium.from_base64(kp.privateKey)
+    );
+    console.log('[CRYPTO] deriveSharedSecret theirPub[]:', theirPublicKeyBase64.substring(0,16), 'myPriv[]:', kp.privateKey.substring(0,16), 'ss[]:', sodium.to_base64(ss).substring(0,16));
+    return ss;
+  }, [loadKeyPair, ensureSodium]);
 
   // Cifrar mensaje
   const encrypt = useCallback(async (plaintext, theirPublicKeyBase64) => {
-    if (!sodiumRef.current) {
-      const sodium = await import('libsodium-wrappers');
-      await sodium.ready;
-      sodiumRef.current = sodium;
-    }
-    const sodium = sodiumRef.current;
-
+    const sodium = await ensureSodium();
     const sharedSecret = await deriveSharedSecret(theirPublicKeyBase64);
     const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
     const ciphertext = sodium.crypto_secretbox_easy(
-      sodium.from_string(plaintext),
-      nonce,
-      sharedSecret
+      sodium.from_string(plaintext), nonce, sharedSecret
     );
-
+    console.log('[CRYPTO] encrypt OK ss[:16]:', sodium.to_base64(sharedSecret).substring(0,16));
     return {
       encryptedContent: sodium.to_base64(ciphertext),
       nonce: sodium.to_base64(nonce)
     };
-  }, [deriveSharedSecret]);
+  }, [deriveSharedSecret, ensureSodium]);
 
   // Descifrar mensaje
   const decrypt = useCallback(async (encryptedContentBase64, nonceBase64, theirPublicKeyBase64) => {
-    if (!sodiumRef.current) {
-      const sodium = await import('libsodium-wrappers');
-      await sodium.ready;
-      sodiumRef.current = sodium;
-    }
-    const sodium = sodiumRef.current;
-
+    const sodium = await ensureSodium();
     const sharedSecret = await deriveSharedSecret(theirPublicKeyBase64);
-    const ciphertext = sodium.from_base64(encryptedContentBase64);
-    const nonce = sodium.from_base64(nonceBase64);
-
-    const plaintext = sodium.crypto_secretbox_open_easy(ciphertext, nonce, sharedSecret);
+    const plaintext = sodium.crypto_secretbox_open_easy(
+      sodium.from_base64(encryptedContentBase64),
+      sodium.from_base64(nonceBase64),
+      sharedSecret
+    );
+    console.log('[CRYPTO] decrypt OK ss[:16]:', sodium.to_base64(sharedSecret).substring(0,16));
     return sodium.to_string(plaintext);
-  }, [deriveSharedSecret]);
+  }, [deriveSharedSecret, ensureSodium]);
 
-  // Limpiar cache en memoria (al bloquear la app con PIN)
+  // Limpiar cache (lock/logout) — usa keyStore singleton
   const clearKeyCache = useCallback(() => {
-    keyPairRef.current = null;
+    clearKeyPair();
   }, []);
 
-  // Verificar si el usuario ya tiene llaves
+  // Verificar si hay llave en RAM
   const hasKeys = useCallback(async () => {
-    const kp = await loadKeyPair();
-    return !!kp;
-  }, [loadKeyPair]);
+    return !!getKeyPair();
+  }, []);
 
   return {
-    generateKeyPair,
+    generateAndSetupKeypair,
+    unlockWithPin,
     loadKeyPair,
     encrypt,
     decrypt,
@@ -197,21 +193,6 @@ export function useChatCrypto() {
     clearKeyCache,
     ready: !!sodiumRef.current
   };
-}
-
-// ── IndexedDB helper ──
-function openKeyDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('ShekaelKeys', 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains('keys')) {
-        db.createObjectStore('keys', { keyPath: 'id' });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
 }
 
 export default useChatCrypto;

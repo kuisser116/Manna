@@ -49,7 +49,6 @@ export default function Chat() {
   const msgListRef = useRef(null);
   const otherUserCache = useRef({});
   const sharedSecretCache = useRef({}); // { [convId]: Uint8Array } ECDH shared secret
-  const ratchetReadyRef = useRef(false); // si ya se recuperó la sesión del ratchet
 
   // Estado para adjuntos
   const [selectedFile, setSelectedFile] = useState(null);
@@ -166,13 +165,18 @@ export default function Chat() {
   useEffect(() => {
     let cancelled = false;
 
+    // Helper: keyId por usuario
+    const currentUserId = user?.id;
+    function keyId(base) {
+      return currentUserId ? `${base}_${currentUserId}` : base;
+    }
+
     async function init() {
       try {
-        // 1. Esperar a que libsodium esté listo
         await sodiumReady;
         if (cancelled) return;
 
-        // 2. Verificar si ya hay llaves locales
+        // Verificar si ya hay llaves locales para ESTE usuario
         await crypto.loadKeyPair();
         let has = await crypto.hasKeys().catch(() => false);
 
@@ -181,20 +185,20 @@ export default function Chat() {
           return;
         }
 
-        // 3. Generar nuevo par de llaves
+        // Generar nuevo par de llaves
         const kp = _sodium.crypto_box_keypair();
         const keyPair = {
           publicKey: _sodium.to_base64(kp.publicKey),
           privateKey: _sodium.to_base64(kp.privateKey)
         };
 
-        // 4. Guardar en IndexedDB
+        // Guardar en IndexedDB (per-user)
         try {
           const db = await openKeyDB();
           const tx = db.transaction('keys', 'readwrite');
           const store = tx.objectStore('keys');
           await new Promise((resolve, reject) => {
-            const req = store.put({ id: 'main', ...keyPair });
+            const req = store.put({ id: keyId('main'), ...keyPair });
             req.onsuccess = resolve;
             req.onerror = reject;
           });
@@ -203,7 +207,7 @@ export default function Chat() {
           console.warn('No se pudo guardar en IndexedDB:', e);
         }
 
-        // 5. Subir llave pública al servidor (best-effort)
+        // Subir llave pública al servidor (best-effort)
         try {
           await updatePublicKey(keyPair.publicKey);
         } catch {
@@ -219,9 +223,9 @@ export default function Chat() {
 
     init();
     return () => { cancelled = true; };
-  }, []);
+  }, [user?.id]);
 
-  // Helper IndexedDB (mismo que useChatCrypto pero acá no depende de nada)
+  // Helper IndexedDB
   function openKeyDB() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open('ShekaelKeys', 1);
@@ -264,12 +268,18 @@ export default function Chat() {
 
   // Derivar shared secret ECDH (permanente para la conversación)
   const deriveEcdhSecret = useCallback(async (convId, theirPublicKey) => {
-    if (sharedSecretCache.current[convId]) return sharedSecretCache.current[convId];
-    if (!theirPublicKey) return null;
+    if (sharedSecretCache.current[convId]) {
+      return sharedSecretCache.current[convId];
+    }
+    if (!theirPublicKey) {
+      return null;
+    }
 
     await sodiumReady;
     const kp = await crypto.loadKeyPair();
-    if (!kp) return null;
+    if (!kp) {
+      return null;
+    }
 
     const sharedSecret = _sodium.crypto_box_beforenm(
       _sodium.from_base64(theirPublicKey),
@@ -316,8 +326,6 @@ export default function Chat() {
     setReplyTo(null);
     setSelectedFile(null);
     setFilePreview(null);
-    ratchetReadyRef.current = false;
-
     if (!conv?.id) return;
 
     let msgs = [];
@@ -326,7 +334,6 @@ export default function Chat() {
     try {
       const res = await getMessages(conv.id);
       msgs = (res?.data?.messages) || [];
-
       // Cachear llaves públicas
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
@@ -339,8 +346,9 @@ export default function Chat() {
       if (x3dhMsg) {
         try {
           await sodiumReady;
+          const preKeyDbName = user?.id ? `ShekaelPreKeys_${user.id}` : 'ShekaelPreKeys';
           const keysDb = await new Promise((resolve, reject) => {
-            const req = indexedDB.open('ShekaelPreKeys', 1);
+            const req = indexedDB.open(preKeyDbName, 1);
             req.onupgradeneeded = () => {
               if (!req.result.objectStoreNames.contains('prekeys'))
                 req.result.createObjectStore('prekeys', { keyPath: 'id' });
@@ -382,36 +390,41 @@ export default function Chat() {
         setMessages(msgs); scrollToBottom(); return;
       }
 
-      const keys = await ratchet.recoverSession(conv.id, sharedSecret, msgs);
-
       const decrypted = [];
       for (const msg of msgs) {
-        const msgKey = msg.msg_index ? keys.get(msg.msg_index) : null;
-        if (msgKey) {
-          try {
-            const plaintext = _sodium.to_string(
-              _sodium.crypto_secretbox_open_easy(
-                _sodium.from_base64(msg.encrypted_content),
-                _sodium.from_base64(msg.nonce),
-                msgKey
-              )
-            );
-            decrypted.push({ ...msg, decrypted: plaintext });
-            continue;
-          } catch {
-            decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
-            continue;
-          }
+        // Mensaje sin cifrar (antes de que el otro tuviera llaves)
+        if (msg.nonce === 'plaintext') {
+          decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
+          continue;
         }
+        // Intentar ECDH directo primero (msgIndex = -1 = nuevo sistema)
         try {
           const plaintext = await crypto.decrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
           decrypted.push({ ...msg, decrypted: plaintext });
+          continue;
         } catch {
+          // Si ECDH falla: probar ratchet (mensajes viejos con msg_index > 0)
+          if (msg.msg_index > 0) {
+            try {
+              const keys = await ratchet.recoverSession(conv.id, sharedSecret, msgs);
+              const msgKey = keys.get(msg.msg_index);
+              if (msgKey) {
+                const plaintext = _sodium.to_string(
+                  _sodium.crypto_secretbox_open_easy(
+                    _sodium.from_base64(msg.encrypted_content),
+                    _sodium.from_base64(msg.nonce),
+                    msgKey
+                  )
+                );
+                decrypted.push({ ...msg, decrypted: plaintext });
+                continue;
+              }
+            } catch {}
+          }
           decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
         }
       }
 
-      ratchetReadyRef.current = true;
       setMessages(decrypted);
       scrollToBottom();
       loadPinnedMessage(conv.id);
@@ -430,30 +443,35 @@ export default function Chat() {
     const decrypted = [];
 
     for (const msg of msgs) {
+      // Mensaje sin cifrar (antes de que el otro tuviera llaves)
+      if (msg.nonce === 'plaintext') {
+        decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
+        continue;
+      }
+      // Intentar ECDH directo primero
       try {
-        // Si tiene msgIndex, usar ratchet
-        if (msg.msg_index && sharedSecretCache.current[convId]) {
-          const sharedSecret = sharedSecretCache.current[convId];
-          const msgKey = await ratchet.deriveKeyForIndex(convId, sharedSecret, msg.msg_index);
-          const plaintext = _sodium.to_string(
-            _sodium.crypto_secretbox_open_easy(
-              _sodium.from_base64(msg.encrypted_content),
-              _sodium.from_base64(msg.nonce),
-              msgKey
-            )
-          );
-          decrypted.push({ ...msg, decrypted: plaintext });
-        } else {
-          // Fallback legacy
-          const plaintext = await crypto.decrypt(
-            msg.encrypted_content,
-            msg.nonce,
-            otherUser.public_key
-          );
-          decrypted.push({ ...msg, decrypted: plaintext });
-        }
+        const plaintext = await crypto.decrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
+        decrypted.push({ ...msg, decrypted: plaintext });
       } catch {
-        decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+        // Fallback: ratchet (mensajes viejos)
+        try {
+          if (msg.msg_index && sharedSecretCache.current[convId]) {
+            const sharedSecret = sharedSecretCache.current[convId];
+            const msgKey = await ratchet.deriveKeyForIndex(convId, sharedSecret, msg.msg_index);
+            const plaintext = _sodium.to_string(
+              _sodium.crypto_secretbox_open_easy(
+                _sodium.from_base64(msg.encrypted_content),
+                _sodium.from_base64(msg.nonce),
+                msgKey
+              )
+            );
+            decrypted.push({ ...msg, decrypted: plaintext });
+          } else {
+            throw new Error('no secret');
+          }
+        } catch {
+          decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+        }
       }
     }
     return decrypted;
@@ -542,34 +560,48 @@ export default function Chat() {
     }
 
     if (!sharedSecret) {
-      alert('El usuario aun no ha configurado el cifrado. Pidele que entre a la seccion de chats para activarlo.');
-      return;
-    }
-
-    // Asegurar que la sesión del ratchet existe (sin resetear si ya había estado)
-    if (!ratchetReadyRef.current) {
-      const existing = await ratchet.loadState(activeConv.id);
-      if (!existing) {
-        await ratchet.initSession(activeConv.id, sharedSecret);
+      // El otro usuario no tiene llaves aún — enviar sin cifrar
+      // El mensaje se muestra normal para el remitente, y como "[Sin cifrar]"
+      // para el receptor hasta que genere llaves.
+      // No usamos el ratchet para no corromper la cadena.
+      setSending(true);
+      try {
+        const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
+        const res = await sendMessage(
+          activeConv.id,
+          inputText, // plaintext como encryptedContent
+          'plaintext', // nonce especial para identificar
+          -1, // msgIndex -1 = sin cifrar
+          null, // ephemeralPubB64
+          null, // preKeyUsedId
+          messageType,
+          uploadedUrl,
+          uploadedThumb,
+          fileMeta.fileName,
+          fileMeta.fileSize,
+          fileMeta.mimeType
+        );
+        if (res.data?.message) {
+          setMessages(prev => [...prev, { ...res.data.message, decrypted: inputText }]);
+        }
+        setInputText('');
+        handleRemoveFile();
+        cancelReply();
+        scrollToBottom();
+      } catch (err) {
+        console.error('Error sending (no keys):', err);
       }
-      ratchetReadyRef.current = true;
+      setSending(false);
+      return;
     }
 
     setSending(true);
     try {
-      const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
-
-      await sodiumReady;
-      const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
-      const ciphertext = _sodium.crypto_secretbox_easy(
-        _sodium.from_string(inputText),
-        nonce,
-        msgKey
-      );
+      // Usar ECDH directo para cada mensaje (NO ratchet — elimina problemas de sincronización)
+      const { encryptedContent, nonce } = await crypto.encrypt(inputText, otherUser.public_key);
 
       const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
 
-      // Reply preview for the reply_to field
       let replyPreview = null;
       if (replyTo) {
         replyPreview = (replyTo.decrypted || '').substring(0, 80);
@@ -577,9 +609,9 @@ export default function Chat() {
 
       const res = await sendMessage(
         activeConv.id,
-        _sodium.to_base64(ciphertext),
-        _sodium.to_base64(nonce),
-        msgIndex,
+        encryptedContent,
+        nonce,
+        -1, // msgIndex -1 = ECDH directo (no ratchet)
         ephemeralPubB64,
         preKeyUsedId,
         messageType,
@@ -1373,27 +1405,12 @@ export default function Chat() {
                 <AudioRecorder
                   onSend={async (audio) => {
                     try {
-                      if (!ratchetReadyRef.current) {
-                        const otherUser = otherUserCache.current[activeConv.id];
-                        if (otherUser?.public_key) {
-                          const ss = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
-                          if (ss) {
-                            const existing = await ratchet.loadState(activeConv.id);
-                            if (!existing) await ratchet.initSession(activeConv.id, ss);
-                            ratchetReadyRef.current = true;
-                          }
-                        }
-                      }
                       setSending(true);
-                      await sodiumReady;
-                      const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
-                      const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
-                      const ciphertext = _sodium.crypto_secretbox_easy(
-                        _sodium.from_string(''), nonce, msgKey
-                      );
+                      const otherUser = otherUserCache.current[activeConv.id];
+                      const { encryptedContent, nonce } = await crypto.encrypt('', otherUser?.public_key);
                       const res = await sendMessage(
-                        activeConv.id, _sodium.to_base64(ciphertext), _sodium.to_base64(nonce),
-                        msgIndex, null, null, 'audio', audio.url, null,
+                        activeConv.id, encryptedContent, nonce,
+                        -1, null, null, 'audio', audio.url, null,
                         audio.fileName, audio.fileSize, audio.mimeType, audio.duration
                       );
                       if (res.data?.message) {
@@ -1642,27 +1659,11 @@ export default function Chat() {
           onSelect={async (imageUrl) => {
             setShowStickerPicker(false);
             try {
-              if (!ratchetReadyRef.current) {
-                const otherUser = otherUserCache.current[activeConv.id];
-                if (otherUser?.public_key) {
-                  const ss = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
-                  if (ss) {
-                    const existing = await ratchet.loadState(activeConv.id);
-                    if (!existing) await ratchet.initSession(activeConv.id, ss);
-                    ratchetReadyRef.current = true;
-                  }
-                }
-              }
               setSending(true);
-              await sodiumReady;
-              const { msgKey, msgIndex } = await ratchet.nextKey(activeConv.id);
-              const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
-              const ciphertext = _sodium.crypto_secretbox_easy(
-                _sodium.from_string(''), nonce, msgKey
-              );
+              const { encryptedContent, nonce } = await crypto.encrypt('', otherUser?.public_key);
               const res = await sendMessage(
-                activeConv.id, _sodium.to_base64(ciphertext), _sodium.to_base64(nonce),
-                msgIndex, null, null, 'image', imageUrl, imageUrl,
+                activeConv.id, encryptedContent, nonce,
+                -1, null, null, 'image', imageUrl, imageUrl,
                 null, null, 'image/png'
               );
               if (res.data?.message) {

@@ -4,8 +4,8 @@ import useStore from '../store';
 /**
  * useSessionLock — Bloqueo automático por inactividad.
  * 
- * La app se bloquea después de inactivityTimeoutMs sin interacción.
- * Al desbloquear, se reinicia el timer.
+ * Al bloquearse: dispara evento 'Shekael:lock' que limpia la llave de RAM.
+ * Al desbloquear: LockScreen vuelve a cargar la llave desde Supabase.
  */
 export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
   const token = useStore(s => s.token);
@@ -18,19 +18,15 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
     if (!mountedRef.current) return;
 
     timerRef.current = setTimeout(() => {
-      if (mountedRef.current) {
-        setLocked(true);
-      }
+      if (mountedRef.current) setLocked(true);
     }, inactivityTimeoutMs);
   }, [inactivityTimeoutMs]);
 
   const unlock = useCallback(() => {
     setLocked(false);
-    // Una vez desbloqueado, iniciar timer de inactividad
     resetTimer();
   }, [resetTimer]);
 
-  // Activar solo cuando hay token
   useEffect(() => {
     mountedRef.current = true;
     if (!token) {
@@ -38,8 +34,6 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
       return;
     }
 
-    // SIEMPRE bloquear al iniciar cuando hay token
-    // Si no hay PIN configurado, LockScreen entra en modo 'setup'
     setLocked(true);
 
     const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
@@ -55,32 +49,10 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
     };
   }, [token, resetTimer]);
 
-  // Bloquear manualmente y limpiar llave descifrada
-  const lock = useCallback(async () => {
+  const lock = useCallback(() => {
     setLocked(true);
-
-    // Notificar a todos los hooks que la app se bloqueó
     window.dispatchEvent(new CustomEvent('Shekael:lock'));
-
-    // Limpiar la llave descifrada temporal de IndexedDB
-    try {
-      const db = await new Promise((resolve, reject) => {
-        const req = indexedDB.open('ShekaelKeys', 1);
-        req.onupgradeneeded = () => {
-          if (!req.result.objectStoreNames.contains('keys'))
-            req.result.createObjectStore('keys', { keyPath: 'id' });
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-      const tx = db.transaction('keys', 'readwrite');
-      tx.objectStore('keys').delete('main_unlocked');
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = resolve;
-        tx.onerror = reject;
-      });
-      db.close();
-    } catch {}
+    // La llave en RAM se limpia automáticamente por el listener en useChatCrypto
   }, []);
 
   return { locked, unlock, lock, resetTimer };

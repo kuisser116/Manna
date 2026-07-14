@@ -69,8 +69,12 @@ const useStore = create((set, get) => ({
 
   logout: () => {
     localStorage.removeItem('Shekael_token');
-    localStorage.removeItem('shekael_terms_v1.0_accepted');
+    // No borrar flags de términos — la aceptación es permanente, no por sesión
+    // Si cambia la versión, se maneja con la comparación de version en DB
+    localStorage.removeItem('shekael_pin_hash');
     set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [] });
+    // Notificar a toda la app que se cerró sesión
+    window.dispatchEvent(new CustomEvent('Shekael:logout'));
   },
 
   // â”€â”€ Wallet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

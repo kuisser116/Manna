@@ -1,22 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
+import useStore from '../../store';
+import { getPinStatus, verifyPin as apiVerifyPin, clearPin } from '../../api/auth.api';
+import useChatCrypto from '../../hooks/useChatCrypto';
 import styles from './LockScreen.module.css';
 import logoImg from '../../assets/personaje_1.12.png';
 
 /**
- * LockScreen — PIN de seguridad para la app.
- * 
- * Cifra la llave privada con el PIN usando PBKDF2 + AES-GCM.
- * Sin PIN correcto, la llave privada no se puede leer.
- * 
- * Props:
- * - onUnlock: () => void (se llama cuando el PIN es correcto)
- * - mode: 'lock' | 'setup' | 'change'
+ * LockScreen — PIN de seguridad para Shekael.
+ *
+ * ARQUITECTURA SERVER-FIRST:
+ * - Nada en IndexedDB. Llave privada cifrada viaja desde/hacia Supabase.
+ * - Setup: crypto.generateAndSetupKeypair(pin, pinHash) →
+ *     genera keypair, cifra private_key con PIN, sube todo.
+ * - Unlock: apiVerifyPin(pinHash) → server devuelve encryptedPrivateKey →
+ *     crypto.unlockWithPin(encryptedPrivateKey, pin) → descifra en RAM.
  */
-export default function LockScreen({ onUnlock, mode = 'lock' }) {
+export default function LockScreen({ onUnlock }) {
+  const crypto = useChatCrypto();
+  const user = useStore(s => s.user);
+  const userId = user?.id;
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
-  const [step, setStep] = useState(mode === 'setup' ? 'create' : 'enter');
+  const [step, setStep] = useState('loading'); // loading | enter | create | confirm
   const [processing, setProcessing] = useState(false);
   const inputRef = useRef(null);
 
@@ -24,10 +30,27 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
     inputRef.current?.focus();
   }, [step]);
 
-  // Keyboard support: regular digits + numpad + backspace
+  // Al montar, verificar si el usuario ya tiene PIN en BD
+  useEffect(() => {
+    let cancelled = false;
+    async function check() {
+      try {
+        const res = await getPinStatus();
+        if (!cancelled) {
+          setStep(res.data.hasPin ? 'enter' : 'create');
+        }
+      } catch {
+        if (!cancelled) setStep('enter');
+      }
+    }
+    check();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Keyboard support
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (processing) return;
+      if (processing || step === 'loading') return;
       const digit = e.code.startsWith('Digit') ? e.code.slice(-1)
         : e.code.startsWith('Numpad') ? e.code.slice(-1)
         : null;
@@ -40,7 +63,7 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
       } else if (e.key === 'Enter' || e.key === 'NumpadEnter') {
         e.preventDefault();
         if (step === 'enter' && pin.length > 0) {
-          verifyPin(pin);
+          handleUnlock(pin);
         }
       }
     };
@@ -48,152 +71,28 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [processing, pin, confirmPin, step]);
 
-  // ── Crypto helpers ──
-
-  // Derivar AES-256 key del PIN usando PBKDF2
-  async function deriveAesKey(pin, salt) {
-    const enc = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw', enc.encode(pin),
-      'PBKDF2', false, ['deriveKey']
-    );
-    return crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-      keyMaterial,
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['encrypt', 'decrypt']
-    );
-  }
-
-  // Verificar PIN (hash simple local)
-  function checkPinHash(enteredPin) {
-    const stored = localStorage.getItem('shekael_pin_hash');
-    if (!stored) return false;
-    let hash = 0;
-    for (let i = 0; i < enteredPin.length; i++) {
-      hash = ((hash << 5) - hash) + enteredPin.charCodeAt(i);
-      hash |= 0;
-    }
-    return 'pin_' + hash === stored;
-  }
-
-  function savePinHash(p) {
+  // Hash simple del PIN (solo para verificación contra server)
+  // Se mantiene compatible con PINs existentes en la BD
+  function computePinHash(p) {
     let hash = 0;
     for (let i = 0; i < p.length; i++) {
       hash = ((hash << 5) - hash) + p.charCodeAt(i);
       hash |= 0;
     }
-    localStorage.setItem('shekael_pin_hash', 'pin_' + hash);
-  }
-
-  // Abrir IndexedDB
-  function openKeysDB() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open('ShekaelKeys', 1);
-      req.onupgradeneeded = () => {
-        if (!req.result.objectStoreNames.contains('keys'))
-          req.result.createObjectStore('keys', { keyPath: 'id' });
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  // Cifrar la llave privada con el PIN y guardarla en IDB (borrando la plana)
-  async function encryptKeyWithPin(thePin) {
-    // ⚠️ Transacción 1: LEER la llave plana (se cierra sola al terminar)
-    const dbRead = await openKeysDB();
-    const stored = await new Promise((resolve) => {
-      const tx = dbRead.transaction('keys', 'readonly');
-      const req = tx.objectStore('keys').get('main');
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve(null);
-      tx.oncomplete = () => dbRead.close();
-    });
-    if (!stored || !stored.privateKey) throw new Error('No hay llave privada para cifrar');
-
-    // Crypto (sin IndexedDB de por medio)
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const aesKey = await deriveAesKey(thePin, salt);
-    const enc = new TextEncoder();
-    const encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv },
-      aesKey,
-      enc.encode(stored.privateKey)
-    );
-
-    // ⚠️ Transacción 2: ESCRIBIR (nueva transacción, misma DB)
-    const dbWrite = await openKeysDB();
-    await new Promise((resolve, reject) => {
-      const tx = dbWrite.transaction('keys', 'readwrite');
-      const store = tx.objectStore('keys');
-      store.put({
-        id: 'main_encrypted',
-        encryptedData: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
-        salt: btoa(String.fromCharCode(...salt)),
-        iv: btoa(String.fromCharCode(...iv))
-      });
-      store.delete('main');
-      tx.oncomplete = () => { dbWrite.close(); resolve(); };
-      tx.onerror = reject;
-    });
-  }
-
-  // Descifrar la llave con el PIN y ponerla a disposición como 'main' (temporal)
-  async function decryptKeyWithPin(thePin) {
-    // ⚠️ Transacción 1: LEER (se cierra sola)
-    const dbRead = await openKeysDB();
-    const encryptedEntry = await new Promise((resolve) => {
-      const tx = dbRead.transaction('keys', 'readonly');
-      const req = tx.objectStore('keys').get('main_encrypted');
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve(null);
-      tx.oncomplete = () => dbRead.close();
-    });
-    if (!encryptedEntry) throw new Error('No hay llave cifrada');
-
-    // Reconstruir bytes
-    const salt = Uint8Array.from(atob(encryptedEntry.salt), c => c.charCodeAt(0));
-    const iv = Uint8Array.from(atob(encryptedEntry.iv), c => c.charCodeAt(0));
-    const encryptedData = Uint8Array.from(atob(encryptedEntry.encryptedData), c => c.charCodeAt(0));
-
-    // Crypto (sin IndexedDB)
-    const aesKey = await deriveAesKey(thePin, salt);
-    const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      aesKey,
-      encryptedData
-    );
-    const decryptedKey = new TextDecoder().decode(decrypted);
-
-    // ⚠️ Transacción 2: ESCRIBIR
-    const dbWrite = await openKeysDB();
-    await new Promise((resolve, reject) => {
-      const tx = dbWrite.transaction('keys', 'readwrite');
-      const store = tx.objectStore('keys');
-      store.put({
-        id: 'main_unlocked',
-        publicKey: encryptedEntry.publicKey,
-        privateKey: decryptedKey
-      });
-      tx.oncomplete = () => { dbWrite.close(); resolve(); };
-      tx.onerror = reject;
-    });
+    return 'pin_' + hash;
   }
 
   // ── Handlers ──
 
   const handleDigit = (d) => {
-    if (processing) return;
+    if (processing || step === 'loading') return;
     setError('');
     if (step === 'enter') {
       const newPin = pin + d;
       if (newPin.length <= 6) {
         setPin(newPin);
         if (newPin.length === 6) {
-          setTimeout(() => verifyPin(newPin), 100);
+          setTimeout(() => handleUnlock(newPin), 100);
         }
       }
     } else if (step === 'create') {
@@ -209,7 +108,7 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
       if (newPin.length <= 6) {
         setConfirmPin(newPin);
         if (newPin.length === 6) {
-          setTimeout(() => checkConfirm(newPin), 100);
+          setTimeout(() => handleSetup(newPin), 100);
         }
       }
     }
@@ -221,29 +120,44 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
     else if (step === 'confirm') setConfirmPin(p => p.slice(0, -1));
   };
 
-  const verifyPin = async (enteredPin) => {
-    if (!checkPinHash(enteredPin)) {
-      setError('PIN incorrecto');
-      setPin('');
-      inputRef.current?.focus();
-      return;
-    }
+  /** UNLOCK: Verificar PIN → server devuelve encryptedPrivateKey → descifrar en RAM */
+  const handleUnlock = async (enteredPin) => {
+    const pinHash = await computePinHash(enteredPin);
 
     setProcessing(true);
     try {
-      await decryptKeyWithPin(enteredPin);
+      // Verificar PIN contra server → recibe encryptedPrivateKey
+      const res = await apiVerifyPin(pinHash);
+      const encryptedPrivateKey = res.data?.encryptedPrivateKey;
+
+      if (!encryptedPrivateKey) {
+        // PIN existe en BD pero encrypted_private_key no (migración).
+        // Limpiar el PIN viejo y generar nuevas llaves.
+        try { await clearPin(); } catch {}
+        setPin('');
+        setConfirmPin('');
+        setStep('create');
+        setProcessing(false);
+        return;
+      }
+
+      // Descifrar private_key con PIN y guardar en RAM
+      await crypto.unlockWithPin(encryptedPrivateKey, enteredPin);
+
       setPin('');
       onUnlock();
     } catch (e) {
-      setError('Error al descifrar la llave: ' + e.message);
+      const msg = e.response?.data?.message || e.message || 'PIN incorrecto';
+      setError(msg);
       setPin('');
       setProcessing(false);
       inputRef.current?.focus();
     }
   };
 
-  const checkConfirm = async (confirm) => {
-    if (pin !== confirm) {
+  /** SETUP: Crear PIN → generar keypair → cifrar private_key → subir todo */
+  const handleSetup = async (confirmedPin) => {
+    if (pin !== confirmedPin) {
       setError('Los PIN no coinciden');
       setConfirmPin('');
       setPin('');
@@ -251,16 +165,18 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
       return;
     }
 
+    const pinHash = await computePinHash(pin);
+
     setProcessing(true);
     try {
-      // Cifrar la llave privada con el PIN
-      await encryptKeyWithPin(pin);
-      savePinHash(pin);
+      // Generar keypair, cifrar private_key con PIN, subir todo al server
+      await crypto.generateAndSetupKeypair(pin, pinHash);
+
       setPin('');
       setConfirmPin('');
       onUnlock();
     } catch (e) {
-      setError('Error al cifrar la llave: ' + e.message);
+      setError('Error al configurar PIN: ' + (e.message || 'desconocido'));
       setPin('');
       setConfirmPin('');
       setStep('create');
@@ -268,23 +184,22 @@ export default function LockScreen({ onUnlock, mode = 'lock' }) {
     }
   };
 
-  const hasPinHash = !!localStorage.getItem('shekael_pin_hash');
-
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <img src={logoImg} alt="Shekael" className={styles.logo} />
 
+        {step === 'loading' && (
+          <>
+            <h2 className={styles.title}>Cargando...</h2>
+            <p className={styles.subtitle}>Verificando configuración de seguridad</p>
+          </>
+        )}
+
         {step === 'enter' && (
           <>
-            <h2 className={styles.title}>
-              {hasPinHash ? 'Desbloquear Shekael' : 'Crear PIN de seguridad'}
-            </h2>
-            <p className={styles.subtitle}>
-              {hasPinHash
-                ? 'Ingresa tu PIN de 6 dígitos'
-                : 'Elige un PIN de 6 dígitos para proteger tu cuenta'}
-            </p>
+            <h2 className={styles.title}>Desbloquear Shekael</h2>
+            <p className={styles.subtitle}>Ingresa tu PIN de 6 dígitos</p>
           </>
         )}
 

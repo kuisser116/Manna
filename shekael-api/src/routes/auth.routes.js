@@ -35,9 +35,9 @@ async function verifyRecaptcha(token) {
 }
 
 // ── Configuración de Términos y Condiciones ──
-const TERMS_VERSION = 'v1.1';
+const TERMS_VERSION = 'v1.2';
 const TERMS_CONTENT_HASH = crypto.createHash('sha256').update(`
-Términos y Condiciones de Shekael v1.1
+Términos y Condiciones de Shekael v1.2
 Última actualización: 12 de Julio de 2026
 
 1. NATURALEZA DE LA PLATAFORMA
@@ -185,6 +185,7 @@ router.post('/google', strictLimiter, async (req, res) => {
                     stellarPublicKey: finalUser.stellar_public_key,
                     is_admin: !!finalUser.is_admin,
                     terms_accepted_at: null,
+                    terms_version: null,
                 },
             });
         }
@@ -207,6 +208,7 @@ router.post('/google', strictLimiter, async (req, res) => {
                 stellarPublicKey: user.stellar_public_key,
                 is_admin: !!user.is_admin,
                 terms_accepted_at: user.terms_accepted_at || null,
+                terms_version: user.terms_version || null,
             },
         });
     } catch (err) {
@@ -274,6 +276,142 @@ router.get('/terms/current', (req, res) => {
     });
 });
 
+// POST /auth/migrate-terms — Actualizar términos de usuarios existentes a v1.2
+router.post('/migrate-terms', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const now = new Date().toISOString();
+        
+        // Actualizar el usuario actual si tiene versión anterior
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('terms_version, id')
+            .eq('id', req.user.id)
+            .single();
+            
+        if (fetchError) throw fetchError;
+        
+        if (!user || user.terms_version === TERMS_VERSION) {
+            return res.json({ migrated: false, message: 'Ya estás en la última versión' });
+        }
+        
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                terms_accepted_at: now,
+                terms_version: TERMS_VERSION
+            })
+            .eq('id', req.user.id);
+            
+        if (updateError) throw updateError;
+        
+        console.log(`[MigrateTerms] Usuario ${req.user.id} actualizado a ${TERMS_VERSION}`);
+        res.json({ migrated: true, terms_version: TERMS_VERSION, terms_accepted_at: now });
+    } catch (err) {
+        console.error('[MigrateTerms] Error:', err.message);
+        res.status(500).json({ message: 'Error al migrar términos' });
+    }
+});
+
+// ── PIN endpoints (per-user) ──
+
+// GET /auth/pin-status — ¿El usuario tiene PIN configurado?
+router.get('/pin-status', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('pin_hash')
+            .eq('id', req.user.id)
+            .maybeSingle();
+
+        if (error) throw error;
+        res.json({ hasPin: !!user?.pin_hash });
+    } catch (err) {
+        console.error('[PIN] Error checking status:', err.message);
+        res.status(500).json({ message: 'Error al verificar estado del PIN' });
+    }
+});
+
+// POST /auth/set-pin — Guardar/actualizar PIN + encrypted_private_key
+router.post('/set-pin', authMiddleware, async (req, res) => {
+    try {
+        const { pinHash, encryptedPrivateKey } = req.body;
+        if (!pinHash || typeof pinHash !== 'string' || pinHash.length < 5) {
+            return res.status(400).json({ message: 'PIN hash inválido' });
+        }
+
+        const updateData = { pin_hash: pinHash };
+        if (encryptedPrivateKey && typeof encryptedPrivateKey === 'string') {
+            updateData.encrypted_private_key = encryptedPrivateKey;
+        }
+
+        const supabase = getDB();
+        const { error } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', req.user.id);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[PIN] Error setting PIN:', err.message);
+        res.status(500).json({ message: 'Error al guardar PIN' });
+    }
+});
+
+// POST /auth/verify-pin — Verificar PIN
+router.post('/verify-pin', authMiddleware, async (req, res) => {
+    try {
+        const { pinHash } = req.body;
+        if (!pinHash || typeof pinHash !== 'string') {
+            return res.status(400).json({ message: 'PIN hash inválido' });
+        }
+
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('pin_hash, encrypted_private_key')
+            .eq('id', req.user.id)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (!user?.pin_hash) {
+            return res.status(400).json({ message: 'No has configurado un PIN' });
+        }
+
+        if (user.pin_hash !== pinHash) {
+            return res.status(401).json({ message: 'PIN incorrecto' });
+        }
+
+        res.json({
+            success: true,
+            encryptedPrivateKey: user.encrypted_private_key || null
+        });
+    } catch (err) {
+        console.error('[PIN] Error verifying PIN:', err.message);
+        res.status(500).json({ message: 'Error al verificar PIN' });
+    }
+});
+
+// POST /auth/clear-pin — Limpiar PIN (para regeneración de llaves)
+router.post('/clear-pin', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { error } = await supabase
+            .from('users')
+            .update({ pin_hash: null })
+            .eq('id', req.user.id);
+        if (error) throw error;
+        console.log(`[PIN] Cleared PIN for user ${req.user.id?.substring(0,8)}`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[PIN] Error clearing PIN:', err.message);
+        res.status(500).json({ message: 'Error al limpiar PIN' });
+    }
+});
+
 // GET /auth/me — Restaurar sesión
 router.get('/me', authMiddleware, async (req, res) => {
     try {
@@ -288,6 +426,21 @@ router.get('/me', authMiddleware, async (req, res) => {
 
         // Reparación Proactiva en cada reconexión
         repairWallet(user.id).catch(err => console.error(`[AuthRepair/Me] Error:`, err.message));
+
+        // Auto-migrate terms_version si está desactualizado o incompleto
+        if (!user.terms_version || user.terms_version !== TERMS_VERSION) {
+            console.log(`[Auth/Me] Auto-migrating terms ${user.terms_version || 'null'} → ${TERMS_VERSION} for ${user.email}`);
+            const { error: migrateErr } = await supabase
+                .from('users')
+                .update({ terms_version: TERMS_VERSION })
+                .eq('id', user.id);
+            if (!migrateErr) {
+                user.terms_version = TERMS_VERSION; // actualizar objeto para respuesta
+                console.log(`[Auth/Me] Migrated ${user.email} to ${TERMS_VERSION}`);
+            } else {
+                console.error(`[Auth/Me] Migration error:`, migrateErr.message);
+            }
+        }
 
         res.json({
             user: {

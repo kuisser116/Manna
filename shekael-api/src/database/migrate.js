@@ -11,6 +11,8 @@ async function runMigration() {
   const projectRef = supabaseUrl.match(/https:\/\/(.+)\.supabase\.co/)[1];
 
   const sql = `
+ALTER TABLE users ADD COLUMN IF NOT EXISTS encrypted_private_key TEXT;
+
 CREATE TABLE IF NOT EXISTS post_views (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

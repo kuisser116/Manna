@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import useStore from './store';
-import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
-import { updatePublicKey, uploadPreKeys } from './api/chats.api';
+import { ready as sodiumReady } from 'libsodium-wrappers';
 import logoImg from './assets/personaje_1.12.png';
 import styles from './App.module.css';
 
@@ -114,7 +113,6 @@ function AppLayout({ children }) {
       {sessionLock.locked && (
         <LockScreen
           onUnlock={sessionLock.unlock}
-          mode={localStorage.getItem('shekael_pin_hash') ? 'lock' : 'setup'}
         />
       )}
       <TopBar onToggleSidebar={handleToggleSidebar} sidebarWidth={isMobile ? 0 : navWidth} isMobile={isMobile} />
@@ -165,145 +163,43 @@ function App() {
     }
   }, [initAuth]);
 
-  // Inicializar E2EE keys si el usuario está autenticado (para toda la app)
+  // Inicializar E2EE — solo asegurar libsodium. El keypair se genera bajo
+  // demanda en LockScreen (setup PIN) y se almacena cifrado en Supabase.
   useEffect(() => {
-    const token = useStore.getState().token;
+    const state = useStore.getState();
+    const token = state.token;
     if (!token) return;
 
     let cancelled = false;
-
     async function initE2EE() {
       try {
         await sodiumReady;
         if (cancelled) return;
+        console.log('[E2EE] libsodium ready, no local keys.');
 
-        // Verificar si ya hay llaves
-        const db = await new Promise((resolve, reject) => {
-          const req = indexedDB.open('ShekaelKeys', 1);
-          req.onupgradeneeded = () => {
-            if (!req.result.objectStoreNames.contains('keys'))
-              req.result.createObjectStore('keys', { keyPath: 'id' });
-          };
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-
-        const tx = db.transaction('keys', 'readonly');
-        const store = tx.objectStore('keys');
-        // Buscar tanto 'main' (plana) como 'main_encrypted' (cifrada con PIN)
-        const [storedPlain, storedEnc] = await Promise.all([
-          new Promise((resolve) => {
-            const req = store.get('main');
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => resolve(null);
-          }),
-          new Promise((resolve) => {
-            const req = store.get('main_encrypted');
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => resolve(null);
-          })
-        ]);
-        db.close();
-
-        if (storedPlain || storedEnc) return; // Ya tiene llaves (planas o cifradas con PIN)
-
-        // Generar nuevo par
-        const kp = _sodium.crypto_box_keypair();
-        const keyPair = {
-          publicKey: _sodium.to_base64(kp.publicKey),
-          privateKey: _sodium.to_base64(kp.privateKey)
-        };
-
-        // Guardar en IndexedDB
-        const db2 = await new Promise((resolve, reject) => {
-          const req = indexedDB.open('ShekaelKeys', 1);
-          req.onupgradeneeded = () => {
-            if (!req.result.objectStoreNames.contains('keys'))
-              req.result.createObjectStore('keys', { keyPath: 'id' });
-          };
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-        const tx2 = db2.transaction('keys', 'readwrite');
-        const store2 = tx2.objectStore('keys');
-        await new Promise((resolve, reject) => {
-          const req = store2.put({ id: 'main', ...keyPair });
-          req.onsuccess = resolve;
-          req.onerror = reject;
-        });
-        db2.close();
-
-        // Subir llave pública (best-effort)
+        // Limpiar IndexedDB legacy si existe
         try {
-          await updatePublicKey(keyPair.publicKey);
-        } catch { /* silencioso */ }
-
-        // Generar y subir pre-keys (para mensajes offline)
+          indexedDB.deleteDatabase('ShekaelKeys');
+        } catch {}
         try {
-          const identityPriv = _sodium.from_base64(keyPair.privateKey);
-
-          // Signed pre-key: un par firmado con la identity key
-          const spkKp = _sodium.crypto_box_keypair();
-          const spkPub = _sodium.to_base64(spkKp.publicKey);
-          const spkPriv = _sodium.to_base64(spkKp.privateKey);
-          const spkSig = _sodium.to_base64(
-            _sodium.crypto_sign_detached(spkKp.publicKey, identityPriv)
-          );
-
-          // One-time pre-keys: 50 pares
-          const preKeys = [];
-          const preKeyPrivates = [];
-          for (let i = 1; i <= 50; i++) {
-            const kp2 = _sodium.crypto_box_keypair();
-            const pubB64 = _sodium.to_base64(kp2.publicKey);
-            preKeys.push({
-              keyId: i,
-              publicKey: pubB64,
-              signature: _sodium.to_base64(
-                _sodium.crypto_sign_detached(kp2.publicKey, identityPriv)
-              )
-            });
-            preKeyPrivates.push({ keyId: i, privateKey: _sodium.to_base64(kp2.privateKey) });
-          }
-
-          // Guardar pre-keys privadas en IndexedDB
-          const pdb = await new Promise((resolve, reject) => {
-            const req = indexedDB.open('ShekaelPreKeys', 1);
-            req.onupgradeneeded = () => {
-              if (!req.result.objectStoreNames.contains('prekeys'))
-                req.result.createObjectStore('prekeys', { keyPath: 'id' });
-            };
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-          });
-          const ptx = pdb.transaction('prekeys', 'readwrite');
-          const pstore = ptx.objectStore('prekeys');
-          // Guardar signed pre-key
-          pstore.put({ id: 'signed', publicKey: spkPub, privateKey: spkPriv });
-          // Guardar one-time pre-keys
-          for (const pk of preKeyPrivates) {
-            pstore.put({ id: `otpk_${pk.keyId}`, ...pk });
-          }
-          await new Promise((resolve, reject) => {
-            ptx.oncomplete = resolve;
-            ptx.onerror = reject;
-          });
-          pdb.close();
-
-          // Subir pre-keys públicas al servidor
-          await uploadPreKeys(preKeys, {
-            publicKey: spkPub,
-            signature: spkSig
-          });
-        } catch { /* silencioso */ }
+          indexedDB.deleteDatabase('ShekaelPreKeys');
+        } catch {}
+        try {
+          indexedDB.deleteDatabase('ShekaelRatchet');
+        } catch {}
+        const uid = useStore.getState().user?.id;
+        if (uid) {
+          try { indexedDB.deleteDatabase(`ShekaelPreKeys_${uid}`); } catch {}
+          try { indexedDB.deleteDatabase(`ShekaelRatchet_${uid}`); } catch {}
+        }
       } catch (e) {
-        console.warn('E2EE init fallo:', e);
+        console.warn('[E2EE] init fallo:', e);
       }
     }
 
     initE2EE();
     return () => { cancelled = true; };
-  }, []);
+  }, [authLoading]);
 
   return (
     <BrowserRouter>

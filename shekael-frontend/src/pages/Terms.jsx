@@ -5,8 +5,7 @@ import { ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import styles from '../styles/pages/Terms.module.css';
 import useStore from '../store';
 
-const TERMS_VERSION = 'v1.2';
-const LAST_UPDATED = '12 de Julio de 2026';
+const API_URL = import.meta.env.VITE_API_URL || location.origin;
 
 export default function Terms() {
   const navigate = useNavigate();
@@ -14,39 +13,77 @@ export default function Terms() {
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState('');
   const [accepted, setAccepted] = useState(false);
+  const [termsVersion, setTermsVersion] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState('');
 
   // Si hay token pero user aún no carga, esperar
   const storedToken = localStorage.getItem('Shekael_token');
   const isLoadingUser = !!storedToken && !user;
 
-  // Verificar aceptación: solo confiar en BD, no en localStorage
-  // (localStorage persiste entre cuentas y da falso positivo)
-  const hasAccepted = user ? user.terms_version === TERMS_VERSION : false;
+  // Fetch versión actual desde el backend al montar
+  useEffect(() => {
+    fetch(`${API_URL}/auth/terms/current`)
+      .then(r => r.json())
+      .then(data => {
+        setTermsVersion(data.version);
+        setLastUpdated(data.last_updated ? new Date(data.last_updated).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+        console.log('[Terms] backend version:', data.version);
+      })
+      .catch(err => {
+        console.error('[Terms] error fetching version:', err);
+        setTermsVersion('v1.2'); // fallback a hardcode
+        setLastUpdated('12 de Julio de 2026');
+      });
+  }, []);
+
+  // Verificar aceptación contra la versión del backend
+  const hasAccepted = user && termsVersion ? user.terms_version === termsVersion : false;
+
+  console.log('[Terms] user:', !!user, 'terms_version:', user?.terms_version, 'backendVersion:', termsVersion, 'hasAccepted:', hasAccepted);
+
+  // Redirigir al feed si ya aceptó
+  useEffect(() => {
+    console.log('[Terms] hasAccepted changed:', hasAccepted, 'navigating to feed?', hasAccepted);
+    if (hasAccepted) {
+      navigate('/feed');
+    }
+  }, [hasAccepted, navigate]);
 
   // Bloquear navegación hacia atrás si no ha aceptado
   useEffect(() => {
     if (hasAccepted) return;
     const handler = (e) => {
       e.preventDefault();
-      // Forzar hacia adelante de nuevo
       window.history.pushState(null, '', window.location.href);
     };
-    // Meter un estado extra en el history para que back no salga de la página
     window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', handler);
     return () => window.removeEventListener('popstate', handler);
   }, [hasAccepted]);
 
   const handleAccept = async () => {
+    if (!termsVersion) {
+      console.error('[Terms] No termsVersion available');
+      setError('Error al obtener versión de términos. Intenta de nuevo.');
+      return;
+    }
     setAccepting(true);
     setError('');
+    console.log('[Terms] handleAccept called with version:', termsVersion, 'token:', !!token);
     try {
-      await acceptTerms(TERMS_VERSION);
+      const result = await acceptTerms(termsVersion);
+      console.log('[Terms] acceptTerms success, result:', JSON.stringify(result));
       // Flag localStorage para UX instantánea entre recargas
-      localStorage.setItem('shekael_terms_' + TERMS_VERSION + '_accepted', 'true');
+      const flagKey = 'shekael_terms_' + termsVersion + '_accepted';
+      localStorage.setItem(flagKey, 'true');
+      console.log('[Terms] Flag set:', flagKey, '= true');
       setAccepted(true);
-      setTimeout(() => navigate('/feed'), 500);
+      setTimeout(() => {
+        console.log('[Terms] Navigating to /feed');
+        navigate('/feed');
+      }, 500);
     } catch (err) {
+      console.error('[Terms] acceptTerms FAILED:', err.message);
       setError(err.message || 'Error al aceptar términos');
     } finally {
       setAccepting(false);
@@ -63,12 +100,7 @@ export default function Terms() {
     );
   }
 
-  // Ya teníamos aceptado en BD, redirigir
-  if (hasAccepted) {
-    navigate('/feed');
-    return null;
-  }
-
+  // Si acaba de aceptar, mostrar pantalla de éxito
   if (accepted) {
     return (
       <div className={styles.page}>
@@ -102,7 +134,7 @@ export default function Terms() {
             </Link>
           )}
           <h1 className={styles.title}>Términos y Condiciones de Shekael</h1>
-          <p className={styles.lastUpdated}>Versión {TERMS_VERSION} · Última actualización: {LAST_UPDATED}</p>
+          <p className={styles.lastUpdated}>Versión {termsVersion || 'v1.2'} · Última actualización: {lastUpdated || '12 de Julio de 2026'}</p>
         </motion.div>
 
         <motion.div

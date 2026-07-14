@@ -41,7 +41,17 @@ function LandingInner() {
   const navigate = useNavigate();
   const { loginWithGoogle } = useAuth();
   const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
-  const { themeName, cycleTheme } = useStore();
+  const { themeName, cycleTheme, user } = useStore();
+  const [termsVersion, setTermsVersion] = useState(null);
+
+  // Obtener versión actual de términos del backend
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || location.origin;
+    fetch(apiUrl + '/auth/terms/current')
+      .then(r => r.json())
+      .then(data => setTermsVersion(data.version))
+      .catch(() => setTermsVersion('v1.2')); // fallback
+  }, []);
   const recaptchaLoaded = useRef(false);
 
   const heroRef = useRef(null);
@@ -77,15 +87,51 @@ function LandingInner() {
     }
   }, [themeName]);
 
-  // Redirect logged-in users
+  // Redirect logged-in users — reactivo al user del store
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('landing') === '1') return;
     const token = localStorage.getItem('Shekael_token');
-    if (token && !window.location.pathname.startsWith('/terminos')) {
-      navigate('/terminos');
+    if (!token) {
+      console.log('[Landing] No token, staying');
+      return;
     }
-  }, [navigate]);
+    if (window.location.pathname.startsWith('/terminos')) {
+      console.log('[Landing] Already on /terminos, skipping');
+      return;
+    }
+
+    console.log('[Landing] Checking redirect... token:', !!token, 'user:', !!user, 'termsVersion:', termsVersion);
+    
+    // Esperar a que initAuth cargue el user
+    if (token && !user) {
+      console.log('[Landing] Waiting for initAuth...');
+      return;
+    }
+    
+    if (!termsVersion) {
+      console.log('[Landing] Waiting for termsVersion...');
+      return;
+    }
+    
+    const flagKey = 'shekael_terms_' + termsVersion + '_accepted';
+    const termsAccepted = localStorage.getItem(flagKey);
+    console.log('[Landing] DECISION: flag', flagKey, '=', termsAccepted, '| user.terms_version:', user?.terms_version, '| backend version:', termsVersion);
+    
+    if (termsAccepted === 'true') {
+      console.log('[Landing] → Redirect to /feed (localStorage flag)');
+      navigate('/feed');
+      return;
+    }
+    if (user?.terms_version === termsVersion) {
+      console.log('[Landing] → Setting flag and redirect to /feed (user version matches)');
+      localStorage.setItem(flagKey, 'true');
+      navigate('/feed');
+      return;
+    }
+    console.log('[Landing] → Redirect to /terminos (no match)');
+    navigate('/terminos');
+  }, [navigate, user, termsVersion]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     showLoading('Entrando a Shekael...', 'Verificando seguridad');
@@ -97,9 +143,11 @@ function LandingInner() {
       const data = await loginWithGoogle(credentialResponse.credential, recaptchaToken);
       hideModal();
       showSuccess('Ya estas dentro!', 'Bienvenido. Aqui si hay algo real.', true);
-      if (!data.user?.terms_accepted_at || data.user?.terms_version !== 'v1.1') {
+      if (!termsVersion) return; // esperar versión
+      if (!data.user?.terms_accepted_at || data.user?.terms_version !== termsVersion) {
         navigate('/terminos');
       } else {
+        localStorage.setItem('shekael_terms_' + termsVersion + '_accepted', 'true');
         navigate('/feed');
       }
     } catch (err) {
