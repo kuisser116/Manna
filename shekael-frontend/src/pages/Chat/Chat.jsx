@@ -6,6 +6,7 @@ import useStore from '../../store';
 import * as signalProtocol from '../../crypto/signalProtocol';
 import { getUserProfile } from '../../api/users.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
+import { getKeyPair } from '../../crypto/keyStore';
 import {
   getConversations, getMessages, sendMessage,
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
