@@ -1310,11 +1310,6 @@ export default function Chat() {
                   const isAudio = msg.message_type === 'audio';
                   const isPoll = msg.message_type === 'poll';
                   const msgText = msg.decrypted || (isImage || isFile || isAudio || isPoll ? '' : '[Cifrado]');
-                  
-                  // DEBUG: ver qué valor tiene decrypted para el audio fantasma
-                  if (msg.message_type === 'audio') {
-                    console.log('[AUDIO_DEBUG] msg id:', msg.id, 'decrypted:', JSON.stringify(msg.decrypted), 'msgText:', JSON.stringify(msgText));
-                  }
 
                   // Encontrar replied message para mostrar preview
                   const repliedMsg = msg.reply_to_id
