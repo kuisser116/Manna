@@ -1643,3 +1643,62 @@
   width: 100%;
 }
 
+/* ── Media card (imagen/file + caption juntos) ── */
+
+.mediaCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--border-radius, 16px);
+  box-shadow: var(--shadow-sm);
+}
+
+.ownMessage .mediaCard {
+  background: color-mix(in srgb, var(--color-surface) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 25%, transparent);
+}
+
+.otherMessage .mediaCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.mediaCard .mediaBubble {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.mediaCard .fileBubble {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.mediaCaption {
+  padding: 8px 14px 12px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+.ownMessage .mediaCaption {
+  color: var(--color-text);
+}
+
+.otherMessage .mediaCaption {
+  color: var(--color-text);
+}
+
+/* ── Estado de mensaje (checkmarks) ── */
+
+.statusIcon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 4px;
+  align-items: center;
+}
+
+.statusIcon svg {
+  display: block;
+}
+

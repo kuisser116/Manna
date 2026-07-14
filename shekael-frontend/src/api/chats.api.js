@@ -126,5 +126,7 @@ export const getEventStream = () => {
 export const toggleSaveMessage = (messageId) =>
     chatAPI.post(`/chats/messages/${messageId}/save`);
 export const getSavedMessages = () => chatAPI.get('/chats/saved-messages');
+export const markAsRead = (conversationId, messageIds) =>
+    chatAPI.post(`/chats/${conversationId}/read`, { messageIds });
 
 export default chatAPI;

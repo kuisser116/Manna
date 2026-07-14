@@ -353,12 +353,25 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
 
         const { data: messages, error } = await supabase
             .from('chat_messages')
-            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, reply_to_id, reply_preview, deleted_at, created_at')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, reply_to_id, reply_preview, deleted_at, created_at, delivered_at, read_at')
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
         if (error) throw error;
+
+        // Marcar como entregados los mensajes donde el usuario actual es receptor
+        if (messages?.length) {
+          const undeliveredIds = messages
+            .filter(m => m.sender_id !== userId && !m.delivered_at)
+            .map(m => m.id);
+          if (undeliveredIds.length > 0) {
+            await supabase
+              .from('chat_messages')
+              .update({ delivered_at: new Date().toISOString() })
+              .in('id', undeliveredIds);
+          }
+        }
 
         // Actualizar last_read_at
         await supabase
@@ -367,9 +380,17 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
             .eq('conversation_id', conversationId)
             .eq('user_id', userId);
 
+        // Re-fetch para incluir delivered_at actualizado
+        const { data: refreshed } = await supabase
+            .from('chat_messages')
+            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, reply_to_id, reply_preview, deleted_at, created_at, delivered_at, read_at')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+
         res.json({
-            messages: messages?.reverse() || [],
-            hasMore: (messages?.length || 0) === limit
+            messages: refreshed?.reverse() || [],
+            hasMore: (refreshed?.length || 0) === limit
         });
     } catch (err) {
         console.error('Error fetching messages:', err);
@@ -927,6 +948,32 @@ router.post('/messages/:id/forward', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('[Chat Forward Error]:', err);
         res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /chats/:id/read — Marcar mensajes como leídos
+router.post('/:id/read', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.id;
+        const { messageIds } = req.body;
+
+        if (!messageIds?.length) {
+            return res.status(400).json({ message: 'Se requieren messageIds' });
+        }
+
+        // Solo marcar leídos los mensajes que NO son del usuario actual
+        await supabase
+            .from('chat_messages')
+            .update({ read_at: new Date().toISOString() })
+            .in('id', messageIds)
+            .neq('sender_id', userId);
+
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Error marking read:', err);
+        res.status(500).json({ message: 'Error al marcar leídos' });
     }
 });
 

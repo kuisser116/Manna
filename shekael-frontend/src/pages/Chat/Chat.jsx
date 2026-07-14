@@ -8,7 +8,7 @@ import { getUserProfile } from '../../api/users.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import { getKeyPair } from '../../crypto/keyStore';
 import {
-  getConversations, getMessages, sendMessage,
+  getConversations, getMessages, sendMessage, markAsRead,
   getMessageRequests, acceptRequest, rejectRequest, blockRequester,
   searchUsers, sendMessageRequest, updatePublicKey,
   uploadChatFile,
@@ -742,6 +742,34 @@ export default function Chat() {
     requestAnimationFrame(() => messagesEndRefCallback());
   }, [messages, messagesEndRefCallback]);
 
+  // ── IntersectionObserver: marcar mensajes como leídos ──
+  const reportedReadRef = useRef(new Set());
+  useEffect(() => {
+    if (!activeConv?.id) return;
+    const observer = new IntersectionObserver((entries) => {
+      const toReport = entries
+        .filter(e => e.isIntersecting)
+        .map(e => e.target.dataset.msgid)
+        .filter(id => id && !reportedReadRef.current.has(id));
+      if (!toReport.length) return;
+      toReport.forEach(id => reportedReadRef.current.add(id));
+      markAsRead(activeConv.id, toReport).catch(() => {});
+    }, { threshold: 0.5 });
+
+    const msgElements = document.querySelectorAll('[data-msgid]');
+    msgElements.forEach(el => observer.observe(el));
+
+    // Re-observar cuando cambien los mensajes
+    const reobserve = () => {
+      document.querySelectorAll('[data-msgid]').forEach(el => observer.observe(el));
+    };
+    const mo = new MutationObserver(reobserve);
+    const container = document.querySelector('[data-msgs-container]');
+    if (container) mo.observe(container, { childList: true, subtree: true });
+
+    return () => { observer.disconnect(); mo.disconnect(); };
+  }, [activeConv?.id]);
+
   const scrollToBottom = () => {
     if (msgListRef.current) {
       msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
@@ -1189,7 +1217,7 @@ export default function Chat() {
           </div>
         ) : (
           <>
-            <div className={styles.messagesList} ref={msgListRef}>
+            <div className={styles.messagesList} ref={msgListRef} data-msgs-container>
               <div className={styles.stickyGroup}>
               <div className={styles.chatHeader}>
               <div className={styles.chatHeaderUser}>
@@ -1336,6 +1364,7 @@ export default function Chat() {
                     <div
                       key={msg.id}
                       id={`msg-${msg.id}`}
+                      data-msgid={msg.id}
                       className={`${styles.message} ${msg.sender_id === user?.id ? styles.ownMessage : styles.otherMessage}`}
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
@@ -1365,34 +1394,41 @@ export default function Chat() {
                         </div>
                       )}
                       {/* Imagen */}
+                      {/* Imagen + caption */}
                       {isImage && msg.media_url && (
-                        <div
-                          className={styles.mediaBubble}
-                          onClick={() => setLightboxUrl(msg.media_url)}
-                        >
-                          <img
-                            src={msg.media_thumb_url || msg.media_url}
-                            alt={msgText || 'Imagen'}
-                            className={styles.mediaImage}
-                            loading="lazy"
-                          />
+                        <div className={styles.mediaCard}>
+                          <div
+                            className={styles.mediaBubble}
+                            onClick={() => setLightboxUrl(msg.media_url)}
+                          >
+                            <img
+                              src={msg.media_thumb_url || msg.media_url}
+                              alt={msgText || 'Imagen'}
+                              className={styles.mediaImage}
+                              loading="lazy"
+                            />
+                          </div>
+                          {msgText && <div className={styles.mediaCaption}>{msgText}</div>}
                         </div>
                       )}
-                      {/* Documento */}
+                      {/* Documento + caption */}
                       {isFile && msg.media_url && (
-                        <div className={styles.fileBubble}>
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                          </svg>
-                          <div className={styles.fileInfo}>
-                            <span className={styles.fileName}>{msg.file_name || 'Archivo'}</span>
-                            {msg.file_size && (
-                              <span className={styles.fileSize}>
-                                {(msg.file_size / 1024 / 1024).toFixed(1)} MB
-                              </span>
-                            )}
+                        <div className={styles.mediaCard}>
+                          <div className={styles.fileBubble}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                              <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            <div className={styles.fileInfo}>
+                              <span className={styles.fileName}>{msg.file_name || 'Archivo'}</span>
+                              {msg.file_size && (
+                                <span className={styles.fileSize}>
+                                  {(msg.file_size / 1024 / 1024).toFixed(1)} MB
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          {msgText && <div className={styles.mediaCaption}>{msgText}</div>}
                         </div>
                       )}
                       {/* Audio */}
@@ -1405,7 +1441,6 @@ export default function Chat() {
                             isActive={activeAudioId === msg.id}
                             onActivate={() => setActiveAudioId(msg.id)}
                             onComplete={() => {
-                              // Play next audio message
                               const audioMessages = messages.filter(m => m.message_type === 'audio' && m.media_url);
                               const currentIdx = audioMessages.findIndex(m => m.id === msg.id);
                               const nextAudio = audioMessages[currentIdx + 1];
@@ -1418,8 +1453,8 @@ export default function Chat() {
                           />
                         </div>
                       )}
-                      {/* Texto */}
-                      {msgText && (
+                      {/* Texto (solo si NO hay imagen/file para evitar duplicados) */}
+                      {!isImage && !isFile && msgText && (
                         <div className={styles.messageBubble}>
                           {msgText}
                         </div>
@@ -1428,6 +1463,23 @@ export default function Chat() {
                         {new Date(msg.created_at).toLocaleTimeString('es-MX', {
                           hour: '2-digit', minute: '2-digit'
                         })}
+                        {msg.sender_id === user?.id && (
+                          <span className={styles.statusIcon}>
+                            {msg.read_at ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="#34B7F1" stroke="none">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                              </svg>
+                            ) : msg.delivered_at ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="none">
+                                <path d="M23.5 17.5l-5 5-3.5-3.5 1.5-1.5 2 2 3.5-3.5 1.5 1.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.1 0 2.19-.17 3.24-.5l-1.73-1.73c-.5.15-1 .23-1.51.23-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8c0 .51-.08 1.01-.23 1.51L20.5 8.76c.33-1.05.5-2.14.5-3.24 0-5.52-4.48-10-10-10S2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-1.1-.17-2.19-.5-3.24z"/>
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="none">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                              </svg>
+                            )}
+                          </span>
+                        )}
                       </span>
                     </div>
                   );
