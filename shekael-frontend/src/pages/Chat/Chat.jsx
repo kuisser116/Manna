@@ -1709,7 +1709,7 @@ export default function Chat() {
                 </button>
                 {showStickerPicker && (
                   <div className={styles.attachMenu}>
-                    <button onClick={() => { setShowPickerTab('emojis'); }}>
+                    <button onClick={() => { setShowPickerTab('emojis'); setShowStickerPicker(false); }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
                       Emojis
                     </button>
@@ -1749,20 +1749,19 @@ export default function Chat() {
                   ref={messageInputRef}
                 />
                 <button
-                  className={styles.sendBtn}
-                  onClick={handleSend}
+                  className={`${styles.sendBtn} ${showAudioRecorder ? styles.sendBtnRecording : ''}`}
                   onMouseDown={(e) => {
                     if (inputText.trim() || selectedFile) return;
-                    e.preventDefault();
-                    const timer = setTimeout(() => {
+                    e.currentTarget._longPressTimer = setTimeout(() => {
                       setShowAudioRecorder(true);
-                    }, 300);
-                    e.currentTarget._longPressTimer = timer;
+                    }, 400);
                   }}
                   onMouseUp={(e) => {
-                    if (e.currentTarget._longPressTimer) {
-                      clearTimeout(e.currentTarget._longPressTimer);
+                    const timer = e.currentTarget._longPressTimer;
+                    if (timer) {
+                      clearTimeout(timer);
                       delete e.currentTarget._longPressTimer;
+                      if (inputText.trim() || selectedFile) handleSend();
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -1771,7 +1770,35 @@ export default function Chat() {
                       delete e.currentTarget._longPressTimer;
                     }
                   }}
-                  disabled={(!inputText.trim() && !selectedFile) || sending || uploading || !keysReady}
+                  onTouchStart={(e) => {
+                    if (inputText.trim() || selectedFile) return;
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    e.currentTarget._touchY = touch.clientY;
+                    e.currentTarget._longPressTimer = setTimeout(() => {
+                      setShowAudioRecorder(true);
+                    }, 400);
+                  }}
+                  onTouchMove={(e) => {
+                    const timer = e.currentTarget._longPressTimer;
+                    if (!timer && !showAudioRecorder) return;
+                    const touch = e.touches[0];
+                    const dy = (e.currentTarget._touchY || touch.clientY) - touch.clientY;
+                    if (dy > 60) {
+                      setShowAudioRecorder(false);
+                      if (timer) { clearTimeout(timer); delete e.currentTarget._longPressTimer; }
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    const timer = e.currentTarget._longPressTimer;
+                    if (timer) {
+                      clearTimeout(timer);
+                      delete e.currentTarget._longPressTimer;
+                      if (inputText.trim() || selectedFile) handleSend();
+                    }
+                    delete e.currentTarget._touchY;
+                  }}
+                  disabled={(!inputText.trim() && !selectedFile && !showAudioRecorder) || sending || uploading || !keysReady}
                 >
                   {uploading ? (
                     <span className={styles.uploadingSpinner} />
@@ -1910,10 +1937,10 @@ export default function Chat() {
       )}
 
       {/* Sticker picker */}
-      {showStickerPicker && (
+      {showPickerTab === 'stickers' && (
         <StickerPicker
           onSelect={async (imageUrl) => {
-            setShowStickerPicker(false);
+            setShowPickerTab('');
             try {
               setSending(true);
               const { encryptedContent, nonce } = await legacyEncrypt('', otherUser?.public_key);
@@ -1929,7 +1956,7 @@ export default function Chat() {
             } catch (e) { console.error('Sticker send err:', e); alert('Error al enviar sticker:\n' + (e.message || e)); }
             setSending(false);
           }}
-          onClose={() => setShowStickerPicker(false)}
+          onClose={() => setShowPickerTab('')}
         />
       )}
 
