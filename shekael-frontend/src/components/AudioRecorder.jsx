@@ -17,6 +17,7 @@ export default function AudioRecorder({ onSend, onClose }) {
   const runningRef = useRef(false);
   const lastSampleRef = useRef(0);
   const pausedRef = useRef(false);
+  const startRef = useRef(null);
   const maxSamples = 500;
 
   useEffect(() => {
@@ -34,12 +35,17 @@ export default function AudioRecorder({ onSend, onClose }) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    const startedMarker = {};
+    startRef.current = startedMarker;
     startRecording();
     return () => {
+      cancelled = true;
+      startRef.current = null;
       runningRef.current = false;
       stopTracks();
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
       if (audioCtxRef.current?.state !== 'closed') audioCtxRef.current?.close();
     };
   }, []);
@@ -125,10 +131,17 @@ export default function AudioRecorder({ onSend, onClose }) {
   };
 
   const startRecording = async () => {
+    const myMarker = {};
+    startRef.current = myMarker;
     try {
       const s = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
       });
+      // StrictMode: si este arranque ya no es el vigente, liberar y salir
+      if (startRef.current !== myMarker) {
+        s.getTracks().forEach(t => t.stop());
+        return;
+      }
       streamRef.current = s;
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
       const mr = new MediaRecorder(s, { mimeType: mime });
@@ -154,9 +167,12 @@ export default function AudioRecorder({ onSend, onClose }) {
         if (!pausedRef.current) setDuration(d => d + 1);
       }, 1000);
     } catch (e) {
-      console.warn('Audio error:', e);
-      alert('No se pudo acceder al microfono.');
-      onClose?.();
+      // Solo mostrar error si este arranque sigue siendo el vigente
+      if (startRef.current === myMarker) {
+        console.warn('Audio error:', e);
+        alert('No se pudo acceder al microfono.');
+        onClose?.();
+      }
     }
   };
 
