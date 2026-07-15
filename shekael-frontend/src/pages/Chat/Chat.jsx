@@ -546,13 +546,18 @@ export default function Chat() {
       }
 
       // Filtrar mensajes anteriores al clearedAt (limpieza local)
-      const clearedKey = `shekael_chat_cleared_${activeConv.id}`;
-      const clearedData = JSON.parse(localStorage.getItem(clearedKey));
+      // Usar conv.id (el parámetro) no activeConv.id (estado asíncrono)
       let visibleMsgs = decrypted;
-      if (clearedData?.clearedAt) {
-        const clearedTime = new Date(clearedData.clearedAt).getTime();
-        visibleMsgs = decrypted.filter(m => new Date(m.created_at).getTime() >= clearedTime);
-      }
+      try {
+        const cKey = `shekael_chat_cleared_${conv.id}`;
+        const cData = JSON.parse(localStorage.getItem(cKey));
+        if (cData?.clearedAt) {
+          const clearedTime = new Date(cData.clearedAt).getTime();
+          if (!isNaN(clearedTime)) {
+            visibleMsgs = decrypted.filter(m => new Date(m.created_at).getTime() >= clearedTime);
+          }
+        }
+      } catch {}
       setMessages(visibleMsgs);
       // Inicializar ref de IDs para el polling
       visibleMsgs.forEach(m => prevMsgIdsRef.current.add(m.id));
