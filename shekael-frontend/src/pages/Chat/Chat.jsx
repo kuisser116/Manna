@@ -366,6 +366,8 @@ export default function Chat() {
         getMessageRequests()
       ]);
       setConversations(convRes.data.conversations || []);
+      // Unirse a todas las salas para recibir eventos WS
+      (convRes.data.conversations || []).forEach(c => joinConversation(c.id));
       const pendingReqs = reqRes.data.requests || [];
       setRequests(pendingReqs);
       // Mostrar automáticamente el panel de solicitudes si hay pendientes
