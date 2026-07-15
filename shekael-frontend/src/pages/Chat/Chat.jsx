@@ -225,100 +225,43 @@ export default function Chat() {
 
   useEffect(() => {
     const token = localStorage.getItem('Shekael_token')?.replace(/["']/g, '');
-    if (!token) {
-      console.log('[WS DEBUG] No token, skipping socket connect');
-      return;
-    }
-
-    console.log('[WS DEBUG] Connecting socket with token:', token.substring(0, 20) + '...');
-    const s = connectSocket(token);
-    console.log('[WS DEBUG] Socket created, connected:', s?.connected);
+    if (!token) return;
+    connectSocket(token);
 
     // Listeners para eventos en tiempo real
     onMessageSent(async (msg) => {
       const conv = activeConvRef.current;
       if (!conv?.id || msg.conversation_id !== conv.id) return;
-
-      // Saltar mensajes propios (ya están en estado desde el optimist update)
       if (msg.sender_id === user?.id) return;
 
-      // No agregar si ya existe (evitar duplicados con polling)
+      // Descifrar con public_key fresca de la API (no cache)
+      let decryptedText = null;
+      const decryptFn = decryptRef.current;
+      const otherUserId = msg.sender_id;
+
+      if (otherUserId && decryptFn) {
+        try {
+          const res = await fetch(import.meta.env.VITE_API_URL + '/users/' + otherUserId, {
+            headers: { Authorization: 'Bearer ' + localStorage.getItem('Shekael_token')?.replace(/["']/g, '') }
+          });
+          const json = await res.json();
+          const fresh = json?.user || json;
+          if (fresh?.public_key) {
+            decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
+            console.log('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
+          }
+        } catch {}
+      }
+
+      // Agregar al state UNA SOLA VEZ
       setMessages(prev => {
         if (prev.some(m => m.id === msg.id)) return prev;
-        return [...prev, { ...msg, decrypted: null }];
+        prevMsgIdsRef.current.add(msg.id);
+        return [...prev, {
+          ...msg,
+          decrypted: decryptedText || (msg.message_type === 'audio' ? '' : '[Mensaje cifrado]')
+        }];
       });
-
-      // Intentar descifrar: Signal Protocol primero
-      let decryptedText = null;
-      let spError = null;
-      try {
-        if (msg.msg_index >= 0 && msg.encrypted_content) {
-          decryptedText = await signalProtocol.decrypt(conv.id, {
-            encryptedContent: msg.encrypted_content,
-            nonce: msg.nonce,
-            ephemeralPubKey: msg.sender_ephemeral_key,
-            msgIndex: msg.msg_index || 0
-          });
-        }
-      } catch (e) {
-        spError = e?.message || '';
-        console.warn('[WS SP DECRYPT FAIL]', spError.substring(0,60));
-      }
-
-      // Si falló porque la sesión aún no se estableció (selectConversation en progreso), reintentar
-      if (!decryptedText && spError?.includes('No hay sesión')) {
-        console.log('[WS SP] sin sesión, esperando 1.5s...');
-        try {
-          await new Promise(r => setTimeout(r, 1500));
-          decryptedText = await signalProtocol.decrypt(conv.id, {
-            encryptedContent: msg.encrypted_content,
-            nonce: msg.nonce,
-            ephemeralPubKey: msg.sender_ephemeral_key,
-            msgIndex: msg.msg_index || 0
-          });
-          console.log('[WS SP] retry OK');
-        } catch (e2) {
-          console.warn('[WS SP RETRY FAIL]', e2?.message?.substring(0,60));
-        }
-      }
-
-      // Fallback: ECDH legacy (sistema anterior)
-      if (!decryptedText) {
-        const otherUser = otherUserCache.current[conv.id];
-        const decryptFn = decryptRef.current;
-        if (otherUser?.public_key && decryptFn) {
-          try {
-            decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, otherUser.public_key);
-          } catch (e2) {
-            console.warn('[WS LEGACY DECRYPT FAIL]', e2?.message?.substring(0,50));
-          }
-        }
-        if (!decryptedText && otherUser?.id && decryptFn) {
-          // Cache vacío — intentar obtener public_key del servidor
-          try {
-            const { default: axios } = await import('axios');
-            const API_URL = import.meta.env.VITE_API_URL || location.origin;
-            const token = localStorage.getItem('Shekael_token')?.replace(/["']/g, '');
-            const profRes = await axios.get(API_URL + '/users/' + otherUser.id, {
-              headers: { Authorization: 'Bearer ' + token }
-            });
-            const fresh = profRes.data?.user || profRes.data;
-            if (fresh?.public_key) {
-              otherUserCache.current[conv.id] = { ...otherUser, public_key: fresh.public_key };
-              decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
-            }
-          } catch (e3) {
-            console.warn('[WS FETCH KEY FAIL]', e3?.message?.substring(0,50));
-          }
-        }
-      }
-
-      // Aplicar resultado
-      setMessages(prev => prev.map(m =>
-        m.id === msg.id
-          ? { ...m, decrypted: decryptedText || (msg.message_type === 'audio' ? '' : '[Mensaje cifrado]') }
-          : m
-      ));
       if (decryptedText) scrollToBottom();
     });
 
@@ -567,6 +510,7 @@ export default function Chat() {
       // Cachear siempre (sea desde conv.otherUser o desde fresh)
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
+        console.log('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
       }
 
       // Intentar inicializar sesión Signal Protocol si no existe
