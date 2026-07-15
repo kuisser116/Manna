@@ -219,7 +219,7 @@ export default function PostDetail() {
                         <button onClick={() => navigate(-1)} className={styles.backBtn}>
                             <ArrowLeft size={24} />
                         </button>
-                        <h2>Post no encontrado</h2>
+                        <h2>Publicación no encontrada</h2>
                     </div>
                 </main>
 
