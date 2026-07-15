@@ -1,0 +1,295 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+}
+
+.modal {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    background: var(--color-surface-1);
+    z-index: 1;
+}
+
+.titleGroup h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.subtitle {
+    margin: 4px 0 0;
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    margin: -8px;
+}
+
+.closeBtn:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+}
+
+.content {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Loading */
+.loadingBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    gap: 16px;
+    color: var(--color-text-muted);
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Error */
+.errorBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    text-align: center;
+    color: #ff5a7e;
+}
+
+.retryBtn {
+    background: var(--color-surface-3);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    padding: 8px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.retryBtn:hover {
+    background: var(--color-surface-2);
+}
+
+/* QR Section */
+.qrSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.qrWrapper {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qrImage {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+.qrPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+}
+
+.qrHint {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+/* Address */
+.addressSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.addressLabel {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.addressBox {
+    display: flex;
+    align-items: center;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.addressText {
+    flex: 1;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--color-text-primary);
+    padding: 10px 12px;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.copyBtn {
+    background: var(--color-surface-3);
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
+}
+
+.copyBtn:hover {
+    background: var(--color-primary);
+    color: #000;
+}
+
+.copyBtn.copied {
+    background: var(--color-success);
+    color: #000;
+}
+
+.copiedText {
+    font-size: 0.75rem;
+    color: var(--color-success);
+    font-weight: 500;
+}
+
+/* Instructions */
+.instructions {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 16px 20px;
+}
+
+.instructions h4 {
+    margin: 0 0 12px;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.steps {
+    margin: 0;
+    padding: 0 0 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.steps li {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.steps li strong {
+    color: var(--color-text-primary);
+}
+
+/* Network info */
+.networkInfo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+}
+
+.networkBadge {
+    font-size: 0.7rem;
+    background: rgba(255, 168, 0, 0.15);
+    color: #ffa800;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.explorerBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.explorerBtn:hover {
+    background: var(--color-surface-3);
+}

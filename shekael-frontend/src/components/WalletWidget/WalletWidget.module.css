@@ -458,6 +458,32 @@
     font-family: var(--font-family);
 }
 
+/* ── Acciones ── */
+.walletActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.depositBtn {
+    flex: 1;
+    background: var(--color-primary);
+    color: #000;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: center;
+}
+
+.depositBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(184, 146, 64, 0.3);
+}
+
 /* ── Misc ── */
 .repairLink {
     display: block;
@@ -481,8 +507,7 @@
 }
 
 .rampBtn {
-    width: 100%;
-    margin-top: 12px;
+    flex: 1;
     background: var(--color-text);
     color: var(--color-bg);
     font-size: 13px;

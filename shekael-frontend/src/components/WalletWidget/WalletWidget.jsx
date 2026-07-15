@@ -8,6 +8,7 @@ import { useQuests } from '../../hooks/useQuests';
 import { verifyWallet } from '../../api/users.api';
 import Confetti from 'react-confetti';
 import WalletRamp from '../WalletRamp/WalletRamp';
+import DepositModal from '../DepositModal/DepositModal';
 import { Gift } from 'lucide-react';
 import styles from './WalletWidget.module.css';
 
@@ -58,6 +59,7 @@ export function WalletWidget({ variant = 'default' }) {
     // Tasa de cambio en tiempo real (por defecto 20.00 como fallback)
     const [usdRate, setUsdRate] = useState(20.00);
     const [isRampOpen, setIsRampOpen] = useState(false);
+    const [isDepositOpen, setIsDepositOpen] = useState(false);
 
     // Obtener tasa real al montar
     useEffect(() => {
@@ -235,17 +237,28 @@ export function WalletWidget({ variant = 'default' }) {
                         </a>
                     )}
 
-                    {!balanceLoading && (parseFloat(mxneBalance || 0) > 0 || (currency !== 'XLM' && parseFloat(balance) > 0)) && (
+                    <div className={styles.walletActions}>
                         <button
-                            className={styles.rampBtn}
+                            className={styles.depositBtn}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setIsRampOpen(true);
+                                setIsDepositOpen(true);
                             }}
                         >
-                            {t('wallet.withdrawOxxo')}
+                            Depositar
                         </button>
-                    )}
+                        {!balanceLoading && (parseFloat(mxneBalance || 0) > 0 || (currency !== 'XLM' && parseFloat(balance) > 0)) && (
+                            <button
+                                className={styles.rampBtn}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsRampOpen(true);
+                                }}
+                            >
+                                {t('wallet.withdrawOxxo')}
+                            </button>
+                        )}
+                    </div>
 
                     {!balanceLoading && parseFloat(balance || 0) <= 0 && (
                         <button
@@ -271,6 +284,10 @@ export function WalletWidget({ variant = 'default' }) {
                 isOpen={isRampOpen}
                 onClose={() => setIsRampOpen(false)}
                 onRefreshBalance={() => fetchBalance()}
+            />
+            <DepositModal
+                isOpen={isDepositOpen}
+                onClose={() => setIsDepositOpen(false)}
             />
         </>
     );

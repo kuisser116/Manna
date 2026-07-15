@@ -128,4 +128,30 @@ router.get('/balance', authMiddleware, async (req, res) => {
     }
 });
 
+/**
+ * GET /wallet/deposit-info — Direccion Stellar para depositar
+ */
+router.get('/deposit-info', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('stellar_public_key')
+            .eq('id', req.user.id)
+            .single();
+
+        if (!user || error) return res.status(404).json({ message: 'Usuario no encontrado' });
+        if (!user.stellar_public_key) return res.status(400).json({ message: 'El usuario no tiene wallet Stellar' });
+
+        res.json({
+            address: user.stellar_public_key,
+            network: process.env.STELLAR_NETWORK || 'TESTNET',
+            memoRequired: false
+        });
+    } catch (err) {
+        console.error('Deposit info error:', err);
+        res.status(500).json({ message: 'Error al obtener información de depósito' });
+    }
+});
+
 export default router;
