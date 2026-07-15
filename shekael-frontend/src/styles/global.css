@@ -7,6 +7,7 @@
   --color-surface-3: #e7e7ea;
   --color-primary: #e11d48; /* Rojo Tequila / Rose */
   --color-primary-dark: #9f1239;
+  --color-badge: var(--color-primary);
   --color-text: #111111;
   --color-text-secondary: #555555;
   --color-text-muted: #6b7280;
@@ -56,6 +57,7 @@
   --color-surface-2: #3f5143;
   --color-surface-3: #495e4f;
   --color-primary: #e11d48;
+  --color-badge: #83c092;
   --color-text: #d3c6aa;
   --color-text-secondary: #a7b5a0;
   --color-text-muted: #85987a;
@@ -161,6 +163,7 @@
   --color-surface-2: #434F55;
   --color-surface-3: #4D5960;
   --color-primary: #e11d48;
+  --color-badge: #83c092;
   --color-text: #D3C6AA;
   --color-text-secondary: #9DA9A0;
   --color-text-muted: #859289;

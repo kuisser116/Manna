@@ -499,12 +499,8 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
 
         // Notificar via WebSocket a la sala
         emitToConversation(conversationId, 'message:sent', msg);
-        emitToConversation(conversationId, 'conversation:updated', {
-            conversationId,
-            lastMessage: msg
-        });
 
-        // También notificar directamente a cada participante (por si no están en la sala)
+        // Notificar directamente a cada participante (sidebar + badge)
         const { data: participants } = await supabase
             .from('conversation_participants')
             .select('user_id')
@@ -512,8 +508,10 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
             .eq('accepted', true)
             .neq('user_id', userId);
 
+        const convNotif = { conversationId, lastMessage: msg };
+        // Al emisor también (para actualizar sidebar)
+        emitToUser(userId, 'conversation:updated', convNotif);
         if (participants) {
-            const convNotif = { conversationId, lastMessage: msg };
             participants.forEach(p => {
                 emitToUser(p.user_id, 'conversation:updated', convNotif);
                 emitToUser(p.user_id, 'message:sent', msg);

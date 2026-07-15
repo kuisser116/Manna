@@ -407,7 +407,7 @@
   font-size: 0.6rem;
   font-weight: 800;
   line-height: 1;
-  background: var(--color-primary);
+  background: var(--color-badge);
   color: #fff;
   border: 2px solid var(--color-bg);
   box-shadow: 0 2px 4px rgba(0,0,0,0.25);
@@ -447,7 +447,6 @@
   width: 44px;
   height: 44px;
   flex-shrink: 0;
-  background: var(--color-surface-3);
   position: relative;
 }
 
