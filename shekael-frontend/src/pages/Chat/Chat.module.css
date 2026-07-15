@@ -539,6 +539,8 @@
   background: color-mix(in srgb, var(--color-bg), transparent 15%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  position: relative;
+  z-index: 1;
 }
 
 .chatHeaderUser {
@@ -710,6 +712,8 @@
 .chatHeaderActions {
   display: flex;
   gap: 4px;
+  position: relative;
+  z-index: 2;
 }
 
 .chatActionBtn {
@@ -1703,6 +1707,14 @@
 
 /* ── Responsive ── */
 
+.sidePanelHidden {
+  display: none;
+}
+
+.mobileBackBtn {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .sidePanel {
     width: 280px;
@@ -1744,6 +1756,38 @@
 
   .sideHeader {
     padding: 16px 16px 12px;
+  }
+
+  /* Chat conversation fullscreen */
+  .mobileBackBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .mobileBackBtn:hover {
+    background: var(--color-surface-2);
+  }
+
+  .chatPanel {
+    position: fixed !important;
+    inset: 0;
+    z-index: 1000;
+    border-radius: 0;
+    min-height: 0 !important;
+    height: 100dvh;
+  }
+
+  .inputArea {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
 
@@ -1926,140 +1970,6 @@
 .chatMenuItem svg {
   flex-shrink: 0;
   opacity: 0.7;
-}
-
-/* ── PIN confirmation modal ── */
-
-.pinOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(8px);
-}
-
-.pinModal {
-  background: var(--color-surface, #1a1a1a);
-  border: 1px solid var(--color-border, #333);
-  border-radius: 16px;
-  padding: 28px 24px;
-  max-width: 320px;
-  width: 90%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-}
-
-.pinModalTitle {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-text, #fff);
-  margin: 0;
-}
-
-.pinModalSubtitle {
-  font-size: 0.8rem;
-  color: var(--color-text-muted, #888);
-  margin: 0;
-  text-align: center;
-}
-
-.pinDots {
-  display: flex;
-  gap: 10px;
-  margin: 8px 0;
-}
-
-.pinDotFilled {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-primary, #e11d48);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--color-primary, #e11d48) 40%, transparent);
-}
-
-.pinDotEmpty {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-border, #333);
-}
-
-.pinModalError {
-  font-size: 0.78rem;
-  color: var(--color-primary, #e11d48);
-  margin: 0;
-}
-
-.pinModalProcessing {
-  font-size: 0.78rem;
-  color: var(--color-text-muted, #888);
-  margin: 0;
-  animation: pulse 1.5s ease infinite;
-}
-
-.pinKeypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  width: 100%;
-  margin-top: 4px;
-}
-
-.pinKey {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 52px;
-  border: 1px solid var(--color-border, #333);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--color-text, #fff);
-  font-size: 1.3rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  user-select: none;
-}
-
-.pinKey:hover {
-  background: var(--color-surface-hover, #222);
-  border-color: var(--color-text-muted, #666);
-}
-
-.pinKey:active {
-  transform: scale(0.95);
-}
-
-.pinKeyDel {
-  composes: pinKey;
-  border-color: transparent;
-  opacity: 0.5;
-}
-
-.pinKeyDel:hover {
-  opacity: 1;
-  border-color: var(--color-primary, #e11d48);
-}
-
-.pinCancelBtn {
-  margin-top: 4px;
-  padding: 8px 20px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--color-text-muted, #888);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.pinCancelBtn:hover {
-  color: var(--color-text, #fff);
 }
 
 /* ── Background config bar (arriba del input) ── */

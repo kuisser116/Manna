@@ -34,7 +34,8 @@ import {
 
 export default function Chat() {
   const navigate = useNavigate();
-  const { user } = useStore();
+  const { user, setChatConversationMode } = useStore();
+  const [isMobile] = useState(() => window.innerWidth <= 700);
   // keyStore singleton — no necesita hook
 
   // Estado
@@ -565,6 +566,12 @@ export default function Chat() {
       }
     }
   }, [loadPinnedMessage]);
+
+  // Sincronizar modo conversación (oculta TopBar/Sidebar en móvil)
+  useEffect(() => {
+    setChatConversationMode(isMobile && !!activeConv);
+    return () => setChatConversationMode(false);
+  }, [isMobile, activeConv, setChatConversationMode]);
 
   // Polling: buscar mensajes nuevos (fallback 60s, solo si WS falla)
   const prevMsgIdsRef = useRef(new Set());
@@ -1197,7 +1204,7 @@ export default function Chat() {
   return (
     <div className={styles.layout}>
       {/* Panel izquierdo: conversaciones */}
-      <div className={styles.sidePanel}>
+      <div className={`${styles.sidePanel} ${isMobile && activeConv ? styles.sidePanelHidden : ''}`}>
         <div className={styles.sideHeader}>
           <div className={styles.sideHeaderTop}>
             <h2>{user?.displayName || user?.email?.split('@')[0] || 'Chats'}</h2>
@@ -1440,6 +1447,17 @@ export default function Chat() {
               <div className={styles.stickyGroup}>
               <div className={styles.chatHeader}>
               <div className={styles.chatHeaderUser}>
+                {isMobile && (
+                  <button
+                    className={styles.mobileBackBtn}
+                    onClick={() => { setActiveConv(null); setChatConversationMode(false); }}
+                    title="Volver a chats"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+                    </svg>
+                  </button>
+                )}
                 <div className={styles.avatarSmall}>
                   {activeConv.otherUser?.avatar_url ? (
                     <img src={activeConv.otherUser.avatar_url} alt="" />

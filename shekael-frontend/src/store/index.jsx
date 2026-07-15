@@ -120,6 +120,10 @@ const useStore = create((set, get) => ({
   setQrScannerOpen: (open) => set({ qrScannerOpen: open }),
   setMyQRModalOpen: (open) => set({ myQRModalOpen: open }),
 
+  // ── Chat ──
+  chatConversationMode: false,
+  setChatConversationMode: (mode) => set({ chatConversationMode: mode }),
+
   // ── UI / Navegación ──
   feedScrollPosition: 0,
   setFeedScrollPosition: (pos) => set({ feedScrollPosition: pos }),

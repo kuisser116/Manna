@@ -57,7 +57,7 @@ function AppLayout({ children }) {
   const location = useLocation();
   const sessionLock = useSessionLock();
 
-  const { videoMode, qrScannerOpen, setQrScannerOpen, myQRModalOpen, setMyQRModalOpen } = useStore();
+  const { videoMode, qrScannerOpen, setQrScannerOpen, myQRModalOpen, setMyQRModalOpen, chatConversationMode } = useStore();
   const isTheaterMode = videoMode === 'theater';
   const isProfileRoute = location.pathname.startsWith('/profile');
   const isChatRoute = location.pathname.startsWith('/chat');
@@ -115,12 +115,16 @@ function AppLayout({ children }) {
           onUnlock={sessionLock.unlock}
         />
       )}
-      <TopBar onToggleSidebar={handleToggleSidebar} sidebarWidth={isMobile ? 0 : navWidth} isMobile={isMobile} />
-      <Sidebar collapsed={actualSidebarCollapsed} hidden={isSidebarHidden} />
+      {(!isChatRoute || !chatConversationMode || !isMobile) && (
+        <TopBar onToggleSidebar={handleToggleSidebar} sidebarWidth={isMobile ? 0 : navWidth} isMobile={isMobile} />
+      )}
+      {(!isChatRoute || !chatConversationMode || !isMobile) && (
+        <Sidebar collapsed={actualSidebarCollapsed} hidden={isSidebarHidden} />
+      )}
       <div
         className={styles.appContent}
         style={{
-          marginLeft: isMobile ? 0 : `${navWidth}px`,
+          marginLeft: (isMobile || (isChatRoute && chatConversationMode)) ? 0 : `${navWidth}px`,
           transition: 'margin-left 0.3s ease',
         }}
       >
