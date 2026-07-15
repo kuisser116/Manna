@@ -74,7 +74,10 @@ export function NotificationsDropdown() {
     };
 
     const handleNotificationClick = async (notif) => {
-        if (notif.post_id) {
+        if (notif.type === 'message' && notif.post_id) {
+            navigate(`/chat?conv=${notif.post_id}`);
+            setIsOpen(false);
+        } else if (notif.post_id) {
             navigate(`/post/${notif.post_id}`);
             setIsOpen(false);
         }
@@ -126,6 +129,7 @@ export function NotificationsDropdown() {
             case 'support': return t('notifications.supportedPost');
             case 'save': return t('notifications.savedPost');
             case 'follow': return t('notifications.followedYou');
+            case 'message': return 'te envió un mensaje';
             case 'ad_rejected': return 'ha revisado tu campaña y no ha podido ser aprobada';
             case 'ad_approved': return 'ha aprobado tu campaña publicitaria';
             case 'ad_pending_review': return 'ha enviado una nueva campaña para revisión';

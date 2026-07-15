@@ -512,10 +512,23 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
         // Al emisor también (para actualizar sidebar)
         emitToUser(userId, 'conversation:updated', convNotif);
         if (participants) {
+            // Notificar en tiempo real y crear notificación en BD
+            const notifRows = [];
             participants.forEach(p => {
                 emitToUser(p.user_id, 'conversation:updated', convNotif);
                 emitToUser(p.user_id, 'message:sent', msg);
+                notifRows.push({
+                    id: uuidv4(),
+                    user_id: p.user_id,
+                    actor_id: userId,
+                    type: 'message',
+                    post_id: conversationId,
+                    is_read: false
+                });
             });
+            if (notifRows.length > 0) {
+                supabase.from('notifications').insert(notifRows).then().catch(() => {});
+            }
         }
 
     res.json({ message: msg });
