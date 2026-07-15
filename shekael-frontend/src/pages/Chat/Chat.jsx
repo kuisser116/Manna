@@ -1751,9 +1751,9 @@ export default function Chat() {
                             {msg._sending ? (
                               <span className={styles.sendingIndicator}>◌</span>
                             ) : msg.delivered_at ? (
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="currentColor" strokeWidth="2">
-                                <path d="M2 12l5 5 13-13" stroke="currentColor" opacity="0.5"/>
-                                <path d="M7 12l5 5 10-10"/>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-primary)" stroke="none">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M7 12l3 3 7-7" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                             ) : (
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
