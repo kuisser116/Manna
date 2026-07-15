@@ -13,7 +13,7 @@ import {
   uploadChatFile,
   searchChatMessages, deleteMessage, forwardMessage, editMessage,
   togglePinConversation, setChatNickname, setChatBackground,
-  togglePinMessage, getPinnedMessage
+  togglePinMessage, getPinnedMessage, markAsRead
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
 import StickerPicker from '../../components/StickerPicker';
@@ -260,6 +260,10 @@ export default function Chat() {
           decrypted: decryptedText || (msg.message_type === 'audio' ? '' : '[Mensaje cifrado]')
         }];
       });
+      // Mantener active conv como leído
+      setConversations(prev => prev.map(c =>
+        c.id === conv.id ? { ...c, lastReadAt: new Date().toISOString() } : c
+      ));
       if (decryptedText) scrollToBottom();
     });
 
@@ -443,6 +447,12 @@ export default function Chat() {
     setSelectedFile(null);
     setFilePreview(null);
     if (!conv?.id) return;
+
+    // Marcar como leído
+    markAsRead(conv.id).catch(() => {});
+    setConversations(prev => prev.map(c =>
+      c.id === conv.id ? { ...c, lastReadAt: new Date().toISOString() } : c
+    ));
 
     prevMsgIdsRef.current = new Set();
 
@@ -855,9 +865,11 @@ export default function Chat() {
 
   // Calcular no leídos
   // Calcular si hay mensajes sin leer en esta conversación
-  const hasUnread = (conv) => conv.lastReadAt && conv.lastMessage?.created_at
-    ? new Date(conv.lastMessage.created_at) > new Date(conv.lastReadAt)
-    : false;
+  const hasUnread = (conv) => {
+    if (!conv.lastMessage?.created_at) return false;
+    if (!conv.lastReadAt) return true; // nunca leído
+    return new Date(conv.lastMessage.created_at) > new Date(conv.lastReadAt);
+  };
 
   // ── Reply ──
 

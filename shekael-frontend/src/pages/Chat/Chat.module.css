@@ -389,6 +389,8 @@
 
 .unreadConv {
   font-weight: 600;
+  background: color-mix(in srgb, var(--color-primary), transparent 92%);
+  border-left: 3px solid var(--color-primary);
 }
 
 .unreadDot {
