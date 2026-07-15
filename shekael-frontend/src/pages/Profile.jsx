@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../components/ProfileEditModal/ProfileEditModal';
+import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
+import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
 import useStore from '../store';
 import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../api/users.api';
 import { getUserPosts } from '../api/posts.api';
@@ -69,6 +71,7 @@ export default function Profile() {
   const [profileLoading, setProfileLoading] = useState(!isOwnProfile);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const { modalState, setModalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
   const [copied, setCopied] = useState(false);
 
   const handleAvatarChange = async (e) => {
@@ -360,10 +363,15 @@ export default function Profile() {
                       onClick={async () => {
                         try {
                           const { sendMessageRequest } = await import('../api/chats.api');
-                          await sendMessageRequest(profileData.id);
-                          navigate('/chats');
+                          const res = await sendMessageRequest(profileData.id);
+                          if (res.data.alreadyConnected && res.data.conversationId) {
+                            navigate(`/chat?conv=${res.data.conversationId}`);
+                          } else {
+                            showSuccess('Solicitud enviada', 'Cuando acepte podran chatear.', true);
+                          }
                         } catch (err) {
-                          alert(err.response?.data?.message || 'Error al enviar solicitud');
+                          const msg = err.response?.data?.message || 'Error al enviar solicitud';
+                          showError('Error', msg);
                         }
                       }}
                       title="Enviar mensaje"
@@ -371,7 +379,7 @@ export default function Profile() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                       </svg>
-                      Mensaje
+                      Enviar mensaje
                     </button>
                   )}
                 </div>
@@ -467,6 +475,17 @@ export default function Profile() {
           />
         )}
       </AnimatePresence>
+
+      <FeedbackModal
+        isOpen={modalState.isOpen}
+        onClose={hideModal}
+        type={modalState.type}
+        title={modalState.title}
+        message={modalState.message}
+        showCloseButton={modalState.showCloseButton}
+        autoClose={modalState.autoClose}
+        autoCloseDelay={modalState.autoCloseDelay}
+      />
     </div>
   );
 }
