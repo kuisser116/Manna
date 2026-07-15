@@ -220,11 +220,18 @@ export default function Chat() {
   const decryptRef = useRef(null);
   const activeConvRef = useRef(activeConv);
   activeConvRef.current = activeConv;
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
 
   useEffect(() => {
     const token = localStorage.getItem('Shekael_token')?.replace(/["']/g, '');
     if (!token) return;
     connectSocket(token);
+
+    // Solicitar permiso de notificaciones
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
 
     // Listeners para eventos en tiempo real
     onMessageSent(async (msg) => {
@@ -299,11 +306,34 @@ export default function Chat() {
     });
 
     onConversationUpdated((data) => {
-      setConversations(prev => prev.map(c =>
-        c.id === data.conversationId
-          ? { ...c, lastMessage: data.lastMessage, updated_at: new Date().toISOString() }
-          : c
-      ).sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0)));
+      setConversations(prev => prev.map(c => {
+        if (c.id !== data.conversationId) return c;
+        const isActive = activeConvRef.current?.id === data.conversationId;
+        return {
+          ...c,
+          lastMessage: data.lastMessage,
+          updated_at: new Date().toISOString(),
+          unreadCount: isActive ? 0 : (c.unreadCount || 0) + 1
+        };
+      }).sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0)));
+
+      // Notificación de escritorio si no es la conv activa
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const conv = conversationsRef.current?.find(c => c.id === data.conversationId);
+        if (conv && activeConvRef.current?.id !== data.conversationId && data.lastMessage?.sender_id !== user?.id) {
+          const senderName = conv.otherUser?.display_name || 'Alguien';
+          const msgType = data.lastMessage?.message_type || 'text';
+          const body = msgType === 'image' ? '📷 Foto'
+            : msgType === 'audio' ? '🎤 Audio'
+            : msgType === 'file' ? '📎 Archivo'
+            : data.lastMessage?.decrypted?.substring(0, 100) || '💬 Nuevo mensaje';
+          new Notification(senderName, {
+            body,
+            icon: conv.otherUser?.avatar_url || undefined,
+            tag: data.conversationId
+          });
+        }
+      }
     });
 
     onTyping(async ({ userId, conversationId, typing }) => {
@@ -453,7 +483,7 @@ export default function Chat() {
     // Marcar como leído
     markAsRead(conv.id).catch(() => {});
     setConversations(prev => prev.map(c =>
-      c.id === conv.id ? { ...c, lastReadAt: new Date().toISOString() } : c
+      c.id === conv.id ? { ...c, lastReadAt: new Date().toISOString(), unreadCount: 0 } : c
     ));
 
     prevMsgIdsRef.current = new Set();
@@ -1228,7 +1258,11 @@ export default function Chat() {
                         {displayName[0] || '?'}
                       </div>
                     )}
-                    {hasUnread(conv) && <span className={styles.unreadDot} />}
+                    {hasUnread(conv) && (
+                      <span className={styles.unreadBadge}>
+                        {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                      </span>
+                    )}
                   </div>
                   <div className={styles.convInfo}>
                     <span className={styles.convName}>

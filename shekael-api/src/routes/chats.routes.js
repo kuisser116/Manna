@@ -287,6 +287,44 @@ router.get('/conversations', authMiddleware, async (req, res) => {
             }
         }
 
+        // Contar mensajes no leídos por conversación
+        const unreadCountMap = {};
+        const { data: unreadData } = await supabase
+            .from('chat_messages')
+            .select('conversation_id, count')
+            .in('conversation_id', convIds)
+            .neq('sender_id', userId)
+            .is('deleted_at', null);
+        if (unreadData) {
+            unreadData.forEach(row => {
+                if (!unreadCountMap[row.conversation_id]) unreadCountMap[row.conversation_id] = 0;
+                unreadCountMap[row.conversation_id]++;
+            });
+        }
+
+        // Ajustar según last_read_at
+        // Traer todos los mensajes no leídos de este usuario y filtrar por fecha
+        const unreadCounts = {};
+        const { data: userUnreadMsgs } = await supabase
+            .from('chat_messages')
+            .select('conversation_id, created_at')
+            .in('conversation_id', convIds)
+            .neq('sender_id', userId)
+            .is('deleted_at', null)
+            .gte('created_at', new Date(0).toISOString());
+        if (userUnreadMsgs) {
+            for (const p of participants) {
+                if (!p.last_read_at) {
+                    // Si nunca leyó, todos los mensajes son no leídos
+                    unreadCounts[p.conversation_id] = userUnreadMsgs.filter(m => m.conversation_id === p.conversation_id).length;
+                } else {
+                    unreadCounts[p.conversation_id] = userUnreadMsgs.filter(m => 
+                        m.conversation_id === p.conversation_id && new Date(m.created_at) > new Date(p.last_read_at)
+                    ).length;
+                }
+            }
+        }
+
         const conversations = participants.map(p => {
             const other = otherParticipants?.find(op => op.conversation_id === p.conversation_id);
             const lastMsg = lastMessageMap[p.conversation_id];
@@ -304,6 +342,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
                 otherUser,
                 lastMessage: lastMsg || null,
                 lastReadAt: p.last_read_at,
+                unreadCount: unreadCounts[p.conversation_id] || 0,
                 isPinned: !!p.is_pinned,
                 pinnedAt: p.pinned_at,
                 myNickname: p.nickname,
