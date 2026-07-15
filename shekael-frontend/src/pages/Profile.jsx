@@ -8,8 +8,6 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../components/ProfileEditModal/ProfileEditModal';
-import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
-import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
 import useStore from '../store';
 import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../api/users.api';
 import { getUserPosts } from '../api/posts.api';
@@ -71,8 +69,13 @@ export default function Profile() {
   const [profileLoading, setProfileLoading] = useState(!isOwnProfile);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
-  const { modalState, setModalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
+  const [toast, setToast] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
