@@ -435,8 +435,8 @@
 .avatarSmall {
   width: 44px;
   height: 44px;
-  border-radius: var(--border-radius-full);
-  overflow: visible;
+  border-radius: 50%;
+  overflow: hidden;
   flex-shrink: 0;
   background: var(--color-surface-3);
   position: relative;
@@ -446,6 +446,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: inherit;
 }
 
 .avatarPlaceholder {
