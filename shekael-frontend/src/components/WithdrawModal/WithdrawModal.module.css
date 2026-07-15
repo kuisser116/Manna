@@ -1,0 +1,288 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.modal {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px var(--color-shadow);
+}
+
+.header {
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.titleGroup h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.subtitle {
+    margin: 4px 0 0;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    margin: -8px;
+}
+
+.closeBtn:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text);
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.tab:hover {
+    color: var(--color-text-secondary);
+    background: var(--color-surface-2);
+}
+
+.activeTab {
+    color: var(--color-text) !important;
+    border-bottom-color: var(--color-text) !important;
+}
+
+/* Content */
+.content {
+    padding: 24px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.inputBox {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inputBox label {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.inputWrapper input {
+    width: 100%;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--color-text);
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.inputWrapper input:focus {
+    outline: none;
+    border-color: var(--color-text);
+    box-shadow: 0 0 0 2px var(--color-surface-3);
+}
+
+.inputWrapper input:disabled {
+    opacity: 0.5;
+}
+
+.currencyBadge {
+    position: absolute;
+    right: 10px;
+    background: var(--color-surface-3);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-dim);
+}
+
+.conversionNote {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    background: var(--color-surface-2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px dashed var(--color-border);
+}
+
+.errorBox {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    padding: 10px 14px;
+    border-radius: 10px;
+    color: var(--color-text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+.submitBtn {
+    width: 100%;
+    background: var(--color-text);
+    color: var(--color-bg);
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.submitBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--color-shadow);
+}
+
+.submitBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Success */
+.successBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 0;
+    gap: 12px;
+}
+
+.successIcon {
+    width: 56px;
+    height: 56px;
+    background: var(--color-surface-2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text);
+}
+
+.successBox h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--color-text);
+}
+
+.successBox p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+}
+
+.successHint {
+    color: var(--color-text-muted) !important;
+    font-size: 0.75rem !important;
+}
+
+/* MoneyGram tab */
+.rampPlaceholder {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.openRampBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    padding: 14px 24px;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.openRampBtn:hover {
+    background: var(--color-surface-3);
+    transform: translateY(-1px);
+}

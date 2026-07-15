@@ -168,9 +168,9 @@ export function WalletWidget({ variant = 'default' }) {
                 )}
             </div>
 
-            <WalletRamp
-                isOpen={isRampOpen}
-                onClose={() => setIsRampOpen(false)}
+            <WithdrawModal
+                isOpen={isWithdrawOpen}
+                onClose={() => setIsWithdrawOpen(false)}
                 onRefreshBalance={() => fetchBalance()}
             />
             <DepositModal

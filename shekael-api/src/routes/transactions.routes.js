@@ -154,4 +154,53 @@ router.get('/deposit-info', authMiddleware, async (req, res) => {
     }
 });
 
+/**
+ * POST /wallet/withdraw-exchange — Enviar XLM a un exchange (Bitso, Binance, etc.)
+ */
+router.post('/withdraw-exchange', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { to, amount } = req.body;
+
+        if (!to || !amount || amount <= 0) {
+            return res.status(400).json({ message: 'Direccion destino y monto requeridos' });
+        }
+
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id, stellar_public_key, stellar_secret_key_encrypted')
+            .eq('id', req.user.id)
+            .single();
+
+        if (!user || error) return res.status(404).json({ message: 'Usuario no encontrado' });
+        if (!user.stellar_secret_key_encrypted) {
+            return res.status(400).json({ message: 'Wallet no configurada' });
+        }
+
+        // Descifrar secret key
+        const secretKey = decrypt(user.stellar_secret_key_encrypted);
+        if (!secretKey || secretKey === 'enc-placeholder') {
+            return res.status(400).json({ message: 'Wallet no disponible para retiros' });
+        }
+
+        // Enviar XLM directamente (los exchanges solo aceptan XLM, no tokens personalizados)
+        const { sendPayment } = await import('../services/stellar.service.js');
+        const hash = await sendPayment({
+            fromSecretKey: secretKey,
+            toPublicKey: to,
+            amount: String(parseFloat(amount)),
+            assetCode: 'USDC', // Por ahora usamos USDC si tienen, sino XLM
+            memo: 'Shekael withdraw',
+        });
+
+        res.json({ hash, message: 'Transferencia enviada correctamente' });
+    } catch (err) {
+        console.error('Withdraw exchange error:', err);
+        if (err.code === 'WALLET_NOT_ACTIVE') {
+            return res.status(400).json({ message: 'El exchange destino no acepta este activo. Asegurate de usar una direccion que acepte USDC o XLM.' });
+        }
+        res.status(500).json({ message: err.message || 'Error al procesar el retiro' });
+    }
+});
+
 export default router;
