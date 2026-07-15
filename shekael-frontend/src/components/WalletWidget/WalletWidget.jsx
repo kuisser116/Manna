@@ -32,45 +32,50 @@ export function WalletWidget({ variant = 'default' }) {
     // ── Slide up reveal (como hero de Landing) ──
     const animateIn = useCallback(() => {
         setShouldRender(true);
+        // El panel ya tiene opacity: 0 en CSS, no hay flash al montar
         requestAnimationFrame(() => {
             if (!panelRef.current) return;
-            // Estado inicial: ligeramente abajo, opaco, sutil blur
+            // Estado inicial: mas abajo, mas pequeno, con tilt
             gsap.set(panelRef.current, {
-                y: 24,
-                opacity: 0,
-                scale: 0.95,
-                filter: 'blur(4px)',
+                y: 36,
+                scale: 0.85,
+                rotate: -3,
+                filter: 'blur(8px)',
                 transformOrigin: 'bottom right',
             });
-            // Animacion de entrada: como hero words pero mas sutil
+            // Animacion mas exagerada: slide+rotate+blur con bounce
             gsap.to(panelRef.current, {
                 y: 0,
                 opacity: 1,
                 scale: 1,
+                rotate: 0,
                 filter: 'blur(0px)',
-                duration: 0.6,
+                duration: 0.7,
                 ease: 'shekael-bounce',
+                onStart: () => {
+                    // Los hijos con stagger mas marcado
+                    if (contentRef.current) {
+                        gsap.fromTo(contentRef.current.children,
+                            { opacity: 0, y: 12 },
+                            { opacity: 1, y: 0, duration: 0.45, stagger: 0.06, delay: 0.15, ease: 'power3.out' }
+                        );
+                    }
+                }
             });
-            // Los hijos aparecen con un ligero stagger
-            if (contentRef.current) {
-                gsap.fromTo(contentRef.current.children,
-                    { opacity: 0, y: 8 },
-                    { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, delay: 0.2, ease: 'power2.out' }
-                );
-            }
         });
     }, []);
 
-    // ── Slide down fade out (sutil, sin pop) ──
+    // ── Slide down fade out (reversa) ──
     const animateOut = useCallback(() => {
         if (!panelRef.current) return;
 
         gsap.to(panelRef.current, {
-            y: 20,
+            y: 24,
             opacity: 0,
-            scale: 0.97,
-            filter: 'blur(3px)',
-            duration: 0.3,
+            scale: 0.92,
+            rotate: 2,
+            filter: 'blur(6px)',
+            duration: 0.35,
             ease: 'power2.in',
             onComplete: () => setShouldRender(false),
         });

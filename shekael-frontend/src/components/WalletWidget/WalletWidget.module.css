@@ -230,6 +230,7 @@
     border-radius: 20px;
     padding: 18px 20px;
     box-shadow: 0 10px 40px var(--color-shadow);
+    opacity: 0; /* Evita flash al montar, GSAP lo pone en 1 */
 }
 
 
