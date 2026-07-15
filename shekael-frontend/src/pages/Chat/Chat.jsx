@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
+import { CustomEase } from 'gsap/CustomEase.js';
 import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
 import { getUserProfile } from '../../api/users.api';
@@ -122,6 +123,32 @@ export default function Chat() {
   // Filtro: 'all' | 'unread'
   const [convFilter, setConvFilter] = useState('all');
   const animatedMsgIdsRef = useRef(new Set());
+
+  // Refs para animaciones de entrada
+  const chatLayoutRef = useRef(null);
+  const sidePanelRef = useRef(null);
+  const chatPanelRef = useRef(null);
+  const inputAreaRef = useRef(null);
+
+  // Registrar CustomEase una vez
+  const easeRegisteredRef = useRef(false);
+
+  // ── GSAP: animación de entrada al cargar la página ──
+  useEffect(() => {
+    if (!easeRegisteredRef.current) {
+      try { CustomEase.create('shekael-bounce', 'M0,0 C0.3,0.9 0.4,1.2 0.5,1 C0.6,0.8 0.7,1.1 1,1'); } catch {}
+      easeRegisteredRef.current = true;
+    }
+
+    const sections = [];
+    if (sidePanelRef.current) sections.push(sidePanelRef.current);
+    if (chatPanelRef.current) sections.push(chatPanelRef.current);
+
+    gsap.fromTo(sections,
+      { opacity: 0, y: 30, scale: 0.96, filter: 'blur(6px)' },
+      { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.7, stagger: 0.12, ease: 'shekael-bounce', clearProps: 'filter' }
+    );
+  }, []);
   const filteredConversations = convFilter === 'unread'
     ? conversations.filter(c => c.lastReadAt && c.lastMessage?.created_at > c.lastReadAt)
     : conversations;
@@ -140,8 +167,8 @@ export default function Chat() {
     });
     if (toAnimate.length === 0) return;
     gsap.fromTo(toAnimate,
-      { opacity: 0, y: 16, scale: 0.97 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.35, stagger: 0.04, ease: 'power3.out' }
+      { opacity: 0, y: 24, scale: 0.92, filter: 'blur(4px)' },
+      { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.5, stagger: 0.05, ease: 'shekael-bounce', clearProps: 'filter' }
     );
     toAnimate.forEach(el => {
       const id = el.id?.replace('msg-', '');
@@ -154,8 +181,8 @@ export default function Chat() {
     const items = msgListRef.current?.parentElement?.querySelectorAll(`.${styles.convItem}`);
     if (!items?.length) return;
     gsap.fromTo(items,
-      { opacity: 0, x: -10 },
-      { opacity: 1, x: 0, duration: 0.3, stagger: 0.025, ease: 'power2.out', overwrite: 'auto' }
+      { opacity: 0, x: -16, filter: 'blur(3px)' },
+      { opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.45, stagger: 0.035, ease: 'shekael-bounce', clearProps: 'filter', overwrite: 'auto' }
     );
   }, [filteredConversations]);
 
@@ -1207,9 +1234,9 @@ export default function Chat() {
   };
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} ref={chatLayoutRef}>
       {/* Panel izquierdo: conversaciones */}
-      <div className={`${styles.sidePanel} ${isMobile && activeConv ? styles.sidePanelHidden : ''}`}>
+      <div ref={sidePanelRef} className={`${styles.sidePanel} ${isMobile && activeConv ? styles.sidePanelHidden : ''}`}>
         <div className={styles.sideHeader}>
           <div className={styles.sideHeaderTop}>
             <h2>{user?.displayName || user?.email?.split('@')[0] || 'Chats'}</h2>
@@ -1432,7 +1459,7 @@ export default function Chat() {
       </div>
 
       {/* Panel derecho: conversación activa */}
-      <div className={`${styles.chatPanel}${bgPreview ? ` ${styles.hasCustomBg}` : ''}${isMobile && activeConv ? ` ${styles.chatPanelFullscreen}` : ''}`} style={{
+      <div ref={chatPanelRef} className={`${styles.chatPanel}${bgPreview ? ` ${styles.hasCustomBg}` : ''}${isMobile && activeConv ? ` ${styles.chatPanelFullscreen}` : ''}`} style={{
         '--pattern-url': `url(${bgPatternUrl})`,
         ...(bgPreview ? {
           '--custom-bg-url': `url(${bgPreview})`,
@@ -1803,7 +1830,7 @@ export default function Chat() {
               style={{ display: 'none' }}
             />
 
-            <div className={styles.inputArea}>
+            <div ref={inputAreaRef} className={styles.inputArea}>
               {/* Edit indicator */}
               {editingMessage && (
                 <div className={styles.replyPreview}>
