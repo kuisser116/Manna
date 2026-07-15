@@ -1777,7 +1777,7 @@
     background: var(--color-surface-2);
   }
 
-  .chatPanel {
+  .chatPanelFullscreen {
     position: fixed !important;
     inset: 0;
     z-index: 1000;

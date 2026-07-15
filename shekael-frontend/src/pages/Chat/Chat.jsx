@@ -1427,7 +1427,7 @@ export default function Chat() {
       </div>
 
       {/* Panel derecho: conversación activa */}
-      <div className={`${styles.chatPanel}${bgPreview ? ` ${styles.hasCustomBg}` : ''}`} style={{
+      <div className={`${styles.chatPanel}${bgPreview ? ` ${styles.hasCustomBg}` : ''}${isMobile && activeConv ? ` ${styles.chatPanelFullscreen}` : ''}`} style={{
         '--pattern-url': `url(${bgPatternUrl})`,
         ...(bgPreview ? {
           '--custom-bg-url': `url(${bgPreview})`,
