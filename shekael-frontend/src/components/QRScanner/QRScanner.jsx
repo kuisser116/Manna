@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QrCode, X, Check, ArrowRight, ShieldCheck, Zap, Camera, RefreshCw } from 'lucide-react';
 import { payQR } from '../../api/transactions.api.js';
 import { Html5Qrcode } from 'html5-qrcode';
+import useStore from '../../store';
 import styles from './QRScanner.module.css';
 
 export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPublicKey, defaultBusinessName }) {
