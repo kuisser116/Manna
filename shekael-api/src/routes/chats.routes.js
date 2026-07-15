@@ -38,7 +38,18 @@ router.post('/request', authMiddleware, async (req, res) => {
                 .in('conversation_id', fromConvIds)
                 .eq('user_id', toUserId);
             if (shared?.length > 0) {
-                return res.json({ alreadyConnected: true, conversationId: shared[0].conversation_id });
+                // Si hay conversaciones duplicadas, limpiar (quedarse con la primera, borrar las demas)
+                const keepId = shared[0].conversation_id;
+                if (shared.length > 1) {
+                    const dupIds = shared.slice(1).map(c => c.conversation_id);
+                    // Mover participantes y mensajes a la conversacion que se conserva
+                    for (const dupId of dupIds) {
+                        await supabase.from('conversation_participants').delete().eq('conversation_id', dupId);
+                        await supabase.from('messages').update({ conversation_id: keepId }).eq('conversation_id', dupId);
+                        await supabase.from('conversations').delete().eq('id', dupId);
+                    }
+                }
+                return res.json({ alreadyConnected: true, conversationId: keepId });
             }
         }
 

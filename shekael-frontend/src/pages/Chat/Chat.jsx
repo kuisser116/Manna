@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase.js';
 import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
@@ -541,6 +541,18 @@ export default function Chat() {
       (convRes.data.conversations || []).forEach(c => joinConversation(c.id));
       const pendingReqs = reqRes.data.requests || [];
       setRequests(pendingReqs);
+      // Auto-seleccionar conversación si se navegó con state.openConversationId
+      const state = window.history.state?.usr;
+      const openConvId = state?.openConversationId;
+      if (openConvId) {
+        const target = (convRes.data.conversations || []).find(c => c.id === openConvId);
+        if (target) {
+          setTimeout(() => selectConversation(target), 100);
+        }
+        // Limpiar state para que no re-seleccione al recargar
+        window.history.replaceState({}, '');
+      }
+
       // Mostrar automáticamente el panel de solicitudes si hay pendientes
       if (pendingReqs.length > 0) {
         setShowRequests(true);

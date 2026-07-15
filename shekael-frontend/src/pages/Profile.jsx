@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {
   UserPlus, UserCheck, Camera, QrCode,
@@ -33,6 +33,7 @@ const Icons = {
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
+  const navigate = useNavigate();
   const { user: currentUser, privacy } = useStore();
 
   const [userPosts, setUserPosts] = useState([]);
@@ -368,7 +369,7 @@ export default function Profile() {
                           const { sendMessageRequest } = await import('../api/chats.api');
                           const res = await sendMessageRequest(profileData.id);
                           if (res.data.alreadyConnected && res.data.conversationId) {
-                            navigate(`/chat?conv=${res.data.conversationId}`);
+                            navigate('/chat', { state: { openConversationId: res.data.conversationId } });
                           } else {
                             showSuccess('Solicitud enviada', 'Cuando acepte podran chatear.', true);
                           }
