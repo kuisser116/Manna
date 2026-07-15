@@ -247,18 +247,32 @@ export default function Terms() {
             </p>
             <p>Sin embargo, para proteger a la comunidad, está prohibido:</p>
             <ul>
-              <li>Contenido ilegal (abuso infantil, trata de personas, venta de drogas/armas).</li>
+              <li>Contenido ilegal (abuso infantil, trata de personas, venta de drogas/armas, apología del delito).</li>
               <li>Spam o publicación automatizada que degrade la experiencia de todos.</li>
               <li>Estafas o esquemas fraudulentos (Ponzi, pirámides).</li>
+              <li>Incitación a la violencia, amenazas o terrorismo.</li>
+              <li>Discriminación por raza, etnia, religión u origen nacional (según la ley mexicana).</li>
             </ul>
             <p>
-              Si un usuario considera que algo cruza la línea, puede reportarlo y se revisará 
-              manualmente. Shekael no eliminará contenido solo por ser incómodo, controversial 
+              Shekael utiliza un <strong>filtro automatizado de palabras clave</strong> que bloquea
+              contenido ilegal al momento de publicar. Este filtro no censura temas controversiales,
+              solo lo que está expresamente prohibido por la ley. Si el filtro rechaza tu contenido,
+              recibirás un mensaje claro del motivo.
+            </p>
+            <p>
+              Además, las imágenes publicadas se analizan con un <strong>modelo de detección
+              NSFW</strong> que corre localmente en tu navegador (sin enviar la imagen a servidores
+              externos). Si se detecta contenido sensible, se te notifica y la publicación puede ser
+              marcada para revisión manual antes de aparecer en el feed.
+            </p>
+            <p>
+              Si un usuario considera que algo cruza la línea, puede reportarlo y se revisará
+              manualmente. Shekael no eliminará contenido solo por ser incómodo, controversial
               o impopular.
             </p>
             <p className={styles.highlight}>
-              Shekael se reserva el derecho de suspender cuentas que infrinjan estas normas 
-              mínimas. En caso de suspensión definitiva, los MXNe acumulados serán redirigidos 
+              Shekael se reserva el derecho de suspender cuentas que infrinjan estas normas
+              mínimas. En caso de suspensión definitiva, los MXNe acumulados serán redirigidos
               al Fondo Regional de Shekael.
             </p>
           </section>

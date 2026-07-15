@@ -3,10 +3,28 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import adminMiddleware from '../middleware/adminMiddleware.js';
 import getDB from '../database/db.js';
 import { v4 as uuidv4 } from 'uuid';
+import { analyzeContentWithAI } from '../services/moderation.service.js';
 
 const router = Router({ strict: false });
 
-// DELETE /moderation/analyze-pre-upload — Ruta eliminada (ya no hay IA de moderación)
+// --- CHECK DE CONTENIDO (reemplaza analyze-pre-upload) ---
+
+// POST /moderation/check-content — Verifica contenido antes de publicar
+router.post('/check-content', authMiddleware, async (req, res) => {
+    try {
+        const { text, type, imageNsfwResult, imageNsfwConfidence } = req.body;
+        const result = analyzeContentWithAI(
+            text || '',
+            type || 'micro-text',
+            text || '',
+            req.user.id,
+            imageNsfwResult ? { nsfwResult: imageNsfwResult, nsfwConfidence: imageNsfwConfidence } : null
+        );
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ verdict: 'error', reason: err.message });
+    }
+});
 
 // --- RUTAS DE ADMINISTRADOR ---
 

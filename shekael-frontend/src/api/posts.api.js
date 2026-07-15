@@ -49,7 +49,7 @@ export const getMyOverview = () => postsAPI.get('/posts/user/my-stats/overview')
 export const markPostAsSeen = (postId) => postsAPI.post(`/posts/${postId}/seen`);
 
 // ── Moderación ──
-export const preValidateContent = (data) => postsAPI.post('/moderation/analyze-pre-upload', data);
+export const checkContent = (data) => postsAPI.post('/moderation/check-content', data);
 
 export default postsAPI;
 

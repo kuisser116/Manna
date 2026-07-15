@@ -7,6 +7,7 @@ import useFeed from '../hooks/useFeed';
 import useStore from '../store';
 import { useImageCompressor } from '../hooks/useImageCompressor';
 import VideoUploadWizard from '../components/VideoUploadWizard/VideoUploadWizard';
+import { checkContent, uploadPost } from '../api/posts.api';
 import styles from '../styles/pages/CreatePost.module.css';
 
 const API_URL = (import.meta.env.VITE_API_URL || location.origin);
@@ -29,6 +30,48 @@ export default function CreatePost() {
   const { token } = useStore();
   const { compress, compressing, compressionStats } = useImageCompressor();
   const { addToast } = useStore();
+
+  // — NSFW detection —
+  const nsfwModelRef = useRef(null);
+  const [nsfwLoaded, setNsfwLoaded] = useState(false);
+  const [nsfwDetected, setNsfwDetected] = useState(false);
+
+  const loadNSFWModel = async () => {
+    if (nsfwModelRef.current) return;
+    try {
+      addToast('loading', 'Cargando filtro de seguridad...', 'Protegiendo la comunidad');
+      const model = await nsfwjs.load();
+      nsfwModelRef.current = model;
+      setNsfwLoaded(true);
+    } catch (err) {
+      console.warn('NSFW model load failed (non-critical):', err.message);
+      // Non-critical — app funciona sin esto
+    }
+  };
+
+  const checkImageNSFW = async (file) => {
+    if (!nsfwModelRef.current) return null;
+    try {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+      const predictions = await nsfwModelRef.current.classify(img);
+      URL.revokeObjectURL(url);
+      const nsfw = predictions.find(p => p.className === 'Porn' || p.className === 'Hentai');
+      if (nsfw && nsfw.probability > 0.85) {
+        setNsfwDetected(true);
+        return nsfw;
+      }
+      return null;
+    } catch (err) {
+      console.warn('NSFW check failed:', err.message);
+      return null;
+    }
+  };
 
   // — Refs para las animaciones GSAP —
   const layoutRef = useRef(null);
@@ -162,6 +205,13 @@ export default function CreatePost() {
     if (type === 'image') {
       const sizeKB = (imageFile.size / 1024).toFixed(0);
       try {
+        // NSFW check (client-side, opcional)
+        if (!nsfwModelRef.current) await loadNSFWModel();
+        const nsfwResult = await checkImageNSFW(imageFile);
+        if (nsfwResult) {
+          addToast('warning', 'Contenido sensible detectado', `La imagen será marcada para revisión (${(nsfwResult.probability * 100).toFixed(0)}% ${nsfwResult.className}).`);
+        }
+
         addToast('loading', 'Subiendo a IPFS...', `Enviando ${sizeKB} KB a la red descentralizada`);
         const result = await uploadImageToIPFS();
         const cid = result.cid?.slice(0, 16);
