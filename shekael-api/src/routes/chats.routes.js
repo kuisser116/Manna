@@ -808,12 +808,7 @@ router.delete('/messages/:id', authMiddleware, async (req, res) => {
             .from('chat_messages')
             .update({
                 deleted_at: new Date().toISOString(),
-                deleted_by: userId,
-                encrypted_content: null,
-                nonce: null,
-                msg_index: null,
-                media_url: null,
-                media_thumb_url: null
+                deleted_by: userId
             })
             .eq('id', messageId);
 
@@ -852,12 +847,7 @@ router.delete('/:conversationId/messages', authMiddleware, async (req, res) => {
             .from('chat_messages')
             .update({
                 deleted_at: new Date().toISOString(),
-                deleted_by: userId,
-                encrypted_content: null,
-                nonce: null,
-                msg_index: null,
-                media_url: null,
-                media_thumb_url: null
+                deleted_by: userId
             })
             .eq('conversation_id', conversationId)
             .eq('sender_id', userId)
