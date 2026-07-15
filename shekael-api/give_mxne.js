@@ -14,7 +14,7 @@ async function giveMXNe() {
         return;
     }
 
-    console.log(`Fondeando MXNe para ${user.email}...`);
+    void(`Fondeando MXNe para ${user.email}...`);
 
     const secretKey = decrypt(user.stellar_secret_key_encrypted);
     const keypair = StellarSdk.Keypair.fromSecret(secretKey);
@@ -30,7 +30,7 @@ async function giveMXNe() {
         // 1. Asegurar trustline de MXNe
         const hasTrust = account.balances.some(b => b.asset_code === 'MXNe');
         if (!hasTrust) {
-            console.log('Creating MXNe trustline...');
+            void('Creating MXNe trustline...');
             const tx = new StellarSdk.TransactionBuilder(account, { fee: StellarSdk.BASE_FEE })
                 .addOperation(StellarSdk.Operation.changeTrust({ asset: MXNE_ASSET }))
                 .setTimeout(30)
@@ -38,14 +38,14 @@ async function giveMXNe() {
                 .build();
             tx.sign(keypair);
             await server.submitTransaction(tx);
-            console.log('Trustline created.');
+            void('Trustline created.');
             await new Promise(r => setTimeout(r, 2000));
         }
 
         const freshAccount = await server.loadAccount(keypair.publicKey());
         
         // 2. Realizar Swap (XLM -> MXNe) - Cambiamos 2000 XLM por MXNe
-        console.log('Swapping XLM to MXNe...');
+        void('Swapping XLM to MXNe...');
         const swapTx = new StellarSdk.TransactionBuilder(freshAccount, { fee: StellarSdk.BASE_FEE })
             .addOperation(StellarSdk.Operation.pathPaymentStrictSend({
                 sendAsset: StellarSdk.Asset.native(),
@@ -61,7 +61,7 @@ async function giveMXNe() {
         
         swapTx.sign(keypair);
         const result = await server.submitTransaction(swapTx);
-        console.log('¡MXNe Swap exitoso! Hash:', result.hash);
+        void('¡MXNe Swap exitoso! Hash:', result.hash);
         process.exit(0);
 
     } catch (err) {

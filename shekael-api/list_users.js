@@ -4,6 +4,6 @@ const { data: users, error } = await supabase.from('users').select('id, email, s
 if (error) {
     console.error(error);
 } else {
-    console.log(JSON.stringify(users, null, 2));
+    void(JSON.stringify(users, null, 2));
 }
 process.exit(0);

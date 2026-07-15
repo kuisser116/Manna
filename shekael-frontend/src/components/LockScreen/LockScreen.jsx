@@ -172,32 +172,6 @@ export default function LockScreen({ onUnlock }) {
       // Generar keypair, cifrar private_key con PIN, subir todo al server
       await crypto.generateAndSetupKeypair(pin, pinHash);
 
-      // Generar y subir pre-keys para Signal Protocol
-      try {
-        const { generatePreKeys } = await import('../../crypto/signalProtocol');
-        const { signedPreKey, oneTimePreKeys } = await generatePreKeys(100);
-        
-        const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
-        const { default: axios } = await import('axios');
-        const API_URL = import.meta.env.VITE_API_URL || location.origin;
-        await axios.post(API_URL + '/auth/pre-keys/upload', {
-          signedPreKey: {
-            key_id: signedPreKey.key_id,
-            public_key: signedPreKey.public_key,
-            signature: signedPreKey.signature
-          },
-          oneTimePreKeys: oneTimePreKeys.map(k => ({
-            key_id: k.key_id,
-            public_key: k.public_key
-          }))
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('[LockScreen] Pre-keys uploaded:', oneTimePreKeys.length);
-      } catch (pkErr) {
-        console.warn('[LockScreen] Could not upload pre-keys:', pkErr.message);
-      }
-
       setPin('');
       setConfirmPin('');
       onUnlock();

@@ -132,7 +132,7 @@ export async function initiateWithdrawal(user, assetCode = 'USDC', amount) {
     // En la realidad, el descuento ocurriría DESPUÉS de que el cajero de Oxxo 
     // escanee el código y notifique al sistema (vía webhook o similar).
     try {
-        console.log(`[MockWithdraw] Generando recibo para ${amount} ${assetCode} (usuario ${user.email}). Sin descuento de saldo para demo.`);
+        void(`[MockWithdraw] Generando recibo para ${amount} ${assetCode} (usuario ${user.email}). Sin descuento de saldo para demo.`);
         
         // Devolvemos el Mock inmediatamente sin tocar la red Stellar
         return {

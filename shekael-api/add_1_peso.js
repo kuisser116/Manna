@@ -21,8 +21,8 @@ async function main() {
         process.exit(1);
     }
 
-    console.log(`💰 Aumentando balance para: ${user.email}`);
-    console.log(`🔑 Wallet: ${publicKey}`);
+    void(`💰 Aumentando balance para: ${user.email}`);
+    void(`🔑 Wallet: ${publicKey}`);
 
     try {
         // fallback-Shekael-1 garantiza un payout de 1.0 MXNc según la lógica de ads.service.js
@@ -34,8 +34,8 @@ async function main() {
             'manual-debug-token', 
             'feed'
         );
-        console.log('\n✅ Balance aumentado exitosamente en +1.00 MXNc.');
-        console.log('🚀 Si el frontend está abierto, solo dale clic al icono de actualización en la billetera.');
+        void('\n✅ Balance aumentado exitosamente en +1.00 MXNc.');
+        void('🚀 Si el frontend está abierto, solo dale clic al icono de actualización en la billetera.');
     } catch (err) {
         console.error('\n❌ Error al ejecutar la distribución:', err.message);
     }

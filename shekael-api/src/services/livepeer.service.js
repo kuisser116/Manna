@@ -14,7 +14,7 @@ export async function proxyUploadVideo() {
 
 export async function triggerTranscoding() {
     // No-op: videos se sirven como MP4 raw desde R2
-    console.log('[Livepeer] Desactivado - video servido como MP4 directo desde R2');
+    void('[Livepeer] Desactivado - video servido como MP4 directo desde R2');
     return null;
 }
 

@@ -122,7 +122,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         const { toPublicKey, amount, assetCode = 'MXNe' } = req.body;
         if (!toPublicKey || !amount) return res.status(400).json({ message: 'Datos incompletos' });
         
-        console.log(`[QR Pay] Iniciando pago: ${amount} ${assetCode} para ${toPublicKey}`);
+        void(`[QR Pay] Iniciando pago: ${amount} ${assetCode} para ${toPublicKey}`);
 
         const supabase = getDB();
         
@@ -183,7 +183,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         await ensureTrustline(secretKey);
 
         const senderKeypair = await import('@stellar/stellar-sdk').then(m => m.Keypair.fromSecret(secretKey));
-        console.log(`[QR Pay] DEBUG - Solicitado por: ${sender.email}. Usando Wallet Stellar: ${senderKeypair.publicKey()}`);
+        void(`[QR Pay] DEBUG - Solicitado por: ${sender.email}. Usando Wallet Stellar: ${senderKeypair.publicKey()}`);
 
         const txHash = await sendPayment({
             fromSecretKey: secretKey,

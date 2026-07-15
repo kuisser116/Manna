@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
-import * as signalProtocol from '../../crypto/signalProtocol';
 import { getUserProfile } from '../../api/users.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import { getKeyPair } from '../../crypto/keyStore';
@@ -34,7 +33,7 @@ import {
 export default function Chat() {
   const navigate = useNavigate();
   const { user } = useStore();
-  // signalProtocol usa keyStore singleton — no necesita hook
+  // keyStore singleton — no necesita hook
 
   // Estado
   const [conversations, setConversations] = useState([]);
@@ -248,7 +247,7 @@ export default function Chat() {
           const fresh = json?.user || json;
           if (fresh?.public_key) {
             decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
-            console.log('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
+            void('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
           }
         } catch {}
       }
@@ -271,28 +270,16 @@ export default function Chat() {
           ? { ...m, encrypted_content: data.encrypted_content, nonce: data.nonce, edited_at: data.edited_at, decrypted: null }
           : m
       ));
-      // Intentar descifrar el nuevo contenido
+      // Descifrar el nuevo contenido
       const conv = activeConvRef.current;
       if (!conv?.id) return;
       let pt = null;
-      try {
-        if (data.msg_index >= 0 && data.encrypted_content) {
-          pt = await signalProtocol.decrypt(conv.id, {
-            encryptedContent: data.encrypted_content,
-            nonce: data.nonce,
-            ephemeralPubKey: data.sender_ephemeral_key,
-            msgIndex: data.msg_index || 0
-          });
-        }
-      } catch { /* fallback */ }
-      if (!pt) {
-        const otherUser = otherUserCache.current[conv.id];
-        const decryptFn = decryptRef.current;
-        if (otherUser?.public_key && decryptFn) {
-          try {
-            pt = await decryptFn(data.encrypted_content, data.nonce, otherUser.public_key);
-          } catch {}
-        }
+      const otherUser = otherUserCache.current[conv.id];
+      const decryptFn = decryptRef.current;
+      if (otherUser?.public_key && decryptFn) {
+        try {
+          pt = await decryptFn(data.encrypted_content, data.nonce, otherUser.public_key);
+        } catch {}
       }
       if (pt) {
         setMessages(prev => prev.map(m =>
@@ -510,43 +497,11 @@ export default function Chat() {
       // Cachear siempre (sea desde conv.otherUser o desde fresh)
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
-        console.log('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
+        void('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
       }
 
-      // Intentar inicializar sesión Signal Protocol si no existe
-      const hasSigSession = await signalProtocol.hasSession(conv.id);
-      if (!hasSigSession && otherUser?.public_key) {
-        // fetch pre-key bundle del otro usuario
-        try {
-          const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
-          const { default: axios } = await import('axios');
-          const API_URL = import.meta.env.VITE_API_URL || location.origin;
-          const bundleRes = await axios.get(`${API_URL}/auth/pre-keys/bundle/${otherUser.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const bundle = bundleRes.data;
-          
-          if (bundle.identityKey && bundle.signedPreKey) {
-            const kp = getKeyPair();
-            if (kp) {
-              await signalProtocol.initSessionAsAlice(conv.id, bundle, kp);
-              console.log('[Signal] Session initialized for', conv.id.substring(0,8));
-            }
-          }
-        } catch (e) {
-          console.warn('[Signal] Could not init session:', e.message);
-        }
-      }
-
-      // Asegurar que tenemos public_key para fallback ECDH (mensajes legacy y audio)
-      if (!otherUser?.public_key) {
-        msgs.forEach(m => prevMsgIdsRef.current.add(m.id));
-        setMessages(msgs); scrollToBottom(); return;
-      }
-
-      // No hacemos X3DH recovery — los mensajes viejos se descifran con ECDH fallback
-      let sharedSecret;
-      if (!hasSigSession) {
+      // Derivar shared secret para ECDH
+      if (otherUser?.public_key) {
         sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
         if (!sharedSecret) {
           msgs.forEach(m => prevMsgIdsRef.current.add(m.id));
@@ -560,20 +515,6 @@ export default function Chat() {
         if (msg.nonce === 'plaintext') {
           decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
           continue;
-        }
-      // Intentar Signal Protocol primero (Double Ratchet)
-        // Solo para mensajes que fueron cifrados con ratchet (msg_index >= 0)
-        if (msg.msg_index >= 0 && await signalProtocol.hasSession(conv.id)) {
-          try {
-            const plaintext = await signalProtocol.decrypt(conv.id, {
-              encryptedContent: msg.encrypted_content,
-              nonce: msg.nonce,
-              ephemeralPubKey: msg.sender_ephemeral_key,
-              msgIndex: msg.msg_index || 0
-            });
-            decrypted.push({ ...msg, decrypted: plaintext });
-            continue;
-          } catch { /* fallback a ECDH */ }
         }
         // Fallback: ECDH directo (para mensajes del sistema anterior)
         try {
@@ -624,26 +565,13 @@ export default function Chat() {
             continue;
           }
           let pt = null;
-          // Signal Protocol primero
+          // Legacy ECDH directo
           try {
-            if (msg.msg_index >= 0 && msg.encrypted_content) {
-              pt = await signalProtocol.decrypt(convId, {
-                encryptedContent: msg.encrypted_content,
-                nonce: msg.nonce,
-                ephemeralPubKey: msg.sender_ephemeral_key,
-                msgIndex: msg.msg_index || 0
-              });
+            const pk = otherUserCache.current[convId]?.public_key;
+            if (pk && getKeyPair()) {
+              pt = await legacyDecrypt(msg.encrypted_content, msg.nonce, pk);
             }
-          } catch { /* fallback */ }
-          // Fallback legacy ECDH
-          if (!pt) {
-            try {
-              const pk = otherUserCache.current[convId]?.public_key;
-              if (pk && getKeyPair()) {
-                pt = await legacyDecrypt(msg.encrypted_content, msg.nonce, pk);
-              }
-            } catch { /* fallo total */ }
-          }
+          } catch { /* fallo total */ }
           if (pt) {
             decrypted.push({ ...msg, decrypted: pt });
           } else if (msg.message_type === 'audio') {
@@ -683,20 +611,7 @@ export default function Chat() {
         decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
         continue;
       }
-      // Intentar Signal Protocol primero (funciona incluso sin sesión pre-existente)
-      if (msg.msg_index >= 0 && msg.encrypted_content) {
-        try {
-          const plaintext = await signalProtocol.decrypt(convId, {
-            encryptedContent: msg.encrypted_content,
-            nonce: msg.nonce,
-            ephemeralPubKey: msg.sender_ephemeral_key,
-            msgIndex: msg.msg_index || 0
-          });
-          decrypted.push({ ...msg, decrypted: plaintext });
-          continue;
-        } catch { /* fallback a ECDH */ }
-      }
-      // Fallback: ECDH directo (para mensajes del sistema anterior)
+      // Legacy ECDH directo
       try {
         const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
         decrypted.push({ ...msg, decrypted: plaintext });

@@ -93,43 +93,43 @@ function LandingInner() {
     if (params.get('landing') === '1') return;
     const token = localStorage.getItem('Shekael_token');
     if (!token) {
-      console.log('[Landing] No token, staying');
+      void('[Landing] No token, staying');
       return;
     }
     if (window.location.pathname.startsWith('/terminos')) {
-      console.log('[Landing] Already on /terminos, skipping');
+      void('[Landing] Already on /terminos, skipping');
       return;
     }
 
-    console.log('[Landing] Checking redirect... token:', !!token, 'user:', !!user, 'termsVersion:', termsVersion);
+    void('[Landing] Checking redirect... token:', !!token, 'user:', !!user, 'termsVersion:', termsVersion);
     
     // Esperar a que initAuth cargue el user
     if (token && !user) {
-      console.log('[Landing] Waiting for initAuth...');
+      void('[Landing] Waiting for initAuth...');
       return;
     }
     
     if (!termsVersion) {
-      console.log('[Landing] Waiting for termsVersion...');
+      void('[Landing] Waiting for termsVersion...');
       return;
     }
     
     const flagKey = 'shekael_terms_' + termsVersion + '_accepted';
     const termsAccepted = localStorage.getItem(flagKey);
-    console.log('[Landing] DECISION: flag', flagKey, '=', termsAccepted, '| user.terms_version:', user?.terms_version, '| backend version:', termsVersion);
+    void('[Landing] DECISION: flag', flagKey, '=', termsAccepted, '| user.terms_version:', user?.terms_version, '| backend version:', termsVersion);
     
     if (termsAccepted === 'true') {
-      console.log('[Landing] → Redirect to /feed (localStorage flag)');
+      void('[Landing] → Redirect to /feed (localStorage flag)');
       navigate('/feed');
       return;
     }
     if (user?.terms_version === termsVersion) {
-      console.log('[Landing] → Setting flag and redirect to /feed (user version matches)');
+      void('[Landing] → Setting flag and redirect to /feed (user version matches)');
       localStorage.setItem(flagKey, 'true');
       navigate('/feed');
       return;
     }
-    console.log('[Landing] → Redirect to /terminos (no match)');
+    void('[Landing] → Redirect to /terminos (no match)');
     navigate('/terminos');
   }, [navigate, user, termsVersion]);
 

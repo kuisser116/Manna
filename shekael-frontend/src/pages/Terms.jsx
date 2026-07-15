@@ -27,7 +27,7 @@ export default function Terms() {
       .then(data => {
         setTermsVersion(data.version);
         setLastUpdated(data.last_updated ? new Date(data.last_updated).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
-        console.log('[Terms] backend version:', data.version);
+        void('[Terms] backend version:', data.version);
       })
       .catch(err => {
         console.error('[Terms] error fetching version:', err);
@@ -39,11 +39,11 @@ export default function Terms() {
   // Verificar aceptación contra la versión del backend
   const hasAccepted = user && termsVersion ? user.terms_version === termsVersion : false;
 
-  console.log('[Terms] user:', !!user, 'terms_version:', user?.terms_version, 'backendVersion:', termsVersion, 'hasAccepted:', hasAccepted);
+  void('[Terms] user:', !!user, 'terms_version:', user?.terms_version, 'backendVersion:', termsVersion, 'hasAccepted:', hasAccepted);
 
   // Redirigir al feed si ya aceptó
   useEffect(() => {
-    console.log('[Terms] hasAccepted changed:', hasAccepted, 'navigating to feed?', hasAccepted);
+    void('[Terms] hasAccepted changed:', hasAccepted, 'navigating to feed?', hasAccepted);
     if (hasAccepted) {
       navigate('/feed');
     }
@@ -69,17 +69,17 @@ export default function Terms() {
     }
     setAccepting(true);
     setError('');
-    console.log('[Terms] handleAccept called with version:', termsVersion, 'token:', !!token);
+    void('[Terms] handleAccept called with version:', termsVersion, 'token:', !!token);
     try {
       const result = await acceptTerms(termsVersion);
-      console.log('[Terms] acceptTerms success, result:', JSON.stringify(result));
+      void('[Terms] acceptTerms success, result:', JSON.stringify(result));
       // Flag localStorage para UX instantánea entre recargas
       const flagKey = 'shekael_terms_' + termsVersion + '_accepted';
       localStorage.setItem(flagKey, 'true');
-      console.log('[Terms] Flag set:', flagKey, '= true');
+      void('[Terms] Flag set:', flagKey, '= true');
       setAccepted(true);
       setTimeout(() => {
-        console.log('[Terms] Navigating to /feed');
+        void('[Terms] Navigating to /feed');
         navigate('/feed');
       }, 500);
     } catch (err) {

@@ -77,7 +77,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
             return () => {
                 clearTimeout(timer);
                 if (html5QrCode.isScanning) {
-                    html5QrCode.stop().catch(e => console.log("Stop error", e));
+                    html5QrCode.stop().catch(e => void("Stop error", e));
                 }
             };
         } else if (isOpen && defaultPublicKey && step === 'scan') {

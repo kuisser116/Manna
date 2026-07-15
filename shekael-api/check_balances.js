@@ -9,7 +9,7 @@ if (error) {
 } else {
     for (const user of users) {
         const balance = await getBalance(user.stellar_public_key);
-        console.log(`${user.email}: ${balance.mxnc} MXNc (${balance.xlm} XLM)`);
+        void(`${user.email}: ${balance.mxnc} MXNc (${balance.xlm} XLM)`);
     }
 }
 process.exit(0);

@@ -127,7 +127,7 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'No puedes seguirte a ti mismo' });
         }
 
-        console.log(`[FollowRoute] User ${currentUserId} attempting to toggle follow on ${targetUserId}`);
+        void(`[FollowRoute] User ${currentUserId} attempting to toggle follow on ${targetUserId}`);
 
         const { data: followRecord, error: fetchError } = await supabase
             .from('followers')
@@ -142,7 +142,7 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
         }
 
         if (followRecord) {
-            console.log(`[FollowRoute] Already following. Unfollowing...`);
+            void(`[FollowRoute] Already following. Unfollowing...`);
             const { error: deleteError } = await supabase
                 .from('followers')
                 .delete()
@@ -151,7 +151,7 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
             if (deleteError) throw deleteError;
             return res.json({ message: 'Dejaste de seguir a este usuario', isFollowing: false });
         } else {
-            console.log(`[FollowRoute] Not following. Inserting record and incrementing...`);
+            void(`[FollowRoute] Not following. Inserting record and incrementing...`);
             const { error: insertError } = await supabase
                 .from('followers')
                 .insert({ follower_id: currentUserId, followed_id: targetUserId });
@@ -161,12 +161,12 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
             }
 
             // Actualizar cuenta de progreso de misión (RPC)
-            console.log(`[FollowRoute] Calling increment_user_follows for ${currentUserId}`);
+            void(`[FollowRoute] Calling increment_user_follows for ${currentUserId}`);
             const { error: rpcError } = await supabase.rpc('increment_user_follows', { user_uuid: currentUserId });
             if (rpcError) {
                 console.error('[FollowRoute] RPC ERROR increment_user_follows:', rpcError);
             } else {
-                console.log(`[FollowRoute] RPC success.`);
+                void(`[FollowRoute] RPC success.`);
             }
 
             const justFunded = await checkAndFundQuest(currentUserId);

@@ -47,7 +47,7 @@ export default function useAntiAFK({ adId, postId, proofToken, targetSeconds = 3
                 viewSeconds: targetSeconds,
                 proofToken
             });
-            console.log("Recompensa reclamada:", data);
+            void("Recompensa reclamada:", data);
             getWalletBalance(); // Recargar billetera
             if (onComplete) onComplete(data);
         } catch (error) {

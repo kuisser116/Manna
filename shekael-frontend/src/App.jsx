@@ -175,7 +175,7 @@ function App() {
       try {
         await sodiumReady;
         if (cancelled) return;
-        console.log('[E2EE] libsodium ready, no local keys.');
+        void('[E2EE] libsodium ready, no local keys.');
 
         // Limpiar IndexedDB legacy si existe
         try {
@@ -184,14 +184,6 @@ function App() {
         try {
           indexedDB.deleteDatabase('ShekaelPreKeys');
         } catch {}
-        try {
-          indexedDB.deleteDatabase('ShekaelRatchet');
-        } catch {}
-        const uid = useStore.getState().user?.id;
-        if (uid) {
-          try { indexedDB.deleteDatabase(`ShekaelPreKeys_${uid}`); } catch {}
-          try { indexedDB.deleteDatabase(`ShekaelRatchet_${uid}`); } catch {}
-        }
       } catch (e) {
         console.warn('[E2EE] init fallo:', e);
       }

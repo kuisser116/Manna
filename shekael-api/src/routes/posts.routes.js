@@ -521,7 +521,7 @@ router.get('/:postId', authMiddleware, async (req, res) => {
         const isAdmin = !!(req.user.is_admin || userData?.is_admin);
 
         const { data: post, error: postError } = await query.maybeSingle();
-        console.log(`[GET /posts/${postId}] post found:`, !!post, 'error:', postError);
+        void(`[GET /posts/${postId}] post found:`, !!post, 'error:', postError);
 
         if (!post || postError) return res.status(404).json({ message: 'Post no encontrado' });
 

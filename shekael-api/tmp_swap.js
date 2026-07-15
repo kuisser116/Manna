@@ -26,7 +26,7 @@ async function runSwap() {
         // 1. Asegurar trustline de forma manual si no está
         const hasTrust = account.balances.some(b => b.asset_code === 'USDC');
         if (!hasTrust) {
-            console.log('Creating USDC trustline...');
+            void('Creating USDC trustline...');
             const tx = new StellarSdk.TransactionBuilder(account, { fee: '1000' })
                 .addOperation(StellarSdk.Operation.changeTrust({ asset: USDC_ASSET }))
                 .setTimeout(30)
@@ -34,7 +34,7 @@ async function runSwap() {
                 .build();
             tx.sign(keypair);
             await server.submitTransaction(tx);
-            console.log('Trustline created.');
+            void('Trustline created.');
             // Reload account
             await new Promise(r => setTimeout(r, 2000));
         }
@@ -42,7 +42,7 @@ async function runSwap() {
         const freshAccount = await server.loadAccount(keypair.publicKey());
         
         // 2. Realizar PathPayment (XLM -> USDC)
-        console.log('Swapping 5000 XLM to USDC...');
+        void('Swapping 5000 XLM to USDC...');
         const swapTx = new StellarSdk.TransactionBuilder(freshAccount, { fee: '1000' })
             .addOperation(StellarSdk.Operation.pathPaymentStrictSend({
                 sendAsset: StellarSdk.Asset.native(),
@@ -58,7 +58,7 @@ async function runSwap() {
         
         swapTx.sign(keypair);
         const result = await server.submitTransaction(swapTx);
-        console.log('Swap successful!', result.hash);
+        void('Swap successful!', result.hash);
 
     } catch (err) {
         console.error('Swap failed:', err.response?.data?.extras?.result_codes || err.message);

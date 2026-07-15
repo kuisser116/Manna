@@ -38,7 +38,7 @@ export function initSocketIO(httpServer) {
 
   io.on('connection', (socket) => {
     const userId = socket.userId;
-    console.log(`[WS] Conectado: ${userId?.substring(0,8)} (${socket.id})`);
+    void(`[WS] Conectado: ${userId?.substring(0,8)} (${socket.id})`);
 
     // Trackear usuario
     if (!connectedUsers.has(userId)) {
@@ -50,7 +50,7 @@ export function initSocketIO(httpServer) {
     socket.on('join:conversation', (convId) => {
       if (!convId) return;
       socket.join(`conv:${convId}`);
-      console.log(`[WS] ${userId?.substring(0,8)} joined conv:${convId?.substring(0,8)}`);
+      void(`[WS] ${userId?.substring(0,8)} joined conv:${convId?.substring(0,8)}`);
     });
 
     // Salir de una conversación
@@ -78,11 +78,11 @@ export function initSocketIO(httpServer) {
           connectedUsers.delete(userId);
         }
       }
-      console.log(`[WS] Desconectado: ${userId?.substring(0,8)}`);
+      void(`[WS] Desconectado: ${userId?.substring(0,8)}`);
     });
   });
 
-  console.log('[WS] Socket.IO inicializado');
+  void('[WS] Socket.IO inicializado');
   return io;
 }
 
@@ -94,29 +94,29 @@ export function getIO() {
 
 export function emitToConversation(conversationId, event, data) {
   if (!io) {
-    console.log(`[WS EMIT FAIL] io es null, evento: ${event}, conv: ${conversationId?.substring(0,8)}`);
+    void(`[WS EMIT FAIL] io es null, evento: ${event}, conv: ${conversationId?.substring(0,8)}`);
     return;
   }
   const room = `conv:${conversationId}`;
   const socketsInRoom = io.sockets.adapter.rooms.get(room);
   const count = socketsInRoom ? socketsInRoom.size : 0;
-  console.log(`[WS EMIT] ${event} → room:${conversationId?.substring(0,8)} sockets:${count}`);
+  void(`[WS EMIT] ${event} → room:${conversationId?.substring(0,8)} sockets:${count}`);
   io.to(room).emit(event, data);
 }
 
 export function emitToUser(userId, event, data) {
   if (!io) {
-    console.log(`[WS EMIT FAIL] io es null, evento: ${event}, userId: ${userId?.substring(0,8)}`);
+    void(`[WS EMIT FAIL] io es null, evento: ${event}, userId: ${userId?.substring(0,8)}`);
     return;
   }
   const sockets = connectedUsers.get(userId);
   if (sockets) {
-    console.log(`[WS EMIT] ${event} → user:${userId?.substring(0,8)} sockets:${sockets.size}`);
+    void(`[WS EMIT] ${event} → user:${userId?.substring(0,8)} sockets:${sockets.size}`);
     sockets.forEach((socketId) => {
       io.to(socketId).emit(event, data);
     });
   } else {
-    console.log(`[WS EMIT NO_USER] ${event} → user:${userId?.substring(0,8)} (no conectado)`);
+    void(`[WS EMIT NO_USER] ${event} → user:${userId?.substring(0,8)} (no conectado)`);
   }
 }
 

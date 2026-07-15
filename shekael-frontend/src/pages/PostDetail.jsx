@@ -136,7 +136,7 @@ export default function PostDetail() {
             });
 
             if (res.ok) {
-                console.log("Vista registrada exitosamente");
+                void("Vista registrada exitosamente");
                 // Importante: Refrescar misiones para que suba la barra
                 verifyCompletion(true);
             } else {

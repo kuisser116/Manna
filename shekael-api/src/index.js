@@ -109,7 +109,7 @@ const io = initSocketIO(server);
 
 // ── Iniciar ───────────────────────────────────────────────
 server.listen(PORT, () => {
-    console.log(`
+    void(`
   🌾  ──────────────────────────────────────── 🌾
        Shekael API Gateway v0.4.0 · Puerto ${PORT}
        Almacenamiento: R2 (Cloudflare)

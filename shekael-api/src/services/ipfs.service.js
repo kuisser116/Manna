@@ -79,7 +79,7 @@ export async function deleteFromR2(filename) {
         });
 
         await client.send(command);
-        console.log(`[R2] Archivo eliminado: ${filename}`);
+        void(`[R2] Archivo eliminado: ${filename}`);
         return true;
     } catch (err) {
         console.error(`[R2 Delete Error]: ${err.message}`);

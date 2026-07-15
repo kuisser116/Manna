@@ -24,7 +24,7 @@ router.get('/admin/queue', authMiddleware, adminMiddleware, async (req, res) => 
         if (status) query = query.eq('status', status);
 
         const { data: reports, error: reportsError } = await query;
-        console.log(`[GET /admin/queue] status: ${status}, count: ${reports?.length}`);
+        void(`[GET /admin/queue] status: ${status}, count: ${reports?.length}`);
         if (reportsError) throw reportsError;
 
         // Unimos datos manualmente para evitar errores de Foreign Key (UUID vs TEXT)
@@ -78,7 +78,7 @@ router.post('/admin/resolve', authMiddleware, adminMiddleware, async (req, res) 
 
             const { data: rData, error: reportsError } = await supabase.from('post_reports').update({ status: 'resolved' }).eq('post_id', postId).select();
             if (reportsError) throw reportsError;
-            console.log(`[RESOLVE] confirm_ban postId: ${postId}. Posts: ${pData?.length}, Reports: ${rData?.length}`);
+            void(`[RESOLVE] confirm_ban postId: ${postId}. Posts: ${pData?.length}, Reports: ${rData?.length}`);
 
         } else if (action === 'restore') {
             const { data: pData, error: postError } = await supabase.from('posts').update({ is_banned: false, reports_count: 0 }).eq('id', postId).select();
@@ -86,12 +86,12 @@ router.post('/admin/resolve', authMiddleware, adminMiddleware, async (req, res) 
 
             const { data: rData, error: reportsError } = await supabase.from('post_reports').update({ status: 'resolved' }).eq('post_id', postId).select();
             if (reportsError) throw reportsError;
-            console.log(`[RESOLVE] restore postId: ${postId}. Posts: ${pData?.length}, Reports: ${rData?.length}`);
+            void(`[RESOLVE] restore postId: ${postId}. Posts: ${pData?.length}, Reports: ${rData?.length}`);
 
         } else if (action === 'ignore') {
             const { data: rData, error: reportsError } = await supabase.from('post_reports').update({ status: 'resolved' }).eq('post_id', postId).select();
             if (reportsError) throw reportsError;
-            console.log(`[RESOLVE] ignore postId: ${postId}. Reports: ${rData?.length}`);
+            void(`[RESOLVE] ignore postId: ${postId}. Reports: ${rData?.length}`);
         }
 
         res.json({ message: 'Acción procesada correctamente' });
@@ -133,7 +133,7 @@ router.post('/report', authMiddleware, async (req, res) => {
         // 3. Si llega a 10 reportes, banear automáticamente
         if (newCount >= 10) {
             await supabase.from('posts').update({ is_banned: true }).eq('id', postId);
-            console.log(`[Moderation] Post ${postId} baneado automáticamente (${newCount} reportes)`);
+            void(`[Moderation] Post ${postId} baneado automáticamente (${newCount} reportes)`);
         }
         
         res.json({ message: 'Reporte enviado. Gracias por ayudar a la comunidad.', reportId });

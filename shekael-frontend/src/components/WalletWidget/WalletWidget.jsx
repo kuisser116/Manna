@@ -66,7 +66,7 @@ export function WalletWidget({ variant = 'default' }) {
             .then(data => {
                 if (data?.rates?.MXN) setUsdRate(data.rates.MXN);
             })
-            .catch(() => console.log('Usando tasa MXN de fallback'));
+            .catch(() => void('Usando tasa MXN de fallback'));
     }, []);
 
     useEffect(() => {
@@ -79,7 +79,7 @@ export function WalletWidget({ variant = 'default' }) {
     // Refrescar misiones cuando se dispara el evento desde Profile/PostCard
     useEffect(() => {
         const handleQuestRefresh = () => {
-            console.log('[WalletWidget] Event received: Shekael:quest-refresh');
+            void('[WalletWidget] Event received: Shekael:quest-refresh');
             fetchStatus();
         };
         window.addEventListener('Shekael:quest-refresh', handleQuestRefresh);

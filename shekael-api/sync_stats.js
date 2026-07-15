@@ -4,14 +4,14 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 async function syncStats() {
-    console.log('🔄 Sincronizando estadísticas desde tablas de relación...\n');
+    void('🔄 Sincronizando estadísticas desde tablas de relación...\n');
 
     // 1. Obtener todos los usuarios
     const { data: users, error: usersError } = await supabase.from('users').select('id, email');
     if (usersError) return console.error('Error users:', usersError);
 
     for (const user of users) {
-        console.log(`[${user.email}] Sincronizando...`);
+        void(`[${user.email}] Sincronizando...`);
 
         // A. Contar Seguidores (donde el usuario es el seguidor)
         const { count: followsCount, error: fError } = await supabase
@@ -46,10 +46,10 @@ async function syncStats() {
         if (updateError) {
             console.error(`   ❌ Error actualizando ${user.email}:`, updateError.message);
         } else {
-            console.log(`   ✅ Sincronizado: Follows=${followsCount}, Likes=${likesCount}, Watch=${totalWatch}s`);
+            void(`   ✅ Sincronizado: Follows=${followsCount}, Likes=${likesCount}, Watch=${totalWatch}s`);
         }
     }
-    console.log('\n✨ Sincronización terminada.');
+    void('\n✨ Sincronización terminada.');
 }
 
 syncStats();

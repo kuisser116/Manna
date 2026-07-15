@@ -305,7 +305,7 @@ router.post('/migrate-terms', authMiddleware, async (req, res) => {
             
         if (updateError) throw updateError;
         
-        console.log(`[MigrateTerms] Usuario ${req.user.id} actualizado a ${TERMS_VERSION}`);
+        void(`[MigrateTerms] Usuario ${req.user.id} actualizado a ${TERMS_VERSION}`);
         res.json({ migrated: true, terms_version: TERMS_VERSION, terms_accepted_at: now });
     } catch (err) {
         console.error('[MigrateTerms] Error:', err.message);
@@ -404,7 +404,7 @@ router.post('/clear-pin', authMiddleware, async (req, res) => {
             .update({ pin_hash: null })
             .eq('id', req.user.id);
         if (error) throw error;
-        console.log(`[PIN] Cleared PIN for user ${req.user.id?.substring(0,8)}`);
+        void(`[PIN] Cleared PIN for user ${req.user.id?.substring(0,8)}`);
         res.json({ success: true });
     } catch (err) {
         console.error('[PIN] Error clearing PIN:', err.message);
@@ -429,14 +429,14 @@ router.get('/me', authMiddleware, async (req, res) => {
 
         // Auto-migrate terms_version si está desactualizado o incompleto
         if (!user.terms_version || user.terms_version !== TERMS_VERSION) {
-            console.log(`[Auth/Me] Auto-migrating terms ${user.terms_version || 'null'} → ${TERMS_VERSION} for ${user.email}`);
+            void(`[Auth/Me] Auto-migrating terms ${user.terms_version || 'null'} → ${TERMS_VERSION} for ${user.email}`);
             const { error: migrateErr } = await supabase
                 .from('users')
                 .update({ terms_version: TERMS_VERSION })
                 .eq('id', user.id);
             if (!migrateErr) {
                 user.terms_version = TERMS_VERSION; // actualizar objeto para respuesta
-                console.log(`[Auth/Me] Migrated ${user.email} to ${TERMS_VERSION}`);
+                void(`[Auth/Me] Migrated ${user.email} to ${TERMS_VERSION}`);
             } else {
                 console.error(`[Auth/Me] Migration error:`, migrateErr.message);
             }
@@ -459,200 +459,6 @@ router.get('/me', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Me error:', err);
         res.status(500).json({ message: 'Error al obtener usuario' });
-    }
-});
-
-// ── Pre-keys (Signal Protocol) ──
-
-// POST /auth/pre-keys/upload — Subir batch de pre-keys (signed + one-time)
-router.post('/pre-keys/upload', authMiddleware, async (req, res) => {
-    try {
-        const supabase = getDB();
-        const userId = req.user.id;
-        const { signedPreKey, oneTimePreKeys } = req.body;
-
-        if (!signedPreKey || !oneTimePreKeys || !Array.isArray(oneTimePreKeys)) {
-            return res.status(400).json({ message: 'signedPreKey y oneTimePreKeys requeridos' });
-        }
-
-        // Validar signed pre-key
-        if (!signedPreKey.key_id || !signedPreKey.public_key || !signedPreKey.signature) {
-            return res.status(400).json({ message: 'Signed pre-key inválida' });
-        }
-
-        // Eliminar signed pre-keys anteriores (solo una activa por usuario)
-        await supabase
-            .from('pre_keys')
-            .delete()
-            .eq('user_id', userId)
-            .eq('key_type', 'signed');
-
-        // Insertar nueva signed pre-key
-        const { error: signedErr } = await supabase
-            .from('pre_keys')
-            .insert({
-                user_id: userId,
-                key_id: signedPreKey.key_id,
-                key_type: 'signed',
-                public_key: signedPreKey.public_key,
-                signature: signedPreKey.signature
-            });
-
-        if (signedErr) throw signedErr;
-
-        // Actualizar signed_pre_key_id en users
-        await supabase
-            .from('users')
-            .update({ signed_pre_key_id: signedPreKey.key_id, last_pre_key_upload_at: new Date().toISOString() })
-            .eq('id', userId);
-
-        // Insertar one-time pre-keys (ignorar duplicados por key_id)
-        const oneTimeRecords = oneTimePreKeys.map(pk => ({
-            user_id: userId,
-            key_id: pk.key_id,
-            key_type: 'one-time',
-            public_key: pk.public_key
-        }));
-
-        const { error: otErr } = await supabase
-            .from('pre_keys')
-            .insert(oneTimeRecords, { ignoreDuplicates: true });
-
-        if (otErr) {
-            // Si falla por unique, igual continuamos
-            console.warn('[PreKeys] Some one-time keys may be duplicates:', otErr.message);
-        }
-
-        console.log(`[PreKeys] Uploaded ${oneTimeRecords.length} one-time + 1 signed for user ${userId.substring(0,8)}`);
-        res.json({ success: true, count: oneTimeRecords.length });
-    } catch (err) {
-        console.error('[PreKeys] Upload error:', err.message);
-        res.status(500).json({ message: 'Error al subir pre-keys' });
-    }
-});
-
-// GET /auth/pre-keys/bundle/:userId — Obtener bundle X3DH de un usuario
-router.get('/pre-keys/bundle/:userId', authMiddleware, async (req, res) => {
-    try {
-        const supabase = getDB();
-        const targetUserId = req.params.userId;
-        const requesterId = req.user.id;
-
-        if (targetUserId === requesterId) {
-            return res.status(400).json({ message: 'No puedes obtener tu propio bundle' });
-        }
-
-        // Obtener identity key (public_key) del usuario
-        const { data: user, error: userErr } = await supabase
-            .from('users')
-            .select('public_key, signed_pre_key_id')
-            .eq('id', targetUserId)
-            .single();
-
-        if (userErr || !user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-
-        if (!user.public_key) {
-            return res.status(404).json({ message: 'El usuario no tiene llaves configuradas' });
-        }
-
-        // Obtener signed pre-key activa
-        const { data: signedKey } = await supabase
-            .from('pre_keys')
-            .select('*')
-            .eq('user_id', targetUserId)
-            .eq('key_type', 'signed')
-            .eq('key_id', user.signed_pre_key_id)
-            .single();
-
-        // Obtener una one-time pre-key no usada
-        const { data: oneTimeKey } = await supabase
-            .from('pre_keys')
-            .select('*')
-            .eq('user_id', targetUserId)
-            .eq('key_type', 'one-time')
-            .eq('is_used', false)
-            .limit(1)
-            .single();
-
-        // Marcar one-time como usada si existe
-        if (oneTimeKey) {
-            await supabase
-                .from('pre_keys')
-                .update({ is_used: true })
-                .eq('id', oneTimeKey.id);
-        }
-
-        res.json({
-            identityKey: user.public_key,
-            signedPreKey: signedKey ? {
-                key_id: signedKey.key_id,
-                public_key: signedKey.public_key,
-                signature: signedKey.signature
-            } : null,
-            oneTimePreKey: oneTimeKey ? {
-                key_id: oneTimeKey.key_id,
-                public_key: oneTimeKey.public_key
-            } : null
-        });
-    } catch (err) {
-        console.error('[PreKeys] Bundle error:', err.message);
-        res.status(500).json({ message: 'Error al obtener bundle' });
-    }
-});
-
-// GET /auth/pre-keys/status — ¿Cuántas pre-keys me quedan?
-router.get('/pre-keys/status', authMiddleware, async (req, res) => {
-    try {
-        const supabase = getDB();
-        const userId = req.user.id;
-
-        const { data: keys, error } = await supabase
-            .from('pre_keys')
-            .select('key_type, is_used')
-            .eq('user_id', userId);
-
-        if (error) throw error;
-
-        const signedCount = keys.filter(k => k.key_type === 'signed').length;
-        const oneTimeTotal = keys.filter(k => k.key_type === 'one-time').length;
-        const oneTimeUsed = keys.filter(k => k.key_type === 'one-time' && k.is_used).length;
-        const oneTimeAvailable = oneTimeTotal - oneTimeUsed;
-
-        res.json({
-            signedPreKey: signedCount > 0,
-            oneTimeTotal,
-            oneTimeUsed,
-            oneTimeAvailable,
-            needsRefill: oneTimeAvailable < 10
-        });
-    } catch (err) {
-        console.error('[PreKeys] Status error:', err.message);
-        res.status(500).json({ message: 'Error al obtener estado' });
-    }
-});
-
-// POST /auth/pre-keys/consume/:keyId — Marcar pre-key como usada (manual fallback)
-router.post('/pre-keys/consume/:keyId', authMiddleware, async (req, res) => {
-    try {
-        const supabase = getDB();
-        const userId = req.user.id;
-        const keyId = parseInt(req.params.keyId);
-
-        const { error } = await supabase
-            .from('pre_keys')
-            .update({ is_used: true })
-            .eq('user_id', userId)
-            .eq('key_id', keyId)
-            .eq('key_type', 'one-time')
-            .eq('is_used', false);
-
-        if (error) throw error;
-        res.json({ success: true });
-    } catch (err) {
-        console.error('[PreKeys] Consume error:', err.message);
-        res.status(500).json({ message: 'Error al consumir pre-key' });
     }
 });
 

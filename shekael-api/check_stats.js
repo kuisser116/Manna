@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 async function checkStats() {
-    console.log('📊 Consultando estadísticas de usuarios en Supabase...\n');
+    void('📊 Consultando estadísticas de usuarios en Supabase...\n');
     
     const { data: users, error } = await supabase
         .from('users')
@@ -16,7 +16,7 @@ async function checkStats() {
     }
 
     if (!users || users.length === 0) {
-        console.log('ℹ️ No hay usuarios registrados.');
+        void('ℹ️ No hay usuarios registrados.');
         return;
     }
 

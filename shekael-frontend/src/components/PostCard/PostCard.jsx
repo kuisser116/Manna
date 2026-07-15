@@ -130,7 +130,7 @@ export function PostCard({ post, isDetail = false }) {
                     url: postUrl,
                 });
             } catch (err) {
-                console.log('Cancelado o error al compartir', err);
+                void('Cancelado o error al compartir', err);
             }
         } else {
             navigator.clipboard.writeText(postUrl);
@@ -257,7 +257,7 @@ export function PostCard({ post, isDetail = false }) {
 
             if (res.ok) {
                 const data = await res.json();
-                console.log(`Vista registrada para video ${id} | visto: ${watchedSeconds}s de ${videoDuration}s`, data);
+                void(`Vista registrada para video ${id} | visto: ${watchedSeconds}s de ${videoDuration}s`, data);
                 // Refrescar misiones para que suba la barra
                 verifyCompletion(true);
             } else {

@@ -48,7 +48,7 @@ router.post('/support', authMiddleware, async (req, res) => {
                 // Buscamos si el 'to' (Public Key) es de un usuario nuestro
                 const { data: destUser } = await supabase.from('users').select('id, email').eq('stellar_public_key', to).single();
                 if (destUser) {
-                    console.log(`[AutoRepair] Intentando activar wallet de destino: ${destUser.email}`);
+                    void(`[AutoRepair] Intentando activar wallet de destino: ${destUser.email}`);
                     repairWallet(destUser.id).catch(e => console.error(`[AutoRepair] Falló para ${destUser.email}:`, e.message));
                 }
 

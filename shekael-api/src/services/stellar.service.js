@@ -260,12 +260,12 @@ export async function registerContentOwnership(secretKey, cid) {
 
         transaction.sign(sourceKeypair);
         const result = await server.submitTransaction(transaction);
-        console.log(`✅ ContentOwnership registrado on-chain. Hash: ${result.hash}`);
+        void(`✅ ContentOwnership registrado on-chain. Hash: ${result.hash}`);
         return result.hash;
     } catch (err) {
         // Si la cuenta no existe en Horizon (404), es porque está en modo 'off-chain' (esperando misiones)
         if (err.response?.status === 404) {
-            console.log(`ℹ️  ContentOwnership: cuenta del creador aún off-chain. Registro pospuesto.`);
+            void(`ℹ️  ContentOwnership: cuenta del creador aún off-chain. Registro pospuesto.`);
             return null;
         }
 
@@ -314,7 +314,7 @@ export async function sendConsentMemo(user, memoText) {
 
         transaction.sign(sourceKeypair);
         const result = await server.submitTransaction(transaction);
-        console.log(`✅ Consentimiento registrado on-chain. Hash: ${result.hash}`);
+        void(`✅ Consentimiento registrado on-chain. Hash: ${result.hash}`);
         return { hash: result.hash };
     } catch (err) {
         console.warn('sendConsentMemo: no pudo registrar on-chain:', err.message);
@@ -415,7 +415,7 @@ export async function ensureTrustline(secretKey, retries = 3) {
                 break;
             } catch (err) {
                 if (err.response?.status === 404 && i < retries - 1) {
-                    console.log(`[Stellar] Cuenta ${keypair.publicKey()} no encontrada. Reintentando en 2s... (${i+1}/${retries})`);
+                    void(`[Stellar] Cuenta ${keypair.publicKey()} no encontrada. Reintentando en 2s... (${i+1}/${retries})`);
                     await new Promise(r => setTimeout(r, 2000));
                     continue;
                 }
@@ -446,7 +446,7 @@ export async function ensureTrustline(secretKey, retries = 3) {
         const builtTx = transaction.build();
         builtTx.sign(keypair);
         await server.submitTransaction(builtTx);
-        console.log(`✅ Trustlines creadas para ${keypair.publicKey()}`);
+        void(`✅ Trustlines creadas para ${keypair.publicKey()}`);
         return true;
     } catch (err) {
         console.error('Error al crear trustlines:', err.message);

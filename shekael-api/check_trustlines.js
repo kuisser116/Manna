@@ -4,7 +4,7 @@ const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.or
 
 try {
     const account = await server.loadAccount(publicKey);
-    console.log(JSON.stringify(account.balances, null, 2));
+    void(JSON.stringify(account.balances, null, 2));
 } catch (e) {
     console.error(e);
 }

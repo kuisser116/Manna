@@ -141,7 +141,7 @@ export function useChatCrypto() {
       sodium.from_base64(theirPublicKeyBase64),
       sodium.from_base64(kp.privateKey)
     );
-    console.log('[CRYPTO] deriveSharedSecret theirPub[]:', theirPublicKeyBase64.substring(0,16), 'myPriv[]:', kp.privateKey.substring(0,16), 'ss[]:', sodium.to_base64(ss).substring(0,16));
+    void('[CRYPTO] deriveSharedSecret theirPub[]:', theirPublicKeyBase64.substring(0,16), 'myPriv[]:', kp.privateKey.substring(0,16), 'ss[]:', sodium.to_base64(ss).substring(0,16));
     return ss;
   }, [loadKeyPair, ensureSodium]);
 
@@ -153,7 +153,7 @@ export function useChatCrypto() {
     const ciphertext = sodium.crypto_secretbox_easy(
       sodium.from_string(plaintext), nonce, sharedSecret
     );
-    console.log('[CRYPTO] encrypt OK ss[:16]:', sodium.to_base64(sharedSecret).substring(0,16));
+    void('[CRYPTO] encrypt OK ss[:16]:', sodium.to_base64(sharedSecret).substring(0,16));
     return {
       encryptedContent: sodium.to_base64(ciphertext),
       nonce: sodium.to_base64(nonce)
@@ -169,7 +169,7 @@ export function useChatCrypto() {
       sodium.from_base64(nonceBase64),
       sharedSecret
     );
-    console.log('[CRYPTO] decrypt OK ss[:16]:', sodium.to_base64(sharedSecret).substring(0,16));
+    void('[CRYPTO] decrypt OK ss[:16]:', sodium.to_base64(sharedSecret).substring(0,16));
     return sodium.to_string(plaintext);
   }, [deriveSharedSecret, ensureSodium]);
 

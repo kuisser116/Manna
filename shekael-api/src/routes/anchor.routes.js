@@ -79,7 +79,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
             });
         }
 
-        console.log(`[Withdraw] Usuario ${req.user.id} solicitando retiro de ${requestedAmount} ${assetCode}. Saldo disponible: ${availableBalance} ${currencyName}`);
+        void(`[Withdraw] Usuario ${req.user.id} solicitando retiro de ${requestedAmount} ${assetCode}. Saldo disponible: ${availableBalance} ${currencyName}`);
 
         const result = await anchorService.initiateWithdrawal(user, assetCode, amount);
         res.json(result); // Devuelve { url, id }

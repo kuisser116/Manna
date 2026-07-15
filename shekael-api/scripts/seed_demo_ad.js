@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 async function seedDemoAd() {
-    console.log('🌱 Creando anuncio de demo en Supabase...\n');
+    void('🌱 Creando anuncio de demo en Supabase...\n');
 
     // 1. Buscar un usuario para ser el anunciante de demo
     const { data: users, error: usersError } = await supabase
@@ -27,7 +27,7 @@ async function seedDemoAd() {
         process.exit(1);
     }
 
-    console.log(`✅ Usando usuario como anunciante: ${users.display_name || users.email} (${users.id})`);
+    void(`✅ Usando usuario como anunciante: ${users.display_name || users.email} (${users.id})`);
 
     // 2. Verificar si ya existe un anuncio activo
     const { data: existing } = await supabase
@@ -38,8 +38,8 @@ async function seedDemoAd() {
         .single();
 
     if (existing) {
-        console.log(`ℹ️  Ya existe un anuncio activo: "${existing.title}" (ID: ${existing.id})`);
-        console.log('   No es necesario crear uno nuevo.\n');
+        void(`ℹ️  Ya existe un anuncio activo: "${existing.title}" (ID: ${existing.id})`);
+        void('   No es necesario crear uno nuevo.\n');
         process.exit(0);
     }
 
@@ -66,14 +66,14 @@ async function seedDemoAd() {
         process.exit(1);
     }
 
-    console.log(`✅ Anuncio de demo creado:`);
-    console.log(`   ID: ${adId}`);
-    console.log(`   Título: 🚀 Shekael — La Red Social que te Paga`);
-    console.log(`   Estado: active`);
-    console.log(`   Budget: $50 USDC`);
-    console.log(`   CPM: $1.00 USDC`);
-    console.log('\n🎉 ¡Listo! El anuncio aparecerá en el feed después de cada 7 posts.');
-    console.log('   Abre el feed y cierra/abre la app para que cargue el nuevo anuncio.\n');
+    void(`✅ Anuncio de demo creado:`);
+    void(`   ID: ${adId}`);
+    void(`   Título: 🚀 Shekael — La Red Social que te Paga`);
+    void(`   Estado: active`);
+    void(`   Budget: $50 USDC`);
+    void(`   CPM: $1.00 USDC`);
+    void('\n🎉 ¡Listo! El anuncio aparecerá en el feed después de cada 7 posts.');
+    void('   Abre el feed y cierra/abre la app para que cargue el nuevo anuncio.\n');
 }
 
 seedDemoAd().catch(console.error);

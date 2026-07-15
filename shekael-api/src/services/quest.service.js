@@ -32,7 +32,7 @@ export async function checkAndFundQuest(userId) {
 
     if (achievedWatch && achievedLikes && achievedFollows) {
         // Disparar fondeo en Testnet (XLM)
-        console.log(`🚀 Validador Maestro: El usuario ${user.email} completó sus misiones. Fondeando cuenta...`);
+        void(`🚀 Validador Maestro: El usuario ${user.email} completó sus misiones. Fondeando cuenta...`);
         try {
             const funded = await fundWithFriendbot(user.stellar_public_key);
             
@@ -44,7 +44,7 @@ export async function checkAndFundQuest(userId) {
             }
 
             // Una vez fondeado (XLM), ya existe en la red y podemos crear la Trustline USDC/MXNe
-            console.log(`🌾 Creando trustlines para ${user.email}...`);
+            void(`🌾 Creando trustlines para ${user.email}...`);
             const secretKey = decrypt(user.stellar_secret_key_encrypted);
             const trustlineOk = await ensureTrustline(secretKey);
 
@@ -64,7 +64,7 @@ export async function checkAndFundQuest(userId) {
                 return false;
             }
 
-            console.log(`✅ Misiones completadas y cuenta activada para ${user.email}`);
+            void(`✅ Misiones completadas y cuenta activada para ${user.email}`);
             return true; // Acaba de ser fondeado y activado
         } catch (err) {
             console.error('Error en activación post-misión:', err.message);

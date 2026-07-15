@@ -40,12 +40,12 @@ CREATE INDEX IF NOT EXISTS idx_post_views_post ON post_views(post_id);
     });
     const text = await res.text();
     if (res.ok || res.status === 204) {
-      console.log('Migration executed successfully via REST API');
+      void('Migration executed successfully via REST API');
       process.exit(0);
     }
-    console.log(`REST API returned ${res.status}: ${text.substring(0, 200)}`);
+    void(`REST API returned ${res.status}: ${text.substring(0, 200)}`);
   } catch (e) {
-    console.log('REST method failed:', e.message);
+    void('REST method failed:', e.message);
   }
 
   // Try 2: Try to use RPC call 
@@ -67,7 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_post_views_post ON post_views(post_id);
     const pgModule = await import('pg');
     pgClient = pgModule.default || pgModule;
   } catch (_) {
-    console.log('pg module not available');
+    void('pg module not available');
   }
 
   if (pgClient) {
@@ -88,21 +88,21 @@ CREATE INDEX IF NOT EXISTS idx_post_views_post ON post_views(post_id);
         await client.connect();
         await client.query(sql);
         await client.end();
-        console.log('Migration executed successfully via PostgreSQL connection');
+        void('Migration executed successfully via PostgreSQL connection');
         process.exit(0);
       } catch (e) {
-        console.log(`Connection ${connStr.substring(0, 60)}... failed: ${e.message}`);
+        void(`Connection ${connStr.substring(0, 60)}... failed: ${e.message}`);
       }
     }
   }
 
   // All methods failed - output SQL for manual execution
-  console.log('\n========================================');
-  console.log('Could not auto-execute migration.');
-  console.log('Please run this SQL in Supabase SQL Editor:');
-  console.log('========================================\n');
-  console.log(sql);
-  console.log('\n========================================');
+  void('\n========================================');
+  void('Could not auto-execute migration.');
+  void('Please run this SQL in Supabase SQL Editor:');
+  void('========================================\n');
+  void(sql);
+  void('\n========================================');
   process.exit(1);
 }
 
