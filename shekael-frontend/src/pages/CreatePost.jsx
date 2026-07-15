@@ -7,8 +7,6 @@ import useFeed from '../hooks/useFeed';
 import useStore from '../store';
 import { useImageCompressor } from '../hooks/useImageCompressor';
 import VideoUploadWizard from '../components/VideoUploadWizard/VideoUploadWizard';
-import { generateThumbnail } from '../utils/mediaUtils';
-import { preValidateContent } from '../api/posts.api';
 import styles from '../styles/pages/CreatePost.module.css';
 
 const API_URL = (import.meta.env.VITE_API_URL || location.origin);
@@ -111,27 +109,9 @@ export default function CreatePost() {
   const handleVideoPublish = async ({ videoFile, thumbnailFile, title, description, tags, visibility, scheduledAt }) => {
     const totalSizeMB = (videoFile.size / (1024 * 1024)).toFixed(1);
 
-    addToast('loading', 'Validando contenido...', 'La IA esta revisando tu video antes de iniciar la subida');
+    addToast('loading', 'Preparando video...', 'Iniciando subida');
 
     try {
-      let thumbBase64 = null;
-      if (thumbnailFile) {
-        thumbBase64 = await generateThumbnail(thumbnailFile);
-      } else {
-        thumbBase64 = await generateThumbnail(videoFile);
-      }
-
-      const aiCheck = await preValidateContent({
-        text: `Titulo: ${title}\nDescripcion: ${description || ''}`,
-        type: 'video',
-        thumbnailBase64: thumbBase64
-      });
-
-      if (aiCheck.data.verdict === 'rejected') {
-        addToast('error', 'Contenido rechazado', aiCheck.data.reason || 'Tu video no cumple con las normas de la comunidad.');
-        return;
-      }
-
       addToast('loading', 'Subiendo video...', `Preparando ${totalSizeMB} MB...`);
 
       const formData = new FormData();
@@ -181,20 +161,7 @@ export default function CreatePost() {
     }
     if (type === 'image') {
       const sizeKB = (imageFile.size / 1024).toFixed(0);
-      addToast('loading', 'Validando imagen...', 'La IA esta revisando tu contenido...');
       try {
-        const thumbBase64 = await generateThumbnail(imageFile);
-        const aiCheck = await preValidateContent({
-          text: content,
-          type: 'image',
-          thumbnailBase64: thumbBase64
-        });
-
-        if (aiCheck.data.verdict === 'rejected') {
-          addToast('error', 'Contenido rechazado', aiCheck.data.reason || 'Tu imagen no cumple con las normas.');
-          return;
-        }
-
         addToast('loading', 'Subiendo a IPFS...', `Enviando ${sizeKB} KB a la red descentralizada`);
         const result = await uploadImageToIPFS();
         const cid = result.cid?.slice(0, 16);
@@ -204,18 +171,7 @@ export default function CreatePost() {
         addToast('error', 'Error al subir imagen', err.message);
       }
     } else {
-      addToast('loading', 'Validando post...', 'La IA esta revisando tu mensaje...');
       try {
-        const aiCheck = await preValidateContent({
-          text: content,
-          type: 'micro-text'
-        });
-
-        if (aiCheck.data.verdict === 'rejected') {
-          addToast('error', 'Contenido rechazado', aiCheck.data.reason || 'Tu post no cumple con las normas.');
-          return;
-        }
-
         addToast('loading', 'Publicando...', 'Enviando a la red');
         await createPost({ type, content });
         addToast('success', 'Publicado!', 'Tu post ya esta en el feed');
