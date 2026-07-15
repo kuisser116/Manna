@@ -5,6 +5,7 @@ import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
 import { getUserProfile } from '../../api/users.api';
 import { verifyPin } from '../../api/auth.api';
+import PinKeypad, { pinHash } from '../../components/PinKeypad/PinKeypad';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import { getKeyPair } from '../../crypto/keyStore';
 import {
@@ -14,8 +15,7 @@ import {
   uploadChatFile,
   searchChatMessages, deleteMessage, forwardMessage, editMessage,
   togglePinConversation, setChatNickname, setChatBackground,
-  togglePinMessage, getPinnedMessage, markAsRead,
-  deleteAllMessages
+  togglePinMessage, getPinnedMessage, markAsRead
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
 import StickerPicker from '../../components/StickerPicker';
@@ -107,9 +107,7 @@ export default function Chat() {
 
   // PIN confirm para borrar historial
   const [showPinConfirm, setShowPinConfirm] = useState(false);
-  const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
-  const [pinProcessing, setPinProcessing] = useState(false);
 
   // Fondo de conversación
   const [bgConfiguring, setBgConfiguring] = useState(false);
@@ -118,16 +116,6 @@ export default function Chat() {
   const [bgOpacity, setBgOpacity] = useState(5); // 1-10, default 5
   const [bgOriginalPreview, setBgOriginalPreview] = useState(null);
   const bgInputRef = useRef(null);
-
-  // computePinHash local (mismo algoritmo que LockScreen)
-  function computePinHash(p) {
-    let hash = 0;
-    for (let i = 0; i < p.length; i++) {
-      hash = ((hash << 5) - hash) + p.charCodeAt(i);
-      hash |= 0;
-    }
-    return 'pin_' + hash;
-  }
   const [nicknameInput, setNicknameInput] = useState('');
 
   // Filtro: 'all' | 'unread'
@@ -556,9 +544,17 @@ export default function Chat() {
         });
       }
 
-      setMessages(decrypted);
+      // Filtrar mensajes anteriores al clearedAt (limpieza local)
+      const clearedKey = `shekael_chat_cleared_${activeConv.id}`;
+      const clearedData = JSON.parse(localStorage.getItem(clearedKey));
+      let visibleMsgs = decrypted;
+      if (clearedData?.clearedAt) {
+        const clearedTime = new Date(clearedData.clearedAt).getTime();
+        visibleMsgs = decrypted.filter(m => new Date(m.created_at).getTime() >= clearedTime);
+      }
+      setMessages(visibleMsgs);
       // Inicializar ref de IDs para el polling
-      decrypted.forEach(m => prevMsgIdsRef.current.add(m.id));
+      visibleMsgs.forEach(m => prevMsgIdsRef.current.add(m.id));
       scrollToBottom();
       loadPinnedMessage(conv.id);
     } catch (err) {
@@ -1066,43 +1062,17 @@ export default function Chat() {
   // ── PIN confirm para borrar historial ──
   const handleOpenPinConfirm = () => {
     setShowChatMenu(false);
-    setPinInput('');
     setPinError('');
     setShowPinConfirm(true);
   };
 
-  const handlePinDigit = (d) => {
-    if (pinProcessing) return;
-    setPinError('');
-    const newPin = pinInput + d;
-    if (newPin.length <= 6) {
-      setPinInput(newPin);
-      if (newPin.length === 6) {
-        confirmDeleteHistory(newPin);
-      }
-    }
-  };
-
-  const handlePinDelete = () => {
-    setPinInput(p => p.slice(0, -1));
-  };
-
-  const confirmDeleteHistory = async (pin) => {
-    const pinHash = computePinHash(pin);
-    setPinProcessing(true);
-    try {
-      await verifyPin(pinHash);
-      // PIN correcto → borrar mensajes
-      await deleteAllMessages(activeConv.id);
-      setMessages([]);
-      setShowPinConfirm(false);
-      setPinInput('');
-      setPinProcessing(false);
-    } catch (e) {
-      setPinError('PIN incorrecto');
-      setPinInput('');
-      setPinProcessing(false);
-    }
+  const handlePinComplete = async (pin) => {
+    await verifyPin(pinHash(pin));
+    // PIN correcto → limpiar vista (no toca la BD)
+    const key = `shekael_chat_cleared_${activeConv.id}`;
+    localStorage.setItem(key, JSON.stringify({ clearedAt: new Date().toISOString() }));
+    setMessages([]);
+    setShowPinConfirm(false);
   };
 
   // ── Fondo de conversación ──
@@ -2229,37 +2199,17 @@ export default function Chat() {
         />
       )}
 
-      {/* PIN confirmation modal */}
+      {/* PIN confirmation modal (reusable PinKeypad) */}
       {showPinConfirm && (
-        <div className={styles.pinOverlay} onClick={() => setShowPinConfirm(false)}>
-          <div className={styles.pinModal} onClick={e => e.stopPropagation()}>
-            <h3 className={styles.pinModalTitle}>Confirmar PIN</h3>
-            <p className={styles.pinModalSubtitle}>Ingresa tu PIN para borrar el historial</p>
-            <div className={styles.pinDots}>
-              {Array.from({length: 6}).map((_, i) => (
-                <div key={i} className={pinInput[i] !== undefined ? styles.pinDotFilled : styles.pinDotEmpty} />
-              ))}
-            </div>
-            {pinError && <p className={styles.pinModalError}>{pinError}</p>}
-            {pinProcessing && <p className={styles.pinModalProcessing}>Verificando...</p>}
-            <div className={styles.pinKeypad}>
-              {[1,2,3,4,5,6,7,8,9].map(n => (
-                <button key={n} className={styles.pinKey} onClick={() => handlePinDigit(String(n))}>{n}</button>
-              ))}
-              <div />
-              <button className={styles.pinKey} onClick={() => handlePinDigit('0')}>0</button>
-              <button className={styles.pinKeyDel} onClick={handlePinDelete}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
-                  <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
-                </svg>
-              </button>
-            </div>
-            <button className={styles.pinCancelBtn} onClick={() => { setShowPinConfirm(false); setPinInput(''); setPinError(''); }}>
-              Cancelar
-            </button>
-          </div>
-        </div>
+        <PinKeypad
+          mode="enter"
+          title="Confirmar PIN"
+          subtitle="Ingresa tu PIN para borrar el historial"
+          onComplete={handlePinComplete}
+          onCancel={() => { setShowPinConfirm(false); setPinError(''); }}
+          error={pinError}
+          loading={false}
+        />
       )}
 
     </div>
