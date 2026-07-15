@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Wallet, RefreshCw, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
-import WalletRamp from '../WalletRamp/WalletRamp';
+import WithdrawModal from '../WithdrawModal/WithdrawModal';
 import DepositModal from '../DepositModal/DepositModal';
 import styles from './WalletWidget.module.css';
 
@@ -21,7 +21,7 @@ export function WalletWidget({ variant = 'default' }) {
     const { mxneBalance, balance, currency, user, balanceLoading } = useStore();
     const { fetchBalance } = useWallet();
     const [isExpanded, setIsExpanded] = useState(false);
-    const [isRampOpen, setIsRampOpen] = useState(false);
+    const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
     const [isDepositOpen, setIsDepositOpen] = useState(false);
     const [shouldRender, setShouldRender] = useState(false);
 
@@ -160,7 +160,7 @@ export function WalletWidget({ variant = 'default' }) {
                 {mxneAmount > 0 && (
                     <button
                         className={styles.withdrawBtn}
-                        onClick={(e) => { e.stopPropagation(); setIsRampOpen(true); }}
+                        onClick={(e) => { e.stopPropagation(); setIsWithdrawOpen(true); }}
                     >
                         <ArrowUpFromLine size={14} />
                         Retirar
