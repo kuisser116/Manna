@@ -75,7 +75,11 @@ export default function Chat() {
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [showPickerTab, setShowPickerTab] = useState('emojis'); // 'emojis' | 'stickers'
+  const [showPickerTab, setShowPickerTab] = useState(''); // 'emojis' | 'stickers' | ''
+
+  // Reenviar
+  const [forwardTarget, setForwardTarget] = useState(null);
+  const [forwardConvId, setForwardConvId] = useState('');
   const [showGroupCreate, setShowGroupCreate] = useState(false);
 
   // Typing indicator
