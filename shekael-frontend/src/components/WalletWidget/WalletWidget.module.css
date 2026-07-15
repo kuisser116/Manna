@@ -1,32 +1,63 @@
+/* ── WalletWidget ── Diseño limpio, theme-aware, sin rojo ── */
+
+/* ── Variante DEFAULT ── */
 .widget {
-    background: var(--color-surface-2);
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    padding: 20px;
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
+/* ── Header ── */
 .header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 16px;
+}
+
+.iconWrap {
+    width: 30px;
+    height: 30px;
+    background: var(--color-surface-3);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+}
+
+.label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
 }
 
 .refreshBtn {
-    margin-left: auto;
     background: none;
     border: none;
     color: var(--color-text-dim);
     cursor: pointer;
-    padding: 4px;
-    border-radius: 50%;
+    padding: 5px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
-    transition: color var(--transition);
+    transition: color 0.2s;
 }
 
 .refreshBtn:hover {
     color: var(--color-text);
+    background: var(--color-surface-3);
 }
 
 .refreshBtn:disabled {
@@ -34,7 +65,7 @@
     cursor: default;
 }
 
-.spinning {
+.spin {
     animation: spin 1s linear infinite;
 }
 
@@ -43,324 +74,103 @@
     to   { transform: rotate(360deg); }
 }
 
-.iconWrap {
-    width: 32px;
-    height: 32px;
-    background: var(--color-surface-3);
-    border-radius: var(--border-radius-sm);
+/* ── Balance ── */
+.balanceSection {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    transition: background 0.4s ease, box-shadow 0.4s ease;
+    gap: 6px;
+    padding: 4px 0;
 }
 
-.iconGlow {
-    background: var(--color-surface-2);
-    box-shadow: 0 0 14px var(--color-text-dim);
-    animation: glowFade 3s ease forwards;
-}
-
-@keyframes glowFade {
-    0%   { box-shadow: 0 0 0 transparent; }
-    20%  { box-shadow: 0 0 16px var(--color-text-dim); }
-    80%  { box-shadow: 0 0 10px var(--color-text-dim); }
-    100% { box-shadow: 0 0 0 transparent; }
-}
-
-.label {
-    font-size: 13px;
-    color: var(--color-text-muted);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.balanceRow {
-    margin-bottom: 8px;
-    min-height: 44px;
+.balanceDisplay {
     display: flex;
-    align-items: center;
+    align-items: baseline;
+    gap: 8px;
 }
 
-.balance {
-    font-family: var(--font-display);
-    font-size: 36px;
+.balanceAmount {
+    font-size: 2.4rem;
     font-weight: 800;
-    color: var(--color-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    line-height: 1;
-}
-
-.skeleton {
-    width: 120px;
-    height: 36px;
-    background: var(--color-surface-3);
-    border-radius: var(--border-radius-sm);
-    animation: shimmer 1.5s infinite;
-}
-
-.amount {
-    font-size: 2.2rem;
-    font-weight: 900;
     color: var(--color-text);
     letter-spacing: -0.5px;
     line-height: 1;
-    margin: 0;
     font-family: var(--font-family);
 }
 
-.balanceLabel {
-    font-size: 0.7rem;
+.balanceCurrency {
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 4px;
-}
-
-.balanceContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 10px 0;
-}
-
-.mainBalance {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    line-height: 1;
-    word-break: break-word;
-    text-align: center;
-}
-
-.currency {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    font-family: var(--font-family);
-}
-
-.secondaryBalance {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    margin-top: 2px;
-    font-weight: 500;
-    opacity: 0.7;
-}
-
-.subBalance {
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    margin-top: 4px;
-    font-weight: 500;
-    background: var(--color-surface-2);
-    padding: 2px 8px;
-    border-radius: 12px;
-    border: 1px solid var(--color-border);
-}
-
-.mxnRow {
-    margin-top: -6px;
-    margin-bottom: 12px;
-}
-
-.mxnValue {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    opacity: 0.9;
-    letter-spacing: 0.5px;
-}
-
-.todayRow {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.todayText {
-    font-size: 13px;
-    color: var(--color-success);
-    font-weight: 500;
 }
 
 .pubKey {
-    font-size: 11px;
-    color: var(--color-text);
-    font-family: monospace;
+    font-size: 10px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--color-text-dim);
     background: var(--color-surface-2);
-    padding: 6px 10px;
-    border-radius: var(--border-radius-sm);
-    margin-bottom: 12px;
-    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
 }
 
-.historyBtn {
-    width: 100%;
-    background: transparent;
-    border: 1px solid var(--color-border);
-    color: var(--color-text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    padding: 8px 12px;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
+.skeleton {
+    width: 140px;
+    height: 38px;
+    background: var(--color-surface-3);
+    border-radius: 8px;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0%   { transform: translateX(-100%) skewX(-20deg); }
+    100% { transform: translateX(200%) skewX(-20deg); }
+}
+
+/* ── Acciones ── */
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+.depositBtn,
+.withdrawBtn {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    transition: all var(--transition);
-    text-decoration: none;
-}
-
-.historyBtn:hover {
-    border-color: var(--color-text-muted);
-    color: var(--color-text);
-}
-
-/* ── Progress Bar ── */
-.progressSection {
-    margin-top: 10px;
-}
-
-.progressTitle {
-    font-size: 13px;
-    color: var(--color-text-secondary);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 12px;
     font-weight: 700;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
 }
 
-.progressSubtitle {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    margin-bottom: 10px;
+.depositBtn {
+    background: var(--color-text);
+    color: var(--color-bg);
 }
 
-.questList {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 16px;
-    margin-top: 8px;
+.depositBtn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
-.questItem {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
+.withdrawBtn {
     background: var(--color-surface-3);
-    border-radius: var(--border-radius-md);
-    border: 1px solid var(--color-border);
-    transition: all 0.3s ease;
-}
-
-.questDone {
-    opacity: 0.5;
-    background: var(--color-surface-2);
-}
-
-.questCircleWrap {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.questSvg {
-    transform: rotate(-90deg);
-}
-
-.questRing {
-    transition: stroke-dashoffset 0.5s ease-in-out;
-}
-
-.questIcon {
-    position: absolute;
     color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.questDone .questIcon {
-    color: var(--color-success);
-}
-
-.questDone .questRing {
-    stroke: var(--color-success);
-}
-
-.questLabel {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.questLabelText {
-    font-size: 13px;
+.withdrawBtn:hover {
+    background: var(--color-border);
     color: var(--color-text);
-    font-weight: 500;
+    transform: translateY(-1px);
 }
 
-.questDone .questLabelText {
-    text-decoration: line-through;
-    color: var(--color-text-muted);
-}
-
-.progressPct {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    text-align: right;
-    margin-top: 4px;
-}
-
-.progressBarContainer {
-    width: 100%;
-    height: 12px;
-    background: var(--color-surface-3);
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-    border: 1px solid var(--color-border);
-}
-
-.progressBarFill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--color-text-secondary), var(--color-text));
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-}
-
-.progressBarFill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.15) 50%,
-            rgba(255, 255, 255, 0) 100%);
-    animation: shimmer 2s infinite;
-    transform: skewX(-20deg);
-}
-
-/* ── Variante Flotante ── */
+/* ── Variante FLOTANTE ── */
 .floatingWrapper {
     position: fixed;
     bottom: 24px;
@@ -377,15 +187,13 @@
         bottom: 72px;
         right: 16px;
     }
-
-    .floatingButton {
-        padding: 8px 14px;
-        font-size: 13px;
-    }
 }
 
-.floatingButton {
-    background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+.floatingBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: color-mix(in srgb, var(--color-surface) 88%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--color-border);
@@ -393,140 +201,33 @@
     border-radius: 30px;
     color: var(--color-text);
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.floatingButton.active {
-    background: var(--color-surface-2);
-    color: var(--color-text);
-}
-
-.buttonBalance {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    font-size: 14px;
     font-weight: 700;
     font-family: var(--font-family);
-    font-size: 15px;
 }
 
-.btnCurrency {
+.floatingBtn.active {
+    background: var(--color-surface-2);
+}
+
+.floatBalance {
+    font-weight: 800;
+}
+
+.floatCurrency {
     font-size: 10px;
-    opacity: 0.8;
-    font-family: var(--font-family);
+    font-weight: 600;
+    opacity: 0.6;
 }
 
 .floatingPanel {
     width: 280px;
-    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--color-border);
     border-radius: 20px;
-    padding: 20px;
-    box-shadow: var(--shadow-xl);
-}
-
-/* ── Variante Mini ── */
-.miniContainer {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    background: var(--color-surface-3);
-    border-radius: 20px;
-    border: 1px solid var(--color-border);
-}
-
-.miniIcon {
-    color: var(--color-text-muted);
-}
-
-.miniBalance {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-text);
-    font-family: var(--font-family);
-}
-
-.miniCurrency {
-    font-size: 9px;
-    opacity: 0.6;
-    font-family: var(--font-family);
-}
-
-/* ── Acciones ── */
-.walletActions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.depositBtn {
-    flex: 1;
-    background: var(--color-primary);
-    color: #000;
-    font-size: 13px;
-    font-weight: 700;
-    padding: 10px;
-    border-radius: var(--border-radius-sm);
-    border: none;
-    cursor: pointer;
-    transition: all var(--transition);
-    text-align: center;
-}
-
-.depositBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(184, 146, 64, 0.3);
-}
-
-/* ── Misc ── */
-.repairLink {
-    display: block;
-    width: 100%;
-    margin-top: 12px;
-    background: none;
-    border: 1px dashed var(--color-border);
-    color: var(--color-text-dim);
-    font-size: 11px;
-    padding: 8px;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: all var(--transition);
-    text-align: center;
-}
-
-.repairLink:hover {
-    border-color: var(--color-text-muted);
-    color: var(--color-text);
-    background: var(--color-surface-2);
-}
-
-.rampBtn {
-    flex: 1;
-    background: var(--color-text);
-    color: var(--color-bg);
-    font-size: 13px;
-    font-weight: 700;
-    padding: 10px;
-    border-radius: var(--border-radius-sm);
-    border: none;
-    cursor: pointer;
-    transition: all var(--transition);
-    text-align: center;
-    box-shadow: 0 4px 12px var(--color-shadow);
-}
-
-.rampBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px var(--color-shadow);
-}
-
-@keyframes shimmer {
-    0%   { transform: translateX(-100%) skewX(-20deg); }
-    100% { transform: translateX(200%) skewX(-20deg); }
+    padding: 18px 20px;
+    box-shadow: 0 10px 40px var(--color-shadow);
 }
