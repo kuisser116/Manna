@@ -56,6 +56,10 @@ export const searchChatMessages = (conversationId, q) =>
 export const deleteMessage = (messageId) =>
     chatAPI.delete(`/chats/messages/${messageId}`);
 
+// Eliminar todos los mensajes del chat
+export const deleteAllMessages = (conversationId) =>
+    chatAPI.delete(`/chats/${conversationId}/messages`);
+
 export const editMessage = (messageId, encryptedContent, nonce) =>
     chatAPI.put(`/chats/messages/${messageId}/edit`, { encryptedContent, nonce });
 

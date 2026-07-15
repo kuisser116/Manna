@@ -828,6 +828,52 @@ router.delete('/messages/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// DELETE /chats/:conversationId/messages — Eliminar todos los mensajes del chat (solo para el usuario)
+router.delete('/:conversationId/messages', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const conversationId = req.params.conversationId;
+
+        // Verificar que el usuario pertenece a la conversación
+        const { data: participant } = await supabase
+            .from('conversation_participants')
+            .select('user_id')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!participant) {
+            return res.status(403).json({ message: 'No eres parte de esta conversación' });
+        }
+
+        // Soft delete todos los mensajes del usuario en esta conversación
+        const { error } = await supabase
+            .from('chat_messages')
+            .update({
+                deleted_at: new Date().toISOString(),
+                deleted_by: userId,
+                encrypted_content: null,
+                nonce: null,
+                msg_index: null,
+                media_url: null,
+                media_thumb_url: null
+            })
+            .eq('conversation_id', conversationId)
+            .eq('sender_id', userId)
+            .is('deleted_at', null);
+
+        if (error) throw error;
+
+        emitToConversation(conversationId, 'conversation:updated', { conversationId });
+
+        res.json({ deleted: true });
+    } catch (err) {
+        console.error('[Chat Delete All Error]:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // PUT /chats/messages/:id/edit — Editar mensaje (ventana de 15 min)
 router.put('/messages/:id/edit', authMiddleware, async (req, res) => {
     try {

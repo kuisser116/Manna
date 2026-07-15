@@ -121,6 +121,21 @@
   border-color: var(--color-primary, #e11d48);
 }
 
+.switchAccount {
+  margin-top: 24px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #888);
+  cursor: pointer;
+  transition: color 0.15s;
+  user-select: none;
+  text-decoration: none;
+}
+
+.switchAccount:hover {
+  color: var(--color-primary, #e11d48);
+  text-decoration: underline;
+}
+
 .processing {
   font-size: 0.8rem;
   color: var(--color-text-muted, #888);

@@ -18,7 +18,10 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
     if (!mountedRef.current) return;
 
     timerRef.current = setTimeout(() => {
-      if (mountedRef.current) setLocked(true);
+      if (mountedRef.current) {
+        // Recargar la app para limpiar estado al bloquear por inactividad
+        window.location.reload();
+      }
     }, inactivityTimeoutMs);
   }, [inactivityTimeoutMs]);
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import useStore from '../../store';
 import { getPinStatus, verifyPin as apiVerifyPin, clearPin } from '../../api/auth.api';
 import useChatCrypto from '../../hooks/useChatCrypto';
+import useStore from '../../store';
 import styles from './LockScreen.module.css';
 import logoImg from '../../assets/personaje_1.12.png';
 
@@ -18,6 +18,7 @@ import logoImg from '../../assets/personaje_1.12.png';
 export default function LockScreen({ onUnlock }) {
   const crypto = useChatCrypto();
   const user = useStore(s => s.user);
+  const logout = useStore(s => s.logout);
   const userId = user?.id;
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -247,6 +248,18 @@ export default function LockScreen({ onUnlock }) {
             </svg>
           </button>
         </div>
+
+        {step === 'enter' && (
+          <span
+            className={styles.switchAccount}
+            onClick={() => {
+              logout();
+              window.location.reload();
+            }}
+          >
+            Cambiar de cuenta
+          </span>
+        )}
       </div>
     </div>
   );

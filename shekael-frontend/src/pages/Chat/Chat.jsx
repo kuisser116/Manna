@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
 import { getUserProfile } from '../../api/users.api';
+import { verifyPin } from '../../api/auth.api';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import { getKeyPair } from '../../crypto/keyStore';
 import {
@@ -13,7 +14,8 @@ import {
   uploadChatFile,
   searchChatMessages, deleteMessage, forwardMessage, editMessage,
   togglePinConversation, setChatNickname, setChatBackground,
-  togglePinMessage, getPinnedMessage, markAsRead
+  togglePinMessage, getPinnedMessage, markAsRead,
+  deleteAllMessages
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
 import StickerPicker from '../../components/StickerPicker';
@@ -98,6 +100,34 @@ export default function Chat() {
 
   // Nickname edit
   const [showNicknameEdit, setShowNicknameEdit] = useState(false);
+
+  // Chat menu (hamburguesa)
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  // PIN confirm para borrar historial
+  const [showPinConfirm, setShowPinConfirm] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [pinProcessing, setPinProcessing] = useState(false);
+
+  // Fondo de conversación
+  const [bgConfiguring, setBgConfiguring] = useState(false);
+  const [bgFile, setBgFile] = useState(null);
+  const [bgPreview, setBgPreview] = useState(null);
+  const [bgOpacity, setBgOpacity] = useState(5); // 1-10, default 5
+  const [bgOriginalPreview, setBgOriginalPreview] = useState(null);
+  const bgInputRef = useRef(null);
+
+  // computePinHash local (mismo algoritmo que LockScreen)
+  function computePinHash(p) {
+    let hash = 0;
+    for (let i = 0; i < p.length; i++) {
+      hash = ((hash << 5) - hash) + p.charCodeAt(i);
+      hash |= 0;
+    }
+    return 'pin_' + hash;
+  }
   const [nicknameInput, setNicknameInput] = useState('');
 
   // Filtro: 'all' | 'unread'
@@ -1014,6 +1044,132 @@ export default function Chat() {
     }
   };
 
+  // ── Cerrar menú al hacer clic fuera ──
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowChatMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // ── Ir a perfil ──
+  const handleGoToProfile = () => {
+    setShowChatMenu(false);
+    if (activeConv?.otherUser?.id) {
+      navigate(`/profile/${activeConv.otherUser.id}`);
+    }
+  };
+
+  // ── PIN confirm para borrar historial ──
+  const handleOpenPinConfirm = () => {
+    setShowChatMenu(false);
+    setPinInput('');
+    setPinError('');
+    setShowPinConfirm(true);
+  };
+
+  const handlePinDigit = (d) => {
+    if (pinProcessing) return;
+    setPinError('');
+    const newPin = pinInput + d;
+    if (newPin.length <= 6) {
+      setPinInput(newPin);
+      if (newPin.length === 6) {
+        confirmDeleteHistory(newPin);
+      }
+    }
+  };
+
+  const handlePinDelete = () => {
+    setPinInput(p => p.slice(0, -1));
+  };
+
+  const confirmDeleteHistory = async (pin) => {
+    const pinHash = computePinHash(pin);
+    setPinProcessing(true);
+    try {
+      await verifyPin(pinHash);
+      // PIN correcto → borrar mensajes
+      await deleteAllMessages(activeConv.id);
+      setMessages([]);
+      setShowPinConfirm(false);
+      setPinInput('');
+      setPinProcessing(false);
+    } catch (e) {
+      setPinError('PIN incorrecto');
+      setPinInput('');
+      setPinProcessing(false);
+    }
+  };
+
+  // ── Fondo de conversación ──
+  const handleOpenBgPicker = () => {
+    setShowChatMenu(false);
+    setBgFile(null);
+    // Guardar el fondo actual como original para poder cancelar
+    setBgOriginalPreview(bgPreview);
+    // Abre el file picker directamente
+    bgInputRef.current?.click();
+  };
+
+  const handleBgFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen no debe superar 5MB');
+      return;
+    }
+    setBgFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setBgPreview(ev.target.result);
+      setBgConfiguring(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleBgSave = () => {
+    if (!bgPreview || !activeConv) return;
+    try {
+      const data = {
+        dataUrl: bgPreview,
+        opacity: bgOpacity
+      };
+      localStorage.setItem(`shekael_chat_bg_${activeConv.id}`, JSON.stringify(data));
+      setBgConfiguring(false);
+      setBgFile(null);
+    } catch (e) {
+      console.error('Error guardando fondo:', e);
+    }
+  };
+
+  const handleBgCancel = () => {
+    // Restaurar el original (lo que había antes de abrir el picker)
+    setBgPreview(bgOriginalPreview);
+    setBgFile(null);
+    setBgConfiguring(false);
+  };
+
+  // Obtener fondo guardado al cambiar de conversación
+  useEffect(() => {
+    if (activeConv?.id) {
+      const saved = localStorage.getItem(`shekael_chat_bg_${activeConv.id}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setBgPreview(parsed.dataUrl);
+          setBgOpacity(parsed.opacity ?? 5);
+        } catch {}
+      } else {
+        setBgPreview(null);
+        setBgOpacity(5);
+      }
+    }
+  }, [activeConv?.id]);
+
   // ── Buscar en el chat (cliente-side, porque los mensajes están cifrados E2EE) ──
 
   const handleChatSearch = (q) => {
@@ -1294,7 +1450,13 @@ export default function Chat() {
       </div>
 
       {/* Panel derecho: conversación activa */}
-      <div className={styles.chatPanel} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
+      <div className={`${styles.chatPanel}${bgPreview ? ` ${styles.hasCustomBg}` : ''}`} style={{
+        '--pattern-url': `url(${bgPatternUrl})`,
+        ...(bgPreview ? {
+          '--custom-bg-url': `url(${bgPreview})`,
+          '--custom-bg-opacity': bgOpacity / 10,
+        } : {}),
+      }}>
         {!activeConv ? (
           <div className={styles.noChat}>
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.3">
@@ -1352,6 +1514,39 @@ export default function Chat() {
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                   </svg>
                 </button>
+                <div className={styles.menuWrapper} ref={menuRef}>
+                  <button
+                    className={styles.chatActionBtn}
+                    onClick={() => setShowChatMenu(!showChatMenu)}
+                    title="Más opciones"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                    </svg>
+                  </button>
+                  {showChatMenu && (
+                    <div className={styles.chatMenu}>
+                      <button className={styles.chatMenuItem} onClick={handleOpenPinConfirm}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Eliminar historial
+                      </button>
+                      <button className={styles.chatMenuItem} onClick={handleGoToProfile}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Ir a perfil
+                      </button>
+                      <button className={styles.chatMenuItem} onClick={handleOpenBgPicker}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        Cambiar fondo
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1436,7 +1631,7 @@ export default function Chat() {
               </div>
             )}
             </div>
-              <div className={styles.messagesContent}>
+            <div className={styles.messagesContent}>
               {messages.length === 0 ? (
                 <div className={styles.noMessages}>
                   <p>No hay mensajes aún</p>
@@ -1581,6 +1776,38 @@ export default function Chat() {
               <div ref={messagesEndRef} />
             </div>
             </div>
+
+            {/* ── Background config bar ── */}
+            {bgConfiguring && bgPreview && (
+              <div className={styles.bgConfigBar}>
+                <div className={styles.bgConfigBarContent}>
+                  <div className={styles.bgConfigBarSlider}>
+                    <span>1</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={bgOpacity}
+                      onChange={e => setBgOpacity(Number(e.target.value))}
+                    />
+                    <span>10</span>
+                  </div>
+                  <div className={styles.bgConfigBarActions}>
+                    <button onClick={handleBgCancel}>Cancelar</button>
+                    <button onClick={handleBgSave}>Listo</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Hidden file input for background (siempre montado) */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleBgFileSelect}
+              ref={bgInputRef}
+              style={{ display: 'none' }}
+            />
 
             <div className={styles.inputArea}>
               {/* Edit indicator */}
@@ -2002,6 +2229,38 @@ export default function Chat() {
         />
       )}
 
+      {/* PIN confirmation modal */}
+      {showPinConfirm && (
+        <div className={styles.pinOverlay} onClick={() => setShowPinConfirm(false)}>
+          <div className={styles.pinModal} onClick={e => e.stopPropagation()}>
+            <h3 className={styles.pinModalTitle}>Confirmar PIN</h3>
+            <p className={styles.pinModalSubtitle}>Ingresa tu PIN para borrar el historial</p>
+            <div className={styles.pinDots}>
+              {Array.from({length: 6}).map((_, i) => (
+                <div key={i} className={pinInput[i] !== undefined ? styles.pinDotFilled : styles.pinDotEmpty} />
+              ))}
+            </div>
+            {pinError && <p className={styles.pinModalError}>{pinError}</p>}
+            {pinProcessing && <p className={styles.pinModalProcessing}>Verificando...</p>}
+            <div className={styles.pinKeypad}>
+              {[1,2,3,4,5,6,7,8,9].map(n => (
+                <button key={n} className={styles.pinKey} onClick={() => handlePinDigit(String(n))}>{n}</button>
+              ))}
+              <div />
+              <button className={styles.pinKey} onClick={() => handlePinDigit('0')}>0</button>
+              <button className={styles.pinKeyDel} onClick={handlePinDelete}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                  <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
+                </svg>
+              </button>
+            </div>
+            <button className={styles.pinCancelBtn} onClick={() => { setShowPinConfirm(false); setPinInput(''); setPinError(''); }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
