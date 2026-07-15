@@ -14,14 +14,14 @@
 }
 
 .modal {
-    background: var(--color-surface-1);
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 20px;
     width: 100%;
     max-width: 400px;
     overflow: hidden;
     position: relative;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 50px var(--color-shadow);
 }
 
 .modalLarge {
@@ -42,14 +42,14 @@
 .titleGroup h3 {
     margin: 0;
     font-size: 1.25rem;
-    color: var(--color-text-primary);
+    color: var(--color-text);
     font-weight: 600;
 }
 
 .subtitle {
     margin: 4px 0 0;
     font-size: 0.85rem;
-    color: var(--color-primary);
+    color: var(--color-text-muted);
     font-weight: 500;
     letter-spacing: 0.5px;
 }
@@ -67,7 +67,7 @@
 
 .closeBtn:hover {
     background: var(--color-surface-3);
-    color: var(--color-text-primary);
+    color: var(--color-text);
 }
 
 .content {
@@ -106,15 +106,15 @@
     border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 14px 16px;
-    color: var(--color-text-primary);
+    color: var(--color-text);
     font-size: 1.1rem;
     transition: all 0.2s;
 }
 
 .inputWrapper input:focus {
     outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(184, 146, 64, 0.1);
+    border-color: var(--color-text);
+    box-shadow: 0 0 0 2px var(--color-surface-3);
 }
 
 .currencyBadge {
@@ -125,7 +125,7 @@
     border-radius: 6px;
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--color-primary);
+    color: var(--color-text-muted);
 }
 
 .hint {
@@ -136,20 +136,20 @@
 }
 
 .errorBox {
-    background: rgba(224, 36, 94, 0.1);
-    border: 1px solid rgba(224, 36, 94, 0.2);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
     padding: 12px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     gap: 10px;
-    color: #ff5a7e;
+    color: var(--color-text-muted);
     font-size: 0.85rem;
 }
 
 .submitBtn {
-    background: var(--color-primary);
-    color: #000;
+    background: var(--color-text);
+    color: var(--color-bg);
     border: none;
     border-radius: 12px;
     padding: 14px;
@@ -165,7 +165,7 @@
 
 .submitBtn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(184, 146, 64, 0.3);
+    box-shadow: 0 4px 12px var(--color-shadow);
 }
 
 .submitBtn:disabled {
@@ -179,7 +179,7 @@
 
 @keyframes spin {
     from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    to   { transform: rotate(360deg); }
 }
 
 /* Modal Iframe Styles */
@@ -195,7 +195,7 @@
     width: 100%;
     flex: 1;
     border: none;
-    background: #fff; /* MoneyGram portal is usually light */
+    background: var(--color-surface-2);
 }
 
 .iframeFooter {
@@ -223,7 +223,7 @@
 .successBox h4 {
     margin: 0;
     font-size: 1.5rem;
-    color: var(--color-text-primary);
+    color: var(--color-text);
 }
 
 .successBox p {
