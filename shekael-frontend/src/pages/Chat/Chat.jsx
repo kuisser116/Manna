@@ -229,6 +229,7 @@ export default function Chat() {
 
     // Listeners para eventos en tiempo real
     onMessageSent(async (msg) => {
+      console.log('[WS RECV] message:sent id:', msg?.id?.substring(0,8));
       const conv = activeConvRef.current;
       if (!conv?.id || msg.conversation_id !== conv.id) return;
       if (msg.sender_id === user?.id) return;
@@ -240,16 +241,17 @@ export default function Chat() {
 
       if (otherUserId && decryptFn) {
         try {
-          const res = await fetch(import.meta.env.VITE_API_URL + '/users/' + otherUserId, {
-            headers: { Authorization: 'Bearer ' + localStorage.getItem('Shekael_token')?.replace(/["']/g, '') }
-          });
-          const json = await res.json();
-          const fresh = json?.user || json;
+          const profRes = await getUserProfile(otherUserId);
+          const fresh = profRes.data?.user || profRes.data;
           if (fresh?.public_key) {
             decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
             console.log('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
+          } else {
+            console.log('[WS KEY] no public_key for user', otherUserId?.substring(0,8));
           }
-        } catch {}
+        } catch (e) {
+          console.log('[WS KEY] fetch/decrypt error:', e?.message?.substring(0,50));
+        }
       }
 
       // Agregar al state UNA SOLA VEZ
