@@ -1,14 +1,14 @@
 import { useEffect, useRef, useCallback } from 'react';
-import useStore from '../store';
 import { updatePublicKey } from '../api/chats.api';
 import { setPin } from '../api/auth.api';
 import { setKeyPair, getKeyPair, clearKeyPair } from '../crypto/keyStore';
 
 /**
- * Hook E2EE simplificado: keypair Curve25519 + crypto_box_seal.
- * - Private key cifrada con PIN y almacenada en servidor
- * - Public key siempre derivada desde private key (nunca confía en API)
- * - Cifrado con crypto_box_seal (no necesita nonces)
+ * Hook E2EE con ECDH (crypto_box_beforenm + crypto_secretbox).
+ * - Ambos lados derivan el MISMO secreto compartido = remitente también puede descifrar
+ * - Public_key siempre derivada desde private_key (nunca se confía en la API)
+ * - Las funciones encrypt/decrypt toman la public_key del otro usuario
+ * - keypair viaja cifrada con PIN entre servidor y cliente
  */
 
 export function useChatCrypto() {
@@ -46,6 +46,42 @@ export function useChatCrypto() {
     sodiumRef.current = mod.default;
     return sodiumRef.current;
   }, []);
+
+  // Derivar shared secret ECDH (fresco cada vez, sin cache)
+  const deriveSharedSecret = useCallback(async (theirPubB64) => {
+    const sodium = await ensureSodium();
+    const kp = getKeyPair();
+    if (!kp) throw new Error('No keypair');
+    return sodium.crypto_box_beforenm(
+      sodium.from_base64(theirPubB64),
+      sodium.from_base64(kp.privateKey)
+    );
+  }, [ensureSodium]);
+
+  // Cifrar: shared secret ECDH + secretbox
+  const encrypt = useCallback(async (plaintext, theirPubB64) => {
+    const sodium = await ensureSodium();
+    const ss = await deriveSharedSecret(theirPubB64);
+    const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+    const ct = sodium.crypto_secretbox_easy(sodium.from_string(plaintext), nonce, ss);
+    return {
+      encryptedContent: sodium.to_base64(ct),
+      nonce: sodium.to_base64(nonce)
+    };
+  }, [deriveSharedSecret, ensureSodium]);
+
+  // Descifrar: shared secret ECDH + secretbox_open
+  // Nota: theirPubB64 es la public_key del OTRO usuario (el que envió el mensaje)
+  const decrypt = useCallback(async (ciphertextB64, nonceB64, theirPubB64) => {
+    const sodium = await ensureSodium();
+    const ss = await deriveSharedSecret(theirPubB64);
+    const pt = sodium.crypto_secretbox_open_easy(
+      sodium.from_base64(ciphertextB64),
+      sodium.from_base64(nonceB64),
+      ss
+    );
+    return sodium.to_string(pt);
+  }, [deriveSharedSecret, ensureSodium]);
 
   // Unlock: descifrar private_key con PIN y cargar keypair
   const unlockWithPin = useCallback(async (encryptedPrivateKeyB64, pin) => {
@@ -89,31 +125,13 @@ export function useChatCrypto() {
     return { privateKey: privateKeyB64, publicKey: publicKeyB64 };
   }, [ensureSodium]);
 
-  // Cifrar con crypto_box_seal — solo necesita public_key del destinatario
-  const encrypt = useCallback(async (plaintext, theirPubB64) => {
-    const sodium = await ensureSodium();
-    const ct = sodium.crypto_box_seal(sodium.from_string(plaintext), sodium.from_base64(theirPubB64));
-    return sodium.to_base64(ct);
-  }, [ensureSodium]);
-
-  // Descifrar con crypto_box_seal_open — necesita keypair propio
-  const decrypt = useCallback(async (ciphertextB64) => {
-    const sodium = await ensureSodium();
-    const kp = getKeyPair();
-    if (!kp) throw new Error('No keypair');
-    const pt = sodium.crypto_box_seal_open(
-      sodium.from_base64(ciphertextB64),
-      sodium.from_base64(kp.publicKey),
-      sodium.from_base64(kp.privateKey)
-    );
-    return sodium.to_string(pt);
-  }, [ensureSodium]);
-
   const hasKeys = useCallback(async () => !!getKeyPair(), []);
+
+  const clearKeyCache = useCallback(() => { clearKeyPair(); }, []);
 
   return {
     generateAndSetupKeypair, unlockWithPin,
-    encrypt, decrypt, hasKeys,
+    encrypt, decrypt, hasKeys, clearKeyCache, deriveSharedSecret,
     ready: !!sodiumRef.current
   };
 }
