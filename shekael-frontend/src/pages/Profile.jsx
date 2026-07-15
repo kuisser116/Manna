@@ -367,11 +367,11 @@ export default function Profile() {
                           if (res.data.alreadyConnected && res.data.conversationId) {
                             navigate(`/chat?conv=${res.data.conversationId}`);
                           } else {
-                            showSuccess('Solicitud enviada', 'Cuando acepte podran chatear.', true);
+                            showToast('success', 'Solicitud enviada. Cuando acepte podran chatear.');
                           }
                         } catch (err) {
                           const msg = err.response?.data?.message || 'Error al enviar solicitud';
-                          showError('Error', msg);
+                          showToast('error', msg);
                         }
                       }}
                       title="Enviar mensaje"
@@ -476,16 +476,11 @@ export default function Profile() {
         )}
       </AnimatePresence>
 
-      <FeedbackModal
-        isOpen={modalState.isOpen}
-        onClose={hideModal}
-        type={modalState.type}
-        title={modalState.title}
-        message={modalState.message}
-        showCloseButton={modalState.showCloseButton}
-        autoClose={modalState.autoClose}
-        autoCloseDelay={modalState.autoCloseDelay}
-      />
+      {toast && (
+        <div className={`${styles.toast} ${styles[toast.type]}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }

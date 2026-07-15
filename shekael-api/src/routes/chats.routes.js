@@ -64,6 +64,31 @@ router.post('/request', authMiddleware, async (req, res) => {
             }
         }
 
+        // Fallback: revisar si ya comparten conversación aunque no haya message_request
+        const { data: myConvs } = await supabase
+            .from('conversation_participants')
+            .select('conversation_id')
+            .eq('user_id', fromUserId)
+            .eq('accepted', true);
+        const myConvIds = myConvs?.map(c => c.conversation_id) || [];
+        if (myConvIds.length > 0) {
+            const { data: shared } = await supabase
+                .from('conversation_participants')
+                .select('conversation_id')
+                .in('conversation_id', myConvIds)
+                .eq('user_id', toUserId);
+            if (shared?.length > 0) {
+                // Upsert message_request a accepted si no existe
+                await supabase
+                    .from('message_requests')
+                    .upsert(
+                        { from_user_id: fromUserId, to_user_id: toUserId, status: 'accepted' },
+                        { onConflict: 'from_user_id,to_user_id' }
+                    );
+                return res.json({ alreadyConnected: true, conversationId: shared[0].conversation_id });
+            }
+        }
+
         // Crear solicitud
         const { error } = await supabase
             .from('message_requests')
