@@ -251,7 +251,7 @@ export default function AudioRecorder({ onSend, onClose }) {
         )}
 
         <button className={styles.sendBtn} onClick={handleSend} title="Enviar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 9"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5m0 0l-7 7m7-7l7 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
     </div>

@@ -1751,7 +1751,7 @@ export default function Chat() {
                             {msg._sending ? (
                               <span className={styles.sendingIndicator}>◌</span>
                             ) : msg.delivered_at ? (
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-primary)" stroke="none">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="none">
                                 <circle cx="12" cy="12" r="10"/>
                                 <path d="M7 12l3 3 7-7" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
@@ -2035,7 +2035,7 @@ export default function Chat() {
                     <span className={styles.uploadingSpinner} />
                   ) : sending ? '...' : (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                      <path d="M12 19V5m0 0l-7 7m7-7l7 7" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   )}
                 </button>
