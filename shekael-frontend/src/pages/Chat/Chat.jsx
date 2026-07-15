@@ -247,7 +247,7 @@ export default function Chat() {
           const fresh = json?.user || json;
           if (fresh?.public_key) {
             decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
-            void('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
+            console.log('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
           }
         } catch {}
       }
@@ -497,10 +497,11 @@ export default function Chat() {
       // Cachear siempre (sea desde conv.otherUser o desde fresh)
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
-        void('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
+        console.log('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
       }
 
       // Derivar shared secret para ECDH
+      let sharedSecret;
       if (otherUser?.public_key) {
         sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
         if (!sharedSecret) {
