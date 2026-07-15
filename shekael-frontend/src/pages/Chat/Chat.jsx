@@ -51,7 +51,6 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   const msgListRef = useRef(null);
   const otherUserCache = useRef({});
-  const sharedSecretCache = useRef({}); // { [convId]: Uint8Array } ECDH shared secret
 
   // Estado para adjuntos
   const [selectedFile, setSelectedFile] = useState(null);
@@ -239,21 +238,21 @@ export default function Chat() {
       const decryptFn = decryptRef.current;
       const otherUserId = msg.sender_id;
 
-      if (otherUserId && decryptFn) {
+      if (otherUserId) {
         try {
           const profRes = await getUserProfile(otherUserId);
           const fresh = profRes.data?.user || profRes.data;
           if (fresh?.public_key) {
-            console.log('[WS KEY] sender_public_key_from_api:', fresh.public_key?.substring(0,30));
-            console.log('[WS KEY] my_priv_fingerprint:', getKeyPair?.()?.privateKey?.substring(0,15));
-            decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
-            console.log('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
-          } else {
-            console.log('[WS KEY] no public_key for user', otherUserId?.substring(0,8));
+            // Sealed box (solo ciphertext)
+            try {
+              decryptedText = await decryptSealBox(msg.encrypted_content);
+            } catch {
+              // Fallback ECDH (mensajes viejos)
+              try { decryptedText = await legacyDecrypt(msg.encrypted_content, msg.nonce, fresh.public_key); } catch {}
+            }
+            if (decryptedText) console.log('[WS KEY] descifrado OK');
           }
-        } catch (e) {
-          console.log('[WS KEY] fetch/decrypt error:', e?.message?.substring(0,50));
-        }
+        } catch {}
       }
 
       // Agregar al state UNA SOLA VEZ
@@ -280,10 +279,12 @@ export default function Chat() {
       let pt = null;
       const otherUser = otherUserCache.current[conv.id];
       const decryptFn = decryptRef.current;
-      if (otherUser?.public_key && decryptFn) {
+      if (otherUser?.public_key) {
         try {
-          pt = await decryptFn(data.encrypted_content, data.nonce, otherUser.public_key);
-        } catch {}
+          pt = await decryptSealBox(data.encrypted_content);
+        } catch {
+          try { pt = await legacyDecrypt(data.encrypted_content, data.nonce, otherUser.public_key); } catch {}
+        }
       }
       if (pt) {
         setMessages(prev => prev.map(m =>
@@ -383,31 +384,29 @@ export default function Chat() {
     }
   };
 
-  // Derivar shared secret ECDH (permanente para la conversación)
-  const deriveEcdhSecret = useCallback(async (convId, theirPublicKey) => {
-    if (sharedSecretCache.current[convId]) {
-      return sharedSecretCache.current[convId];
-    }
-    if (!theirPublicKey) {
-      return null;
-    }
+  // ── Cifrado E2EE con crypto_box_seal (NaCl sealed box) ──
 
-    await sodiumReady;
-    const kp = getKeyPair();
-    if (!kp) {
-      return null;
-    }
-
-    const sharedSecret = _sodium.crypto_box_beforenm(
-      _sodium.from_base64(theirPublicKey),
-      _sodium.from_base64(kp.privateKey)
-    );
-    sharedSecretCache.current[convId] = sharedSecret;
-    return sharedSecret;
+  // Cifrar: solo necesita public_key del destinatario
+  const encryptSealBox = useCallback(async (plaintext, theirPubB64) => {
+    const ct = _sodium.crypto_box_seal(_sodium.from_string(plaintext), _sodium.from_base64(theirPubB64));
+    return { encryptedContent: _sodium.to_base64(ct), nonce: 'sealed' };
   }, []);
 
-  // Legacy decrypt (ECDH directo) para mensajes viejos sin ratchet
+  // Descifrar: necesita keypair propio
+  const decryptSealBox = useCallback(async (ciphertextB64) => {
+    const kp = getKeyPair();
+    if (!kp) throw new Error('No keypair');
+    const pt = _sodium.crypto_box_seal_open(
+      _sodium.from_base64(ciphertextB64),
+      _sodium.from_base64(kp.publicKey),
+      _sodium.from_base64(kp.privateKey)
+    );
+    return _sodium.to_string(pt);
+  }, []);
+
+  // Fallback ECDH para mensajes viejos (antes del sealed box)
   const legacyDecrypt = useCallback(async (encryptedContent, nonceB64, theirPublicKey) => {
+    await sodiumReady;
     const ss = _sodium.crypto_box_beforenm(
       _sodium.from_base64(theirPublicKey),
       _sodium.from_base64(getKeyPair().privateKey)
@@ -420,43 +419,32 @@ export default function Chat() {
       )
     );
   }, []);
-  decryptRef.current = legacyDecrypt;
+  decryptRef.current = decryptSealBox;
 
-  // Legacy encrypt (ECDH directo) para compatibilidad con sistema anterior
-  const legacyEncrypt = useCallback(async (plaintext, theirPublicKey) => {
-    const ss = _sodium.crypto_box_beforenm(
-      _sodium.from_base64(theirPublicKey),
-      _sodium.from_base64(getKeyPair().privateKey)
-    );
-    const nonce = _sodium.randombytes_buf(_sodium.crypto_secretbox_NONCEBYTES);
-    const ciphertext = _sodium.crypto_secretbox_easy(
-      _sodium.from_string(plaintext), nonce, ss
-    );
-    return {
-      encryptedContent: _sodium.to_base64(ciphertext),
-      nonce: _sodium.to_base64(nonce)
-    };
-  }, []);
-
-  // Load pinned message after selectConversation sets sharedSecretCache
+  // Load pinned message
   const loadPinnedMessage = useCallback(async (convId) => {
     try {
       const res = await getPinnedMessage(convId);
       const pm = res.data.pinnedMessage;
       if (!pm) { setPinnedMessage(null); return; }
-
       let decryptedText = null;
-      const ss = sharedSecretCache.current[convId];
-      if (ss && pm.msg_index) {
+      const kp = getKeyPair();
+      if (kp && pm.encrypted_content) {
         try {
-          decryptedText = _sodium.to_string(
-            _sodium.crypto_secretbox_open_easy(
+          decryptedText = _sodium.to_string(_sodium.crypto_box_seal_open(
+            _sodium.from_base64(pm.encrypted_content),
+            _sodium.from_base64(kp.publicKey),
+            _sodium.from_base64(kp.privateKey)
+          ));
+        } catch {
+          try {
+            decryptedText = _sodium.to_string(_sodium.crypto_secretbox_open_easy(
               _sodium.from_base64(pm.encrypted_content),
-              _sodium.from_base64(pm.nonce),
-              ss
-            )
-          );
-        } catch { /* falló descifrado */ }
+              _sodium.from_base64(pm.nonce || ''),
+              _sodium.crypto_box_beforenm(_sodium.from_base64(pm.sender_public_key || ''), _sodium.from_base64(kp.privateKey))
+            ));
+          } catch {}
+        }
       }
       setPinnedMessage({ ...pm, decryptedText });
     } catch {
@@ -504,32 +492,25 @@ export default function Chat() {
         console.log('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
       }
 
-      // Derivar shared secret para ECDH
-      let sharedSecret;
-      if (otherUser?.public_key) {
-        sharedSecret = await deriveEcdhSecret(conv.id, otherUser.public_key);
-        if (!sharedSecret) {
-          msgs.forEach(m => prevMsgIdsRef.current.add(m.id));
-          setMessages(msgs); scrollToBottom(); return;
-        }
-      }
-
       const decrypted = [];
       for (const msg of msgs) {
-        // Mensaje sin cifrar (antes de que el otro tuviera llaves)
         if (msg.nonce === 'plaintext') {
           decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
           continue;
         }
-        // Fallback: ECDH directo (para mensajes del sistema anterior)
-        try {
-          const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
-          decrypted.push({ ...msg, decrypted: plaintext });
-          continue;
-        } catch (e) {
-          console.warn('[Chat] decrypt fail for msg', msg.id, 'type:', msg.message_type, 'error:', e.message);
-          decrypted.push({ ...msg, decrypted: msg.message_type === 'audio' ? '' : '[Mensaje cifrado]' });
+        let plaintext = null;
+        // Sealed box (nuevo formato)
+        if (msg.nonce === 'sealed' && msg.encrypted_content) {
+          try { plaintext = await decryptSealBox(msg.encrypted_content); } catch {}
         }
+        // Legacy ECDH (formato anterior)
+        if (!plaintext && otherUser?.public_key && msg.encrypted_content) {
+          try { plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key); } catch {}
+        }
+        decrypted.push({
+          ...msg,
+          decrypted: plaintext || (msg.message_type === 'audio' ? '' : '[Mensaje cifrado]')
+        });
       }
 
       setMessages(decrypted);
@@ -544,7 +525,7 @@ export default function Chat() {
         scrollToBottom();
       }
     }
-  }, [deriveEcdhSecret, loadPinnedMessage]);
+  }, [loadPinnedMessage]);
 
   // Polling: buscar mensajes nuevos (fallback 60s, solo si WS falla)
   const prevMsgIdsRef = useRef(new Set());
@@ -570,13 +551,19 @@ export default function Chat() {
             continue;
           }
           let pt = null;
-          // Legacy ECDH directo
-          try {
-            const pk = otherUserCache.current[convId]?.public_key;
-            if (pk && getKeyPair()) {
-              pt = await legacyDecrypt(msg.encrypted_content, msg.nonce, pk);
-            }
-          } catch { /* fallo total */ }
+          // Sealed box primero
+          if (msg.nonce === 'sealed') {
+            try { pt = await decryptSealBox(msg.encrypted_content); } catch {}
+          }
+          // Fallback legacy ECDH
+          if (!pt) {
+            try {
+              const pk = otherUserCache.current[convId]?.public_key;
+              if (pk && getKeyPair()) {
+                pt = await legacyDecrypt(msg.encrypted_content, msg.nonce, pk);
+              }
+            } catch {}
+          }
           if (pt) {
             decrypted.push({ ...msg, decrypted: pt });
           } else if (msg.message_type === 'audio') {
@@ -616,7 +603,15 @@ export default function Chat() {
         decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
         continue;
       }
-      // Legacy ECDH directo
+      // Sealed box primero
+      try {
+        if (msg.nonce === 'sealed') {
+          const plaintext = await decryptSealBox(msg.encrypted_content);
+          decrypted.push({ ...msg, decrypted: plaintext });
+          continue;
+        }
+      } catch {}
+      // Fallback legacy ECDH
       try {
         const plaintext = await legacyDecrypt(msg.encrypted_content, msg.nonce, otherUser.public_key);
         decrypted.push({ ...msg, decrypted: plaintext });
@@ -650,8 +645,8 @@ export default function Chat() {
         setSending(true);
         let encryptedContent, nonce;
 
-        // Re-cifrar con legacy ECDH (más simple para edits)
-        const result = await legacyEncrypt(inputText, otherUser?.public_key || '');
+        // Re-cifrar con sealed box
+        const result = await encryptSealBox(inputText, otherUser?.public_key || '');
         encryptedContent = result.encryptedContent;
         nonce = result.nonce;
 
@@ -698,10 +693,6 @@ export default function Chat() {
     }
 
     let otherUser = otherUserCache.current[activeConv.id] || activeConv.otherUser;
-    let usingPreKey = false;
-    let ephemeralPubB64 = null;
-    let preKeyUsedId = null;
-    let sharedSecret;
     
     // Si no tenemos la llave pública, intentar obtenerla del servidor
     if (!otherUser?.public_key && otherUser?.id) {
@@ -715,13 +706,8 @@ export default function Chat() {
       } catch { /* fallo, seguimos sin llave */ }
     }
 
-    // ECDH directo (sin Signal Protocol)
-    if (otherUser?.public_key) {
-      sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
-    }
-
-    if (!sharedSecret) {
-      // No hay forma de cifrar — enviar sin cifrar
+    if (!otherUser?.public_key) {
+      // No hay public_key — enviar sin cifrar
       setSending(true);
       try {
         const messageType = hasFile ? (selectedFile.type?.startsWith('image/') ? 'image' : 'file') : 'text';
@@ -780,9 +766,9 @@ export default function Chat() {
     }]);
     scrollToBottom();
     try {
-      const legacyResult = await legacyEncrypt(inputText, otherUser.public_key);
-      const encryptedContent = legacyResult.encryptedContent;
-      const nonce = legacyResult.nonce;
+      const sealResult = await encryptSealBox(inputText, otherUser.public_key);
+      const encryptedContent = sealResult.encryptedContent;
+      const nonce = sealResult.nonce;
 
       const res = await sendMessage(
         activeConv.id,
@@ -1658,7 +1644,7 @@ export default function Chat() {
                     try {
                       setSending(true);
                       const otherUser = otherUserCache.current[activeConv.id];
-                      const { encryptedContent, nonce } = await legacyEncrypt('', otherUser?.public_key);
+                      const { encryptedContent, nonce } = await encryptSealBox('', otherUser?.public_key);
                       const res = await sendMessage(
                         activeConv.id, encryptedContent, nonce,
                         -1, null, null, 'audio', audio.url, null,
@@ -1923,7 +1909,7 @@ export default function Chat() {
             setShowStickerPicker(false);
             try {
               setSending(true);
-              const { encryptedContent, nonce } = await legacyEncrypt('', otherUser?.public_key);
+              const { encryptedContent, nonce } = await encryptSealBox('', otherUser?.public_key);
               const res = await sendMessage(
                 activeConv.id, encryptedContent, nonce,
                 -1, null, null, 'image', imageUrl, imageUrl,
@@ -1949,7 +1935,7 @@ export default function Chat() {
           onCreated={async (poll) => {
             // Enviar mensaje del sistema con el poll_id
             try {
-              const { encryptedContent, nonce } = await legacyEncrypt('Encuesta: ' + poll?.question, otherUserCache.current[activeConv.id]?.public_key);
+              const { encryptedContent, nonce } = await encryptSealBox('Encuesta: ' + poll?.question, otherUserCache.current[activeConv.id]?.public_key);
               const res = await sendMessage(
                 activeConv.id, encryptedContent, nonce,
                 -1, null, null, 'poll', null, null,
