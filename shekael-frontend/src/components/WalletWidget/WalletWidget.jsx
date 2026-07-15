@@ -50,14 +50,14 @@ export function WalletWidget({ variant = 'default' }) {
                 scale: 1,
                 rotate: 0,
                 filter: 'blur(0px)',
-                duration: 0.7,
+                duration: 0.6,
                 ease: 'shekael-bounce',
                 onStart: () => {
                     // Los hijos con stagger mas marcado
                     if (contentRef.current) {
                         gsap.fromTo(contentRef.current.children,
                             { opacity: 0, y: 12 },
-                            { opacity: 1, y: 0, duration: 0.45, stagger: 0.06, delay: 0.15, ease: 'power3.out' }
+                            { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, delay: 0.12, ease: 'power3.out' }
                         );
                     }
                 }
@@ -75,7 +75,7 @@ export function WalletWidget({ variant = 'default' }) {
             scale: 0.92,
             rotate: 2,
             filter: 'blur(6px)',
-            duration: 0.35,
+            duration: 0.3,
             ease: 'power2.in',
             onComplete: () => setShouldRender(false),
         });
