@@ -89,6 +89,12 @@ export function useChatCrypto() {
     const actualPrivateKey = sodium.from_base64(privateKey);
     const computedPubBytes = sodium.crypto_scalarmult_base(actualPrivateKey);
     const publicKey = sodium.to_base64(computedPubBytes);
+
+    // Si la pública en la API no coincide, actualizarla
+    const currentUser = useStore.getState().user;
+    if (currentUser?.public_key && currentUser.public_key !== publicKey) {
+      updatePublicKey(publicKey).catch(() => {});
+    }
     
     setKeyPair({ privateKey, publicKey });
     return { privateKey, publicKey };
