@@ -820,5 +820,151 @@ router.delete('/:postId', authMiddleware, async (req, res) => {
     }
 });
 
+// PATCH /posts/:postId — Editar contenido de un post
+router.patch('/:postId', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { postId } = req.params;
+        const { content } = req.body;
+        const currentUserId = req.user.id;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ message: 'El contenido no puede estar vacio' });
+        }
+
+        const { data: post } = await supabase
+            .from('posts')
+            .select('author_id')
+            .eq('id', postId)
+            .single();
+
+        if (!post) return res.status(404).json({ message: 'Post no encontrado' });
+        if (post.author_id !== currentUserId) {
+            return res.status(403).json({ message: 'No tienes permiso para editar esta publicacion' });
+        }
+
+        const { data: updated, error } = await supabase
+            .from('posts')
+            .update({ content: content.trim(), edited_at: new Date().toISOString() })
+            .eq('id', postId)
+            .select('id, content, edited_at')
+            .single();
+
+        if (error) throw error;
+        res.json({ post: updated });
+    } catch (err) {
+        console.error('Edit post error:', err);
+        res.status(500).json({ message: 'Error al editar la publicacion' });
+    }
+});
+
+// GET /posts/user/my-comments — Todos los comentarios en posts del usuario
+router.get('/user/my-comments', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+
+        // Obtener IDs de posts del usuario
+        const { data: userPosts } = await supabase
+            .from('posts')
+            .select('id')
+            .eq('author_id', userId);
+
+        if (!userPosts || userPosts.length === 0) {
+            return res.json({ comments: [] });
+        }
+
+        const postIds = userPosts.map(p => p.id);
+
+        const { data: comments, error } = await supabase
+            .from('post_comments')
+            .select(`
+                *,
+                author:users!post_comments_author_id_fkey (display_name, avatar_url),
+                post:posts!post_comments_post_id_fkey (id, type, content, video_title)
+            `)
+            .in('post_id', postIds)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = (comments || []).map(c => ({
+            ...c,
+            author_name: c.author?.display_name,
+            author_avatar: c.author?.avatar_url,
+            post_title: c.post?.video_title || (c.post?.type === 'image' ? 'Imagen' : c.post?.content?.substring(0, 50)) || 'Post',
+            post_type: c.post?.type
+        }));
+
+        res.json({ comments: formatted });
+    } catch (err) {
+        console.error('My comments error:', err);
+        res.status(500).json({ message: 'Error al obtener comentarios' });
+    }
+});
+
+// GET /posts/user/my-stats/overview — Resumen agregado de estadisticas
+router.get('/user/my-stats/overview', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+
+        // Posts del usuario
+        const { data: posts } = await supabase
+            .from('posts')
+            .select('id, type, likes_count, video_view_count, supports_count, is_banned, created_at')
+            .eq('author_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (!posts) return res.json({ overview: null });
+
+        const totalPosts = posts.length;
+        const activePosts = posts.filter(p => !p.is_banned).length;
+        const totalViews = posts.reduce((a, p) => a + (p.video_view_count || 0), 0);
+        const totalLikes = posts.reduce((a, p) => a + (p.likes_count || 0), 0);
+        const totalSupports = posts.reduce((a, p) => a + (p.supports_count || 0), 0);
+
+        // Top post por views
+        const sorted = [...posts].sort((a, b) => (b.video_view_count || 0) - (a.video_view_count || 0));
+        const topPost = sorted[0] || null;
+
+        // Posts por tipo
+        const byType = posts.reduce((acc, p) => {
+            acc[p.type] = (acc[p.type] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Posts este mes
+        const thisMonth = new Date();
+        thisMonth.setDate(1);
+        thisMonth.setHours(0, 0, 0, 0);
+        const postsThisMonth = posts.filter(p => new Date(p.created_at) >= thisMonth).length;
+
+        // Total comentarios en tus posts
+        const postIds = posts.map(p => p.id);
+        const { data: comments } = await supabase
+            .from('post_comments')
+            .select('id')
+            .in('post_id', postIds);
+        const totalComments = comments?.length || 0;
+
+        res.json({
+            overview: {
+                totalPosts,
+                activePosts,
+                totalViews,
+                totalLikes,
+                totalSupports,
+                totalComments,
+                postsThisMonth,
+                topPost,
+                byType
+            }
+        });
+    } catch (err) {
+        console.error('Overview error:', err);
+        res.status(500).json({ message: 'Error al obtener resumen' });
+    }
+});
 
 export default router;

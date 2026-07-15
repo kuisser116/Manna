@@ -40,6 +40,10 @@ export const getLikedPosts = (userId) => postsAPI.get(`/posts/liked/${userId}`);
 export const getSavedPosts = () => postsAPI.get('/posts/bookmarks/me');
 export const toggleSavePost = (postId) => postsAPI.post(`/posts/${postId}/save`);
 export const deletePost = (postId) => postsAPI.delete(`/posts/${postId}`);
+export const updatePost = (postId, data) => postsAPI.patch(`/posts/${postId}`, data);
+export const getMyComments = () => postsAPI.get('/posts/user/my-comments');
+export const getMyStats = () => postsAPI.get('/posts/user/my-stats');
+export const getMyOverview = () => postsAPI.get('/posts/user/my-stats/overview');
 
 // ── Seen tracking ──
 export const markPostAsSeen = (postId) => postsAPI.post(`/posts/${postId}/seen`);

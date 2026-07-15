@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import {
   UserPlus, UserCheck, Camera, QrCode,
   LayoutGrid, Eye, MessageCircle, Share, Flag,
-  Copy, Check, ImagePlus, CalendarDays, Settings
+  Copy, Check, ImagePlus, CalendarDays, Settings, BarChart3
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../components/ProfileEditModal/ProfileEditModal';
@@ -329,6 +329,13 @@ export default function Profile() {
                   <h1 className={styles.name}>{profileData?.displayName || 'Usuario'}</h1>
                   {isOwnProfile ? (
                     <>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => navigate('/studio')}
+                        title="Shekael Studio"
+                      >
+                        <BarChart3 size={18} />
+                      </button>
                       <button
                         className={styles.editBtn}
                         onClick={() => setIsProfileModalOpen(true)}
