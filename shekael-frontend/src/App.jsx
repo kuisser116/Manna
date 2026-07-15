@@ -119,7 +119,12 @@ function AppLayout({ children }) {
         <TopBar onToggleSidebar={handleToggleSidebar} sidebarWidth={isMobile ? 0 : navWidth} isMobile={isMobile} />
       )}
       {(!isChatRoute || !chatConversationMode || !isMobile) && (
-        <Sidebar collapsed={actualSidebarCollapsed} hidden={isSidebarHidden} />
+        <Sidebar
+          collapsed={actualSidebarCollapsed}
+          hidden={isSidebarHidden}
+          isMobile={isMobile}
+          onClose={() => setSidebarCollapsed(true)}
+        />
       )}
       <div
         className={styles.appContent}

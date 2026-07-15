@@ -4,44 +4,46 @@ import { useTranslation } from 'react-i18next';
 import styles from './Sidebar.module.css';
 import useStore from '../../store';
 
-export function Sidebar({ collapsed = false, hidden = false }) {
+export function Sidebar({ collapsed = false, hidden = false, isMobile = false, onClose }) {
     const { t, i18n } = useTranslation();
     const { user, setQrScannerOpen } = useStore();
     const navigate = useNavigate();
 
-
-
-    const changeLang = (lang) => {
-        i18n.changeLanguage(lang);
+    const handleNav = (to) => {
+        if (isMobile && onClose) onClose();
+        navigate(to);
     };
 
-    return (
-        <aside className={`${styles.nav} ${collapsed ? styles.collapsed : styles.expanded} ${hidden ? styles.hidden : ''}`}>
+    const sidebarContent = (
+        <div className={`${styles.nav} ${collapsed ? styles.collapsed : styles.expanded} ${hidden ? styles.hidden : ''} ${isMobile ? styles.mobileNav : ''}`}>
             <div className={styles.itemsContainer}>
                 {/* Home */}
-                <Link
-                    to="/feed"
+                <button
                     className={styles.iconBtn}
                     title={t('sidebar.feed', 'Inicio')}
                     data-label={t('sidebar.feed', 'Inicio')}
+                    onClick={() => handleNav('/feed')}
                 >
                     <Home size={24} strokeWidth={2} />
-                </Link>
+                </button>
 
                 {/* Create Post Button */}
-                <Link
-                    to="/create"
+                <button
                     className={styles.iconBtn}
                     title={t('sidebar.create', 'Crear publicación')}
                     data-label={t('sidebar.create', 'Crear publicación')}
+                    onClick={() => handleNav('/create')}
                 >
                     <PlusSquare size={24} strokeWidth={2} />
-                </Link>
+                </button>
 
                 {/* QR Button */}
                 <button
                     className={styles.iconBtn}
-                    onClick={() => setQrScannerOpen(true)}
+                    onClick={() => {
+                        if (isMobile && onClose) onClose();
+                        setQrScannerOpen(true);
+                    }}
                     aria-label="Mi QR"
                     title={t('sidebar.qr', 'Mi QR')}
                     data-label={t('sidebar.qr', 'Mi QR')}
@@ -50,27 +52,41 @@ export function Sidebar({ collapsed = false, hidden = false }) {
                 </button>
 
                 {/* Chat */}
-                <Link
-                    to="/chat"
+                <button
                     className={styles.iconBtn}
                     title={t('sidebar.chat', 'Chat')}
                     data-label={t('sidebar.chat', 'Chat')}
+                    onClick={() => handleNav('/chat')}
                 >
                     <MessageCircle size={24} strokeWidth={2} />
-                </Link>
+                </button>
 
                 {/* User Avatar */}
-                <Link
-                    to="/profile"
+                <button
                     className={styles.iconBtn}
                     title={t('sidebar.profile', 'Perfil')}
                     data-label={t('sidebar.profile', 'Perfil')}
+                    onClick={() => handleNav('/profile')}
                 >
                     <User size={24} strokeWidth={2} />
-                </Link>
+                </button>
             </div>
-        </aside>
+        </div>
     );
+
+    if (isMobile) {
+        return (
+            <>
+                {/* Backdrop */}
+                {!collapsed && (
+                    <div className={styles.mobileOverlay} onClick={onClose} />
+                )}
+                {sidebarContent}
+            </>
+        );
+    }
+
+    return sidebarContent;
 }
 
 export default Sidebar;
