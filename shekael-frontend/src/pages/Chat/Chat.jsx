@@ -1751,12 +1751,13 @@ export default function Chat() {
                             {msg._sending ? (
                               <span className={styles.sendingIndicator}>◌</span>
                             ) : msg.delivered_at ? (
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="none">
-                                <path d="M23.5 17.5l-5 5-3.5-3.5 1.5-1.5 2 2 3.5-3.5 1.5 1.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 13.5l-4-4 1.41-1.41L10 12.67l6.59-6.59L18 7.5l-8 8z"/>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="currentColor" strokeWidth="2">
+                                <path d="M2 12l5 5 13-13" stroke="currentColor" opacity="0.5"/>
+                                <path d="M7 12l5 5 10-10"/>
                               </svg>
                             ) : (
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-text-dim)" stroke="none">
-                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M4 12l5 5 11-11"/>
                               </svg>
                             )}
                           </span>
@@ -2022,9 +2023,15 @@ export default function Chat() {
                     }
                     delete e.currentTarget._touchY;
                   }}
-                  disabled={(!inputText.trim() && !selectedFile && !showAudioRecorder) || sending || uploading || !keysReady}
+                  disabled={sending || uploading || !keysReady}
                 >
-                  {uploading ? (
+                  {showAudioRecorder ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="9" y="2" width="6" height="12" rx="3"/>
+                      <path d="M5 10a7 7 0 0 0 14 0"/>
+                      <line x1="12" y1="19" x2="12" y2="22"/>
+                    </svg>
+                  ) : uploading ? (
                     <span className={styles.uploadingSpinner} />
                   ) : sending ? '...' : (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
