@@ -27,6 +27,7 @@ const resources = {
       "sidebar": {
         "feed": "Inicio",
         "create": "Publicar",
+        "chat": "Chat",
         "qr": "QR",
         "studio": "Estudio",
         "profile": "Perfil"
@@ -34,7 +35,8 @@ const resources = {
       "feed": {
         "noPostsYet": "Nadie ha publicado nada todavía. ¿Y si empiezas tú?",
         "createPost": "Publicar algo",
-        "endOfFeed": "¡Has llegado al final!"
+        "endOfFeed": "¡Has llegado al final!",
+        "allSeen": "Ya viste todo lo nuevo. Vuelve más tarde o cambia de filtro."
       },
       "wallet": {
         "balance": "Saldo",
@@ -53,7 +55,25 @@ const resources = {
         "saved": "Guardados",
         "noPosts": "Aún no hay publicaciones en este remanso.",
         "noLikes": "Aún no has dado me gusta a ninguna publicación.",
-        "noSaved": "Aún no tienes publicaciones guardadas."
+        "noSaved": "Aún no tienes publicaciones guardadas.",
+        "changeCover": "Cambiar portada",
+        "copyAddress": "Copiar dirección",
+        "memberSince": "Miembro desde",
+        "noContent": "No hay contenido disponible",
+        "noImages": "Aún no se han compartido imágenes.",
+        "noText": "Esta sección de texto está vacía.",
+        "noVideos": "No se encontraron videos aquí.",
+        "stats": {
+          "followers": "Seguidores",
+          "following": "Siguiendo",
+          "posts": "Publicaciones"
+        },
+        "tabs": {
+          "all": "Todo",
+          "images": "Imágenes",
+          "text": "Texto",
+          "videos": "Videos"
+        }
       },
       "notifications": {
         "title": "Notificaciones",
@@ -97,6 +117,7 @@ const resources = {
       "sidebar": {
         "feed": "Feed",
         "create": "Create",
+        "chat": "Chat",
         "qr": "QR",
         "studio": "Studio",
         "profile": "Profile"
@@ -104,7 +125,8 @@ const resources = {
       "feed": {
         "noPostsYet": "Nobody has posted anything yet. Why don't you start?",
         "createPost": "Post something",
-        "endOfFeed": "You've reached the end!"
+        "endOfFeed": "You've reached the end!",
+        "allSeen": "You've seen everything new. Come back later or change the filter."
       },
       "wallet": {
         "balance": "Balance",
@@ -123,7 +145,25 @@ const resources = {
         "saved": "Saved",
         "noPosts": "There are no posts in this space yet.",
         "noLikes": "You haven't liked any posts yet.",
-        "noSaved": "You don't have any saved posts yet."
+        "noSaved": "You don't have any saved posts yet.",
+        "changeCover": "Change cover",
+        "copyAddress": "Copy address",
+        "memberSince": "Member since",
+        "noContent": "No content available",
+        "noImages": "No images have been shared yet.",
+        "noText": "This text section is still empty.",
+        "noVideos": "No videos found here yet.",
+        "stats": {
+          "followers": "Followers",
+          "following": "Following",
+          "posts": "Posts"
+        },
+        "tabs": {
+          "all": "All",
+          "images": "Images",
+          "text": "Text",
+          "videos": "Videos"
+        }
       },
       "notifications": {
         "title": "Notifications",
