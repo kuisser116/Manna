@@ -222,7 +222,6 @@ export default function CreatePost() {
       }
     } else {
       try {
-        addToast('loading', 'Publicando...', 'Enviando a la red');
         await createPost({ type, content });
         addToast('success', 'Publicado!', 'Tu post ya esta en el feed');
         setTimeout(() => navigate('/feed'), 1400);
