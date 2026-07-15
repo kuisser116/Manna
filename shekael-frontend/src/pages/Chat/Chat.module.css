@@ -389,8 +389,8 @@
 
 .unreadConv {
   font-weight: 600;
-  background: color-mix(in srgb, var(--color-primary), transparent 92%);
-  border-left: 3px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-badge), transparent 90%);
+  border-left: 3px solid var(--color-badge);
 }
 
 .unreadBadge {
@@ -416,7 +416,7 @@
 
 .convPreviewUnread {
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-badge);
 }
 
 .convInfo {

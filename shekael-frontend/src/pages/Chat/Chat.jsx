@@ -306,19 +306,29 @@ export default function Chat() {
     });
 
     onConversationUpdated((data) => {
-      setConversations(prev => prev.map(c => {
-        if (c.id !== data.conversationId) return c;
-        const isActive = activeConvRef.current?.id === data.conversationId;
-        return {
-          ...c,
-          lastMessage: data.lastMessage,
-          updated_at: new Date().toISOString(),
-          unreadCount: isActive ? 0 : (c.unreadCount || 0) + 1
-        };
-      }).sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0)));
+      setConversations(prev => {
+        const updated = prev.map(c => {
+          if (c.id !== data.conversationId) return c;
+          const isActive = activeConvRef.current?.id === data.conversationId;
+          const isOwn = data.lastMessage?.sender_id === user?.id;
+          return {
+            ...c,
+            lastMessage: data.lastMessage,
+            updated_at: new Date().toISOString(),
+            unreadCount: isOwn ? 0 : (isActive ? 0 : (c.unreadCount || 0) + 1)
+          };
+        });
+        // Pinned siempre arriba, luego por updated_at
+        updated.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+        });
+        return updated;
+      });
 
-      // Notificación de escritorio si no es la conv activa
-      if ('Notification' in window && Notification.permission === 'granted') {
+      // Notificación de escritorio solo para mensajes de otros
+      if ('Notification' in window && Notification.permission === 'granted' && data.lastMessage?.sender_id !== user?.id) {
         const conv = conversationsRef.current?.find(c => c.id === data.conversationId);
         if (conv && activeConvRef.current?.id !== data.conversationId && data.lastMessage?.sender_id !== user?.id) {
           const senderName = conv.otherUser?.display_name || 'Alguien';
