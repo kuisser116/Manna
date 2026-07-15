@@ -1,22 +1,96 @@
-import { useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
-import { X, ArrowUpFromLine, ExternalLink, Loader2, ArrowDownToLine } from 'lucide-react';
+import gsap from 'gsap';
+import { X, ArrowUpFromLine, Loader2, ArrowDownToLine, Wallet, QrCode, ExternalLink, Banknote, Clock, CheckCircle2 } from 'lucide-react';
 import useStore from '../../store';
-import WalletRamp from '../WalletRamp/WalletRamp';
 import styles from './WithdrawModal.module.css';
 
 export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
-    const { mxneBalance, user } = useStore();
+    const { mxneBalance } = useStore();
+    const overlayRef = useRef(null);
+    const panelRef = useRef(null);
+    const contentRef = useRef(null);
     const [activeTab, setActiveTab] = useState('exchange');
     const [address, setAddress] = useState('');
     const [amount, setAmount] = useState('');
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
     const [error, setError] = useState(null);
-    const [isRampOpen, setIsRampOpen] = useState(false);
+    const [shouldRender, setShouldRender] = useState(false);
 
     const mxneAmount = parseFloat(mxneBalance || 0);
+
+    const animateIn = useCallback(() => {
+        setShouldRender(true);
+        requestAnimationFrame(() => {
+            if (!panelRef.current) return;
+
+            // Overlay fade-in
+            gsap.fromTo(overlayRef.current,
+                { opacity: 0 },
+                { opacity: 1, duration: 0.25, ease: 'power2.out' }
+            );
+
+            // Panel: slide+fade+scale similar to wallet float
+            gsap.fromTo(panelRef.current,
+                { opacity: 0, y: 40, scale: 0.92, rotate: -2, filter: 'blur(6px)' },
+                {
+                    opacity: 1, y: 0, scale: 1, rotate: 0, filter: 'blur(0px)',
+                    duration: 0.55, ease: 'power3.out', clearProps: 'filter'
+                }
+            );
+
+            // Content stagger
+            const children = contentRef.current?.children;
+            if (children) {
+                gsap.set(children, { opacity: 0, y: 12 });
+                gsap.to(children, {
+                    opacity: 1, y: 0,
+                    duration: 0.4, stagger: 0.04, delay: 0.15,
+                    ease: 'power2.out'
+                });
+            }
+        });
+    }, []);
+
+    const animateOut = useCallback((callback) => {
+        if (!panelRef.current) { callback?.(); return; }
+
+        const tl = gsap.timeline({
+            onComplete: () => {
+                setShouldRender(false);
+                callback?.();
+            }
+        });
+
+        tl.to(panelRef.current, {
+            opacity: 0, y: 24, scale: 0.95,
+            duration: 0.22, ease: 'power2.in'
+        });
+        tl.to(overlayRef.current, {
+            opacity: 0, duration: 0.15, ease: 'power2.out'
+        }, '-=0.1');
+    }, []);
+
+    const handleClose = useCallback(() => {
+        animateOut(onClose);
+    }, [animateOut, onClose]);
+
+    // Animate in on open
+    useEffect(() => {
+        if (isOpen) {
+            animateIn();
+            // reset state
+            setActiveTab('exchange');
+            setAddress('');
+            setAmount('');
+            setSent(false);
+            setError(null);
+        } else {
+            // When isOpen becomes false from parent, clean up
+            setShouldRender(false);
+        }
+    }, [isOpen, animateIn]);
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -41,32 +115,25 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
         }
     };
 
-    const handleTabChange = (tab) => {
-        setActiveTab(tab);
-        setError(null);
-        setSent(false);
-        if (tab === 'moneygram') {
-            setIsRampOpen(true);
-        }
-    };
-
-    if (!isOpen) return null;
+    if (!shouldRender && !isOpen) return null;
 
     return createPortal(
-        <div className={styles.overlay} onClick={onClose}>
-            <motion.div
-                className={styles.modal}
+        <div className={styles.overlay} ref={overlayRef} onClick={handleClose}
+            style={{ opacity: 0 }}>
+            <div className={styles.modal} ref={panelRef}
                 onClick={e => e.stopPropagation()}
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-            >
+                style={{ opacity: 0 }}>
+                {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.titleGroup}>
-                        <h3>Retirar fondos</h3>
-                        <p className={styles.subtitle}>Saldo disponible: {mxneAmount.toFixed(2)} MXNe</p>
+                        <h3 className={styles.title}>Retirar fondos</h3>
+                        <p className={styles.balanceLabel}>
+                            <Wallet size={12} />
+                            {mxneAmount.toFixed(2)} MXNe disponibles
+                        </p>
                     </div>
-                    <button className={styles.closeBtn} onClick={onClose}>
-                        <X size={20} />
+                    <button className={styles.closeBtn} onClick={handleClose}>
+                        <X size={18} />
                     </button>
                 </div>
 
@@ -74,51 +141,66 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                 <div className={styles.tabs}>
                     <button
                         className={`${styles.tab} ${activeTab === 'exchange' ? styles.activeTab : ''}`}
-                        onClick={() => handleTabChange('exchange')}
+                        onClick={() => { setActiveTab('exchange'); setError(null); setSent(false); }}
                     >
                         <ArrowUpFromLine size={14} />
-                        A exchange
+                        <span>A exchange</span>
                     </button>
                     <button
                         className={`${styles.tab} ${activeTab === 'moneygram' ? styles.activeTab : ''}`}
-                        onClick={() => handleTabChange('moneygram')}
+                        onClick={() => { setActiveTab('moneygram'); setError(null); setSent(false); }}
                     >
-                        <ExternalLink size={14} />
-                        Efectivo (Oxxo)
+                        <Banknote size={14} />
+                        <span>Efectivo</span>
                     </button>
                 </div>
 
-                <div className={styles.content}>
+                {/* Content */}
+                <div className={styles.content} ref={contentRef}>
                     {activeTab === 'exchange' ? (
                         sent ? (
                             <div className={styles.successBox}>
                                 <div className={styles.successIcon}>
-                                    <ArrowUpFromLine size={32} />
+                                    <CheckCircle2 size={36} />
                                 </div>
-                                <h4>Transferencia enviada</h4>
-                                <p>Tus fondos están en camino a la dirección destino.</p>
+                                <h4 className={styles.successTitle}>Transferencia enviada</h4>
+                                <p className={styles.successDesc}>Tus fondos están en camino a la dirección destino.</p>
                                 <p className={styles.successHint}>Llegan en ~3-5 segundos a la red Stellar.</p>
-                                <button className={styles.submitBtn} onClick={onClose}>
+                                <button className={styles.submitBtn} onClick={handleClose}>
                                     Finalizar
                                 </button>
                             </div>
                         ) : (
                             <form className={styles.form} onSubmit={handleSend}>
-                                <div className={styles.inputBox}>
-                                    <label>Dirección Stellar destino (de Bitso, Binance...)</label>
-                                    <input
-                                        type="text"
-                                        placeholder="G... o M..."
-                                        value={address}
-                                        onChange={e => setAddress(e.target.value)}
-                                        required
-                                        disabled={sending}
-                                    />
+                                <div className={styles.fieldGroup}>
+                                    <label className={styles.fieldLabel}>
+                                        Dirección destino
+                                        <span className={styles.fieldHint}>de Bitso, Binance o cualquier exchange</span>
+                                    </label>
+                                    <div className={styles.addressInputWrapper}>
+                                        <input
+                                            type="text"
+                                            className={styles.addressInput}
+                                            placeholder="G... o M..."
+                                            value={address}
+                                            onChange={e => setAddress(e.target.value)}
+                                            required
+                                            disabled={sending}
+                                        />
+                                        <div className={styles.addressIcon}>
+                                            <QrCode size={16} />
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className={styles.inputBox}>
-                                    <label>Monto en MXNe</label>
-                                    <div className={styles.inputWrapper}>
+                                <div className={styles.fieldGroup}>
+                                    <label className={styles.fieldLabel}>
+                                        Monto a retirar
+                                        <span className={styles.fieldHint}>
+                                            Máximo {mxneAmount.toFixed(2)} MXNe
+                                        </span>
+                                    </label>
+                                    <div className={styles.amountInputWrapper}>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -129,20 +211,31 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                             onChange={e => setAmount(e.target.value)}
                                             required
                                             disabled={sending}
+                                            className={styles.amountInput}
                                         />
                                         <span className={styles.currencyBadge}>MXNe</span>
                                     </div>
-                                    {mxneAmount > 0 && (
-                                        <p className={styles.hint}>
-                                            Máximo: {mxneAmount.toFixed(2)} MXNe
-                                        </p>
-                                    )}
+                                    <div className={styles.amountQuickRow}>
+                                        {[50, 100, 200, 500].map(n => (
+                                            <button
+                                                key={n}
+                                                type="button"
+                                                className={styles.quickAmountBtn}
+                                                onClick={() => setAmount(Math.min(n, mxneAmount))}
+                                                disabled={sending || mxneAmount < n}
+                                            >
+                                                ${n}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 {amount > 0 && !error && (
                                     <div className={styles.conversionNote}>
-                                        <ArrowDownToLine size={12} />
-                                        Se convertirá MXNe → XLM en el DEX y se enviará a tu exchange
+                                        <ArrowDownToLine size={14} />
+                                        <span>
+                                            MXNe &rarr; XLM vía Stellar DEX &middot; Comisión ≈ $0.003 MXN
+                                        </span>
                                     </div>
                                 )}
 
@@ -160,34 +253,60 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                     {sending ? (
                                         <><Loader2 className={styles.spin} size={18} /> Enviando...</>
                                     ) : (
-                                        <><ArrowUpFromLine size={16} /> Transferir a exchange</>
+                                        <><ArrowUpFromLine size={18} /> Transferir a exchange</>
                                     )}
                                 </button>
                             </form>
                         )
                     ) : (
-                        /* Pestaña MoneyGram - abre el WalletRamp directo */
-                        <div className={styles.rampPlaceholder}>
-                            {isRampOpen && (
-                                <WalletRamp
-                                    isOpen={isRampOpen}
-                                    onClose={() => { setIsRampOpen(false); onClose(); }}
-                                    onRefreshBalance={onRefreshBalance}
-                                />
-                            )}
-                            {!isRampOpen && (
-                                <button
-                                    className={styles.openRampBtn}
-                                    onClick={() => setIsRampOpen(true)}
-                                >
-                                    <ExternalLink size={16} />
-                                    Abrir retiro en Oxxo
-                                </button>
-                            )}
+                        /* MoneyGram tab — inline, no second modal */
+                        <div className={styles.moneygramContent}>
+                            <div className={styles.mgHero}>
+                                <Banknote size={28} />
+                                <h4>Retira en efectivo</h4>
+                                <p>En más de 21,000 puntos Oxxo en todo México</p>
+                            </div>
+
+                            <div className={styles.mgSteps}>
+                                <div className={styles.mgStep}>
+                                    <div className={styles.stepNumber}>1</div>
+                                    <div className={styles.stepInfo}>
+                                        <strong>Ingresa el monto</strong>
+                                        <p>Elige cuánto retirar de tu saldo MXNe</p>
+                                    </div>
+                                </div>
+                                <div className={styles.mgStep}>
+                                    <div className={styles.stepNumber}>2</div>
+                                    <div className={styles.stepInfo}>
+                                        <strong>Recibe tu código</strong>
+                                        <p>Generamos un código de retiro válido por 24h</p>
+                                    </div>
+                                </div>
+                                <div className={styles.mgStep}>
+                                    <div className={styles.stepNumber}>3</div>
+                                    <div className={styles.stepInfo}>
+                                        <strong>Cobra en Oxxo</strong>
+                                        <p>Presenta tu código en cualquier Oxxo y recibe efectivo</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={styles.mgComingSoon}>
+                                <Clock size={16} />
+                                <span>Próximamente &mdash; Activando convenio con MoneyGram</span>
+                            </div>
+
+                            <div className={styles.mgDisclaimer}>
+                                <p>
+                                    Shekael utilizará <strong>MoneyGram Ramps API</strong> (SEP-24) para
+                                    habilitar retiros en efectivo. Cada transacción tiene un límite
+                                    de $8,000 MXN y requiere identificación oficial.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
-            </motion.div>
+            </div>
         </div>,
         document.body
     );

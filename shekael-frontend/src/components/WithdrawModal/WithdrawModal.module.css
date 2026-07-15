@@ -1,49 +1,69 @@
+/* ============================================
+   WithdrawModal — GSAP animated, spacious, sleek
+   ============================================ */
+
+/* --- Overlay --- */
 .overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    padding: 20px;
+    padding: 24px;
 }
 
+/* --- Modal --- */
 .modal {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 20px;
+    border-radius: 24px;
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
+    max-height: min(90vh, 680px);
     overflow: hidden;
-    position: relative;
-    box-shadow: 0 20px 60px var(--color-shadow);
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 24px 80px rgba(0, 0, 0, 0.4);
 }
 
+/* --- Header --- */
 .header {
-    padding: 20px 24px;
+    padding: 28px 28px 20px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    border-bottom: 1px solid var(--color-border);
+    gap: 16px;
 }
 
-.titleGroup h3 {
+.titleGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.title {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.35rem;
+    font-weight: 700;
     color: var(--color-text);
-    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
 }
 
-.subtitle {
-    margin: 4px 0 0;
-    font-size: 0.8rem;
+.balanceLabel {
+    margin: 0;
+    font-size: 0.78rem;
     color: var(--color-text-muted);
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .closeBtn {
@@ -51,21 +71,31 @@
     border: none;
     color: var(--color-text-muted);
     cursor: pointer;
-    padding: 4px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s;
-    margin: -8px;
+    flex-shrink: 0;
+    margin: -4px;
 }
 
 .closeBtn:hover {
     background: var(--color-surface-3);
     color: var(--color-text);
+    transform: rotate(90deg);
 }
 
-/* Tabs */
+/* --- Tabs --- */
 .tabs {
     display: flex;
-    border-bottom: 1px solid var(--color-border);
+    margin: 0 24px;
+    gap: 4px;
+    background: var(--color-surface-2);
+    border-radius: 14px;
+    padding: 4px;
 }
 
 .tab {
@@ -73,143 +103,253 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 12px;
-    background: none;
+    gap: 7px;
+    padding: 10px 16px;
     border: none;
+    background: transparent;
     color: var(--color-text-muted);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
+    border-radius: 11px;
+    transition: all 0.25s ease;
 }
 
 .tab:hover {
     color: var(--color-text-secondary);
-    background: var(--color-surface-2);
 }
 
 .activeTab {
+    background: var(--color-surface);
     color: var(--color-text) !important;
-    border-bottom-color: var(--color-text) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* Content */
+/* --- Content area --- */
 .content {
-    padding: 24px;
+    padding: 24px 28px 28px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
+
+/* ============================================
+   EXCHANGE TAB
+   ============================================ */
 
 .form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
 }
 
-.inputBox {
+.fieldGroup {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.inputBox label {
-    font-size: 0.85rem;
-    color: var(--color-text-secondary);
-    font-weight: 500;
+.fieldLabel {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
 }
 
-.inputWrapper {
+.fieldHint {
+    font-weight: 400;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+}
+
+/* Address input with scan icon */
+.addressInputWrapper {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.inputWrapper input {
+.addressInput {
     width: 100%;
     background: var(--color-surface-2);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    padding: 12px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 14px;
+    padding: 14px 44px 14px 16px;
     color: var(--color-text);
-    font-size: 1rem;
+    font-size: 0.9rem;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    letter-spacing: 0.01em;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.addressInput:focus {
+    border-color: var(--color-text);
+    box-shadow: 0 0 0 3px var(--color-surface-3);
+}
+
+.addressInput::placeholder {
+    color: var(--color-text-dim);
+    font-family: inherit;
+    opacity: 0.5;
+}
+
+.addressInput:disabled {
+    opacity: 0.45;
+}
+
+.addressIcon {
+    position: absolute;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--color-surface-3);
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    cursor: pointer;
     transition: all 0.2s;
 }
 
-.inputWrapper input:focus {
-    outline: none;
-    border-color: var(--color-text);
-    box-shadow: 0 0 0 2px var(--color-surface-3);
+.addressIcon:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
 }
 
-.inputWrapper input:disabled {
-    opacity: 0.5;
+/* Amount input with badge */
+.amountInputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.amountInput {
+    width: 100%;
+    background: var(--color-surface-2);
+    border: 1.5px solid var(--color-border);
+    border-radius: 14px;
+    padding: 16px 80px 16px 16px;
+    color: var(--color-text);
+    font-size: 1.15rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.amountInput:focus {
+    border-color: var(--color-text);
+    box-shadow: 0 0 0 3px var(--color-surface-3);
+}
+
+.amountInput:disabled {
+    opacity: 0.45;
 }
 
 .currencyBadge {
     position: absolute;
-    right: 10px;
+    right: 12px;
     background: var(--color-surface-3);
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-}
-
-.hint {
-    margin: 0;
+    padding: 4px 10px;
+    border-radius: 8px;
     font-size: 0.75rem;
-    color: var(--color-text-dim);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.02em;
 }
 
+/* Quick amount buttons */
+.amountQuickRow {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.quickAmountBtn {
+    flex: 1;
+    padding: 7px 0;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quickAmountBtn:hover:not(:disabled) {
+    background: var(--color-surface-3);
+    color: var(--color-text);
+    border-color: var(--color-text);
+    transform: translateY(-1px);
+}
+
+.quickAmountBtn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Conversion note */
 .conversionNote {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 0.75rem;
     color: var(--color-text-muted);
     background: var(--color-surface-2);
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px dashed var(--color-border);
-}
-
-.errorBox {
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-border);
     padding: 10px 14px;
     border-radius: 10px;
-    color: var(--color-text-secondary);
-    font-size: 0.82rem;
+    border: 1px dashed var(--color-border);
     line-height: 1.4;
 }
 
+/* Error */
+.errorBox {
+    background: rgba(255, 80, 80, 0.06);
+    border: 1px solid rgba(255, 80, 80, 0.15);
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--color-text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* Submit button */
 .submitBtn {
     width: 100%;
     background: var(--color-text);
     color: var(--color-bg);
     border: none;
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 14px;
+    padding: 14px 24px;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    letter-spacing: 0.01em;
+    margin-top: 4px;
 }
 
 .submitBtn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--color-shadow);
+    box-shadow: 0 6px 16px var(--color-shadow);
 }
 
 .submitBtn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
+    transform: none;
 }
 
 .spin {
@@ -221,68 +361,169 @@
     to   { transform: rotate(360deg); }
 }
 
-/* Success */
+/* --- Success state --- */
 .successBox {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 20px 0;
-    gap: 12px;
+    padding: 32px 16px 20px;
+    gap: 8px;
 }
 
 .successIcon {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     background: var(--color-surface-2);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--color-text);
+    margin-bottom: 8px;
 }
 
-.successBox h4 {
+.successTitle {
     margin: 0;
     font-size: 1.2rem;
+    font-weight: 700;
     color: var(--color-text);
 }
 
-.successBox p {
+.successDesc {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
 }
 
 .successHint {
+    margin: 0;
     color: var(--color-text-muted) !important;
     font-size: 0.75rem !important;
+    margin-bottom: 12px !important;
 }
 
-/* MoneyGram tab */
-.rampPlaceholder {
-    min-height: 200px;
+/* ============================================
+   MONEYGRAM TAB — inline, no second modal
+   ============================================ */
+
+.moneygramContent {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.mgHero {
+    text-align: center;
+    padding: 20px 12px;
+    background: var(--color-surface-2);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text);
+}
+
+.mgHero h4 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.mgHero p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.mgHero svg {
+    opacity: 0.6;
+}
+
+/* Steps */
+.mgSteps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mgStep {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--color-surface-2);
+    border-radius: 14px;
+    transition: background 0.2s;
+}
+
+.stepNumber {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-surface-3);
+    color: var(--color-text-secondary);
+    font-size: 0.78rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
 }
 
-.openRampBtn {
+.stepInfo strong {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.stepInfo p {
+    margin: 3px 0 0;
+    font-size: 0.77rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+/* Coming soon badge */
+.mgComingSoon {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    padding: 12px 16px;
     background: var(--color-surface-2);
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
-    padding: 14px 24px;
-    border-radius: 14px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-weight: 500;
 }
 
-.openRampBtn:hover {
+/* Disclaimer */
+.mgDisclaimer {
+    border-top: 1px solid var(--color-border);
+    padding-top: 16px;
+}
+
+.mgDisclaimer p {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--color-text-dim);
+    line-height: 1.5;
+}
+
+/* --- Scrollbar styling --- */
+.content::-webkit-scrollbar {
+    width: 4px;
+}
+.content::-webkit-scrollbar-track {
+    background: transparent;
+}
+.content::-webkit-scrollbar-thumb {
     background: var(--color-surface-3);
-    transform: translateY(-1px);
+    border-radius: 4px;
 }
