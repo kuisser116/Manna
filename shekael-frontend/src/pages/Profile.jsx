@@ -370,11 +370,11 @@ export default function Profile() {
                           if (res.data.alreadyConnected && res.data.conversationId) {
                             navigate(`/chat?conv=${res.data.conversationId}`);
                           } else {
-                            showToast('success', 'Solicitud enviada. Cuando acepte podran chatear.');
+                            showSuccess('Solicitud enviada', 'Cuando acepte podran chatear.', true);
                           }
                         } catch (err) {
                           const msg = err.response?.data?.message || 'Error al enviar solicitud';
-                          showToast('error', msg);
+                          showError('Error', msg);
                         }
                       }}
                       title="Enviar mensaje"

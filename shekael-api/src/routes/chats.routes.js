@@ -25,7 +25,24 @@ router.post('/request', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'No puedes enviarte solicitud a ti mismo' });
         }
 
-        // Verificar si ya existe solicitud
+        // Primero: revisar si YA comparten conversación (sin importar message_request)
+        const { data: fromParts } = await supabase
+            .from('conversation_participants')
+            .select('conversation_id')
+            .eq('user_id', fromUserId);
+        const fromConvIds = fromParts?.map(c => c.conversation_id) || [];
+        if (fromConvIds.length > 0) {
+            const { data: shared } = await supabase
+                .from('conversation_participants')
+                .select('conversation_id')
+                .in('conversation_id', fromConvIds)
+                .eq('user_id', toUserId);
+            if (shared?.length > 0) {
+                return res.json({ alreadyConnected: true, conversationId: shared[0].conversation_id });
+            }
+        }
+
+        // No comparten conversación → verificar/crear message_request
         const { data: existing } = await supabase
             .from('message_requests')
             .select('id, status')
@@ -43,50 +60,7 @@ router.post('/request', authMiddleware, async (req, res) => {
             if (existing.status === 'rejected') {
                 return res.status(403).json({ message: 'No puedes enviar otra solicitud' });
             }
-            // Si ya está aceptado, redirigir a la conversación
-            if (existing.status === 'accepted') {
-                const { data: convParts } = await supabase
-                    .from('conversation_participants')
-                    .select('conversation_id')
-                    .eq('user_id', fromUserId)
-                    .eq('accepted', true);
-                const otherUserConversations = convParts?.map(c => c.conversation_id) || [];
-                if (otherUserConversations.length > 0) {
-                    const { data: sharedConv } = await supabase
-                        .from('conversation_participants')
-                        .select('conversation_id')
-                        .in('conversation_id', otherUserConversations)
-                        .eq('user_id', toUserId);
-                    if (sharedConv?.length > 0) {
-                        return res.json({ alreadyConnected: true, conversationId: sharedConv[0].conversation_id });
-                    }
-                }
-            }
-        }
-
-        // Fallback: revisar si ya comparten conversación aunque no haya message_request
-        const { data: myConvs } = await supabase
-            .from('conversation_participants')
-            .select('conversation_id')
-            .eq('user_id', fromUserId)
-            .eq('accepted', true);
-        const myConvIds = myConvs?.map(c => c.conversation_id) || [];
-        if (myConvIds.length > 0) {
-            const { data: shared } = await supabase
-                .from('conversation_participants')
-                .select('conversation_id')
-                .in('conversation_id', myConvIds)
-                .eq('user_id', toUserId);
-            if (shared?.length > 0) {
-                // Upsert message_request a accepted si no existe
-                await supabase
-                    .from('message_requests')
-                    .upsert(
-                        { from_user_id: fromUserId, to_user_id: toUserId, status: 'accepted' },
-                        { onConflict: 'from_user_id,to_user_id' }
-                    );
-                return res.json({ alreadyConnected: true, conversationId: shared[0].conversation_id });
-            }
+            // Accepted sin conversación compartida (inconsistencia) → crear request de nuevo
         }
 
         // Crear solicitud
