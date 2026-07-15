@@ -244,6 +244,8 @@ export default function Chat() {
           const profRes = await getUserProfile(otherUserId);
           const fresh = profRes.data?.user || profRes.data;
           if (fresh?.public_key) {
+            console.log('[WS KEY] sender_public_key_from_api:', fresh.public_key?.substring(0,30));
+            console.log('[WS KEY] my_priv_fingerprint:', getKeyPair?.()?.privateKey?.substring(0,15));
             decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
             console.log('[WS KEY] msg:', msg.id?.substring(0,8), 'fresh_key:', fresh.public_key?.substring(0,20));
           } else {
@@ -632,7 +634,7 @@ export default function Chat() {
 
     // ── Edit mode ──
     if (editingMessage) {
-      const otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
+      const otherUser = otherUserCache.current[activeConv.id] || activeConv.otherUser;
       if (!otherUser?.public_key) {
         // Intentar obtener llave pública
         try {
@@ -695,7 +697,7 @@ export default function Chat() {
       setUploading(false);
     }
 
-    let otherUser = activeConv.otherUser || otherUserCache.current[activeConv.id];
+    let otherUser = otherUserCache.current[activeConv.id] || activeConv.otherUser;
     let usingPreKey = false;
     let ephemeralPubB64 = null;
     let preKeyUsedId = null;
