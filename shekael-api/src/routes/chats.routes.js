@@ -4,7 +4,7 @@ import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { uploadToR2 } from '../services/ipfs.service.js';
-import { emitToConversation } from '../services/socket.js';
+import { emitToConversation, emitToUser } from '../services/socket.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
@@ -458,12 +458,28 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
             .update({ updated_at: new Date().toISOString() })
             .eq('id', conversationId);
 
-        // Notificar via WebSocket
+        // Notificar via WebSocket a la sala
         emitToConversation(conversationId, 'message:sent', msg);
         emitToConversation(conversationId, 'conversation:updated', {
             conversationId,
             lastMessage: msg
         });
+
+        // También notificar directamente a cada participante (por si no están en la sala)
+        const { data: participants } = await supabase
+            .from('conversation_participants')
+            .select('user_id')
+            .eq('conversation_id', conversationId)
+            .eq('accepted', true)
+            .neq('user_id', userId);
+
+        if (participants) {
+            const convNotif = { conversationId, lastMessage: msg };
+            participants.forEach(p => {
+                emitToUser(p.user_id, 'conversation:updated', convNotif);
+                emitToUser(p.user_id, 'message:sent', msg);
+            });
+        }
 
     res.json({ message: msg });
     } catch (err) {
