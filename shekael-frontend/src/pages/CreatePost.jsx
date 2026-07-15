@@ -41,7 +41,7 @@ export default function CreatePost() {
   const formRef = useRef(null);
   const textareaWrapRef = useRef(null);
   const imageZoneWrapRef = useRef(null);
-  const submitWrapRef = useRef(null);
+  const submitAreaRef = useRef(null);
   const compressionBadgeRef = useRef(null);
 
   // — Animación de entrada —
@@ -351,6 +351,7 @@ export default function CreatePost() {
           ))}
         </div>
 
+        <div className={styles.formCard}>
         <form onSubmit={handleSubmit} className={styles.form} ref={formRef}>
           {/* Zona de imagen */}
           {type === 'image' && (
@@ -426,13 +427,7 @@ export default function CreatePost() {
           )}
 
           {type !== 'video' && (
-            <div className={styles.depositNote}>
-              Deposito de Confianza: 0.10 XLM se bloquea al publicar y se devuelve en 24 h
-            </div>
-          )}
-
-          {type !== 'video' && (
-            <div className={styles.submitWrap} ref={submitWrapRef}>
+            <div className={styles.submitArea} ref={submitAreaRef}>
               <button
                 type="submit"
                 className={styles.submitBtn}
@@ -443,6 +438,7 @@ export default function CreatePost() {
             </div>
           )}
         </form>
+        </div>
 
         <FeedbackModal
           isOpen={modalState.isOpen}
