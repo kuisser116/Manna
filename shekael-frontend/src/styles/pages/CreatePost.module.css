@@ -1,351 +1,329 @@
 .layout {
-    display: flex;
-    min-height: 100vh;
-    width: 100%;
-    background: var(--color-bg);
-    position: relative;
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--color-bg);
+  position: relative;
 }
 
 .layout::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    background: var(--color-pattern);
-    -webkit-mask-image: var(--pattern-url);
-    mask-image: var(--pattern-url);
-    -webkit-mask-repeat: repeat;
-    mask-repeat: repeat;
-    -webkit-mask-size: 104px 104px;
-    mask-size: 104px 104px;
-    opacity: var(--pattern-opacity);
-    pointer-events: none;
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--color-pattern);
+  -webkit-mask-image: var(--pattern-url);
+  mask-image: var(--pattern-url);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 104px 104px;
+  mask-size: 104px 104px;
+  opacity: var(--pattern-opacity);
+  pointer-events: none;
 }
 
 .main {
-    flex: 1;
-    max-width: 100%;
-    padding: 28px 24px;
-    border-right: 1px solid var(--color-border);
-    background: var(--color-bg);
-    position: relative;
-    z-index: 1;
+  flex: 1;
+  max-width: 100%;
+  padding: 32px 28px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg);
+  position: relative;
+  z-index: 1;
 }
 
+/* ── Header ── */
+
 .header {
-    margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .title {
-    font-family: var(--font-display);
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
-    font-size: 14px;
-    color: var(--color-text-muted);
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
 }
 
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 70%;
-    margin: 0 auto;
-}
+/* ── Type grid ── */
 
 .typeGrid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 28px;
 }
 
 .typeCard {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 16px 12px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    transition: all var(--transition);
-    color: var(--color-text-muted);
-    text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .typeCard:hover {
-    border-color: var(--color-primary);
-    color: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  transform: translateY(-1px);
 }
 
 .typeActive {
-    border-color: var(--color-primary);
-    background: var(--color-primary-glow);
-    color: var(--color-primary);
+  border-color: var(--color-text);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  box-shadow: 0 2px 8px var(--color-shadow);
 }
 
 .typeLabel {
-    font-weight: 600;
-    font-size: 14px;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .typeDesc {
-    font-size: 11px;
-    color: var(--color-text-muted);
+  font-size: 11px;
+  color: var(--color-text-dim);
 }
 
+/* ── Form ── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* ── Textarea ── */
+
 .textareaWrap {
-    position: relative;
+  position: relative;
 }
 
 .textarea {
-    width: 100%;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    color: var(--color-text);
-    padding: 16px;
-    font-size: 16px;
-    resize: vertical;
-    line-height: 1.6;
-    transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text);
+  padding: 18px;
+  font-size: 16px;
+  resize: vertical;
+  line-height: 1.7;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
 }
 
 .textarea:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-glow);
-    outline: none;
+  border-color: var(--color-text-muted);
+  box-shadow: 0 0 0 3px var(--color-shadow);
+  outline: none;
 }
 
-.capsuleTextarea {
-    font-family: var(--font-display);
-    font-size: 18px;
-    font-style: italic;
-    text-align: center;
+.textarea::placeholder {
+  color: var(--color-text-dim);
 }
 
 .charCount {
-    text-align: right;
-    padding: 4px 2px 0;
-    font-size: 12px;
-    color: var(--color-text-muted);
+  text-align: right;
+  padding: 6px 4px 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .charWarn {
-    color: var(--color-warning);
+  color: var(--color-warning);
+  font-weight: 600;
 }
 
+/* ── Image zone ── */
+
 .imageZone {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .uploadLabel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 48px;
-    border: 2px dashed var(--color-border);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    color: var(--color-text-muted);
-    font-size: 14px;
-    transition: all var(--transition);
-    text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  border: 2px dashed var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  transition: all 0.2s ease;
+  text-align: center;
 }
 
 .uploadLabel:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+  border-color: var(--color-text);
+  color: var(--color-text);
+  background: var(--color-surface-2);
 }
 
 .uploadSub {
-    font-size: 12px;
-    color: var(--color-text-dim);
+  font-size: 12px;
+  color: var(--color-text-dim);
 }
 
 .imagePreviewWrap {
-    position: relative;
+  position: relative;
 }
 
 .imagePreview {
-    width: 100%;
-    border-radius: var(--border-radius);
-    max-height: 300px;
-    object-fit: cover;
+  width: 100%;
+  border-radius: 12px;
+  max-height: 300px;
+  object-fit: cover;
 }
 
 .removeImage {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.capsuleNote {
-    font-size: 13px;
-    color: var(--color-primary);
-    background: var(--color-primary-glow);
-    border: 1px solid rgba(225, 29, 72, 0.2);
-    border-radius: var(--border-radius-sm);
-    padding: 10px 14px;
+.removeImage:hover {
+  background: rgba(0, 0, 0, 0.85);
 }
 
-.depositNote {
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    background: var(--color-surface-2);
-    border-radius: var(--border-radius-sm);
-    padding: 10px 14px;
-    border: 1px solid var(--color-border);
-}
+/* ── Badge de compresion ── */
 
-.submitBtn {
-    background: var(--color-primary);
-    color: var(--color-white);
-    font-weight: 700;
-    padding: 14px;
-    border-radius: var(--border-radius-full);
-    font-size: 16px;
-    cursor: pointer;
-    border: none;
-}
-
-.submitBtn:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
-.submitBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Badge de compresion */
 .compressionBadge {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background: rgba(0, 0, 0, 0.75);
-    color: var(--color-success);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 10px;
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(46, 189, 106, 0.3);
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--color-success);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .savingsTag {
-    color: #2EBD6A;
-    font-weight: 700;
-    margin-left: 2px;
+  color: var(--color-success);
+  font-weight: 700;
+  margin-left: 2px;
 }
 
-.ipfsNote {
-    font-size: 12px;
-    color: var(--color-text-muted);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: var(--color-primary-glow);
-    border: 1px solid rgba(225, 29, 72, 0.2);
-    border-radius: var(--border-radius-sm);
+/* ── Deposit note ── */
+
+.depositNote {
+  font-size: 13px;
+  color: var(--color-text-dim);
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  line-height: 1.5;
 }
 
-/* Sidebar derecha */
+/* ── Submit ── */
+
+.submitWrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submitBtn {
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-weight: 700;
+  padding: 14px 40px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.submitBtn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.submitBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Sidebar derecha (oculto por ahora) ── */
+
 .sidebar {
-    width: 300px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 56px;
-    height: calc(100vh - 56px);
-    overflow-y: auto;
-    background: var(--color-surface);
-    border-left: 1px solid var(--color-border);
-    padding: 24px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  display: none;
 }
 
-@media (max-width: 900px) {
-    .sidebar { display: none; }
-    .main { border-right: none; }
-}
+/* ── Responsive ── */
 
-@media (max-width: 700px) {
-    .main { padding: 16px; }
-    .form { max-width: 100%; }
-    .typeGrid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 768px) {
+  .main {
+    padding: 20px 16px;
+    border-right: none;
+  }
+  .form {
+    max-width: 100%;
+  }
+  .typeGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .typeCard {
+    padding: 14px 8px;
+  }
+  .submitBtn {
+    width: 100%;
+    padding: 14px;
+  }
 }
 
 @media (max-width: 480px) {
-    .valueGrid { grid-template-columns: 1fr; }
-}
-
-.valueSelector {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.valueTitle {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text);
-}
-
-.valueGrid {
-    display: grid;
+  .main {
+    padding: 16px 12px;
+  }
+  .typeGrid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-}
-
-.valueCard {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    transition: all var(--transition);
-    color: var(--color-text-muted);
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.valueCard:hover {
-    border-color: var(--color-primary);
-    color: var(--color-text);
-}
-
-.valueActive {
-    border-color: var(--color-primary);
-    background: var(--color-primary-glow);
-    color: var(--color-primary);
+  }
+  .title {
+    font-size: 22px;
+  }
 }
