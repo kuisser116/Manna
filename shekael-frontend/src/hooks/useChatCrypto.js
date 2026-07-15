@@ -84,13 +84,11 @@ export function useChatCrypto() {
     const plaintext = sodium.crypto_secretbox_open_easy(actualCipher, nonce, key);
     const privateKey = sodium.to_string(plaintext);
 
-    // Recuperar public_key desde el store (ya cargada del server en initAuth)
-    const currentUser = useStore.getState().user;
-    const publicKey = currentUser?.public_key || '';
-
-    // Derivar shared secret a partir del private key para validar
-    // (no guardamos el keypair típico, guardamos privateKey raw)
+    // Derivar public_key desde la private key (Curve25519)
+    // Así siempre matchean, sin importar qué tenga la API
     const actualPrivateKey = sodium.from_base64(privateKey);
+    const computedPubBytes = sodium.crypto_scalarmult_base(actualPrivateKey);
+    const publicKey = sodium.to_base64(computedPubBytes);
     
     setKeyPair({ privateKey, publicKey });
     return { privateKey, publicKey };
