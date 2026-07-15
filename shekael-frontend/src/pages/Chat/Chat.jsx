@@ -262,10 +262,8 @@ export default function Chat() {
     });
     if (toAnimate.length === 0) return;
     gsap.fromTo(toAnimate,
-      { opacity: 0, y: 24, scale: 0.92, filter: 'blur(4px)' },
-      { opacity: 1, y: 0, scale: 1, filter: 'none', duration: 0.5, stagger: 0.05, ease: 'shekael-bounce', onComplete: () => {
-        toAnimate.forEach(el => gsap.set(el, { clearProps: 'filter' }));
-      }}
+      { opacity: 0, y: 12 },
+      { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power2.out' }
     );
     toAnimate.forEach(el => {
       const id = el.id?.replace('msg-', '');
