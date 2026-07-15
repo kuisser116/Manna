@@ -306,16 +306,17 @@ export default function Chat() {
     });
 
     onConversationUpdated((data) => {
+      const currentUser = useStore.getState().user;
       setConversations(prev => {
         const updated = prev.map(c => {
           if (c.id !== data.conversationId) return c;
           const isActive = activeConvRef.current?.id === data.conversationId;
-          const isOwn = data.lastMessage?.sender_id === user?.id;
+          const isOwn = data.lastMessage?.sender_id === currentUser?.id;
           return {
             ...c,
             lastMessage: data.lastMessage,
             updated_at: new Date().toISOString(),
-            unreadCount: isOwn ? 0 : (isActive ? 0 : (c.unreadCount || 0) + 1)
+            unreadCount: isOwn ? (c.unreadCount || 0) : (isActive ? 0 : (c.unreadCount || 0) + 1)
           };
         });
         // Pinned siempre arriba, luego por updated_at
@@ -908,8 +909,9 @@ export default function Chat() {
   // Calcular no leídos
   // Calcular si hay mensajes sin leer en esta conversación
   const hasUnread = (conv) => {
+    if (typeof conv.unreadCount === 'number' && conv.unreadCount > 0) return true;
     if (!conv.lastMessage?.created_at) return false;
-    if (!conv.lastReadAt) return true; // nunca leído
+    if (!conv.lastReadAt) return true;
     return new Date(conv.lastMessage.created_at) > new Date(conv.lastReadAt);
   };
 
