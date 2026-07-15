@@ -70,18 +70,12 @@ export default function Chat() {
   const [chatSearchResults, setChatSearchResults] = useState([]);
   const [showChatSearch, setShowChatSearch] = useState(false);
 
-  // Emoji picker
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const emojiPickerRef = useRef(null);
-
-  // Reenviar
-  const [forwardTarget, setForwardTarget] = useState(null); // message being forwarded
-  const [forwardConvId, setForwardConvId] = useState('');
-
   // Nuevos modales
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showPollCreator, setShowPollCreator] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showPickerTab, setShowPickerTab] = useState('emojis'); // 'emojis' | 'stickers'
   const [showGroupCreate, setShowGroupCreate] = useState(false);
 
   // Typing indicator
@@ -141,19 +135,6 @@ export default function Chat() {
       { opacity: 1, x: 0, duration: 0.3, stagger: 0.025, ease: 'power2.out', overwrite: 'auto' }
     );
   }, [filteredConversations]);
-
-  // Cerrar emoji picker al hacer click fuera
-  useEffect(() => {
-    const handler = (e) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
-        setShowEmojiPicker(false);
-      }
-    };
-    if (showEmojiPicker) {
-      document.addEventListener('mousedown', handler);
-    }
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showEmojiPicker]);
 
   // Cerrar context menu al hacer click fuera
   useEffect(() => {
@@ -1686,9 +1667,9 @@ export default function Chat() {
               <div className={styles.inputRow}>
                 <button
                   className={styles.attachBtn}
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => setShowAttachMenu(!showAttachMenu)}
                   disabled={!keysReady || uploading}
-                  title="Adjuntar imagen o archivo"
+                  title="Adjuntar"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
@@ -1701,11 +1682,23 @@ export default function Chat() {
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
+                {showAttachMenu && (
+                  <div className={styles.attachMenu}>
+                    <button onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                      Archivo
+                    </button>
+                    <button onClick={() => { setShowPollCreator(true); setShowAttachMenu(false); }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                      Encuesta
+                    </button>
+                  </div>
+                )}
                 <button
-                  className={styles.emojiBtn}
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className={styles.toolBtn}
+                  onClick={() => setShowStickerPicker(!showStickerPicker)}
                   disabled={!keysReady}
-                  title="Emoji"
+                  title="Emojis y Stickers"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10"/>
@@ -1714,59 +1707,30 @@ export default function Chat() {
                     <line x1="15" y1="9" x2="15.01" y2="9"/>
                   </svg>
                 </button>
-                <button
-                  className={styles.toolBtn}
-                  onClick={() => setShowStickerPicker(true)}
-                  disabled={!keysReady}
-                  title="Sticker"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z"/>
-                    <path d="M12 2c6 0 10 4 10 10l-10 2-2 10C4 22 2 17.5 2 12c0-5.5 4.5-10 10-10z"/>
-                    <circle cx="9" cy="9" r="1" fill="currentColor"/>
-                    <circle cx="15" cy="9" r="1" fill="currentColor"/>
-                  </svg>
-                </button>
-                <button
-                  className={styles.toolBtn}
-                  onClick={() => setShowAudioRecorder(true)}
-                  disabled={!keysReady}
-                  title="Audio"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="22"/>
-                  </svg>
-                </button>
-                <button
-                  className={styles.toolBtn}
-                  onClick={() => setShowPollCreator(true)}
-                  disabled={!keysReady}
-                  title="Encuesta"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="3" y1="9" x2="21" y2="9"/>
-                    <line x1="9" y1="3" x2="9" y2="21"/>
-                    <line x1="7" y1="13" x2="10" y2="13"/>
-                    <line x1="14" y1="13" x2="17" y2="13"/>
-                    <line x1="7" y1="17" x2="10" y2="17"/>
-                    <line x1="14" y1="17" x2="17" y2="17"/>
-                  </svg>
-                </button>
-                {/* Emoji picker popover */}
-                {showEmojiPicker && (
-                  <div className={styles.emojiPicker} ref={emojiPickerRef}>
+                {showStickerPicker && (
+                  <div className={styles.attachMenu}>
+                    <button onClick={() => { setShowPickerTab('emojis'); }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+                      Emojis
+                    </button>
+                    <button onClick={() => { setShowPickerTab('stickers'); setShowStickerPicker(false); }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z"/></svg>
+                      Stickers
+                    </button>
+                  </div>
+                )}
+                {/* Emoji picker inline cuando se selecciona Emojis */}
+                {showPickerTab === 'emojis' && (
+                  <div className={styles.emojiPicker}>
+                    <div className={styles.emojiHeader}>
+                      <span>Emojis</span>
+                      <button className={styles.emojiClose} onClick={() => setShowPickerTab('')}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
                     <div className={styles.emojiGrid}>
                       {EMOJIS.map((e, i) => (
-                        <button
-                          key={i}
-                          className={styles.emojiItem}
-                          onClick={() => insertEmoji(e)}
-                        >
-                          {e}
-                        </button>
+                        <button key={i} className={styles.emojiItem} onClick={() => insertEmoji(e)}>{e}</button>
                       ))}
                     </div>
                   </div>
@@ -1787,6 +1751,26 @@ export default function Chat() {
                 <button
                   className={styles.sendBtn}
                   onClick={handleSend}
+                  onMouseDown={(e) => {
+                    if (inputText.trim() || selectedFile) return;
+                    e.preventDefault();
+                    const timer = setTimeout(() => {
+                      setShowAudioRecorder(true);
+                    }, 300);
+                    e.currentTarget._longPressTimer = timer;
+                  }}
+                  onMouseUp={(e) => {
+                    if (e.currentTarget._longPressTimer) {
+                      clearTimeout(e.currentTarget._longPressTimer);
+                      delete e.currentTarget._longPressTimer;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (e.currentTarget._longPressTimer) {
+                      clearTimeout(e.currentTarget._longPressTimer);
+                      delete e.currentTarget._longPressTimer;
+                    }
+                  }}
                   disabled={(!inputText.trim() && !selectedFile) || sending || uploading || !keysReady}
                 >
                   {uploading ? (
