@@ -154,8 +154,8 @@ export default function Chat() {
     if (chatPanelRef.current) sections.push(chatPanelRef.current);
 
     gsap.fromTo(sections,
-      { opacity: 0, y: 30, scale: 0.96, filter: 'blur(6px)' },
-      { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.7, stagger: 0.12, ease: 'shekael-bounce', clearProps: 'filter' }
+      { opacity: 0, y: 30, scale: 0.96 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.12, ease: 'shekael-bounce' }
     );
   }, []);
 
@@ -204,7 +204,7 @@ export default function Chat() {
     if (pinnedMessage) {
       gsap.fromTo(el,
         { opacity: 0, y: -12, filter: 'blur(4px)' },
-        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.4, ease: 'shekael-bounce', clearProps: 'filter' }
+        { opacity: 1, y: 0, filter: 'none', duration: 0.4, ease: 'shekael-bounce', onComplete: () => gsap.set(el, { clearProps: 'filter' }) }
       );
     }
   }, [pinnedMessage]);
@@ -263,7 +263,9 @@ export default function Chat() {
     if (toAnimate.length === 0) return;
     gsap.fromTo(toAnimate,
       { opacity: 0, y: 24, scale: 0.92, filter: 'blur(4px)' },
-      { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.5, stagger: 0.05, ease: 'shekael-bounce', clearProps: 'filter' }
+      { opacity: 1, y: 0, scale: 1, filter: 'none', duration: 0.5, stagger: 0.05, ease: 'shekael-bounce', onComplete: () => {
+        toAnimate.forEach(el => gsap.set(el, { clearProps: 'filter' }));
+      }}
     );
     toAnimate.forEach(el => {
       const id = el.id?.replace('msg-', '');
@@ -277,7 +279,9 @@ export default function Chat() {
     if (!items?.length) return;
     gsap.fromTo(items,
       { opacity: 0, x: -16, filter: 'blur(3px)' },
-      { opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.45, stagger: 0.035, ease: 'shekael-bounce', clearProps: 'filter', overwrite: 'auto' }
+      { opacity: 1, x: 0, filter: 'none', duration: 0.45, stagger: 0.035, ease: 'shekael-bounce', overwrite: 'auto', onComplete: () => {
+        items.forEach(el => gsap.set(el, { clearProps: 'filter' }));
+      }}
     );
   }, [filteredConversations]);
 
