@@ -16,10 +16,8 @@ export function initSocketIO(httpServer) {
       ],
       credentials: true,
     },
-    // Minimizar overhead para datos móviles
-    pingInterval: 30000,  // 30s entre pings
-    pingTimeout: 10000,   // 10s para responder
-    transports: ['websocket'], // Solo WS, sin polling HTTP
+    pingInterval: 30000,
+    pingTimeout: 10000,
   });
 
   // Auth middleware
@@ -33,7 +31,7 @@ export function initSocketIO(httpServer) {
       socket.userId = payload.id;
       socket.userEmail = payload.email;
       next();
-    } catch {
+    } catch (err) {
       next(new Error('Token inválido o expirado'));
     }
   });
@@ -95,17 +93,30 @@ export function getIO() {
 // Helpers para emitir desde rutas HTTP
 
 export function emitToConversation(conversationId, event, data) {
-  if (!io) return;
-  io.to(`conv:${conversationId}`).emit(event, data);
+  if (!io) {
+    console.log(`[WS EMIT FAIL] io es null, evento: ${event}, conv: ${conversationId?.substring(0,8)}`);
+    return;
+  }
+  const room = `conv:${conversationId}`;
+  const socketsInRoom = io.sockets.adapter.rooms.get(room);
+  const count = socketsInRoom ? socketsInRoom.size : 0;
+  console.log(`[WS EMIT] ${event} → room:${conversationId?.substring(0,8)} sockets:${count}`);
+  io.to(room).emit(event, data);
 }
 
 export function emitToUser(userId, event, data) {
-  if (!io) return;
+  if (!io) {
+    console.log(`[WS EMIT FAIL] io es null, evento: ${event}, userId: ${userId?.substring(0,8)}`);
+    return;
+  }
   const sockets = connectedUsers.get(userId);
   if (sockets) {
+    console.log(`[WS EMIT] ${event} → user:${userId?.substring(0,8)} sockets:${sockets.size}`);
     sockets.forEach((socketId) => {
       io.to(socketId).emit(event, data);
     });
+  } else {
+    console.log(`[WS EMIT NO_USER] ${event} → user:${userId?.substring(0,8)} (no conectado)`);
   }
 }
 

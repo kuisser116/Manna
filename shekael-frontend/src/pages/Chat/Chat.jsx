@@ -225,44 +225,141 @@ export default function Chat() {
 
   useEffect(() => {
     const token = localStorage.getItem('Shekael_token')?.replace(/["']/g, '');
-    if (!token) return;
+    if (!token) {
+      console.log('[WS DEBUG] No token, skipping socket connect');
+      return;
+    }
 
-    connectSocket(token);
+    console.log('[WS DEBUG] Connecting socket with token:', token.substring(0, 20) + '...');
+    const s = connectSocket(token);
+    console.log('[WS DEBUG] Socket created, connected:', s?.connected);
 
     // Listeners para eventos en tiempo real
     onMessageSent(async (msg) => {
       const conv = activeConvRef.current;
       if (!conv?.id || msg.conversation_id !== conv.id) return;
 
+      // Saltar mensajes propios (ya están en estado desde el optimist update)
+      if (msg.sender_id === user?.id) return;
+
+      // No agregar si ya existe (evitar duplicados con polling)
       setMessages(prev => {
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, { ...msg, decrypted: null }];
       });
 
-      // Intentar descifrar
-      const otherUser = otherUserCache.current[conv.id];
-      const decryptFn = decryptRef.current;
-      if (otherUser?.public_key && decryptFn) {
+      // Intentar descifrar: Signal Protocol primero
+      let decryptedText = null;
+      let spError = null;
+      try {
+        if (msg.msg_index >= 0 && msg.encrypted_content) {
+          decryptedText = await signalProtocol.decrypt(conv.id, {
+            encryptedContent: msg.encrypted_content,
+            nonce: msg.nonce,
+            ephemeralPubKey: msg.sender_ephemeral_key,
+            msgIndex: msg.msg_index || 0
+          });
+        }
+      } catch (e) {
+        spError = e?.message || '';
+        console.warn('[WS SP DECRYPT FAIL]', spError.substring(0,60));
+      }
+
+      // Si falló porque la sesión aún no se estableció (selectConversation en progreso), reintentar
+      if (!decryptedText && spError?.includes('No hay sesión')) {
+        console.log('[WS SP] sin sesión, esperando 1.5s...');
         try {
-          const pt = await decryptFn(msg.encrypted_content, msg.nonce, otherUser.public_key);
-          setMessages(prev => prev.map(m =>
-            m.id === msg.id ? { ...m, decrypted: pt } : m
-          ));
-          scrollToBottom();
-        } catch {
-          setMessages(prev => prev.map(m =>
-            m.id === msg.id ? { ...m, decrypted: '[Mensaje cifrado]' } : m
-          ));
+          await new Promise(r => setTimeout(r, 1500));
+          decryptedText = await signalProtocol.decrypt(conv.id, {
+            encryptedContent: msg.encrypted_content,
+            nonce: msg.nonce,
+            ephemeralPubKey: msg.sender_ephemeral_key,
+            msgIndex: msg.msg_index || 0
+          });
+          console.log('[WS SP] retry OK');
+        } catch (e2) {
+          console.warn('[WS SP RETRY FAIL]', e2?.message?.substring(0,60));
         }
       }
-    });
 
-    onMessageEdited((data) => {
+      // Fallback: ECDH legacy (sistema anterior)
+      if (!decryptedText) {
+        const otherUser = otherUserCache.current[conv.id];
+        const decryptFn = decryptRef.current;
+        if (otherUser?.public_key && decryptFn) {
+          try {
+            decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, otherUser.public_key);
+          } catch (e2) {
+            console.warn('[WS LEGACY DECRYPT FAIL]', e2?.message?.substring(0,50));
+          }
+        }
+        if (!decryptedText && otherUser?.id && decryptFn) {
+          // Cache vacío — intentar obtener public_key del servidor
+          try {
+            const { default: axios } = await import('axios');
+            const API_URL = import.meta.env.VITE_API_URL || location.origin;
+            const token = localStorage.getItem('Shekael_token')?.replace(/["']/g, '');
+            const profRes = await axios.get(API_URL + '/users/' + otherUser.id, {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            const fresh = profRes.data?.user || profRes.data;
+            if (fresh?.public_key) {
+              otherUserCache.current[conv.id] = { ...otherUser, public_key: fresh.public_key };
+              decryptedText = await decryptFn(msg.encrypted_content, msg.nonce, fresh.public_key);
+            }
+          } catch (e3) {
+            console.warn('[WS FETCH KEY FAIL]', e3?.message?.substring(0,50));
+          }
+        }
+      }
+
+      // Aplicar resultado
       setMessages(prev => prev.map(m =>
-        m.id === data.messageId
-          ? { ...m, encrypted_content: data.encrypted_content, nonce: data.nonce, edited_at: data.edited_at }
+        m.id === msg.id
+          ? { ...m, decrypted: decryptedText || (msg.message_type === 'audio' ? '' : '[Mensaje cifrado]') }
           : m
       ));
+      if (decryptedText) scrollToBottom();
+    });
+
+    onMessageEdited(async (data) => {
+      setMessages(prev => prev.map(m =>
+        m.id === data.messageId
+          ? { ...m, encrypted_content: data.encrypted_content, nonce: data.nonce, edited_at: data.edited_at, decrypted: null }
+          : m
+      ));
+      // Intentar descifrar el nuevo contenido
+      const conv = activeConvRef.current;
+      if (!conv?.id) return;
+      let pt = null;
+      try {
+        if (data.msg_index >= 0 && data.encrypted_content) {
+          pt = await signalProtocol.decrypt(conv.id, {
+            encryptedContent: data.encrypted_content,
+            nonce: data.nonce,
+            ephemeralPubKey: data.sender_ephemeral_key,
+            msgIndex: data.msg_index || 0
+          });
+        }
+      } catch { /* fallback */ }
+      if (!pt) {
+        const otherUser = otherUserCache.current[conv.id];
+        const decryptFn = decryptRef.current;
+        if (otherUser?.public_key && decryptFn) {
+          try {
+            pt = await decryptFn(data.encrypted_content, data.nonce, otherUser.public_key);
+          } catch {}
+        }
+      }
+      if (pt) {
+        setMessages(prev => prev.map(m =>
+          m.id === data.messageId ? { ...m, decrypted: pt } : m
+        ));
+      } else {
+        setMessages(prev => prev.map(m =>
+          m.id === data.messageId ? { ...m, decrypted: '[Mensaje cifrado]' } : m
+        ));
+      }
     });
 
     onMessageDeleted((data) => {
@@ -329,14 +426,6 @@ export default function Chat() {
   // Cargar conversaciones y solicitudes al montar, sin esperar crypto
   useEffect(() => {
     loadData();
-    // Fallback polling de conversaciones cada 60s (solo si WS falla)
-    const convPoll = setInterval(async () => {
-      try {
-        const convRes = await getConversations();
-        setConversations(convRes.data.conversations || []);
-      } catch {}
-    }, 60000);
-    return () => clearInterval(convPoll);
   }, []);
 
   const loadData = async () => {
@@ -583,7 +672,6 @@ export default function Chat() {
         const newMsgs = raw.filter(m => !prevMsgIdsRef.current.has(m.id));
         if (!newMsgs.length) return;
 
-        const otherUser = otherUserCache.current[convId];
         const decrypted = [];
         for (const msg of newMsgs) {
           prevMsgIdsRef.current.add(msg.id);
@@ -591,25 +679,33 @@ export default function Chat() {
             decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
             continue;
           }
+          let pt = null;
+          // Signal Protocol primero
           try {
-            const pk = otherUser?.public_key;
-            const myKp = getKeyPair();
-            console.log('[POLL_DECRYPT] conv:', convId.substring(0,8), 'msg:', msg.id.substring(0,8), 'hasKeyPair:', !!myKp, 'hasOtherKey:', !!pk);
-            const pt = pk
-              ? await legacyDecrypt(msg.encrypted_content, msg.nonce, pk)
-              : null;
-            if (pt !== null && pt !== undefined) {
-              decrypted.push({ ...msg, decrypted: pt });
-            } else if (msg.message_type === 'audio') {
-              decrypted.push({ ...msg, decrypted: '' });
-            } else {
-              decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
+            if (msg.msg_index >= 0 && msg.encrypted_content) {
+              pt = await signalProtocol.decrypt(convId, {
+                encryptedContent: msg.encrypted_content,
+                nonce: msg.nonce,
+                ephemeralPubKey: msg.sender_ephemeral_key,
+                msgIndex: msg.msg_index || 0
+              });
             }
-          } catch (e) {
-            console.warn('[Poll] decrypt failed for msg', msg.id, 'type:', msg.message_type);
-            if (msg.message_type === 'audio') {
-              decrypted.push({ ...msg, decrypted: '' });
-            }
+          } catch { /* fallback */ }
+          // Fallback legacy ECDH
+          if (!pt) {
+            try {
+              const pk = otherUserCache.current[convId]?.public_key;
+              if (pk && getKeyPair()) {
+                pt = await legacyDecrypt(msg.encrypted_content, msg.nonce, pk);
+              }
+            } catch { /* fallo total */ }
+          }
+          if (pt) {
+            decrypted.push({ ...msg, decrypted: pt });
+          } else if (msg.message_type === 'audio') {
+            decrypted.push({ ...msg, decrypted: '' });
+          } else {
+            decrypted.push({ ...msg, decrypted: '[Mensaje cifrado]' });
           }
         }
 
@@ -643,9 +739,8 @@ export default function Chat() {
         decrypted.push({ ...msg, decrypted: msg.encrypted_content || '' });
         continue;
       }
-      // Intentar Signal Protocol primero
-      // Solo para mensajes cifrados con ratchet (msg_index >= 0)
-      if (msg.msg_index >= 0 && await signalProtocol.hasSession(convId)) {
+      // Intentar Signal Protocol primero (funciona incluso sin sesión pre-existente)
+      if (msg.msg_index >= 0 && msg.encrypted_content) {
         try {
           const plaintext = await signalProtocol.decrypt(convId, {
             encryptedContent: msg.encrypted_content,
@@ -992,7 +1087,10 @@ export default function Chat() {
   };
 
   // Calcular no leídos
-  const unreadCount = 0; // Se puede implementar después con last_read_at
+  // Calcular si hay mensajes sin leer en esta conversación
+  const hasUnread = (conv) => conv.lastReadAt && conv.lastMessage?.created_at
+    ? new Date(conv.lastMessage.created_at) > new Date(conv.lastReadAt)
+    : false;
 
   // ── Reply ──
 
@@ -1338,7 +1436,7 @@ export default function Chat() {
               return (
                 <div
                   key={conv.id}
-                  className={`${styles.convItem} ${activeConv?.id === conv.id ? styles.activeConv : ''} ${conv.isPinned ? styles.pinnedConv : ''}`}
+                  className={`${styles.convItem} ${activeConv?.id === conv.id ? styles.activeConv : ''} ${conv.isPinned ? styles.pinnedConv : ''} ${hasUnread(conv) ? styles.unreadConv : ''}`}
                   onClick={() => selectConversation(conv)}
                 >
                   <div className={styles.avatarSmall}>
@@ -1349,15 +1447,19 @@ export default function Chat() {
                         {displayName[0] || '?'}
                       </div>
                     )}
+                    {hasUnread(conv) && <span className={styles.unreadDot} />}
                   </div>
                   <div className={styles.convInfo}>
                     <span className={styles.convName}>
                       {displayName}
                     </span>
-                    <span className={styles.convPreview}>
+                    <span className={`${styles.convPreview} ${hasUnread(conv) ? styles.convPreviewUnread : ''}`}>
                       {conv.lastMessage?.decrypted
                         ? conv.lastMessage.decrypted.substring(0, 40)
-                        : 'Mensaje cifrado'}
+                        : conv.lastMessage?.message_type === 'image' ? 'Foto'
+                        : conv.lastMessage?.message_type === 'audio' ? 'Audio'
+                        : conv.lastMessage?.message_type === 'file' ? 'Archivo'
+                        : 'Mensaje'}
                     </span>
                   </div>
                   <button

@@ -447,7 +447,7 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
                 duration: duration || null,
                 poll_id: pollId || null
             })
-            .select('id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, poll_id, created_at')
+            .select('id, conversation_id, sender_id, encrypted_content, nonce, msg_index, sender_ephemeral_key, pre_key_used_id, message_type, media_url, media_thumb_url, file_name, file_size, mime_type, duration, poll_id, created_at')
             .single();
 
         if (error) throw error;
@@ -942,8 +942,11 @@ router.put('/messages/:id/edit', authMiddleware, async (req, res) => {
         // Notificar via WebSocket
         emitToConversation(msg.conversation_id, 'message:edited', {
             messageId,
+            conversation_id: msg.conversation_id,
             encrypted_content: encryptedContent,
             nonce: nonce,
+            msg_index: msg.msg_index,
+            sender_ephemeral_key: msg.sender_ephemeral_key,
             edited_at: editedAt
         });
 

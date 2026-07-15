@@ -20,17 +20,17 @@ export function connectSocket(token) {
 
   socket = io(API_URL, {
     auth: { token },
-    transports: ['websocket'],    // Solo WS, sin polling HTTP
+    transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000,       // Empieza en 1s
-    reconnectionDelayMax: 30000,   // Máximo 30s entre intentos
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 30000,
     randomizationFactor: 0.5,
-    timeout: 10000,
+    timeout: 20000,
   });
 
   socket.on('connect', () => {
-    console.log('[WS] Conectado');
+    console.log('[WS] Conectado socket:', socket.id);
     if (reconnectTimer) {
       clearInterval(reconnectTimer);
       reconnectTimer = null;
@@ -38,24 +38,44 @@ export function connectSocket(token) {
   });
 
   socket.on('disconnect', (reason) => {
-    console.log('[WS] Desconectado:', reason);
+    console.log('[WS] Desconectado:', reason, 'transport:', socket.io?.engine?.transport?.name);
+  });
+
+  // Log cuando cambia de transporte (útil para debug)
+  socket.io?.engine?.on?.('upgrade', (transport) => {
+    console.log('[WS] Upgrade a:', transport.name);
   });
 
   socket.on('connect_error', (err) => {
-    console.warn('[WS] Error de conexión:', err.message);
+    console.warn('[WS] Error de conexión:', err.message, 'transport:', socket.io?.engine?.transport?.name);
+  });
+
+  socket.on('reconnect_attempt', (attempt) => {
+    console.log('[WS] Reconnect attempt:', attempt, 'transport:', socket.io?.engine?.transport?.name);
+  });
+
+  socket.on('reconnect_error', (err) => {
+    console.warn('[WS] Reconnect error:', err.message);
+  });
+
+  socket.on('reconnect_failed', () => {
+    console.warn('[WS] Reconnect failed');
   });
 
   // ── Eventos del chat ──
 
   socket.on('message:sent', (data) => {
+    console.log('[WS EVENT] message:sent id:', data?.id?.substring(0,8));
     if (callbacks.onMessageSent) callbacks.onMessageSent(data);
   });
 
   socket.on('message:edited', (data) => {
+    console.log('[WS EVENT] message:edited id:', data?.messageId?.substring(0,8));
     if (callbacks.onMessageEdited) callbacks.onMessageEdited(data);
   });
 
   socket.on('message:deleted', (data) => {
+    console.log('[WS EVENT] message:deleted id:', data?.messageId?.substring(0,8));
     if (callbacks.onMessageDeleted) callbacks.onMessageDeleted(data);
   });
 
@@ -64,6 +84,7 @@ export function connectSocket(token) {
   });
 
   socket.on('conversation:updated', (data) => {
+    console.log('[WS EVENT] conversation:updated conv:', data?.conversationId?.substring(0,8));
     if (callbacks.onConversationUpdated) callbacks.onConversationUpdated(data);
   });
 
@@ -82,14 +103,18 @@ export function disconnectSocket() {
 export function joinConversation(convId) {
   if (!convId) return;
   if (socket?.connected) {
+    console.log('[WS JOIN] room conv:', convId?.substring(0,8));
     socket.emit('join:conversation', convId);
   } else if (socket) {
-    // Socket conectándose — esperar a que conecte
+    console.log('[WS JOIN] esperando conexión para unirse a:', convId?.substring(0,8));
     const onConnect = () => {
+      console.log('[WS JOIN] socket conectado, uniendo a:', convId?.substring(0,8));
       socket.emit('join:conversation', convId);
       socket.off('connect', onConnect);
     };
     socket.on('connect', onConnect);
+  } else {
+    console.warn('[WS JOIN] no hay socket para unirse a:', convId?.substring(0,8));
   }
 }
 

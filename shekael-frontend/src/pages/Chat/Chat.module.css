@@ -387,6 +387,27 @@
   border: 1px solid rgba(225, 29, 72, 0.12);
 }
 
+.unreadConv {
+  font-weight: 600;
+}
+
+.unreadDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary, #3b82f6);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.convPreviewUnread {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 .convInfo {
   flex: 1;
   min-width: 0;
@@ -415,9 +436,10 @@
   width: 44px;
   height: 44px;
   border-radius: var(--border-radius-full);
-  overflow: hidden;
+  overflow: visible;
   flex-shrink: 0;
   background: var(--color-surface-3);
+  position: relative;
 }
 
 .avatarSmall img {
