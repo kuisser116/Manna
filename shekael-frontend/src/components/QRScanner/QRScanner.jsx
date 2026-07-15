@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QrCode, X, Check, ArrowRight, ShieldCheck, Zap, Camera, RefreshCw } from 'lucide-react';
 import { payQR } from '../../api/transactions.api.js';
 import { Html5Qrcode } from 'html5-qrcode';
-import useFeedbackModal from '../FeedbackModal/useFeedbackModal';
-import FeedbackModal from '../FeedbackModal/FeedbackModal';
 import styles from './QRScanner.module.css';
 
 export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPublicKey, defaultBusinessName }) {
@@ -18,7 +16,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
     const [scannerInstance, setScannerInstance] = useState(null);
     const [isScannerReady, setIsScannerReady] = useState(false);
 
-    const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
+    const { addToast } = useStore();
 
     // Iniciar el escáner con control total
     useEffect(() => {
@@ -69,7 +67,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     }
                 } catch (err) {
                     console.error("Error starting scanner:", err);
-                    showError('Cámara', 'No se pudo acceder a la cámara. Asegúrate de dar permisos.');
+                    addToast('error', 'Cámara', 'No se pudo acceder a la cámara. Asegúrate de dar permisos.');
                 }
             };
 
@@ -166,7 +164,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
             setLoading(false);
             console.error('WebAuthn Cancelled/Failed:', err);
             // Solo mostramos error si no fue cancelación manual (opcional, por ahora mostramos el aviso de protección)
-            showError('Seguridad Shekael', 'Validación biométrica cancelada o no disponible. Tu dinero está seguro.', true);
+            addToast('error', 'Seguridad Shekael', 'Validación biométrica cancelada o no disponible. Tu dinero está seguro.');
             return;
         }
         // ------------------------------------
@@ -188,13 +186,9 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
             console.error('Payment API Error:', err);
             const errorCode = err.response?.data?.code || err.code;
             if (errorCode === 'WALLET_NOT_ACTIVE') {
-                showError(
-                    'Billetera Inactiva', 
-                    'El usuario destino aún no tiene su billetera activa en Stellar. Necesita completar sus tareas para poder recibir pagos físicos digitales.',
-                    true
-                );
+                addToast('error', 'Billetera Inactiva', 'El usuario destino aún no tiene su billetera activa en Stellar. Necesita completar sus tareas para poder recibir pagos físicos digitales.');
             } else {
-                showError('Error de Pago', err.response?.data?.message || 'No se pudo procesar el pago en este momento.', true);
+                addToast('error', 'Error de Pago', err.response?.data?.message || 'No se pudo procesar el pago en este momento.');
             }
         } finally {
             setLoading(false);
@@ -343,16 +337,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                 </motion.div>
             </motion.div>
 
-            {step !== 'success' && (
-                <FeedbackModal
-                    isOpen={modalState.isOpen}
-                    onClose={hideModal}
-                    type={modalState.type}
-                    title={modalState.title}
-                    message={modalState.message}
-                    showCloseButton={modalState.showCloseButton}
-                />
-            )}
+
         </AnimatePresence>
     );
 }

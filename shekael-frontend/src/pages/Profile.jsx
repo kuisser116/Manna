@@ -371,11 +371,11 @@ export default function Profile() {
                           if (res.data.alreadyConnected && res.data.conversationId) {
                             navigate('/chat', { state: { openConversationId: res.data.conversationId } });
                           } else {
-                            showSuccess('Solicitud enviada', 'Cuando acepte podran chatear.', true);
+                            useStore.getState().addToast('success', 'Solicitud enviada', 'Cuando acepte podran chatear.');
                           }
                         } catch (err) {
                           const msg = err.response?.data?.message || 'Error al enviar solicitud';
-                          showError('Error', msg);
+                          useStore.getState().addToast('error', 'Error', msg);
                         }
                       }}
                       title="Enviar mensaje"

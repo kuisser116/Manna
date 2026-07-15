@@ -8,7 +8,6 @@ import PostCard from '../components/PostCard/PostCard';
 import VideoDetailLayout from '../components/VideoDetailLayout/VideoDetailLayout';
 import ImageDetailLayout from '../components/ImageDetailLayout/ImageDetailLayout';
 import TextDetailLayout from '../components/TextDetailLayout/TextDetailLayout';
-import ConfirmationModal from '../components/ConfirmationModal/ConfirmationModal';
 import useStore from '../store';
 import { likePostCounter, unlikePost } from '../api/quests.api';
 import { useQuests } from '../hooks/useQuests';
@@ -35,7 +34,7 @@ export default function PostDetail() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
 
-    const { addToast } = useStore();
+    const { addToast, showConfirm } = useStore();
     const { verifyCompletion } = useQuests();
 
     useEffect(() => {
@@ -175,7 +174,7 @@ export default function PostDetail() {
     };
 
     const handleDeletePost = () => {
-        setIsDeleteModalOpen(true);
+        showConfirm('¿Eliminar publicación?', 'Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones.', confirmDelete, { confirmLabel: 'Eliminar permanentemente', danger: true });
     };
 
     const confirmDelete = async () => {
@@ -246,14 +245,6 @@ export default function PostDetail() {
                     registerView={registerView}
                     onDelete={handleDeletePost}
                 />
-                <ConfirmationModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onConfirm={confirmDelete}
-                    title="¿Eliminar publicación?"
-                    message="Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones."
-                    confirmText="Eliminar permanentemente"
-                />
             </>
         );
     }
@@ -276,14 +267,6 @@ export default function PostDetail() {
                     onBack={() => navigate(-1)}
                     onDelete={handleDeletePost}
                 />
-                <ConfirmationModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onConfirm={confirmDelete}
-                    title="¿Eliminar publicación?"
-                    message="Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones."
-                    confirmText="Eliminar permanentemente"
-                />
             </>
         );
     }
@@ -303,14 +286,6 @@ export default function PostDetail() {
                 isLiked={isLiked}
                 onLike={handleLike}
                 onDelete={handleDeletePost}
-            />
-            <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={confirmDelete}
-                title="¿Eliminar publicación?"
-                message="Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones."
-                confirmText="Eliminar permanentemente"
             />
         </>
     );

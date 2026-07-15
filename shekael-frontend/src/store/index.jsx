@@ -211,6 +211,13 @@ const useStore = create((set, get) => ({
     toasts: state.toasts.filter(t => t.id !== id)
   })),
 
+  // â”€â”€ Confirm Toast (con acciones Si/No) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  confirmToast: null,
+  showConfirm: (title, message, onConfirm, options = {}) => set({
+    confirmToast: { id: Date.now(), title, message, onConfirm, ...options }
+  }),
+  hideConfirm: () => set({ confirmToast: null }),
+
 }));
 
 export default useStore;

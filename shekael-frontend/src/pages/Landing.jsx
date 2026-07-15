@@ -10,8 +10,6 @@ import { CustomEase } from 'gsap/CustomEase.js';
 import { Palette } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useStore from '../store';
-import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
-import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
 import styles from '../styles/pages/Landing.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
@@ -40,8 +38,7 @@ const PRINCIPLES = [
 function LandingInner() {
   const navigate = useNavigate();
   const { loginWithGoogle } = useAuth();
-  const { modalState, showLoading, showSuccess, showError, hideModal } = useFeedbackModal();
-  const { themeName, cycleTheme, user } = useStore();
+  const { addToast, themeName, cycleTheme, user } = useStore();
   const [termsVersion, setTermsVersion] = useState(null);
 
   // Obtener versión actual de términos del backend
@@ -134,15 +131,14 @@ function LandingInner() {
   }, [navigate, user, termsVersion]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    showLoading('Entrando a Shekael...', 'Verificando seguridad');
+    addToast('loading', 'Entrando a Shekael...', 'Verificando seguridad');
     try {
       let recaptchaToken = '';
       if (typeof grecaptcha !== 'undefined') {
         recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'login' });
       }
       const data = await loginWithGoogle(credentialResponse.credential, recaptchaToken);
-      hideModal();
-      showSuccess('Ya estas dentro!', 'Bienvenido. Aqui si hay algo real.', true);
+      addToast('success', 'Ya estas dentro!', 'Bienvenido. Aqui si hay algo real.');
       if (!termsVersion) return; // esperar versión
       if (!data.user?.terms_accepted_at || data.user?.terms_version !== termsVersion) {
         navigate('/terminos');
@@ -151,8 +147,7 @@ function LandingInner() {
         navigate('/feed');
       }
     } catch (err) {
-      hideModal();
-      showError('Error de Google', err.message);
+      addToast('error', 'Error de Google', err.message);
     }
   };
 
@@ -441,7 +436,7 @@ function LandingInner() {
               <div className={styles.googleWrap}>
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
-                  onError={() => showError('Error', 'No se pudo conectar con Google')}
+                  onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
                   shape="pill"
                   theme="outline"
                   text="continue_with"
@@ -602,7 +597,7 @@ function LandingInner() {
           <div className={styles.closingCta}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => showError('Error', 'No se pudo conectar con Google')}
+              onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
               shape="pill"
               theme="outline"
               text="continue_with"
@@ -619,16 +614,6 @@ function LandingInner() {
         <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">Terminos del Servicio</a>.
       </p>
 
-      <FeedbackModal
-        isOpen={modalState.isOpen}
-        onClose={hideModal}
-        type={modalState.type}
-        title={modalState.title}
-        message={modalState.message}
-        showCloseButton={modalState.showCloseButton}
-        autoClose={modalState.autoClose}
-        autoCloseDelay={modalState.autoCloseDelay}
-      />
     </div>
   );
 }

@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, TrendingUp, Percent, HelpCircle, Store } from 'lucide-react';
 import { getRegionalFund, updateUserState } from '../api/transactions.api';
-import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
-import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
 import SelectStateModal from '../components/SelectStateModal/SelectStateModal';
 import useStore from '../store';
 import styles from '../styles/pages/FondoRegional.module.css';
@@ -14,7 +12,7 @@ export default function FondoRegional() {
     const [showStateModal, setShowStateModal] = useState(false);
     const [loadingState, setLoadingState] = useState(false);
 
-    const { modalState, showError, hideModal } = useFeedbackModal();
+    const { addToast } = useStore();
 
     const fetchData = async () => {
         try {
@@ -41,7 +39,7 @@ export default function FondoRegional() {
             await updateUserState(state);
             await fetchData();
         } catch (err) {
-            showError('Error', 'No se pudo guardar el estado');
+            addToast('error', 'Error', 'No se pudo guardar el estado');
         } finally {
             setLoadingState(false);
         }
@@ -129,16 +127,7 @@ export default function FondoRegional() {
                 loading={loadingState}
             />
 
-            <FeedbackModal
-                isOpen={modalState.isOpen}
-                onClose={hideModal}
-                type={modalState.type}
-                title={modalState.title}
-                message={modalState.message}
-                showCloseButton={modalState.showCloseButton}
-                autoClose={modalState.autoClose}
-                autoCloseDelay={modalState.autoCloseDelay}
-            />
+
         </div>
     );
 }

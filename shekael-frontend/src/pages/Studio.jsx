@@ -7,8 +7,6 @@ import {
   ChevronUp, AlertCircle, CheckCircle, ArrowLeft, Clock, ThumbsUp, Activity
 } from 'lucide-react';
 import useStore from '../store';
-import useFeedbackModal from '../components/FeedbackModal/useFeedbackModal';
-import ConfirmationModal from '../components/ConfirmationModal/ConfirmationModal';
 import Avatar from '../components/Avatar/Avatar';
 import { deletePost, updatePost, getMyComments, getMyStats, getMyOverview } from '../api/posts.api';
 import styles from '../styles/pages/Studio.module.css';
@@ -47,8 +45,7 @@ function MiniStat({ icon: Icon, value, label }) {
 
 export default function Studio() {
   const navigate = useNavigate();
-  const { user } = useStore();
-  const { showSuccess, showError } = useFeedbackModal();
+  const { user, addToast, showConfirm } = useStore();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [posts, setPosts] = useState([]);
@@ -58,10 +55,6 @@ export default function Studio() {
   const [editingPost, setEditingPost] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
-
-  // Delete modal
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [postToDelete, setPostToDelete] = useState(null);
 
   // Refs for GSAP
   const dashboardRef = useRef(null);
@@ -82,7 +75,7 @@ export default function Studio() {
         setPosts(postsRes.data.posts || []);
       } catch (err) {
         console.error('Studio load error:', err);
-        showError('Error', 'No se pudieron cargar tus datos');
+        addToast('error', 'Error', 'No se pudieron cargar tus datos');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -148,25 +141,23 @@ export default function Studio() {
     try {
       await updatePost(postId, { content: editContent.trim() });
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, content: editContent.trim(), edited_at: new Date().toISOString() } : p));
-      showSuccess('Editado', 'Contenido actualizado.', true);
+      addToast('success', 'Editado', 'Contenido actualizado.');
       setEditingPost(null);
     } catch (err) {
-      showError('Error', 'No se pudo editar');
+      addToast('error', 'Error', 'No se pudo editar');
     }
     setSavingEdit(false);
   };
 
   // Delete handlers
-  const confirmDelete = async () => {
-    if (!postToDelete) return;
+  const confirmDelete = async (postId) => {
     try {
-      await deletePost(postToDelete.id);
-      showSuccess('Eliminado', 'Publicacion borrada.', true);
-      setPosts(prev => prev.filter(p => p.id !== postToDelete.id));
+      await deletePost(postId);
+      addToast('success', 'Eliminado', 'Publicacion borrada.');
+      setPosts(prev => prev.filter(p => p.id !== postId));
     } catch {
-      showError('Error', 'No se pudo eliminar');
+      addToast('error', 'Error', 'No se pudo eliminar');
     }
-    setDeleteModalOpen(false);
   };
 
   // --- RENDER ---
@@ -345,7 +336,7 @@ export default function Studio() {
                           </button>
                           <button
                             className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                            onClick={() => { setPostToDelete(post); setDeleteModalOpen(true); }}
+                            onClick={() => showConfirm('Eliminar publicacion?', `Se borrará "${getPostTitle(post)}" permanentemente con todos sus datos.`, () => confirmDelete(post.id), { danger: true, confirmLabel: 'Eliminar' })}
                             title="Eliminar"
                           >
                             <Trash2 size={16} />
@@ -519,14 +510,6 @@ export default function Studio() {
         )}
       </div>
 
-      <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onConfirm={confirmDelete}
-        title="Eliminar publicacion?"
-        message={`Se borrara "${getPostTitle(postToDelete)}" permanentemente con todos sus datos.`}
-        confirmText="Eliminar"
-      />
     </div>
   );
 }

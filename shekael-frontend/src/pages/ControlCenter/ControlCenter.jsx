@@ -1,12 +1,11 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, XCircle, RotateCcw, Search, Eye } from 'lucide-react';
 import useStore from '../../store';
-import { useFeedbackModal } from '../../components/FeedbackModal/useFeedbackModal.js';
 import styles from './ControlCenter.module.css';
 
 export default function ControlCenter() {
     const { token, user } = useStore();
-    const { showSuccess, showError } = useFeedbackModal();
+    const { addToast } = useStore();
     const [queue, setQueue] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('pending'); // 'pending' | 'appealed' | 'resolved'
@@ -42,7 +41,7 @@ export default function ControlCenter() {
             const data = await res.json();
             setQueue(data.queue || []);
         } catch (error) {
-            showError('Error', 'No se pudo cargar la cola de moderaciÃ³n');
+            addToast('error', 'Error', 'No se pudo cargar la cola de moderación');
         } finally {
             setLoading(false);
         }
@@ -65,14 +64,14 @@ export default function ControlCenter() {
             });
 
             if (res.ok) {
-                showSuccess('AcciÃ³n completada', `El reporte ha sido marcado como ${action}.`);
+                addToast('success', 'Acción completada', `El reporte ha sido marcado como ${action}.`);
                 // ActualizaciÃ³n optimista: lo quitamos de la lista local
                 setQueue(prev => prev.filter(item => item.post_id !== postId));
             } else {
-                showError('Error', 'No se pudo procesar la acciÃ³n');
+                addToast('error', 'Error', 'No se pudo procesar la acción');
             }
         } catch (error) {
-            showError('Error', 'Fallo de conexiÃ³n');
+            addToast('error', 'Error', 'Fallo de conexión');
         }
     };
 
