@@ -795,41 +795,12 @@ export default function Chat() {
       } catch { /* fallo, seguimos sin llave */ }
     }
 
-    // Intentar usar Signal Protocol (Double Ratchet)
-    let sigSession = await signalProtocol.hasSession(activeConv.id);
-    
-    if (!sigSession && otherUser?.public_key) {
-      // No hay sesión — intentar iniciar X3DH
-      try {
-        const token = localStorage.getItem('Shekael_token')?.replace(/"/g, '');
-        const { default: axios } = await import('axios');
-        const API_URL = import.meta.env.VITE_API_URL || location.origin;
-        const bundleRes = await axios.get(`${API_URL}/auth/pre-keys/bundle/${otherUser.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const bundle = bundleRes.data;
-        
-        if (bundle.identityKey && bundle.signedPreKey) {
-          const kp = getKeyPair();
-          if (kp) {
-            const result = await signalProtocol.initSessionAsAlice(activeConv.id, bundle, kp);
-            sigSession = true;
-            ephemeralPubB64 = result.ephemeralPubB64;
-            preKeyUsedId = result.preKeyUsedId;
-            await sodiumReady;
-            console.log('[Signal] Session established for', activeConv.id.substring(0,8));
-          }
-        }
-      } catch (e) {
-        console.warn('[Signal] Could not init session, trying ECDH:', e.message);
-        // Fallback a ECDH
-        if (otherUser?.public_key) {
-          sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
-        }
-      }
+    // ECDH directo (sin Signal Protocol)
+    if (otherUser?.public_key) {
+      sharedSecret = await deriveEcdhSecret(activeConv.id, otherUser.public_key);
     }
 
-    if (!sigSession && !sharedSecret) {
+    if (!sharedSecret) {
       // No hay forma de cifrar — enviar sin cifrar
       setSending(true);
       try {
@@ -889,31 +860,17 @@ export default function Chat() {
     }]);
     scrollToBottom();
     try {
-      let encryptedContent, nonce, result;
-      
-      if (sigSession) {
-        // Signal Protocol: Double Ratchet encrypt
-        result = await signalProtocol.encrypt(activeConv.id, inputText);
-        encryptedContent = result.encryptedContent;
-        nonce = result.nonce;
-        // Si el mensaje trae nueva llave efímera del ratchet, enviarla
-        if (result.ephemeralPubKey) {
-          ephemeralPubB64 = result.ephemeralPubKey;
-        }
-      } else {
-        // Legacy: ECDH directo
-        const legacyResult = await legacyEncrypt(inputText, otherUser.public_key);
-        encryptedContent = legacyResult.encryptedContent;
-        nonce = legacyResult.nonce;
-      }
+      const legacyResult = await legacyEncrypt(inputText, otherUser.public_key);
+      const encryptedContent = legacyResult.encryptedContent;
+      const nonce = legacyResult.nonce;
 
       const res = await sendMessage(
         activeConv.id,
         encryptedContent,
         nonce,
-        sigSession ? (result.msgIndex ?? -1) : -1,
-        ephemeralPubB64,
-        preKeyUsedId,
+        -1,
+        null,
+        null,
         messageType,
         uploadedUrl,
         uploadedThumb,
