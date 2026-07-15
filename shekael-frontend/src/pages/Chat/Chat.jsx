@@ -909,6 +909,9 @@ export default function Chat() {
   // Calcular no leídos
   // Calcular si hay mensajes sin leer en esta conversación
   const hasUnread = (conv) => {
+    const u = useStore.getState().user;
+    // Si el último mensaje lo enviaste vos, no es no leído
+    if (conv.lastMessage?.sender_id === u?.id) return false;
     if (typeof conv.unreadCount === 'number' && conv.unreadCount > 0) return true;
     if (!conv.lastMessage?.created_at) return false;
     if (!conv.lastReadAt) return true;
