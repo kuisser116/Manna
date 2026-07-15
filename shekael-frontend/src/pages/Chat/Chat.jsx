@@ -130,6 +130,15 @@ export default function Chat() {
   const chatPanelRef = useRef(null);
   const inputAreaRef = useRef(null);
 
+  // Refs para animaciones de elementos toggle
+  const audioRecorderWrapRef = useRef(null);
+  const replyPreviewWrapRef = useRef(null);
+  const editPreviewWrapRef = useRef(null);
+  const pinnedBannerWrapRef = useRef(null);
+  const attachMenuWrapRef = useRef(null);
+  const chatSearchWrapRef = useRef(null);
+  const filePreviewWrapRef = useRef(null);
+
   // Registrar CustomEase una vez
   const easeRegisteredRef = useRef(false);
 
@@ -149,6 +158,92 @@ export default function Chat() {
       { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.7, stagger: 0.12, ease: 'shekael-bounce', clearProps: 'filter' }
     );
   }, []);
+
+  // ── GSAP: animar barra de audio al aparecer/desaparecer ──
+  useEffect(() => {
+    const el = audioRecorderWrapRef.current;
+    if (!el) return;
+    if (showAudioRecorder) {
+      gsap.fromTo(el,
+        { opacity: 0, y: -10, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: 'shekael-bounce' }
+      );
+    } else {
+      gsap.to(el, { opacity: 0, y: -8, scale: 0.95, duration: 0.2, ease: 'power2.in' });
+    }
+  }, [showAudioRecorder]);
+
+  // ── GSAP: animar barra de responder (reply) ──
+  useEffect(() => {
+    const el = replyPreviewWrapRef.current;
+    if (!el) return;
+    if (replyTo) {
+      gsap.fromTo(el,
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
+      );
+    }
+  }, [replyTo]);
+
+  // ── GSAP: animar barra de editar ──
+  useEffect(() => {
+    const el = editPreviewWrapRef.current;
+    if (!el) return;
+    if (editingMessage) {
+      gsap.fromTo(el,
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
+      );
+    }
+  }, [editingMessage]);
+
+  // ── GSAP: animar banner de mensaje fijado ──
+  useEffect(() => {
+    const el = pinnedBannerWrapRef.current;
+    if (!el) return;
+    if (pinnedMessage) {
+      gsap.fromTo(el,
+        { opacity: 0, y: -12, filter: 'blur(4px)' },
+        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.4, ease: 'shekael-bounce', clearProps: 'filter' }
+      );
+    }
+  }, [pinnedMessage]);
+
+  // ── GSAP: animar menú de adjuntar ──
+  useEffect(() => {
+    const el = attachMenuWrapRef.current;
+    if (!el) return;
+    if (showAttachMenu) {
+      gsap.fromTo(el,
+        { opacity: 0, scale: 0.92, y: 4 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'power3.out' }
+      );
+    }
+  }, [showAttachMenu]);
+
+  // ── GSAP: animar buscador en el chat ──
+  useEffect(() => {
+    const el = chatSearchWrapRef.current;
+    if (!el) return;
+    if (showChatSearch) {
+      gsap.fromTo(el,
+        { height: 0, opacity: 0 },
+        { height: 'auto', opacity: 1, duration: 0.3, ease: 'power3.out' }
+      );
+    }
+  }, [showChatSearch]);
+
+  // ── GSAP: animar preview de archivo ──
+  useEffect(() => {
+    const el = filePreviewWrapRef.current;
+    if (!el) return;
+    if (selectedFile) {
+      gsap.fromTo(el,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }
+      );
+    }
+  }, [selectedFile]);
   const filteredConversations = convFilter === 'unread'
     ? conversations.filter(c => c.lastReadAt && c.lastMessage?.created_at > c.lastReadAt)
     : conversations;
@@ -1572,7 +1667,7 @@ export default function Chat() {
 
             {/* Pinned message banner */}
             {pinnedMessage && (
-              <div
+              <div ref={pinnedBannerWrapRef}
                 className={styles.pinnedBanner}
                 onClick={() => {
                   const el = document.getElementById(`msg-${pinnedMessage.id}`);
@@ -1603,7 +1698,7 @@ export default function Chat() {
 
             {/* Chat search */}
             {showChatSearch && (
-              <div className={styles.chatSearchPanel}>
+              <div ref={chatSearchWrapRef} className={styles.chatSearchPanel}>
                 <input
                   type="text"
                   placeholder="Buscar en esta conversación..."
@@ -1833,7 +1928,7 @@ export default function Chat() {
             <div ref={inputAreaRef} className={styles.inputArea}>
               {/* Edit indicator */}
               {editingMessage && (
-                <div className={styles.replyPreview}>
+                <div ref={editPreviewWrapRef} className={styles.replyPreview}>
                   <div className={styles.replyPreviewBar} style={{background: 'var(--color-primary, #3b82f6)'}} />
                   <div className={styles.replyPreviewContent}>
                     <span className={styles.replyPreviewLabel}>Editando mensaje</span>
@@ -1850,7 +1945,7 @@ export default function Chat() {
               )}
               {/* Reply preview */}
               {replyTo && (
-                <div className={styles.replyPreview}>
+                <div ref={replyPreviewWrapRef} className={styles.replyPreview}>
                   <div className={styles.replyPreviewBar} />
                   <div className={styles.replyPreviewContent}>
                     <span className={styles.replyPreviewLabel}>Respondiendo</span>
@@ -1869,7 +1964,7 @@ export default function Chat() {
               )}
               {/* Preview de archivo seleccionado */}
               {selectedFile && (
-                <div className={styles.filePreviewStrip}>
+                <div ref={filePreviewWrapRef} className={styles.filePreviewStrip}>
                   {filePreview ? (
                     <div className={styles.previewImageWrap}>
                       <img src={filePreview} alt="Preview" className={styles.previewImage} />
@@ -1895,6 +1990,7 @@ export default function Chat() {
               )}
 
               {showAudioRecorder && (
+                <div ref={audioRecorderWrapRef}>
                 <AudioRecorder
                   onSend={async (audio) => {
                     try {
@@ -1915,6 +2011,7 @@ export default function Chat() {
                   }}
                   onClose={() => setShowAudioRecorder(false)}
                 />
+                </div>
               )}
               <div className={styles.inputRow}>
                 <button
@@ -1935,6 +2032,7 @@ export default function Chat() {
                   style={{ display: 'none' }}
                 />
                 {showAttachMenu && (
+                  <div ref={attachMenuWrapRef}>
                   <div className={styles.attachMenu}>
                     <button onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
@@ -1945,6 +2043,7 @@ export default function Chat() {
                       Encuesta
                     </button>
                   </div>
+                </div>
                 )}
                 <button
                   className={styles.toolBtn}
