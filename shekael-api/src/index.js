@@ -16,6 +16,7 @@ import notificationsRoutes from './routes/notifications.routes.js';
 import anchorRoutes from './routes/anchor.routes.js';
 import chatRoutes from './routes/chats.routes.js';
 
+import { apiLimiter, uploadLimiter, chatLimiter } from './middleware/rateLimiter.js';
 import { initSocketIO } from './services/socket.js';
 
 import getDB from './database/db.js';
@@ -62,6 +63,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads', express.static(uploadsDir));
+
+// ── Rate Limiting Global ──────────────────────────
+// Aplica a TODAS las rutas API
+app.use(apiLimiter);
+
+// ── Uploads: rate limit más restrictivo ────────────
+app.use('/upload', uploadLimiter);
+
+// ── Chats: rate limit específico ───────────────────
+// (aplica dentro de chatRoutes)
 
 // ── Rutas ────────────────────────────────────────
 app.use('/auth', authRoutes);
