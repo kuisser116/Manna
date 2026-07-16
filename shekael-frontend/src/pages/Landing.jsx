@@ -131,6 +131,7 @@ function LandingInner() {
   }, [navigate, user, termsVersion]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
+    addToast('loading', 'Entrando a Shekael...', 'Verificando seguridad');
     try {
       let recaptchaToken = '';
       if (typeof grecaptcha !== 'undefined') {
@@ -138,7 +139,7 @@ function LandingInner() {
       }
       await loginWithGoogle(credentialResponse.credential, recaptchaToken);
       addToast('success', 'Ya estas dentro!', 'Bienvenido.');
-      // El redirect lo maneja el useEffect de abajo (redirect logic)
+      // El redirect lo maneja el useEffect de abajo
     } catch (err) {
       addToast('error', 'Error de Google', err.message);
     }

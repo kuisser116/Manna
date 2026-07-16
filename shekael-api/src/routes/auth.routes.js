@@ -430,20 +430,10 @@ router.get('/me', authMiddleware, async (req, res) => {
         // Reparación Proactiva en cada reconexión
         repairWallet(user.id).catch(err => console.error(`[AuthRepair/Me] Error:`, err.message));
 
-        // Auto-migrate terms_version si está desactualizado o incompleto
-        if (!user.terms_version || user.terms_version !== TERMS_VERSION) {
-            void(`[Auth/Me] Auto-migrating terms ${user.terms_version || 'null'} → ${TERMS_VERSION} for ${user.email}`);
-            const { error: migrateErr } = await supabase
-                .from('users')
-                .update({ terms_version: TERMS_VERSION })
-                .eq('id', user.id);
-            if (!migrateErr) {
-                user.terms_version = TERMS_VERSION; // actualizar objeto para respuesta
-                void(`[Auth/Me] Migrated ${user.email} to ${TERMS_VERSION}`);
-            } else {
-                console.error(`[Auth/Me] Migration error:`, migrateErr.message);
-            }
-        }
+        // NOTA: NO auto-migrar terms_version aquí.
+        // El frontend verifica si user.terms_version === TERMS_VERSION
+        // y redirige a /terminos si no coinciden.
+        // Si auto-migráramos aquí, el usuario nunca vería la pantalla de aceptación.
 
         res.json({
             user: {
