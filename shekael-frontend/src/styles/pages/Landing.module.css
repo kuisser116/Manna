@@ -121,7 +121,7 @@
 }
 
 .logoWordmark {
-  font-family: 'Caesar Dressing', 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Fraunces', 'Plus Jakarta Sans', sans-serif;
   font-size: 46px;
   line-height: 1;
   color: var(--color-text);
@@ -191,6 +191,37 @@
   font-weight: 600;
   letter-spacing: 1.5px;
   text-transform: uppercase;
+}
+
+/* ─── Decoracion mexicana sutil ─── */
+.mxMotif {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  opacity: 0.35;
+}
+
+.mxMotifLine {
+  width: 40px;
+  height: 1px;
+  background: var(--color-text-dim);
+}
+
+.mxMotifDiamond {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--color-text-dim);
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+
+.mxMotifDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-text-dim);
 }
 
 /* ══════════════════════════════════════════════

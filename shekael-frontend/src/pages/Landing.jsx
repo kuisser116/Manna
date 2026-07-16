@@ -411,6 +411,14 @@ function LandingInner() {
               <span className={styles.logoTag}>Porque la luz no deberia estar escondida</span>
             </div>
 
+            <div className={styles.mxMotif} aria-hidden="true">
+              <span className={styles.mxMotifLine} />
+              <span className={styles.mxMotifDot} />
+              <span className={styles.mxMotifDiamond} />
+              <span className={styles.mxMotifDot} />
+              <span className={styles.mxMotifLine} />
+            </div>
+
             <h1 className={styles.headline}>
               {headlineWords.map((word, i) => (
                 <span key={i} className={styles.heroWord}>
@@ -421,9 +429,9 @@ function LandingInner() {
             </h1>
 
             <p className={styles.heroSub}>
-              Una red social con proposito donde el contenido vuelve a sentirse humano.
-              Menos ruido, mas valor, mas libertad. Todo potenciado por una economia digital
-              que empieza aqui.
+              Una red social con proposito, hecha en Mexico para el mundo.
+              Aqui el contenido vuelve a sentirse humano, tu comunidad local
+              cobra vida y tu tiempo vale. Menos ruido, mas valor.
             </p>
 
             <div className={styles.heroCta}>
@@ -449,7 +457,7 @@ function LandingInner() {
       {/* ═══ BAND 1: FEATURES ═══ */}
       <section className={`${styles.band} ${styles.bandLight}`} ref={band1Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Tu red, tu espacio</span>
+          <span className={styles.bandEyebrow}>Tu red, tu terruno</span>
           <h2 className={styles.bandTitle}>Lo que ya puedes hacer</h2>
           <div className={styles.featGrid} ref={tagsRef}>
             <div className={styles.featInner}>
@@ -485,7 +493,7 @@ function LandingInner() {
       {/* ═══ BAND 2: ECONOMY ═══ */}
       <section className={`${styles.band} ${styles.bandDark}`} ref={band2Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Economia MXNe</span>
+          <span className={styles.bandEyebrow}>Economia MXNe — Hecha en Mexico</span>
           <h2 className={styles.bandTitle}>Gana mientras formas parte</h2>
           <div className={styles.econLine}>
             <svg width="60" height="3" viewBox="0 0 60 3">
@@ -569,7 +577,7 @@ function LandingInner() {
       {/* ═══ BAND 4: PRINCIPLES ═══ */}
       <section className={`${styles.band} ${styles.bandLight}`} ref={band4Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Nuestros principios</span>
+          <span className={styles.bandEyebrow}>Nuestra manera</span>
           <h2 className={styles.bandTitle}>Como construimos Shekael</h2>
           <div className={styles.principlesList} ref={principleListRef}>
             {PRINCIPLES.map((item, i) => (
@@ -585,9 +593,9 @@ function LandingInner() {
       {/* ═══ CLOSING ═══ */}
       <section className={`${styles.band} ${styles.bandDark} ${styles.bandClosing}`} ref={closingRef}>
         <div className={styles.bandInner}>
-          <p className={styles.closingMission}>Una aplicacion. Un ecosistema.</p>
+          <p className={styles.closingMission}>Hecho en Mexico. Para todos.</p>
           <h2 className={styles.bandTitle}>Shekael te espera</h2>
-          <p className={styles.closingVision}>La super app de Mexico</p>
+          <p className={styles.closingVision}>La super app de Mexico, hecha para el mundo</p>
           <div className={styles.closingCta}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
