@@ -148,7 +148,7 @@ router.post('/create', authMiddleware, async (req, res) => {
         const finalContent = contentCID || content;
 
         // --- Moderación local (sin IA) ---
-        const modCheck = analyzeContentWithAI(finalContent, type, null, req.user.id);
+        const modCheck = await analyzeContentWithAI(finalContent, type, null, req.user.id);
         if (modCheck.verdict === 'rejected') {
             return res.status(400).json({ 
                 message: 'Contenido rechazado por nuestras normas de comunidad',

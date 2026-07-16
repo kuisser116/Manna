@@ -13,7 +13,7 @@ const router = Router({ strict: false });
 router.post('/check-content', authMiddleware, async (req, res) => {
     try {
         const { text, type, imageNsfwResult, imageNsfwConfidence } = req.body;
-        const result = analyzeContentWithAI(
+        const result = await analyzeContentWithAI(
             text || '',
             type || 'micro-text',
             text || '',

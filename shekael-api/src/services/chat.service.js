@@ -198,7 +198,7 @@ export async function sendMessage(conversationId, userId, { content, message_typ
 
   // Moderar contenido
   const { moderate } = await import('./moderation.service.js');
-  const modResult = moderate(content || '');
+  const modResult = await moderate(content || '');
   if (modResult.isBlocked) throw error('Contenido no permitido');
 
   const messageId = uuidv4();

@@ -34,7 +34,7 @@ router.post('/image', authMiddleware, upload.single('image'), async (req, res) =
         const content = `${fileUrl}|||${caption}`;
 
         // Moderación local (sin IA)
-        const modCheck = analyzeContentWithAI(content, 'image', caption, req.user.id);
+        const modCheck = await analyzeContentWithAI(content, 'image', caption, req.user.id);
         if (modCheck.verdict === 'rejected') {
             return res.status(400).json({ message: modCheck.reason });
         }
@@ -77,7 +77,7 @@ router.post('/video', authMiddleware, upload.fields([{ name: 'video', maxCount: 
 
         // Moderación local sobre título/descripción
         const textContent = `${req.body.title || ''} ${req.body.description || ''}`.trim();
-        const modCheck = analyzeContentWithAI(textContent, 'video', textContent, req.user.id);
+        const modCheck = await analyzeContentWithAI(textContent, 'video', textContent, req.user.id);
         if (modCheck.verdict === 'rejected') {
             return res.status(400).json({ message: modCheck.reason });
         }
