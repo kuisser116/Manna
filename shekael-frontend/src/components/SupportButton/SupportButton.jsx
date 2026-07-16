@@ -255,14 +255,15 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             document.body
             )}
 
-            {pinModalOpen && (
+            {pinModalOpen && createPortal(
                 <PinKeypad
                     mode="enter"
                     onComplete={handlePinVerified}
                     onCancel={() => setPinModalOpen(false)}
                     title="Confirmar transacción"
                     subtitle={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
-                />
+                />,
+                document.body
             )}
         </div>
     );
