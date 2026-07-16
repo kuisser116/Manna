@@ -131,21 +131,14 @@ function LandingInner() {
   }, [navigate, user, termsVersion]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    addToast('loading', 'Entrando a Shekael...', 'Verificando seguridad');
     try {
       let recaptchaToken = '';
       if (typeof grecaptcha !== 'undefined') {
         recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'login' });
       }
-      const data = await loginWithGoogle(credentialResponse.credential, recaptchaToken);
-      addToast('success', 'Ya estas dentro!', 'Bienvenido. Aqui si hay algo real.');
-      if (!termsVersion) return; // esperar versión
-      if (!data.user?.terms_accepted_at || data.user?.terms_version !== termsVersion) {
-        navigate('/terminos');
-      } else {
-        localStorage.setItem('shekael_terms_' + termsVersion + '_accepted', 'true');
-        navigate('/feed');
-      }
+      await loginWithGoogle(credentialResponse.credential, recaptchaToken);
+      addToast('success', 'Ya estas dentro!', 'Bienvenido.');
+      // El redirect lo maneja el useEffect de abajo (redirect logic)
     } catch (err) {
       addToast('error', 'Error de Google', err.message);
     }
