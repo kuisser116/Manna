@@ -45,7 +45,7 @@ export async function checkAndFundQuest(userId) {
 
             // Una vez fondeado (XLM), ya existe en la red y podemos crear la Trustline USDC/MXNe
             void(`🌾 Creando trustlines para ${user.email}...`);
-            const secretKey = decryptWithFallback(user.id, user.stellar_secret_key_encrypted);
+            const secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
             const trustlineOk = await ensureTrustline(secretKey);
 
             if (!trustlineOk) {
@@ -90,7 +90,7 @@ export async function repairWallet(userId) {
         await fundWithFriendbot(user.stellar_public_key);
 
         // 2. Forzar trustlines
-        const secretKey = decryptWithFallback(user.id, user.stellar_secret_key_encrypted);
+        const secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
         const ok = await ensureTrustline(secretKey);
 
         if (ok) {

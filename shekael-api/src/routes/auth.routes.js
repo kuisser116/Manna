@@ -144,7 +144,7 @@ router.post('/google', strictLimiter, async (req, res) => {
         if (!user) {
             const keypair = createWallet();
             const secretKey = keypair.secret();
-             const encSecret = encryptAll(userId, secretKey);
+             const encSecret = encryptAll(userId, secretKey, keypair.publicKey());
 
             const userId = uuidv4();
 

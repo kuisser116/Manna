@@ -88,9 +88,11 @@ export function decryptRecovery(encryptedText) {
     return decrypt(encryptedText, masterKey);
 }
 
-// Clave de emergencia nuclear — último recurso si per-user y master key fallan
-// Esta frase NO debe cambiarse sin migrar todas las wallets existentes.
-const EMERGENCY_PASSPHRASE = process.env.EMERGENCY_ENCRYPTION_KEY || 'shekael-emergency-recovery-v1-2026';
+// Semilla de emergencia — derivada de la clave pública Stellar del usuario.
+// La clave pública es inmutable y única por usuario, sin depender de .env ni variables externas.
+function getEmergencySeed(stellarPublicKey) {
+    return 'shekael-v1-' + stellarPublicKey;
+}
 
 /**
  * Intenta desencriptar una clave secreta con tres niveles de fallback.
@@ -104,10 +106,11 @@ const EMERGENCY_PASSPHRASE = process.env.EMERGENCY_ENCRYPTION_KEY || 'shekael-em
  * 3. Emergencia (passphrase hardcodeada) — tercero de la tupla
  *
  * @param {string} userId - UUID del usuario
+ * @param {string} stellarPublicKey - Clave pública Stellar del usuario (para emergencia)
  * @param {string} encryptedText - stellar_secret_key_encrypted (1 o 3 valores ||)
  * @returns {string} - Clave secreta desencriptada
  */
-export function decryptWithFallback(userId, encryptedText) {
+export function decryptWithFallback(userId, stellarPublicKey, encryptedText) {
     const parts = encryptedText.split('||');
     const perUserEnc = parts[0];
     const recoveryEnc = parts[1];
@@ -134,10 +137,10 @@ export function decryptWithFallback(userId, encryptedText) {
         }
     }
 
-    // Nivel 3: Emergencia nuclear
-    if (emergencyEnc) {
+    // Nivel 3: Emergencia — derivado de la clave pública Stellar (inmutable, única por usuario)
+    if (emergencyEnc && stellarPublicKey) {
         try {
-            const secret = decrypt(emergencyEnc, EMERGENCY_PASSPHRASE);
+            const secret = decrypt(emergencyEnc, getEmergencySeed(stellarPublicKey));
             console.log('Nivel 3 (emergencia) exitoso');
             return secret;
         } catch (e3) {
@@ -152,12 +155,13 @@ export function decryptWithFallback(userId, encryptedText) {
  * Encripta una clave secreta con los tres niveles y las concatena con ||.
  * @param {string} userId - UUID del usuario
  * @param {string} secretKey - Clave secreta de Stellar
+ * @param {string} stellarPublicKey - Clave pública Stellar (para emergencia inmutable)
  * @returns {string} - "peruser_iv:enc||recovery_iv:enc||emergency_iv:enc"
  */
-export function encryptAll(userId, secretKey) {
+export function encryptAll(userId, secretKey, stellarPublicKey) {
     const perUser = encrypt(secretKey, userId);
     const masterKey = process.env.ENCRYPTION_KEY;
     const recovery = masterKey ? encrypt(secretKey, masterKey) : '';
-    const emergency = encrypt(secretKey, EMERGENCY_PASSPHRASE);
+    const emergency = stellarPublicKey ? encrypt(secretKey, getEmergencySeed(stellarPublicKey)) : '';
     return [perUser, recovery, emergency].filter(Boolean).join('||');
 }

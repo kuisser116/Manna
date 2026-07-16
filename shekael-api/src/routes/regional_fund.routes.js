@@ -177,7 +177,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         const userAmount = (parseFloat(amount) * discountFactor).toString();
 
         // 3. Procesar pago en Stellar (Desde el usuario)
-        const secretKey = decryptWithFallback(sender.id, sender.stellar_secret_key_encrypted);
+        const secretKey = decryptWithFallback(sender.id, sender.stellar_public_key, sender.stellar_secret_key_encrypted);
         
         // Asegurar trustline para el activo
         await ensureTrustline(secretKey);

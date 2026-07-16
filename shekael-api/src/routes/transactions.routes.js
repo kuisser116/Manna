@@ -36,7 +36,7 @@ router.post('/support', authMiddleware, async (req, res) => {
 
         let secretKey;
         try {
-            secretKey = decryptWithFallback(sender.id, sender.stellar_secret_key_encrypted);
+            secretKey = decryptWithFallback(sender.id, sender.stellar_public_key, sender.stellar_secret_key_encrypted);
         } catch (decryptErr) {
             console.error('Todos los niveles de decrypt fallaron para', sender.id, ':', decryptErr.message);
             return res.status(500).json({
