@@ -29,6 +29,12 @@ export function WalletWidget({ variant = 'default' }) {
     const contentRef = useRef(null);
     const buttonRef = useRef(null);
 
+    // Auto‑cargar saldo al montar y cuando cambie el usuario (login)
+    useEffect(() => {
+        fetchBalance();
+    }, [user?.stellarPublicKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps — solo queremos que corra al montar / login
+
     // ── Slide up reveal (como hero de Landing) ──
     const animateIn = useCallback(() => {
         setShouldRender(true);
