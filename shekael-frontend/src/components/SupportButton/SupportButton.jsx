@@ -99,7 +99,6 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             const hash = pinHash(enteredPin);
             await apiVerifyPin(hash);
 
-            addToast('loading', 'Enviando apoyo...', 'Firmando en Stellar Testnet...');
             const result = await sendSupport(recipientKey, postId, customAmount.toString());
             setSupported(true);
             setCount((c) => c + 1);
