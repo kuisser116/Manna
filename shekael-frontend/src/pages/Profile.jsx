@@ -70,29 +70,8 @@ export default function Profile() {
   const [profileLoading, setProfileLoading] = useState(!isOwnProfile);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
-  const [toast, setToast] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const showToast = (type, message) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarUploading(true);
-    try {
-      const { data } = await updateAvatar(file);
-      if (data?.avatarUrl) {
-        setProfileData(prev => ({ ...prev, avatarUrl: data.avatarUrl }));
-        if (isOwnProfile) {
-          useStore.getState().setUser({ ...currentUser, avatarUrl: data.avatarUrl });
-        }
-      }
-    } catch {}
-    setAvatarUploading(false);
-  };
 
   const handleCopyWallet = () => {
     if (!profileData?.stellarPublicKey) return;
@@ -479,12 +458,6 @@ export default function Profile() {
           />
         )}
       </AnimatePresence>
-
-      {toast && (
-        <div className={`${styles.toast} ${styles[toast.type]}`}>
-          {toast.message}
-        </div>
-      )}
     </div>
   );
 }

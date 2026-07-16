@@ -772,44 +772,7 @@
   }
 
   .postText {
-    font-size: 0.96rem;
-  }
+}
+  font-size: 0.95rem;
 }
 
-/* ── Toast ── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  z-index: 9999;
-  animation: toastIn 0.3s ease;
-  box-shadow: 0 4px 20px var(--color-shadow);
-  max-width: 420px;
-  text-align: center;
-}
-
-.success {
-  background: var(--color-success);
-  color: white;
-}
-
-.error {
-  background: var(--color-danger);
-  color: white;
-}
-
-@keyframes toastIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
