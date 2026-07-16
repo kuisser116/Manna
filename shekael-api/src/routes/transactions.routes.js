@@ -30,6 +30,10 @@ router.post('/support', authMiddleware, async (req, res) => {
         }
 
         // Descifrar clave custodial
+        if (!sender.stellar_secret_key_encrypted || sender.stellar_secret_key_encrypted === 'enc-placeholder') {
+            return res.status(400).json({ message: 'Tu billetera Stellar no está activa. Completa las misiones en la app para activarla.' });
+        }
+
         const secretKey = decrypt(sender.stellar_secret_key_encrypted);
 
         // Enviar pago en Stellar Testnet

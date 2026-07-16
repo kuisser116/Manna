@@ -149,7 +149,6 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => { if (!loading) setModalOpen(false); }}
                     >
                         <motion.div
                             className={styles.supportModal}
@@ -256,13 +255,21 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             )}
 
             {pinModalOpen && createPortal(
-                <PinKeypad
-                    mode="enter"
-                    onComplete={handlePinVerified}
-                    onCancel={() => setPinModalOpen(false)}
-                    title="Confirmar transacción"
-                    subtitle={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
-                />,
+                <div
+                    className={styles.pinOverlay}
+                    onClick={(e) => {
+                        // Solo cerrar si clickeó directamente el overlay, no el modal interno
+                        if (e.target === e.currentTarget) setPinModalOpen(false);
+                    }}
+                >
+                    <PinKeypad
+                        mode="enter"
+                        onComplete={handlePinVerified}
+                        onCancel={() => setPinModalOpen(false)}
+                        title="Confirmar transacción"
+                        subtitle={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
+                    />
+                </div>,
                 document.body
             )}
         </div>
