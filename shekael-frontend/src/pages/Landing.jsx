@@ -131,15 +131,15 @@ function LandingInner() {
   }, [navigate, user, termsVersion]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    addToast('loading', 'Entrando a Shekael...', 'Verificando seguridad');
+    addToast('loading', 'Iniciando sesión...');
     try {
       let recaptchaToken = '';
       if (typeof grecaptcha !== 'undefined') {
         recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'login' });
       }
       await loginWithGoogle(credentialResponse.credential, recaptchaToken);
-      addToast('success', 'Ya estas dentro!', 'Bienvenido.');
-      // El redirect lo maneja el useEffect de abajo
+      // Sin success toast — la redirección al feed + posible LockScreen
+      // hacen más claro el estado real que un toast prematuro
     } catch (err) {
       addToast('error', 'Error de Google', err.message);
     }

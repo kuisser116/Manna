@@ -112,7 +112,10 @@ function AppLayout({ children }) {
     <>
       {sessionLock.locked && (
         <LockScreen
-          onUnlock={sessionLock.unlock}
+          onUnlock={() => {
+            sessionLock.unlock();
+            useStore.getState().addToast('success', 'Sesión reanudada', 'Bienvenido de vuelta.');
+          }}
         />
       )}
       {(!isChatRoute || !chatConversationMode || !isMobile) && (
