@@ -275,7 +275,7 @@ export default function Terms() {
               no controla y no se hace responsable</strong> por servicios externos que permitan
               la entrada o salida de fondos del ecosistema MXNe.
             </p>
-            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Depósitos desde Exchanges</h3>
+            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Depósitos desde Exchanges</h3>
             <p>
               Los usuarios pueden adquirir MXNe a través de exchanges externos (Bitso, Binance,
               KuCoin, etc.) y depositarlos en su billetera Stellar dentro de Shekael. Shekael:
@@ -286,7 +286,7 @@ export default function Terms() {
               <li><strong>No garantiza la disponibilidad, precio o liquidez</strong> de MXNe en exchanges externos.</li>
               <li>La conversión de MXN a MXNe ocurre <strong>fuera de Shekael</strong>, en plataformas de terceros.</li>
             </ul>
-            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Retiros a Oxxo / MoneyGram</h3>
+            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Retiros a Oxxo / MoneyGram</h3>
             <p>
               Shekael puede integrar anchors de la red Stellar (como MoneyGram) para permitir
               la conversión de MXNe a moneda fiduciaria y su retiro en efectivo. Al usar este servicio:
@@ -300,7 +300,7 @@ export default function Terms() {
               <li>El usuario acepta que Shekael <strong>no maneja, custodia ni transfiere dinero fiduciario</strong>
               en ningún momento del proceso.</li>
             </ul>
-            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Swap XLM ↔ MXNe</h3>
+            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Swap XLM ↔ MXNe</h3>
             <p>
               El intercambio (swap) entre XLM y MXNe ocurre en el <strong>DEX descentralizado de la red
               Stellar</strong> (Stellar Decentralized Exchange). Shekael:
@@ -314,7 +314,7 @@ export default function Terms() {
               <li>Shekael no cobra comisiones adicionales por el swap; las únicas comisiones son las
 de la red Stellar y el spread del DEX.</li>
             </ul>
-            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Fondo Regional (Comisión del 10%)</h3>
+            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Fondo Regional (Comisión del 10%)</h3>
             <p>
               Cada transacción de apoyo (support) dentro de la Plataforma genera una comisión
               automática del <strong>10% del monto</strong>, que se deposita en el Fondo Regional.
