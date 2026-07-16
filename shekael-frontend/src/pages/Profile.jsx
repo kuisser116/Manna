@@ -64,6 +64,25 @@ export default function Profile() {
     }
   };
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setProfileData(prev => ({ ...prev, avatarUrl: preview }));
+    setAvatarUploading(true);
+    try {
+      const { data } = await updateAvatar(file);
+      if (data?.avatarUrl) {
+        URL.revokeObjectURL(preview);
+        setProfileData(prev => ({ ...prev, avatarUrl: data.avatarUrl }));
+      }
+    } catch {
+      // Keep optimistic local preview
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const isOwnProfile = !profileId || currentUser?.id === profileId;
 
   const [profileData, setProfileData] = useState(isOwnProfile ? currentUser : null);
