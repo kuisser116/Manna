@@ -3,8 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { getBalance, sendPayment } from '../services/stellar.service.js';
-import { decrypt, encrypt } from '../services/crypto.service.js';
-import StellarSdk from '@stellar/stellar-sdk';
+import { decrypt } from '../services/crypto.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { repairWallet } from '../services/quest.service.js';
 
@@ -40,25 +39,12 @@ router.post('/support', authMiddleware, async (req, res) => {
             secretKey = decrypt(sender.stellar_secret_key_encrypted);
         } catch (decryptErr) {
             console.error('Decrypt error para usuario', req.user.id, ':', decryptErr.message);
-            // Intentar reparar: crear nueva wallet y encriptar
-            try {
-                const newKeypair = StellarSdk.Keypair.random();
-                const newEncrypted = encrypt(newKeypair.secret());
-                await supabase.from('users').update({
-                    stellar_public_key: newKeypair.publicKey(),
-                    stellar_secret_key_encrypted: newEncrypted
-                }).eq('id', req.user.id);
-                secretKey = newKeypair.secret();
-                console.log('Wallet reparada para usuario', req.user.id);
-                // Fondear con Friendbot para que tenga XLM de fees
-                try {
-                    const { fundWithFriendbot } = await import('../services/stellar.service.js');
-                    await fundWithFriendbot(newKeypair.publicKey());
-                } catch (_) { /* no pasa nada si falla el fondeo */ }
-            } catch (repairErr) {
-                console.error('Repair wallet falló:', repairErr.message);
-                return res.status(500).json({ message: 'Tu billetera está corrupta y no pudimos repararla automáticamente. Contacta a soporte.' });
-            }
+            // NUNCA reemplazar la wallet automaticamente — eso pierde fondos.
+            // La unica causa es que ENCRYPTION_KEY cambio despues de crear la cuenta.
+            return res.status(500).json({
+                message: 'Error de seguridad: no se puede acceder a tu billetera. Contacta a soporte para restaurar tu clave de encriptación.',
+                code: 'DECRYPT_FAILED'
+            });
         }
 
         // Enviar pago en Stellar Testnet
