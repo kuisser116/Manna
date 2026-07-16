@@ -37,6 +37,18 @@
     border-left: 3px solid var(--color-warning);
 }
 
+.loading {
+    border-left: 3px solid var(--color-info, #3b82f6);
+}
+
+.spinIcon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 .content {
     display: flex;
     flex-direction: column;
