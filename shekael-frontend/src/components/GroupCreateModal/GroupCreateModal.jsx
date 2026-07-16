@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { createGroup } from '../api/chats.api';
-import useStore from '../store';
+import { createGroup } from '../../api/chats.api';
+import useStore from '../../store';
 import styles from './GroupCreateModal.module.css';
 
 export default function GroupCreateModal({ onCreated, onClose }) {

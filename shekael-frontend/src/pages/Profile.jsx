@@ -484,10 +484,10 @@ function PrivacyModal({ isOpen, onClose }) {
           <button className={styles.modalClose} onClick={onClose}>✕</button>
         </div>
         <div className={styles.modalBody}>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '0.5rem' }}>
+          <p className={styles.profileAboutText}>
             Controla qué información se muestra en tu perfil público.
           </p>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', lineHeight: 1.4, marginBottom: '1.25rem' }}>
+          <p className={styles.profileAboutMuted}>
             Los mensajes directos siempre están cifrados E2EE y nadie puede leerlos, ni Shekael.
           </p>
 

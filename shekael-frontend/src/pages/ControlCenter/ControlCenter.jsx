@@ -87,7 +87,7 @@ export default function ControlCenter() {
                     <div>
                         <h1>Shekael Control Center</h1>
                         <p>GestiÃ³n global de seguridad, moderaciÃ³n y apelaciones.</p>
-                        <a href="/admin/ads" className={styles.adsAdminLink} style={{ color: 'var(--color-primary)', fontSize: '0.85rem', fontWeight: 600, marginTop: '8px', display: 'inline-block' }}>
+                        <a href="/admin/ads" className={styles.adsAdminLink}>
                             Ir a GestiÃ³n de Anuncios
                         </a>
                     </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createPoll } from '../api/chats.api';
+import { createPoll } from '../../api/chats.api';
 import styles from './PollCreator.module.css';
 
 export default function PollCreator({ conversationId, onCreated, onClose }) {

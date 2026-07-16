@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getStickers, uploadSticker, toggleStickerFav } from '../api/chats.api';
+import { getStickers, uploadSticker, toggleStickerFav } from '../../api/chats.api';
 import styles from './StickerPicker.module.css';
 
 export default function StickerPicker({ onSelect, onClose }) {

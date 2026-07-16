@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getPoll, votePoll } from '../api/chats.api';
-import useStore from '../store';
+import { getPoll, votePoll } from '../../api/chats.api';
+import useStore from '../../store';
 import styles from './PollResults.module.css';
 
 export default function PollResults({ pollId, isActive }) {

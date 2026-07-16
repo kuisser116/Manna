@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { uploadChatFile } from '../api/chats.api';
+import { uploadChatFile } from '../../api/chats.api';
 import styles from './AudioRecorder.module.css';
 
 export default function AudioRecorder({ onSend, onClose }) {

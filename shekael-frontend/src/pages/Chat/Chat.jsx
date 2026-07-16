@@ -19,12 +19,12 @@ import {
   togglePinMessage, getPinnedMessage, markAsRead
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
-import StickerPicker from '../../components/StickerPicker';
-import AudioRecorder from '../../components/AudioRecorder';
-import PollCreator from '../../components/PollCreator';
-import PollResults from '../../components/PollResults';
-import GroupCreateModal from '../../components/GroupCreateModal';
-import AudioPlayer from '../../components/AudioPlayer';
+import StickerPicker from '../../components/StickerPicker/StickerPicker';
+import AudioRecorder from '../../components/AudioRecorder/AudioRecorder';
+import PollCreator from '../../components/PollCreator/PollCreator';
+import PollResults from '../../components/PollResults/PollResults';
+import GroupCreateModal from '../../components/GroupCreateModal/GroupCreateModal';
+import AudioPlayer from '../../components/AudioPlayer/AudioPlayer';
 import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../api/chats.api';
 import {
   connectSocket, disconnectSocket, joinConversation, leaveConversation, emitTyping,
@@ -363,7 +363,6 @@ export default function Chat() {
 
     // Listeners para eventos en tiempo real
     onMessageSent(async (msg) => {
-      console.log('[WS RECV] message:sent id:', msg?.id?.substring(0,8));
       const conv = activeConvRef.current;
       if (!conv?.id || msg.conversation_id !== conv.id) return;
       if (msg.sender_id === user?.id) return;
@@ -381,7 +380,7 @@ export default function Chat() {
             try {
               decryptedText = await legacyDecrypt(msg.encrypted_content, msg.nonce, fresh.public_key);
             } catch {}
-            if (decryptedText) console.log('[WS KEY] descifrado OK');
+            // decrypted
           }
         } catch {}
       }
@@ -662,7 +661,6 @@ export default function Chat() {
       // Cachear siempre (sea desde conv.otherUser o desde fresh)
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
-        console.log('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
       }
 
       const decrypted = [];

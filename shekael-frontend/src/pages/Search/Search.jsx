@@ -33,12 +33,12 @@ export default function Search() {
         return (
             <div className={styles.userGrid}>
                 {results.users.map(u => (
-                    <Link to={`/profile/${u.id}`} key={u.id} style={{ textDecoration: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                    <Link to={`/profile/${u.id}`} key={u.id} className={styles.searchUserLink}>
+                        <div className={styles.searchUserCard}>
                             <Avatar avatarUrl={u.avatarUrl} name={u.displayName} size={48} />
                             <div>
-                                <h3 style={{ fontSize: '15px', color: 'var(--color-text)', margin: 0 }}>{u.displayName}</h3>
-                                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>Reputación: {u.reputationLevel || 1}</p>
+                                <h3 className={styles.searchUserName}>{u.displayName}</h3>
+                                <p className={styles.searchUserRep}>Reputación: {u.reputationLevel || 1}</p>
                             </div>
                         </div>
                     </Link>

@@ -392,3 +392,6 @@
         padding: 12px 12px;
     }
 }
+
+.clickable { cursor: pointer; }
+.cursorDefault { cursor: default; }

@@ -149,7 +149,7 @@ export default function PinKeypad({ mode = 'enter', onComplete, onCancel, error:
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete="one-time-code"
-          style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }}
+          className={styles.hiddenInput}
           value=""
           readOnly
         />

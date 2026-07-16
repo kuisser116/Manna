@@ -371,7 +371,6 @@ export function PostCard({ post, isDetail = false }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             onClick={handleCardClick}
-            style={{ cursor: 'pointer' }}
         >
             {isCapsule && (
                 <div className={styles.capsuleLabel}>
@@ -477,7 +476,7 @@ export function PostCard({ post, isDetail = false }) {
                     <Share2 size={16} />
                 </button>
                 {isVideo && (
-                <div className={styles.actionBtn} style={{ cursor: 'default' }} title="Vistas">
+                <div className={`${styles.actionBtn} ${styles.cursorDefault}`} title="Vistas">
                     <Eye size={16} />
                     <span>{formatViews(video_view_count || 0)}</span>
                 </div>

@@ -36,7 +36,7 @@ function ImageRecommendCard({ post }) {
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => navigate(`/post/${post.id}`)}
-            style={{ cursor: 'pointer' }}
+            className={styles.clickable}
         >
             <div className={styles.recommendThumb}>
                 {imgUrl

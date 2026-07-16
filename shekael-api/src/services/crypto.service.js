@@ -129,7 +129,6 @@ export function decryptWithFallback(userId, stellarPublicKey, encryptedText) {
             const masterKey = process.env.ENCRYPTION_KEY;
             if (masterKey) {
                 const secret = decrypt(recoveryEnc, masterKey);
-                console.log('Nivel 2 (recovery) exitoso');
                 return secret;
             }
         } catch (e2) {
@@ -141,7 +140,6 @@ export function decryptWithFallback(userId, stellarPublicKey, encryptedText) {
     if (emergencyEnc && stellarPublicKey) {
         try {
             const secret = decrypt(emergencyEnc, getEmergencySeed(stellarPublicKey));
-            console.log('Nivel 3 (emergencia) exitoso');
             return secret;
         } catch (e3) {
             console.warn('Nivel 3 (emergencia) falló:', e3.message);

@@ -162,3 +162,5 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+
+.hiddenInput { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
