@@ -1,6 +1,6 @@
 import getDB from '../database/db.js';
 import { fundWithFriendbot, ensureTrustline } from './stellar.service.js';
-import { decrypt } from './crypto.service.js';
+import { decryptWithFallback } from './crypto.service.js';
 
 /**
  * Validador Maestro de Misiones (Proof of Engagement)
@@ -45,7 +45,7 @@ export async function checkAndFundQuest(userId) {
 
             // Una vez fondeado (XLM), ya existe en la red y podemos crear la Trustline USDC/MXNe
             void(`🌾 Creando trustlines para ${user.email}...`);
-            const secretKey = decryptForUser(user.id, user.stellar_secret_key_encrypted);
+            const secretKey = decryptWithFallback(user.id, user.stellar_secret_key_encrypted);
             const trustlineOk = await ensureTrustline(secretKey);
 
             if (!trustlineOk) {
@@ -90,7 +90,7 @@ export async function repairWallet(userId) {
         await fundWithFriendbot(user.stellar_public_key);
 
         // 2. Forzar trustlines
-        const secretKey = decryptForUser(user.id, user.stellar_secret_key_encrypted);
+        const secretKey = decryptWithFallback(user.id, user.stellar_secret_key_encrypted);
         const ok = await ensureTrustline(secretKey);
 
         if (ok) {

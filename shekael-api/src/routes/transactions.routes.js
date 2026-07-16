@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { getBalance, sendPayment } from '../services/stellar.service.js';
-import { decryptForUser, decryptRecovery } from '../services/crypto.service.js';
+import { decryptWithFallback } from '../services/crypto.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { repairWallet } from '../services/quest.service.js';
 
@@ -36,27 +36,13 @@ router.post('/support', authMiddleware, async (req, res) => {
 
         let secretKey;
         try {
-            secretKey = decryptForUser(sender.id, sender.stellar_secret_key_encrypted);
+            secretKey = decryptWithFallback(sender.id, sender.stellar_secret_key_encrypted);
         } catch (decryptErr) {
-            console.error('Decrypt per-user falló para', sender.id, ':', decryptErr.message);
-            // Intentar recovery con master key
-            if (sender.recovery_encrypted) {
-                try {
-                    secretKey = decryptRecovery(sender.recovery_encrypted);
-                    console.log('Recovery exitoso para', sender.id);
-                } catch (recoveryErr) {
-                    console.error('Recovery también falló:', recoveryErr.message);
-                    return res.status(500).json({
-                        message: 'No se puede acceder a tu billetera. Contacta a soporte.',
-                        code: 'DECRYPT_FAILED'
-                    });
-                }
-            } else {
-                return res.status(500).json({
-                    message: 'No se puede acceder a tu billetera. Contacta a soporte.',
-                    code: 'DECRYPT_FAILED'
-                });
-            }
+            console.error('Todos los niveles de decrypt fallaron para', sender.id, ':', decryptErr.message);
+            return res.status(500).json({
+                message: 'No se puede acceder a tu billetera. Contacta a soporte.',
+                code: 'DECRYPT_FAILED'
+            });
         }
 
         // Enviar pago en Stellar Testnet

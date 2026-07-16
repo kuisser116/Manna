@@ -87,3 +87,77 @@ export function decryptRecovery(encryptedText) {
     if (!masterKey) throw new Error('ENCRYPTION_KEY no configurada para recovery');
     return decrypt(encryptedText, masterKey);
 }
+
+// Clave de emergencia nuclear — último recurso si per-user y master key fallan
+// Esta frase NO debe cambiarse sin migrar todas las wallets existentes.
+const EMERGENCY_PASSPHRASE = process.env.EMERGENCY_ENCRYPTION_KEY || 'shekael-emergency-recovery-v1-2026';
+
+/**
+ * Intenta desencriptar una clave secreta con tres niveles de fallback.
+ * El campo encryptedText puede contener 1 o 3 valores separados por ||:
+ *   "peruser_iv:enc"  (solo per-user, legacy)
+ *   "peruser_iv:enc||recovery_iv:enc||emergency_iv:enc"
+ *
+ * Orden de intentos:
+ * 1. Per-user (userId) — primero o primero de la tupla
+ * 2. Recovery (ENCRYPTION_KEY maestra) — segundo de la tupla
+ * 3. Emergencia (passphrase hardcodeada) — tercero de la tupla
+ *
+ * @param {string} userId - UUID del usuario
+ * @param {string} encryptedText - stellar_secret_key_encrypted (1 o 3 valores ||)
+ * @returns {string} - Clave secreta desencriptada
+ */
+export function decryptWithFallback(userId, encryptedText) {
+    const parts = encryptedText.split('||');
+    const perUserEnc = parts[0];
+    const recoveryEnc = parts[1];
+    const emergencyEnc = parts[2];
+
+    // Nivel 1: Per-user
+    try {
+        return decrypt(perUserEnc, userId);
+    } catch (e1) {
+        console.warn('Nivel 1 (per-user) falló:', e1.message);
+    }
+
+    // Nivel 2: Recovery con master key
+    if (recoveryEnc) {
+        try {
+            const masterKey = process.env.ENCRYPTION_KEY;
+            if (masterKey) {
+                const secret = decrypt(recoveryEnc, masterKey);
+                console.log('Nivel 2 (recovery) exitoso');
+                return secret;
+            }
+        } catch (e2) {
+            console.warn('Nivel 2 (recovery) falló:', e2.message);
+        }
+    }
+
+    // Nivel 3: Emergencia nuclear
+    if (emergencyEnc) {
+        try {
+            const secret = decrypt(emergencyEnc, EMERGENCY_PASSPHRASE);
+            console.log('Nivel 3 (emergencia) exitoso');
+            return secret;
+        } catch (e3) {
+            console.warn('Nivel 3 (emergencia) falló:', e3.message);
+        }
+    }
+
+    throw new Error('No se pudo desencriptar la clave con ningún método de respaldo');
+}
+
+/**
+ * Encripta una clave secreta con los tres niveles y las concatena con ||.
+ * @param {string} userId - UUID del usuario
+ * @param {string} secretKey - Clave secreta de Stellar
+ * @returns {string} - "peruser_iv:enc||recovery_iv:enc||emergency_iv:enc"
+ */
+export function encryptAll(userId, secretKey) {
+    const perUser = encrypt(secretKey, userId);
+    const masterKey = process.env.ENCRYPTION_KEY;
+    const recovery = masterKey ? encrypt(secretKey, masterKey) : '';
+    const emergency = encrypt(secretKey, EMERGENCY_PASSPHRASE);
+    return [perUser, recovery, emergency].filter(Boolean).join('||');
+}
