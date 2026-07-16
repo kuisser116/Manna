@@ -5,7 +5,8 @@ import { Heart, X, ChevronDown, Sparkles } from 'lucide-react';
 import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
 
-import PinModal from '../PinModal/PinModal';
+import PinKeypad, { pinHash } from '../PinKeypad/PinKeypad';
+import { verifyPin as apiVerifyPin } from '../../api/auth.api';
 import styles from './SupportButton.module.css';
 
 const PRESETS = [5, 10, 25, 50, 100];
@@ -91,19 +92,24 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
         setPinModalOpen(true);
     };
 
-    const handlePinVerified = async () => {
+    const handlePinVerified = async (enteredPin) => {
         setLoading(true);
         try {
-            addToast('success', 'Enviando apoyo...', 'Firmando en Stellar Testnet...');
+            // Verificar PIN contra el servidor
+            const hash = pinHash(enteredPin);
+            await apiVerifyPin(hash);
+
+            addToast('loading', 'Enviando apoyo...', 'Firmando en Stellar Testnet...');
             const result = await sendSupport(recipientKey, postId, customAmount.toString());
             setSupported(true);
             setCount((c) => c + 1);
             setShowParticles(true);
+            setPinModalOpen(false);
             setLoading(false);
             setTimeout(() => setShowParticles(false), 700);
 
-            const hash = result?.hash;
-            const explorerMsg = hash && !hash.startsWith('demo-')
+            const hashResult = result?.hash;
+            const explorerMsg = hashResult && !hashResult.startsWith('demo-')
                 ? `TX confirmada · Ver en Stellar Explorer`
                 : `${customAmount} MXne enviado al creador`;
 
@@ -114,7 +120,9 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             if (errorCode === 'WALLET_NOT_ACTIVE') {
                 addToast('error', 'Billetera Inactiva', 'El creador necesita completar sus tareas para recibir fondos reales.');
             } else {
-                addToast('error', 'Error', err.response?.data?.message || err.message || 'Inténtalo de nuevo');
+                const msg = err.response?.data?.message || err.message || 'Inténtalo de nuevo';
+                addToast('error', 'Error', msg);
+                throw err; // <-- importante: relanzar para que PinKeypad muestre error
             }
         }
     };
@@ -248,13 +256,15 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             document.body
             )}
 
-            <PinModal
-                isOpen={pinModalOpen}
-                onClose={() => setPinModalOpen(false)}
-                onVerified={handlePinVerified}
-                title="Confirmar transacción"
-                description={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
-            />
+            {pinModalOpen && (
+                <PinKeypad
+                    mode="enter"
+                    onComplete={handlePinVerified}
+                    onCancel={() => setPinModalOpen(false)}
+                    title="Confirmar transacción"
+                    subtitle={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
+                />
+            )}
         </div>
     );
 }
