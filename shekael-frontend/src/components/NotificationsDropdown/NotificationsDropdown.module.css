@@ -76,28 +76,7 @@
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-.markAllBtn {
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 0.35rem 0.5rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
 
-.markAllBtn:hover {
-    background: var(--color-surface-2);
-    color: var(--color-text);
-    border-color: var(--color-border);
-}
 
 .list {
     overflow-y: auto;
@@ -126,14 +105,7 @@
     background: var(--color-surface-2);
 }
 
-.item.unread {
-    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
-    border-left: 3px solid var(--color-primary);
-}
 
-.item.unread:hover {
-    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
-}
 
 .content {
     flex: 1;
@@ -160,13 +132,7 @@
     color: var(--color-text-muted);
 }
 
-.unreadDot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    flex-shrink: 0;
-}
+
 
 .loadMoreBtn {
     width: 100%;

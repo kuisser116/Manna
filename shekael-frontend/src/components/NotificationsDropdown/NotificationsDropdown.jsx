@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getNotifications, getUnreadNotificationsCount, markNotificationAsRead, markAllNotificationsAsRead } from '../../api/notifications.api';
+import { getNotifications, getUnreadNotificationsCount, markAllNotificationsAsRead } from '../../api/notifications.api';
 import Avatar from '../Avatar/Avatar';
 import useStore from '../../store';
 import styles from './NotificationsDropdown.module.css';
@@ -20,22 +20,33 @@ export function NotificationsDropdown() {
     const { user } = useStore();
     const navigate = useNavigate();
 
+    // Polling de contador de no leídas
     useEffect(() => {
         if (user) {
             fetchUnreadCount();
-            const interval = setInterval(() => {
-                fetchUnreadCount();
-            }, 30000); // 30 seconds
+            const interval = setInterval(fetchUnreadCount, 30000);
             return () => clearInterval(interval);
         }
     }, [user]);
 
+    // Al abrir: cargar notis + auto-marcar todo como leído
     useEffect(() => {
-        if (isOpen && notifications.length === 0) {
-            fetchNotifications(0);
+        if (isOpen) {
+            if (notifications.length === 0) {
+                fetchNotifications(0);
+            }
+            if (unreadCount > 0) {
+                markAllNotificationsAsRead()
+                    .then(() => {
+                        setUnreadCount(0);
+                        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                    })
+                    .catch(console.error);
+            }
         }
     }, [isOpen]);
 
+    // Cerrar al hacer clic fuera
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -73,47 +84,13 @@ export function NotificationsDropdown() {
         }
     };
 
-    const handleNotificationClick = async (notif) => {
+    const handleNotificationClick = (notif) => {
         if (notif.type === 'message' && notif.post_id) {
             navigate(`/chat?conv=${notif.post_id}`);
-            setIsOpen(false);
         } else if (notif.post_id) {
             navigate(`/post/${notif.post_id}`);
-            setIsOpen(false);
         }
-
-        // Marcar como leída si no lo está
-        if (!notif.is_read) {
-            try {
-                await markNotificationAsRead(notif.id);
-                setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
-                setUnreadCount(prev => Math.max(0, prev - 1));
-            } catch (err) {
-                console.error('Error marking as read:', err);
-            }
-        }
-    };
-
-    const handleMarkAsRead = async (id, isRead) => {
-        if (isRead) return;
-        try {
-            await markNotificationAsRead(id);
-            setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (err) {
-            console.error('Error marking as read:', err);
-        }
-    };
-
-    const handleMarkAllAsRead = async (e) => {
-        e.stopPropagation();
-        try {
-            await markAllNotificationsAsRead();
-            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-            setUnreadCount(0);
-        } catch (err) {
-            console.error('Error marking all as read:', err);
-        }
+        setIsOpen(false);
     };
 
     const loadMore = () => {
@@ -139,9 +116,9 @@ export function NotificationsDropdown() {
 
     return (
         <div className={styles.container} ref={dropdownRef}>
-            <button 
-                className={styles.bellBtn} 
-                aria-label={t('notifications.title')} 
+            <button
+                className={styles.bellBtn}
+                aria-label={t('notifications.title')}
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <Bell size={20} />
@@ -154,23 +131,17 @@ export function NotificationsDropdown() {
                 <div className={styles.dropdown}>
                     <div className={styles.header}>
                         <h4>{t('notifications.title')}</h4>
-                        {unreadCount > 0 && (
-                            <button className={styles.markAllBtn} onClick={handleMarkAllAsRead}>
-                                <CheckCheck size={16} />
-                                {t('notifications.markAllRead')}
-                            </button>
-                        )}
                     </div>
-                    
+
                     <div className={styles.list}>
                         {notifications.length === 0 && !loading && (
                             <div className={styles.empty}>{t('notifications.noNotifications')}</div>
                         )}
-                        
+
                         {notifications.map((notif) => (
-                            <div 
-                                key={notif.id} 
-                                className={`${styles.item} ${notif.is_read ? '' : styles.unread}`}
+                            <div
+                                key={notif.id}
+                                className={styles.item}
                                 onClick={() => handleNotificationClick(notif)}
                             >
                                 <Avatar avatarUrl={notif.actor_avatar} name={notif.actor_name} size={40} />
@@ -182,7 +153,6 @@ export function NotificationsDropdown() {
                                         {new Date(notif.created_at).toLocaleDateString()} {new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                     </span>
                                 </div>
-                                {!notif.is_read && <span className={styles.unreadDot} />}
                             </div>
                         ))}
 
