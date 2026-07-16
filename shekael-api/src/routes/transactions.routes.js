@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { getBalance, sendPayment } from '../services/stellar.service.js';
-import { decrypt } from '../services/crypto.service.js';
+import { decryptForUser, decryptRecovery } from '../services/crypto.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { repairWallet } from '../services/quest.service.js';
 
@@ -36,15 +36,27 @@ router.post('/support', authMiddleware, async (req, res) => {
 
         let secretKey;
         try {
-            secretKey = decrypt(sender.stellar_secret_key_encrypted);
+            secretKey = decryptForUser(sender.id, sender.stellar_secret_key_encrypted);
         } catch (decryptErr) {
-            console.error('Decrypt error para usuario', req.user.id, ':', decryptErr.message);
-            // NUNCA reemplazar la wallet automaticamente — eso pierde fondos.
-            // La unica causa es que ENCRYPTION_KEY cambio despues de crear la cuenta.
-            return res.status(500).json({
-                message: 'Error de seguridad: no se puede acceder a tu billetera. Contacta a soporte para restaurar tu clave de encriptación.',
-                code: 'DECRYPT_FAILED'
-            });
+            console.error('Decrypt per-user falló para', sender.id, ':', decryptErr.message);
+            // Intentar recovery con master key
+            if (sender.recovery_encrypted) {
+                try {
+                    secretKey = decryptRecovery(sender.recovery_encrypted);
+                    console.log('Recovery exitoso para', sender.id);
+                } catch (recoveryErr) {
+                    console.error('Recovery también falló:', recoveryErr.message);
+                    return res.status(500).json({
+                        message: 'No se puede acceder a tu billetera. Contacta a soporte.',
+                        code: 'DECRYPT_FAILED'
+                    });
+                }
+            } else {
+                return res.status(500).json({
+                    message: 'No se puede acceder a tu billetera. Contacta a soporte.',
+                    code: 'DECRYPT_FAILED'
+                });
+            }
         }
 
         // Enviar pago en Stellar Testnet

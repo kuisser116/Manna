@@ -10,7 +10,7 @@ export async function recordConsent(userId, interests = [], ageRange = null, reg
 
     let consentTx = null;
     try {
-        const { data: user } = await supabase.from('users').select('stellar_public_key, stellar_secret_key_encrypted').eq('id', userId).single();
+        const { data: user } = await supabase.from('users').select('id, stellar_public_key, stellar_secret_key_encrypted, recovery_encrypted').eq('id', userId).single();
         if (user) {
             const txResult = await stellarService.sendConsentMemo(user, `Shekael_CONSENT_${CONSENT_VERSION}`);
             consentTx = txResult?.hash || null;
@@ -34,7 +34,7 @@ export async function recordConsent(userId, interests = [], ageRange = null, reg
 export async function revokeConsent(userId) {
     const supabase = getDB();
     try {
-        const { data: user } = await supabase.from('users').select('stellar_public_key, stellar_secret_key_encrypted').eq('id', userId).single();
+        const { data: user } = await supabase.from('users').select('id, stellar_public_key, stellar_secret_key_encrypted, recovery_encrypted').eq('id', userId).single();
         if (user) {
             await stellarService.sendConsentMemo(user, `Shekael_REVOKE_${CONSENT_VERSION}`);
         }

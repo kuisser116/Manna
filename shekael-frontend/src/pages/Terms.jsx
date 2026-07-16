@@ -238,7 +238,38 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>6. Libertad de Expresión y Moderación</h2>
+            <h2>6. Seguridad de tu Billetera Stellar</h2>
+            <p>
+              Shekael utiliza un sistema de <strong>encriptación por-usuario</strong> para proteger
+              las claves privadas de tu billetera Stellar. Cada wallet se encripta con un identificador
+              único asociado a tu cuenta, no con una llave maestra compartida.
+            </p>
+            <p>
+              Adicionalmente, se genera un <strong>backup de recuperación</strong> encriptado con una
+              llave maestra interna. Este backup solo se utiliza en casos de emergencia o migración
+              de base de datos, y nunca está disponible para terceros.
+            </p>
+            <p>
+              <strong>Importante:</strong> Aunque Shekael toma medidas para proteger tus claves,
+              <strong>no podemos garantizar la recuperación de wallets</strong> si ocurre un error
+              grave en el sistema de encriptación. Eres responsable de mantener tu cuenta segura
+              y de no compartir tu información de inicio de sesión.
+            </p>
+            <p className={styles.highlight}>
+              En caso de pérdida de acceso a tu billetera por causas imputables a Shekael,
+              haremos todo lo posible por restaurarla, pero <strong>no nos hacemos responsables
+              por fondos perdidos debido a errores del sistema</strong>, cambios en las claves de
+              encriptación o fallos técnicos fuera de nuestro control.
+            </p>
+            <p>
+              La billetera Stellar opera actualmente en <strong>testnet</strong>. Los MXNe obtenidos
+              no tienen valor real y son exclusivamente para fines de prueba y desarrollo.
+              Al migrar a mainnet, se implementarán medidas adicionales de seguridad.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2>7. Libertad de Expresión y Moderación</h2>
             <p>
               Shekael cree en la <strong>libertad de expresión como principio fundamental</strong>. 
               No censuramos temas sensibles, controversiales o incómodos. Creemos que la conciencia 
@@ -278,7 +309,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>7. Propiedad Intelectual</h2>
+            <h2>8. Propiedad Intelectual</h2>
             <p>
               El usuario conserva todos los derechos de propiedad intelectual sobre el contenido que publique 
               en Shekael. Al publicar contenido, otorgas a Shekael una licencia mundial, no exclusiva, 
@@ -292,7 +323,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>8. Privacidad y Datos</h2>
+            <h2>9. Privacidad y Datos</h2>
             <p>
               Shekael recopila y procesa tu información de acuerdo con nuestra Política de Privacidad. 
               Al usar la Plataforma, consientes la recopilación y uso de tu información según lo descrito 
@@ -307,7 +338,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>9. Riesgos Asociados a Tokens Digitales</h2>
+            <h2>10. Riesgos Asociados a Tokens Digitales</h2>
             <p className={styles.highlight}>
               Al usar MXNe, reconoces que los tokens digitales y las redes blockchain conllevan 
               riesgos inherentes. Shekael <strong>no garantiza</strong> la estabilidad, disponibilidad 
@@ -331,7 +362,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>10. Limitación de Responsabilidad</h2>
+            <h2>11. Limitación de Responsabilidad</h2>
             <p className={styles.highlight}>
               Shekael NO será responsable por:
             </p>
@@ -350,7 +381,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>11. Terminación</h2>
+            <h2>12. Terminación</h2>
             <p>
               Puedes dejar de usar Shekael en cualquier momento. Shekael puede suspender o terminar tu acceso 
               si violas estos Términos. Al terminar tu relación con Shekael:
@@ -363,7 +394,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>12. Ley Aplicable y Jurisdicción</h2>
+            <h2>13. Ley Aplicable y Jurisdicción</h2>
             <p>
               Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia 
  relacionada con estos Términos será sometida a la jurisdicción de los tribunales competentes de la 
@@ -372,7 +403,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>13. Contacto</h2>
+            <h2>14. Contacto</h2>
             <p>
               Para preguntas, aclaraciones o notificaciones relacionadas con estos Términos, puedes 
               contactarnos a través de los medios dispuestos en la Plataforma.

@@ -291,9 +291,9 @@ export async function sendConsentMemo(user, memoText) {
     }
 
     try {
-        // Desencriptar clave (reutiliza la misma lógica que el resto del backend)
-        const { decryptSecret } = await import('./crypto.service.js');
-        const secretKey = decryptSecret(user.stellar_secret_key_encrypted);
+        // Desencriptar clave per-user con userId
+        const { decryptForUser } = await import('./crypto.service.js');
+        const secretKey = decryptForUser(user.id, user.stellar_secret_key_encrypted);
 
         const sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
         const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());

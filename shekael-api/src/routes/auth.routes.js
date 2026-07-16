@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import getDB from '../database/db.js';
 import { createWallet, fundWithFriendbot, ensureTrustline } from '../services/stellar.service.js';
-import { encrypt } from '../services/crypto.service.js';
+import { encryptForUser, encryptRecovery } from '../services/crypto.service.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { strictLimiter } from '../middleware/rateLimiter.js';
 import { repairWallet } from '../services/quest.service.js';
@@ -144,7 +144,9 @@ router.post('/google', strictLimiter, async (req, res) => {
         if (!user) {
             const keypair = createWallet();
             const secretKey = keypair.secret();
-            const encSecret = encrypt(secretKey);
+             const encSecret = encryptForUser(userId, secretKey);
+            const recoveryEnc = encryptRecovery(secretKey);
+
             const userId = uuidv4();
 
             // 1. El usuario se registra solo en Supabase.
@@ -163,6 +165,7 @@ router.post('/google', strictLimiter, async (req, res) => {
                     display_name: displayName,
                     stellar_public_key: keypair.publicKey(),
                     stellar_secret_key_encrypted: encSecret,
+                    recovery_encrypted: recoveryEnc,
                     target_watch_seconds: targetWatchSeconds,
                     target_likes: targetLikes,
                     target_follows: targetFollows

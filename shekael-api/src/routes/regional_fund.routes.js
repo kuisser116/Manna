@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { sendPayment, getBalance, ensureTrustline } from '../services/stellar.service.js';
-import { decrypt } from '../services/crypto.service.js';
+import { decryptForUser } from '../services/crypto.service.js';
 
 const router = Router({ strict: false });
 
@@ -177,7 +177,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         const userAmount = (parseFloat(amount) * discountFactor).toString();
 
         // 3. Procesar pago en Stellar (Desde el usuario)
-        const secretKey = decrypt(sender.stellar_secret_key_encrypted);
+        const secretKey = decryptForUser(sender.id, sender.stellar_secret_key_encrypted);
         
         // Asegurar trustline para el activo
         await ensureTrustline(secretKey);
