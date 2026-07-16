@@ -35,9 +35,9 @@ async function verifyRecaptcha(token) {
 }
 
 // ── Configuración de Términos y Condiciones ──
-const TERMS_VERSION = 'v1.2';
+const TERMS_VERSION = 'v1.3';
 const TERMS_CONTENT_HASH = crypto.createHash('sha256').update(`
-Términos y Condiciones de Shekael v1.2
+Términos y Condiciones de Shekael v1.3
 Última actualización: 12 de Julio de 2026
 
 1. NATURALEZA DE LA PLATAFORMA

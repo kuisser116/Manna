@@ -31,7 +31,7 @@ export default function Terms() {
       })
       .catch(err => {
         console.error('[Terms] error fetching version:', err);
-        setTermsVersion('v1.2'); // fallback a hardcode
+        setTermsVersion('v1.3'); // fallback a hardcode
         setLastUpdated('12 de Julio de 2026');
       });
   }, []);
@@ -134,7 +134,7 @@ export default function Terms() {
             </Link>
           )}
           <h1 className={styles.title}>Términos y Condiciones de Shekael</h1>
-          <p className={styles.lastUpdated}>Versión {termsVersion || 'v1.2'} · Última actualización: {lastUpdated || '12 de Julio de 2026'}</p>
+          <p className={styles.lastUpdated}>Versión {termsVersion || 'v1.3'} · Última actualización: {lastUpdated || '15 de Julio de 2026'}</p>
         </motion.div>
 
         <motion.div
@@ -269,7 +269,74 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>7. Libertad de Expresión y Moderación</h2>
+            <h2>7. Depósitos, Retiros y Servicios de Terceros</h2>
+            <p>
+              Shekael facilita la experiencia de usuario dentro de su Plataforma, pero <strong>no opera,
+              no controla y no se hace responsable</strong> por servicios externos que permitan
+              la entrada o salida de fondos del ecosistema MXNe.
+            </p>
+            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Depósitos desde Exchanges</h3>
+            <p>
+              Los usuarios pueden adquirir MXNe a través de exchanges externos (Bitso, Binance,
+              KuCoin, etc.) y depositarlos en su billetera Stellar dentro de Shekael. Shekael:
+            </p>
+            <ul>
+              <li><strong>No opera ningún exchange</strong> ni casa de cambio.</li>
+              <li><strong>No recibe, custodia ni procesa</strong> depósitos en moneda fiduciaria (MXN, USD).</li>
+              <li><strong>No garantiza la disponibilidad, precio o liquidez</strong> de MXNe en exchanges externos.</li>
+              <li>La conversión de MXN a MXNe ocurre <strong>fuera de Shekael</strong>, en plataformas de terceros.</li>
+            </ul>
+            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Retiros a Oxxo / MoneyGram</h3>
+            <p>
+              Shekael puede integrar anchors de la red Stellar (como MoneyGram) para permitir
+              la conversión de MXNe a moneda fiduciaria y su retiro en efectivo. Al usar este servicio:
+            </p>
+            <ul>
+              <li>Shekael <strong>solo actúa como interfaz técnica</strong> entre el usuario y el anchor.</li>
+              <li>El anchor es un <strong>tercero independiente</strong> con sus propios términos y condiciones.</li>
+              <li>Shekael <strong>no garantiza</strong> que el anchor procese la transacción, ni se hace
+              responsable por retrasos, rechazos o pérdidas ocurridas en el anchor.</li>
+              <li>Cualquier comisión, límite o restricción del anchor es responsabilidad exclusiva del anchor.</li>
+              <li>El usuario acepta que Shekael <strong>no maneja, custodia ni transfiere dinero fiduciario</strong>
+              en ningún momento del proceso.</li>
+            </ul>
+            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Swap XLM ↔ MXNe</h3>
+            <p>
+              El intercambio (swap) entre XLM y MXNe ocurre en el <strong>DEX descentralizado de la red
+              Stellar</strong> (Stellar Decentralized Exchange). Shekael:
+            </p>
+            <ul>
+              <li><strong>No opera ni controla</strong> el DEX de Stellar.</li>
+              <li><strong>No garantiza</strong> la ejecución exitosa del swap, el tipo de cambio,
+              ni la existencia de liquidez en el DEX.</li>
+              <li>El swap es una transacción <strong>directa entre el usuario y la red Stellar</strong>,
+              sin intervención de Shekael.</li>
+              <li>Shekael no cobra comisiones adicionales por el swap; las únicas comisiones son las
+de la red Stellar y el spread del DEX.</li>
+            </ul>
+            <h3 style="font-size:0.95rem; margin-top:1rem; color:var(--color-text);">Fondo Regional (Comisión del 10%)</h3>
+            <p>
+              Cada transacción de apoyo (support) dentro de la Plataforma genera una comisión
+              automática del <strong>10% del monto</strong>, que se deposita en el Fondo Regional.
+              Al realizar una transacción en Shekael, aceptas esta comisión. El Fondo Regional:
+            </p>
+            <ul>
+              <li>Se utiliza para <strong>beneficios comunitarios</strong> determinados unilateralmente por Shekael.</li>
+              <li><strong>No es un fondo de inversión, seguro ni garantía financiera.</strong></li>
+              <li>Shekael puede modificar el porcentaje de comisión en cualquier momento,
+              notificando a los usuarios con anticipación.</li>
+            </ul>
+            <p className={styles.highlight}>
+              Al usar las funciones de depósito, retiro, swap o apoyo dentro de Shekael,
+              reconoces que todas las transacciones con valor económico real ocurren en la
+              <strong>red Stellar o en plataformas de terceros</strong>, y que Shekael
+              <strong>no es responsable por pérdidas, retrasos o fallas</strong> en dichas
+              redes o servicios externos.
+            </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2>8. Libertad de Expresión y Moderación</h2>
             <p>
               Shekael cree en la <strong>libertad de expresión como principio fundamental</strong>. 
               No censuramos temas sensibles, controversiales o incómodos. Creemos que la conciencia 
@@ -309,7 +376,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>8. Propiedad Intelectual</h2>
+            <h2>9. Propiedad Intelectual</h2>
             <p>
               El usuario conserva todos los derechos de propiedad intelectual sobre el contenido que publique 
               en Shekael. Al publicar contenido, otorgas a Shekael una licencia mundial, no exclusiva, 
@@ -323,7 +390,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>9. Privacidad y Datos</h2>
+            <h2>10. Privacidad y Datos</h2>
             <p>
               Shekael recopila y procesa tu información de acuerdo con nuestra Política de Privacidad. 
               Al usar la Plataforma, consientes la recopilación y uso de tu información según lo descrito 
@@ -338,7 +405,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>10. Riesgos Asociados a Tokens Digitales</h2>
+            <h2>11. Riesgos Asociados a Tokens Digitales</h2>
             <p className={styles.highlight}>
               Al usar MXNe, reconoces que los tokens digitales y las redes blockchain conllevan 
               riesgos inherentes. Shekael <strong>no garantiza</strong> la estabilidad, disponibilidad 
@@ -362,7 +429,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>11. Limitación de Responsabilidad</h2>
+            <h2>12. Limitación de Responsabilidad</h2>
             <p className={styles.highlight}>
               Shekael NO será responsable por:
             </p>
@@ -381,7 +448,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>12. Terminación</h2>
+            <h2>13. Terminación</h2>
             <p>
               Puedes dejar de usar Shekael en cualquier momento. Shekael puede suspender o terminar tu acceso 
               si violas estos Términos. Al terminar tu relación con Shekael:
@@ -394,7 +461,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>13. Ley Aplicable y Jurisdicción</h2>
+            <h2>14. Ley Aplicable y Jurisdicción</h2>
             <p>
               Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia 
  relacionada con estos Términos será sometida a la jurisdicción de los tribunales competentes de la 
@@ -403,7 +470,7 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>14. Contacto</h2>
+            <h2>15. Contacto</h2>
             <p>
               Para preguntas, aclaraciones o notificaciones relacionadas con estos Términos, puedes 
               contactarnos a través de los medios dispuestos en la Plataforma.

@@ -47,7 +47,7 @@ function LandingInner() {
     fetch(apiUrl + '/auth/terms/current')
       .then(r => r.json())
       .then(data => setTermsVersion(data.version))
-      .catch(() => setTermsVersion('v1.2')); // fallback
+      .catch(() => setTermsVersion('v1.3')); // fallback
   }, []);
   const recaptchaLoaded = useRef(false);
 
