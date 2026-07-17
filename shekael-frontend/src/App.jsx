@@ -19,6 +19,7 @@ import ControlCenter from './pages/ControlCenter/ControlCenter';
 import Studio from './pages/Studio';
 import Search from './pages/Search/Search';
 import Chat from './pages/Chat/Chat';
+import BusinessProfile from './components/Business/BusinessProfile';
 
 
 
@@ -61,6 +62,7 @@ function AppLayout({ children }) {
   const isTheaterMode = videoMode === 'theater';
   const isProfileRoute = location.pathname.startsWith('/profile');
   const isChatRoute = location.pathname.startsWith('/chat');
+  const isBusinessRoute = location.pathname.startsWith('/business');
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -137,7 +139,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isProfileRoute && !isChatRoute && <WalletWidget variant="floating" />}
+        {!isProfileRoute && !isChatRoute && !isBusinessRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
@@ -241,6 +243,11 @@ function App() {
         <Route path="/admin/control-center" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><ControlCenter /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/business/:id" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><BusinessProfile /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/search" element={

@@ -1,0 +1,116 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.card {
+  background: var(--color-surface, #1a1a2e);
+  border-radius: 16px;
+  overflow: hidden;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  animation: popIn 0.25s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.closeBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: #fff;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.imageSection {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--color-surface-2, #2a2a3e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image { width: 100%; height: 100%; object-fit: cover; }
+
+.imagePlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-dim, #555);
+}
+
+.info {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 0;
+  color: var(--color-text, #fff);
+}
+
+.price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary, #e11d48);
+  white-space: nowrap;
+}
+
+.category {
+  font-size: 11px;
+  background: var(--color-surface-3, #3a3a4e);
+  color: var(--color-text-secondary, #aaa);
+  padding: 2px 10px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary, #bbb);
+  margin: 0;
+}
+
+.contactBtn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-primary, #e11d48);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 4px;
+}
+
+.contactBtn:hover { background: var(--color-primary-dark, #9f1239); }

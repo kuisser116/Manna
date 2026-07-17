@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Bell, Menu, ArrowLeft, QrCode, Palette } from "lucide-react";
+import { Search, Bell, Menu, ArrowLeft, QrCode, Palette, Store } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
 import { searchGlobal } from "../../api/search.api";
 import Avatar from "../Avatar/Avatar";
 import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdown";
+import BusinessRegistrationModal from "../Business/BusinessRegistrationModal";
 
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
@@ -27,6 +28,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showBusinessForm, setShowBusinessForm] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const inputRef = useRef(null);
@@ -81,6 +83,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   };
 
   return (
+    <>
     <header className={styles.topbar}>
       <div className={styles.topbarMain}>
         <div className={styles.left}>
@@ -222,6 +225,15 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                 >
                   Mi perfil
                 </Link>
+                <button
+                  className={styles.userMenuItem}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    setShowBusinessForm(true);
+                  }}
+                >
+                  <Store size={16} /> Registrar comercio
+                </button>
                 {user?.is_admin && (
                   <Link
                     to="/admin/control-center"
@@ -262,6 +274,15 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
         </div>
       )}
     </header>
+      {showBusinessForm && (
+        <BusinessRegistrationModal
+          onClose={() => setShowBusinessForm(false)}
+          onCreated={(biz) => {
+            navigate(`/business/${biz.id}`);
+          }}
+        />
+      )}
+    </>
   );
 }
 

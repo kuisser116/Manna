@@ -1,0 +1,196 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display, 'Caesar Dressing');
+  font-size: 20px;
+  margin: 0;
+  color: var(--color-text, #fff);
+}
+
+/* Stat Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.statCard {
+  background: var(--color-surface-2, #2a2a3e);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 3px solid var(--card-accent, #e11d48);
+}
+
+.cardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card-accent, #e11d48) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--card-accent, #e11d48);
+  flex-shrink: 0;
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cardLabel {
+  font-size: 11px;
+  color: var(--color-text-dim, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cardValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text, #fff);
+  line-height: 1;
+}
+
+.cardChange {
+  font-size: 12px;
+  color: var(--color-success, #10b981);
+  font-weight: 600;
+}
+
+.cardExtra {
+  font-size: 12px;
+  color: var(--color-text-dim, #666);
+}
+
+/* Charts */
+.chartCard {
+  background: var(--color-surface-2, #2a2a3e);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.chartTitle {
+  font-size: 15px;
+  margin: 0 0 14px;
+  color: var(--color-text, #fff);
+}
+
+/* Bar Chart */
+.barChart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  height: 160px;
+}
+
+.barCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.barValue {
+  font-size: 10px;
+  color: var(--color-text-dim, #666);
+}
+
+.barTrack {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: height 0.3s;
+}
+
+.barLabel {
+  font-size: 10px;
+  color: var(--color-text-secondary, #999);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Line Chart */
+.lineChart { }
+.lineSvg { width: 100%; height: auto; }
+.linePath { }
+.lineDot { stroke: var(--color-surface-2); stroke-width: 2; }
+
+.lineLabels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  margin-top: 4px;
+}
+
+.lineLabel {
+  font-size: 10px;
+  color: var(--color-text-dim, #666);
+}
+
+/* Pie Chart (horizontal bars) */
+.pieChart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pieRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pieBarTrack {
+  flex: 1;
+  height: 24px;
+  background: var(--color-surface-3, #3a3a4e);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pieSegment {
+  height: 100%;
+  border-radius: 6px;
+  min-width: 4px;
+  transition: width 0.4s;
+}
+
+.pieLabel {
+  font-size: 13px;
+  color: var(--color-text-secondary, #aaa);
+  min-width: 70px;
+}
+
+.pieValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text, #fff);
+  min-width: 30px;
+  text-align: right;
+}
