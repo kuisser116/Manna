@@ -45,8 +45,14 @@ router.post('/pay', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { businessId, amount } = req.body;
 
-    if (!businessId || !amount || amount <= 0) {
-      return res.status(400).json({ message: 'Comercio y monto requeridos' });
+    const parsedAmount = parseFloat(amount);
+    if (!businessId || isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({ message: 'Monto inválido' });
+    }
+
+    // Límite por transacción
+    if (parsedAmount > 100) {
+      return res.status(400).json({ message: 'Monto máximo por pago: $100 USD' });
     }
 
     // Obtener datos del comercio
@@ -74,10 +80,9 @@ router.post('/pay', authMiddleware, async (req, res) => {
     if (payerError || !payer) return res.status(404).json({ message: 'Usuario no encontrado' });
     if (!payer.stellar_public_key) return res.status(400).json({ message: 'No tienes billetera Stellar' });
 
-    // Calcular descuento: 5%, tope $50 MXN
-    const parsedAmount = parseFloat(amount);
+    // Calcular descuento: 5%, tope $2.70 USDC (~$50 MXN)
     let discount = parsedAmount * 0.05;
-    if (discount > 50) discount = 50;
+    if (discount > 2.70) discount = 2.70;
     discount = Math.round(discount * 100) / 100;
 
     const finalAmount = parsedAmount - discount;
@@ -138,6 +143,34 @@ router.post('/pay', authMiddleware, async (req, res) => {
         metadata: { paymentId: payment.id, businessName: biz.name },
       });
 
+      // ⭐ First-purchase bonus: $1 USDC al usuario por su primera compra
+      let bonusGiven = false;
+      try {
+        const { data: prevPayments } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('from_user_id', userId)
+          .eq('status', 'completed')
+          .limit(2);
+
+        // Si este es su primer pago (solo 1 = el que acaba de hacer)
+        if ((prevPayments?.length || 0) <= 1) {
+          const bonusWalletSecret = process.env.BONUS_WALLET_SECRET;
+          if (bonusWalletSecret) {
+            await sendPayment({
+              fromSecretKey: bonusWalletSecret,
+              toPublicKey: payer.stellar_public_key,
+              amount: '1',
+              memo: 'Shekael:bienvenida',
+            });
+            bonusGiven = true;
+          }
+        }
+      } catch (bonusErr) {
+        console.error('Error al dar bono de primera compra:', bonusErr.message);
+        // No bloqueamos el pago si el bono falla
+      }
+
       res.json({
         status: 'completed',
         paymentId: payment.id,
@@ -145,6 +178,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         originalAmount: parsedAmount,
         discountApplied: discount,
         stellarTxHash: txHash,
+        bonusGiven,
         message: discount > 0
           ? `Pago exitoso. Descuento del 5% aplicado: ahorraste USDC ${discount.toFixed(2)}`
           : 'Pago exitoso',
@@ -209,8 +243,14 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { businessId, amount, bankAccountInfo } = req.body;
 
-    if (!businessId || !amount || !bankAccountInfo) {
-      return res.status(400).json({ message: 'Comercio, monto y datos bancarios requeridos' });
+    const parsedAmount = parseFloat(amount);
+    if (!businessId || isNaN(parsedAmount) || parsedAmount <= 0 || !bankAccountInfo) {
+      return res.status(400).json({ message: 'Monto inválido o datos bancarios incompletos' });
+    }
+
+    // Límite por retiro
+    if (parsedAmount > 500) {
+      return res.status(400).json({ message: 'Monto máximo por retiro: $500 USD' });
     }
 
     // Verificar propiedad del comercio
@@ -229,7 +269,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
 
     const balance = await getBalance(biz.stellar_public_key);
     const usdcBalance = parseFloat(balance.usdc || '0');
-    if (usdcBalance < parseFloat(amount)) {
+    if (usdcBalance < parsedAmount) {
       return res.status(400).json({ message: `Saldo insuficiente. USDC disponible: ${usdcBalance.toFixed(2)}` });
     }
 
@@ -238,8 +278,8 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
       .from('withdrawals')
       .insert({
         business_id: businessId,
-        amount_usdc: parseFloat(amount),
-        amount_mxn: parseFloat(amount), // tasa 1:1 USDC/MXN temporal
+        amount_usdc: parsedAmount,
+        amount_mxn: parsedAmount, // tasa 1:1 USDC/MXN temporal
         bank_account_info: bankAccountInfo,
         status: 'pending',
       })
