@@ -60,7 +60,7 @@ export default function Explorar() {
       MOCK_BUSINESSES.forEach((biz) => {
         const el = document.createElement('div');
         el.className = styles.marker;
-        el.innerHTML = `<div class="${styles.markerInner}"><span>${biz.name.charAt(0)}</span></div>`;
+        el.innerHTML = `<div class="${styles.markerLabel}">${biz.name}</div><div class="${styles.markerDot}"></div>`;
         el.title = biz.name;
 
         const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(`
@@ -70,7 +70,7 @@ export default function Explorar() {
           </div>
         `);
 
-        const marker = new mapboxgl.Marker({ element: el })
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([biz.location.lng, biz.location.lat])
           .setPopup(popup)
           .addTo(map);
