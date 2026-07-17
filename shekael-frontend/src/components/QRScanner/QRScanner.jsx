@@ -19,6 +19,28 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
 
     const { addToast } = useStore();
 
+    // Buscar info del comercio desde un QR escaneado
+    const fetchBusinessInfo = async (bizId, pubKey, qrAmount, setSD, setAmt, scanner, setSt) => {
+        try {
+            const resp = await fetch(`/api/businesses/${bizId}`);
+            const biz = await resp.json();
+            setSD({
+                publicKey: pubKey,
+                businessName: biz.name || 'Comercio',
+                isVerified: biz.is_active || false,
+                businessId: bizId,
+            });
+            if (qrAmount) setAmt(qrAmount);
+            await scanner.stop().catch(() => {});
+            setSt('confirm');
+        } catch {
+            setSD({ publicKey: pubKey, businessName: 'Comercio Shekael', isVerified: false, businessId: bizId });
+            if (qrAmount) setAmt(qrAmount);
+            await scanner.stop().catch(() => {});
+            setSt('confirm');
+        }
+    };
+
     // Iniciar el escáner con control total
     useEffect(() => {
         if (isOpen && !defaultPublicKey && step === 'scan') {
@@ -49,7 +71,16 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                                 aspectRatio: 1.0
                             },
                             (decodedText) => {
-                                if (decodedText.startsWith('G') && decodedText.length === 56) {
+                                // Formato: shekael://pay/{bizId}?dest={pubkey}&amount=X
+                                if (decodedText.startsWith('shekael://')) {
+                                    try {
+                                        const url = new URL(decodedText);
+                                        const bizId = url.pathname.split('/').pop();
+                                        const pubKey = url.searchParams.get('dest');
+                                        const qrAmount = url.searchParams.get('amount');
+                                        fetchBusinessInfo(bizId, pubKey, qrAmount, setScanData, setAmount, html5QrCode, setStep);
+                                    } catch {}
+                                } else if (decodedText.startsWith('G') && decodedText.length === 56) {
                                     setScanData({
                                         publicKey: decodedText,
                                         businessName: 'Usuario Escaneado',
@@ -105,7 +136,15 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     aspectRatio: 1.0
                 },
                 (decodedText) => {
-                    if (decodedText.startsWith('G') && decodedText.length === 56) {
+                    if (decodedText.startsWith('shekael://')) {
+                        try {
+                            const url = new URL(decodedText);
+                            const bizId = url.pathname.split('/').pop();
+                            const pubKey = url.searchParams.get('dest');
+                            const qrAmount = url.searchParams.get('amount');
+                            fetchBusinessInfo(bizId, pubKey, qrAmount, setScanData, setAmount, scannerInstance, setStep);
+                        } catch {}
+                    } else if (decodedText.startsWith('G') && decodedText.length === 56) {
                         setScanData({
                             publicKey: decodedText,
                             businessName: 'Usuario Escaneado',

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
+import * as StellarSdk from '@stellar/stellar-sdk';
 import { sendPayment, getBalance } from '../services/stellar.service.js';
 import { decryptWithFallback } from '../services/crypto.service.js';
 import { createNotification } from '../services/notifications.service.js';
@@ -8,6 +9,7 @@ import { createNotification } from '../services/notifications.service.js';
 const router = Router({ strict: false });
 
 // ─── Generar QR de pago para un comercio ──────────────────
+// GET /business/:businessId/qr?amount=10.00 — amount es opcional, lo pone el comercio
 router.get('/business/:businessId/qr', authMiddleware, async (req, res) => {
   try {
     const supabase = getDB();
@@ -22,8 +24,11 @@ router.get('/business/:businessId/qr', authMiddleware, async (req, res) => {
     if (error || !biz) return res.status(404).json({ message: 'Comercio no encontrado' });
     if (!biz.stellar_public_key) return res.status(400).json({ message: 'El comercio no tiene llave Stellar configurada' });
 
-    // El QR contiene: shekael://pay/{bizId}?dest={stellarKey}
-    const qrData = `shekael://pay/${bizId}?dest=${biz.stellar_public_key}`;
+    // El QR contiene el monto si el comercio lo especifica (?amount=X)
+    const amount = req.query.amount ? parseFloat(req.query.amount) : null;
+    const qrData = amount
+      ? `shekael://pay/${bizId}?dest=${biz.stellar_public_key}&amount=${amount}`
+      : `shekael://pay/${bizId}?dest=${biz.stellar_public_key}`;
 
     res.json({
       businessId: biz.id,
@@ -121,17 +126,39 @@ router.post('/pay', authMiddleware, async (req, res) => {
 
     // Enviar pago USDC vía Stellar
     try {
-      const txHash = await sendPayment({
+      // 1. Cliente paga el monto con descuento
+      await sendPayment({
         fromSecretKey: secretKey,
         toPublicKey: biz.stellar_public_key,
         amount: String(finalAmount),
         memo: `Shekael:${payment.id.slice(0, 20)}`,
       });
 
+      // 2. Kuki paga el descuento al comercio (5% desde la wallet maestra)
+      let discountTxHash = null;
+      const bonusWalletSecret = process.env.MANNA_DEV_WALLET_SECRET;
+      if (discount > 0 && bonusWalletSecret) {
+        try {
+          discountTxHash = await sendPayment({
+            fromSecretKey: bonusWalletSecret,
+            toPublicKey: biz.stellar_public_key,
+            amount: String(discount.toFixed(7)),
+            memo: `Shekael:discount:${payment.id.slice(0, 16)}`,
+          });
+        } catch (bonusErr) {
+          console.error('Error al enviar descuento:', bonusErr.message);
+          // No bloqueamos si el descuento falla
+        }
+      }
+
       // Marcar como completado
       await supabase
         .from('payments')
-        .update({ status: 'completed', stellar_tx_hash: txHash, completed_at: new Date().toISOString() })
+        .update({
+          status: 'completed',
+          stellar_tx_hash: discountTxHash || 'direct',
+          completed_at: new Date().toISOString()
+        })
         .eq('id', payment.id);
 
       // Notificar al comercio (owner)
@@ -212,11 +239,18 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
   try {
     const supabase = getDB();
     const userId = req.user.id;
-    const { businessId, amount, bankAccountInfo } = req.body;
+    const { businessId, amount, destinationAddress } = req.body;
 
     const parsedAmount = parseFloat(amount);
-    if (!businessId || isNaN(parsedAmount) || parsedAmount <= 0 || !bankAccountInfo) {
-      return res.status(400).json({ message: 'Monto inválido o datos bancarios incompletos' });
+    if (!businessId || isNaN(parsedAmount) || parsedAmount <= 0 || !destinationAddress) {
+      return res.status(400).json({ message: 'Monto inválido o dirección de Bitso requerida' });
+    }
+
+    // Validar dirección Stellar
+    try {
+      StellarSdk.Keypair.fromPublicKey(destinationAddress);
+    } catch {
+      return res.status(400).json({ message: 'Dirección Stellar inválida. Usa la dirección de depósito USDC de tu Bitso.' });
     }
 
     // Límite por retiro
@@ -235,51 +269,51 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
     if (bizError || !biz) return res.status(404).json({ message: 'Comercio no encontrado' });
     if (biz.owner_id !== userId) return res.status(403).json({ message: 'No eres el dueño de este comercio' });
 
-    // Verificar que el comercio tenga saldo suficiente
     if (!biz.stellar_public_key) return res.status(400).json({ message: 'El comercio no tiene billetera Stellar' });
 
+    // Verificar saldo
     const balance = await getBalance(biz.stellar_public_key);
     const usdcBalance = parseFloat(balance.usdc || '0');
     if (usdcBalance < parsedAmount) {
       return res.status(400).json({ message: `Saldo insuficiente. USDC disponible: ${usdcBalance.toFixed(2)}` });
     }
 
-    // Registrar solicitud de retiro
-    const { data: withdrawal, error: wdError } = await supabase
-      .from('withdrawals')
-      .insert({
-        business_id: businessId,
-        amount_usdc: parsedAmount,
-        amount_mxn: parsedAmount, // tasa 1:1 USDC/MXN temporal
-        bank_account_info: bankAccountInfo,
-        status: 'pending',
-      })
-      .select()
+    // Desencriptar clave y enviar directo a Bitso
+    const { data: owner } = await supabase
+      .from('users')
+      .select('stellar_secret_key_encrypted')
+      .eq('id', userId)
       .single();
 
-    if (wdError) throw wdError;
+    if (!owner?.stellar_secret_key_encrypted) {
+      return res.status(400).json({ message: 'No tienes clave secreta configurada' });
+    }
 
-    // Notificar al admin (para procesar manualmente o automático vía Bitso)
-    await createNotification({
-      userId: userId,
-      type: 'withdrawal_requested',
-      title: 'Solicitud de retiro',
-      message: `Has solicitado retirar USDC ${amount}. El equipo procesará tu solicitud.`,
-      metadata: { withdrawalId: withdrawal.id, businessName: biz.name },
+    const secretKey = decryptWithFallback(userId, biz.stellar_public_key, owner.stellar_secret_key_encrypted);
+    const txHash = await sendPayment({
+      fromSecretKey: secretKey,
+      toPublicKey: destinationAddress,
+      amount: String(parsedAmount),
+      memo: `Shekael:wd:${businessId.slice(0, 10)}`,
     });
 
-    res.status(201).json({
-      message: 'Solicitud de retiro registrada. El equipo procesará tu solicitud.',
-      withdrawal: {
-        id: withdrawal.id,
-        amount: parseFloat(amount),
-        status: 'pending',
-        createdAt: withdrawal.created_at,
-      },
+    // Registrar retiro completado
+    await supabase.from('withdrawals').insert({
+      business_id: businessId,
+      amount_usdc: parsedAmount,
+      destination_address: destinationAddress,
+      stellar_tx_hash: txHash,
+      status: 'completed',
+    });
+
+    res.json({
+      success: true,
+      txHash,
+      message: `USDC ${parsedAmount.toFixed(2)} enviado a tu Bitso. Llega en ~5 segundos.`,
     });
   } catch (err) {
     console.error('Withdrawal error:', err);
-    res.status(500).json({ message: err.message || 'Error al solicitar retiro' });
+    res.status(500).json({ message: err.message || 'Error al enviar a Bitso' });
   }
 });
 
