@@ -5,7 +5,7 @@ import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 import { Type, Image, Upload, X, Video } from 'lucide-react';
 import useFeed from '../hooks/useFeed';
 import useStore from '../store';
-import { useImageCompressor } from '../hooks/useImageCompressor';
+
 import VideoUploadWizard from '../components/VideoUploadWizard/VideoUploadWizard';
 import { checkContent, uploadPost } from '../api/posts.api';
 import styles from '../styles/pages/CreatePost.module.css';
@@ -14,7 +14,7 @@ const API_URL = (import.meta.env.VITE_API_URL || location.origin);
 
 const POST_TYPES = [
   { value: 'micro-text', label: 'Texto', icon: Type, desc: 'Un pensamiento (max 280 caracteres)' },
-  { value: 'image', label: 'Imagen', icon: Image, desc: 'Subida a IPFS — permanente' },
+  { value: 'image', label: 'Imagen', icon: Image, desc: 'Subida directa — HD permanente' },
   { value: 'video', label: 'Video', icon: Video, desc: 'Streaming Web3 via Livepeer' },
 ];
 
@@ -23,13 +23,10 @@ export default function CreatePost() {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [originalSize, setOriginalSize] = useState(null);
   const navigate = useNavigate();
 
   const { createPost } = useFeed();
-  const { token } = useStore();
-  const { compress, compressing, compressionStats } = useImageCompressor();
-  const { addToast } = useStore();
+  const { token, addToast } = useStore();
 
   // — NSFW detection —
   const nsfwModelRef = useRef(null);
@@ -81,7 +78,6 @@ export default function CreatePost() {
   const textareaWrapRef = useRef(null);
   const imageZoneWrapRef = useRef(null);
   const submitAreaRef = useRef(null);
-  const compressionBadgeRef = useRef(null);
 
   // — Animación de entrada —
   useEffect(() => {
@@ -108,28 +104,12 @@ export default function CreatePost() {
     return () => ctx.revert();
   }, []);
 
-  // — Animación del badge de compresión con GSAP —
-  useEffect(() => {
-    if (compressionStats || compressing) {
-      gsap.fromTo(compressionBadgeRef.current,
-        { opacity: 0, y: 8, scale: 0.92 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: 'power3.out' }
-      );
-    }
-  }, [compressionStats, compressing]);
-
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setOriginalSize(file.size);
     setImagePreview(URL.createObjectURL(file));
-    try {
-      const compressed = await compress(file, { quality: 0.78, maxWidth: 1200 });
-      setImageFile(compressed);
-    } catch (err) {
-      addToast('error', 'Error con la imagen', err.message);
-      setImagePreview(null);
-    }
+    // El servidor comprime automáticamente (Sharp, JPEG 85, max 2048px)
+    setImageFile(file);
   };
 
   const uploadImageToIPFS = async () => {
@@ -212,10 +192,10 @@ export default function CreatePost() {
           addToast('warning', 'Contenido sensible detectado', `La imagen será marcada para revisión (${(nsfwResult.probability * 100).toFixed(0)}% ${nsfwResult.className}).`);
         }
 
-        addToast('loading', 'Subiendo a IPFS...', `Enviando ${sizeKB} KB a la red descentralizada`);
+        addToast('loading', 'Subiendo imagen...', `Enviando ${sizeKB} KB al servidor`);
         const result = await uploadImageToIPFS();
         const cid = result.cid?.slice(0, 16);
-        addToast('success', 'Imagen publicada en IPFS!', result.cid ? `CID: ${cid}...` : 'Modo demo');
+        addToast('success', 'Imagen publicada!', result.cid ? `CID: ${cid}...` : 'Modo demo');
         setTimeout(() => navigate('/feed'), 2000);
       } catch (err) {
         addToast('error', 'Error al subir imagen', err.message);
@@ -269,30 +249,16 @@ export default function CreatePost() {
                   <button
                     type="button"
                     className={styles.removeImage}
-                    onClick={() => { setImageFile(null); setImagePreview(null); setOriginalSize(null); }}
                   >
                     <X size={16} />
                   </button>
-
-                  {/* Badge de compresión con GSAP */}
-                  <div ref={compressionBadgeRef}>
-                    {compressionStats && (
-                      <div className={styles.compressionBadge}>
-                        {(originalSize / 1024).toFixed(0)} KB → {compressionStats.compressedKB} KB
-                        <span className={styles.savingsTag}>-{compressionStats.savings}%</span>
-                      </div>
-                    )}
-                    {compressing && (
-                      <div className={styles.compressionBadge}>Comprimiendo...</div>
-                    )}
-                  </div>
                 </div>
               )}
               {!imagePreview && (
                 <label className={styles.uploadLabel}>
                   <Upload size={26} />
                   <span>Haz clic o arrastra una imagen</span>
-                  <span className={styles.uploadSub}>Se comprime automaticamente · Limite 5 MB</span>
+                  <span className={styles.uploadSub}>Se comprime automaticamente · HD max 200 MB</span>
                   <input type="file" accept="image/*" onChange={handleImageChange} hidden />
                 </label>
               )}
@@ -338,9 +304,7 @@ export default function CreatePost() {
               <button
                 type="submit"
                 className={styles.submitBtn}
-                disabled={(type === 'image' && !imageFile) || (type !== 'image' && !content.trim()) || compressing}
               >
-                {compressing ? 'Comprimiendo...' : 'Publicar'}
               </button>
             </div>
           )}
