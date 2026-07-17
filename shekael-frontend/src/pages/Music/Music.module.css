@@ -32,7 +32,7 @@
   background: var(--color-surface-2);
 }
 
-/* ═══ Lista de canciones ═══ */
+/* ═══ Lista ═══ */
 .list {
   display: flex;
   flex-direction: column;
@@ -46,9 +46,7 @@
 }
 
 @media (max-width: 900px) {
-  .listShift {
-    margin-right: 0;
-  }
+  .listShift { margin-right: 0; }
 }
 
 .song {
@@ -61,13 +59,8 @@
   border-radius: 0;
 }
 
-.song:hover {
-  background: var(--color-surface);
-}
-
-.songActive {
-  background: var(--color-surface) !important;
-}
+.song:hover { background: var(--color-surface); }
+.songActive { background: var(--color-surface) !important; }
 
 .thumb {
   width: 48px;
@@ -115,9 +108,7 @@
   transition: color 0.15s;
 }
 
-.song:hover .songPlayIcon {
-  color: var(--color-text);
-}
+.song:hover .songPlayIcon { color: var(--color-text); }
 
 .songPlaying {
   display: flex;
@@ -162,7 +153,7 @@
 }
 
 /* ════════════════════════════════════
-   PANEL LATERAL (Spotify-style)
+   PANEL LATERAL
    ════════════════════════════════════ */
 .panel {
   position: fixed;
@@ -190,18 +181,6 @@
   .panel { width: 100%; max-width: 100%; top: 0; height: 100vh; }
 }
 
-.panelClose {
-  position: absolute; top: 12px; right: 12px;
-  width: 34px; height: 34px;
-  border: none; border-radius: 50%;
-  background: rgba(0,0,0,0.4); color: #fff;
-  cursor: pointer; display: flex;
-  align-items: center; justify-content: center;
-  z-index: 2; transition: background 0.15s;
-}
-
-.panelClose:hover { background: rgba(0,0,0,0.6); }
-
 .panelArtWrap {
   width: 100%;
   aspect-ratio: 1;
@@ -217,16 +196,17 @@
 }
 
 .panelBody {
-  padding: 24px 20px;
+  padding: 20px 20px 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+  overflow-y: auto;
 }
 
 .panelTitle {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--color-text);
   display: -webkit-box;
@@ -236,16 +216,13 @@
 }
 
 .panelArtist {
-  margin: -12px 0 0;
-  font-size: 0.85rem;
+  margin: -8px 0 0;
+  font-size: 0.82rem;
   color: var(--color-text-secondary);
 }
 
-/* Seek bar */
-.seekWrap {
-  cursor: pointer;
-  user-select: none;
-}
+/* Seek */
+.seekWrap { cursor: pointer; user-select: none; }
 
 .seekTrack {
   height: 4px;
@@ -273,14 +250,12 @@
   transition: opacity 0.15s;
 }
 
-.seekWrap:hover .seekThumb {
-  opacity: 1;
-}
+.seekWrap:hover .seekThumb { opacity: 1; }
 
 .seekTime {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
+  margin-top: 5px;
   font-size: 0.68rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
@@ -291,12 +266,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  margin-top: 4px;
+  gap: 12px;
 }
 
 .ctrlBtn {
-  width: 38px; height: 38px;
+  width: 36px; height: 36px;
   border: none; border-radius: 50%;
   background: transparent;
   color: var(--color-text-secondary);
@@ -311,11 +285,11 @@
 }
 
 .ctrlBtn:disabled { opacity: 0.3; cursor: default; }
-
 .ctrlBtn.active { color: var(--color-primary); }
+.emptyBtn { visibility: hidden; }
 
 .playBtn {
-  width: 52px; height: 52px;
+  width: 48px; height: 48px;
   border: none; border-radius: 50%;
   background: var(--color-primary);
   color: #fff;
@@ -324,15 +298,11 @@
   transition: opacity 0.2s, transform 0.15s;
 }
 
-.playBtn:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: scale(1.04);
-}
-
+.playBtn:hover:not(:disabled) { opacity: 0.9; transform: scale(1.04); }
 .playBtn:disabled { opacity: 0.5; cursor: default; }
 
 .spinner {
-  width: 22px; height: 22px;
+  width: 20px; height: 20px;
   border: 3px solid rgba(255,255,255,0.25);
   border-top-color: #fff;
   border-radius: 50%;
@@ -347,24 +317,23 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: auto;
-  padding-top: 12px;
 }
 
 .volIcon {
-  width: 30px; height: 30px;
+  width: 28px; height: 28px;
   border: none; border-radius: 50%;
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center; justify-content: center;
 }
 
 .volIcon:hover { color: var(--color-text); }
 
 .volTrack {
   flex: 1;
-  height: 24px;
+  height: 20px;
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -412,143 +381,106 @@
   transform: translate(-50%, -50%) scale(1);
 }
 
-/* ═══ Queue FAB ═══ */
-.queueFab {
-  position: fixed;
-  bottom: 20px;
-  left: 100px;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 24px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 16px var(--color-shadow);
-  transition: background 0.2s, transform 0.15s;
-}
-
-.queueFab:hover {
-  background: var(--color-surface-2);
-  transform: translateY(-2px);
-}
-
-.queueFab span { color: var(--color-primary); }
-
-@media (max-width: 768px) {
-  .queueFab { left: 20px; bottom: 16px; }
-}
-
-/* ═══ Queue Panel ═══ */
-.overlay {
-  position: fixed; inset: 0; z-index: 48;
-}
-
-.queuePanel {
-  position: fixed;
-  bottom: 0;
-  left: 80px;
-  right: 0;
-  max-height: 50vh;
-  background: var(--color-surface);
+/* ═══ Cola dentro del panel ═══ */
+.panelQueue {
   border-top: 1px solid var(--color-border);
-  border-radius: 16px 16px 0 0;
-  z-index: 49;
-  box-shadow: 0 -8px 30px var(--color-shadow);
-  display: flex;
-  flex-direction: column;
-  animation: qUp 0.2s ease;
+  padding-top: 10px;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
-@keyframes qUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-@media (max-width: 768px) { .queuePanel { left: 0; } }
-
-.queueHeader {
+.panelQueueHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 6px;
 }
 
-.queueTitle {
-  font-size: 0.85rem;
+.panelQueueTitle {
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
 }
 
-.queueClose {
-  width: 32px; height: 32px;
+.panelQueueToggle {
+  width: 24px; height: 24px;
   border: none; border-radius: 50%;
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-text-dim);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
 }
 
-.queueClose:hover {
+.panelQueueToggle:hover {
   background: var(--color-surface-2);
   color: var(--color-text);
 }
 
-.queueList {
-  overflow-y: auto;
-  flex: 1;
-  padding: 6px 0;
+.rotateCCW {
+  transform: rotate(180deg);
 }
 
-.queueItem {
+.panelQueueList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.panelQueueItem {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
   transition: background 0.12s;
 }
 
-.queueItem:hover { background: var(--color-surface-2); }
+.panelQueueItem:hover {
+  background: var(--color-surface-2);
+}
 
-.queueIdx {
-  font-size: 0.7rem;
+.panelQueueIdx {
+  font-size: 0.65rem;
   color: var(--color-text-dim);
-  width: 18px;
+  width: 16px;
   text-align: right;
   flex-shrink: 0;
 }
 
-.queueThumb {
-  width: 36px; height: 36px;
-  border-radius: 6px;
+.panelQueueThumb {
+  width: 32px; height: 32px;
+  border-radius: 5px;
   object-fit: cover;
   flex-shrink: 0;
   background: var(--color-surface-3);
 }
 
-.queueInfo { flex: 1; min-width: 0; }
+.panelQueueInfo {
+  flex: 1;
+  min-width: 0;
+}
 
-.queueSong {
-  font-size: 0.78rem;
+.panelQueueSong {
+  font-size: 0.72rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--color-text);
 }
 
-.queueMeta {
-  font-size: 0.65rem;
+.panelQueueMeta {
+  font-size: 0.6rem;
   color: var(--color-text-muted);
 }
 
-.queueRemove {
-  width: 28px; height: 28px;
+.panelQueueRemove {
+  width: 24px; height: 24px;
   border: none; border-radius: 50%;
   background: transparent;
   color: var(--color-text-dim);
@@ -559,8 +491,8 @@
   flex-shrink: 0;
 }
 
-.queueItem:hover .queueRemove { opacity: 1; }
-.queueRemove:hover {
+.panelQueueItem:hover .panelQueueRemove { opacity: 1; }
+.panelQueueRemove:hover {
   background: rgba(255,60,60,0.12);
   color: #ff6b6b;
 }

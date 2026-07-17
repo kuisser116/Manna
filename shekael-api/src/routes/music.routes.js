@@ -161,6 +161,53 @@ setInterval(() => {
   } catch {}
 }, 5 * 60 * 1000);
 
+// ─── Canciones relacionadas (Mix de YouTube) ───
+router.get('/related/:videoId', async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    if (!/^[\w-]+$/.test(videoId)) {
+      return res.status(400).json({ error: 'Invalid video ID' });
+    }
+
+    const limit = Math.min(parseInt(req.query.limit) || 30, 50);
+    const mixUrl = `https://www.youtube.com/watch?v=${videoId}&list=RD${videoId}`;
+
+    const raw = await ytExec([
+      '--flat-playlist', '--dump-json', '--no-warnings',
+      '--playlist-end', String(limit),
+      '--user-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+      mixUrl,
+    ]);
+
+    const results = [];
+    if (!raw) return res.json({ results: [] });
+    for (const line of raw.split('\n').filter(Boolean)) {
+      try {
+        const item = JSON.parse(line);
+        // Skip el primer item (es el mismo video)
+        if (item?.id === videoId) continue;
+        if (item?.id && item?.title) {
+          results.push({
+            id: item.id,
+            title: item.title,
+            duration: item.duration || 0,
+            durationLabel: formatDuration(item.duration),
+            thumbnail: `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`,
+            channel: item.channel || item.uploader || 'Desconocido',
+            channelUrl: item.channel_url || '',
+            url: item.webpage_url || `https://www.youtube.com/watch?v=${item.id}`,
+            views: item.view_count || 0,
+          });
+        }
+      } catch {}
+    }
+    res.json({ results });
+  } catch (err) {
+    console.error('[Music] Related error:', err.message);
+    res.status(500).json({ error: 'Error al obtener canciones relacionadas' });
+  }
+});
+
 function formatDuration(sec) {
   if (!sec || sec <= 0) return '0:00';
   const m = Math.floor(sec / 60);

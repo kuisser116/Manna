@@ -5,8 +5,8 @@ import { searchMusic } from '../../api/music.api';
 import { useMusic } from '../../context/MusicContext';
 import {
   Play, Pause, SkipBack, SkipForward,
-  Volume2, VolumeX, X, ChevronDown, Shuffle,
-  ListMusic
+  Volume2, VolumeX, Shuffle, X,
+  ListMusic, ChevronDown
 } from 'lucide-react';
 import styles from './Music.module.css';
 
@@ -15,22 +15,19 @@ export default function Music() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showQueue, setShowQueue] = useState(false);
 
   const {
     currentSong, playing, duration, currentTime, volume, muted,
     queue, shuffle, loadingStream,
     playSong, togglePlay, playNext, playPrev, setShuffle,
-    addToQueue, removeFromQueue, seek, setPlaylist,
+    addToQueue, removeFromQueue, seek,
     setVolume, setMuted,
   } = useMusic();
 
   const panelRef = useRef(null);
   const listRef = useRef(null);
   const songRefs = useRef({});
-  const queueBtnRef = useRef(null);
-
-  const [showQueue, setShowQueue] = useState(false);
-
   const q = searchParams.get('q') || '';
 
   // ── Búsqueda ──
@@ -41,15 +38,13 @@ export default function Music() {
       searchMusic(q).then(data => {
         const list = data.results || [];
         setResults(list);
-        setPlaylist(list);
         if (!list.length) setError('Sin resultados');
       }).catch(() => setError('Error al buscar'))
       .finally(() => setLoading(false));
     } else {
       setResults([]);
-      setPlaylist([]);
     }
-  }, [q, setPlaylist]);
+  }, [q]);
 
   // ── Animación del panel ──
   useEffect(() => {
@@ -75,7 +70,6 @@ export default function Music() {
     }
   }, [currentSong]);
 
-  // ── Animación en card click ──
   const animateCard = useCallback((songId) => {
     const el = songRefs.current[songId];
     if (!el) return;
@@ -85,14 +79,9 @@ export default function Music() {
     );
   }, []);
 
-  // ── Click en canción ──
   const handlePlaySong = async (song, addToQueueOnly = false) => {
     if (addToQueueOnly) {
-      const len = addToQueue(song);
-      gsap.fromTo(queueBtnRef.current,
-        { scale: 1 },
-        { scale: 1.2, duration: 0.15, ease: 'power1.out', yoyo: true, repeat: 1 }
-      );
+      addToQueue(song);
       return;
     }
     animateCard(song.id);
@@ -168,13 +157,9 @@ export default function Music() {
         ))}
       </div>
 
-      {/* ═══ Panel lateral ═══ */}
+      {/* ═══ Panel lateral con cola integrada ═══ */}
       {currentSong && (
         <div ref={panelRef} className={styles.panel}>
-          <button className={styles.panelClose} onClick={() => {}}>
-            {/* Close que no detiene — el panel se oculta al ir a otra página */}
-          </button>
-
           <div className={styles.panelArtWrap}>
             <img data-panel-art src={currentSong.thumbnail || ''} alt="" className={styles.panelArt} />
           </div>
@@ -209,17 +194,15 @@ export default function Music() {
               <button className={styles.playBtn} onClick={togglePlay} disabled={loadingStream}>
                 {loadingStream ? <span className={styles.spinner} /> : (playing ? <Pause size={24} /> : <Play size={24} />)}
               </button>
-              <button className={styles.ctrlBtn} onClick={playNext} disabled={!queue.length}>
+              <button className={styles.ctrlBtn} onClick={playNext}>
                 <SkipForward size={18} />
               </button>
-              <button className={`${styles.ctrlBtn} ${shuffle ? styles.active : ''}`} style={{visibility: 'hidden'}}>
-                <Shuffle size={16} />
-              </button>
+              <button className={`${styles.ctrlBtn} ${styles.emptyBtn}`} />
             </div>
 
             {/* Volume */}
             <div className={styles.volRow}>
-              <button className={styles.volIcon} onClick={() => { setMuted(!muted); }}>
+              <button className={styles.volIcon} onClick={() => setMuted(!muted)}>
                 {muted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
               <div className={styles.volTrack} onClick={(e) => {
@@ -231,41 +214,50 @@ export default function Music() {
                 <div className={styles.volThumb} style={{ left: `${(muted ? 0 : volume) * 100}%` }} />
               </div>
             </div>
+
+            {/* ═══ Cola dentro del panel ═══ */}
+            {queue.length > 0 && (
+              <div className={styles.panelQueue}>
+                <div className={styles.panelQueueHeader}>
+                  <span className={styles.panelQueueTitle}>Siguientes</span>
+                  <button
+                    className={styles.panelQueueToggle}
+                    onClick={() => setShowQueue(v => !v)}
+                  >
+                    <ChevronDown size={14} className={showQueue ? '' : styles.rotateCCW} />
+                  </button>
+                </div>
+                {showQueue && (
+                  <div className={styles.panelQueueList}>
+                    {[...queue].slice(0, 15).map((song, i) => (
+                      <div
+                        key={`pq-${i}`}
+                        className={styles.panelQueueItem}
+                        onClick={() => {
+                          removeFromQueue(i);
+                          playSong(song);
+                        }}
+                      >
+                        <span className={styles.panelQueueIdx}>{i + 1}</span>
+                        <img src={song.thumbnail || ''} alt="" className={styles.panelQueueThumb} />
+                        <div className={styles.panelQueueInfo}>
+                          <div className={styles.panelQueueSong}>{song.title}</div>
+                          <div className={styles.panelQueueMeta}>{song.channel}</div>
+                        </div>
+                        <button
+                          className={styles.panelQueueRemove}
+                          onClick={e => { e.stopPropagation(); removeFromQueue(i); }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
-
-      {/* ═══ Cola FAB ═══ */}
-      {queue.length > 0 && (
-        <button ref={queueBtnRef} className={styles.queueFab} onClick={() => setShowQueue(!showQueue)}>
-          <ListMusic size={16} />
-          <span>{queue.length}</span>
-        </button>
-      )}
-
-      {showQueue && queue.length > 0 && (
-        <>
-          <div className={styles.overlay} onClick={() => setShowQueue(false)} />
-          <div className={styles.queuePanel}>
-            <div className={styles.queueHeader}>
-              <span className={styles.queueTitle}>Cola ({queue.length})</span>
-              <button className={styles.queueClose} onClick={() => setShowQueue(false)}><ChevronDown size={18} /></button>
-            </div>
-            <div className={styles.queueList}>
-              {queue.map((song, i) => (
-                <div key={`q-${i}`} className={styles.queueItem}>
-                  <span className={styles.queueIdx}>{i + 1}</span>
-                  <img src={song.thumbnail || ''} alt="" className={styles.queueThumb} />
-                  <div className={styles.queueInfo}>
-                    <div className={styles.queueSong}>{song.title}</div>
-                    <div className={styles.queueMeta}>{song.channel}</div>
-                  </div>
-                  <button className={styles.queueRemove} onClick={() => removeFromQueue(i)}><X size={13} /></button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
       )}
     </div>
   );

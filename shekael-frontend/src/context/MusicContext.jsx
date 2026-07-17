@@ -6,7 +6,8 @@ export function MusicProvider({ children }) {
   const audioRef = useRef(null);
   const queueRef = useRef([]);
   const historyRef = useRef([]);
-  const playlistRef = useRef([]);
+  const relatedRef = useRef([]);
+  const loadingRelatedRef = useRef(false);
 
   const [currentSong, setCurrentSong] = useState(null);
   const [playing, setPlaying] = useState(false);
@@ -21,47 +22,56 @@ export function MusicProvider({ children }) {
   const [shuffle, setShuffle] = useState(false);
   const [loadingStream, setLoadingStream] = useState(false);
 
-  // Persistir volumen
   useEffect(() => {
     localStorage.setItem('shekael-music-volume', String(volume));
   }, [volume]);
 
-  // Sincronizar volumen con el audio element
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
+    if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  const fillQueueFromPlaylist = useCallback(() => {
-    const pl = playlistRef.current;
-    if (!pl.length) return;
+  // ── Cargar relacionadas desde el Mix de YouTube ──
+  const loadRelatedSongs = useCallback(async (videoId) => {
+    if (loadingRelatedRef.current) return;
+    loadingRelatedRef.current = true;
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const res = await fetch(`${baseUrl}/music/related/${videoId}?limit=50`);
+      const data = await res.json();
+      if (data.results?.length) {
+        relatedRef.current = data.results;
+      }
+    } catch (err) {
+      console.error('[Music] Error loading related:', err);
+    } finally {
+      loadingRelatedRef.current = false;
+    }
+  }, []);
 
-    // Songs already in queue (by id)
+  // ── Rellenar cola desde relacionadas ──
+  const fillQueue = useCallback(() => {
+    const rel = relatedRef.current;
+    if (!rel.length) return false;
+
     const queuedIds = new Set(queueRef.current.map(s => s.id));
     const currentId = currentSong?.id;
+    const toAdd = rel.filter(s => s.id !== currentId && !queuedIds.has(s.id));
 
-    // Add songs from playlist that aren't queued and aren't currently playing
-    const toAdd = pl.filter(s => s.id !== currentId && !queuedIds.has(s.id));
-    if (toAdd.length) {
-      queueRef.current = [...queueRef.current, ...toAdd.map(s => ({ ...s }))];
-      setQueue([...queueRef.current]);
-    }
+    if (!toAdd.length) return false;
+
+    queueRef.current = [...queueRef.current, ...toAdd.map(s => ({ ...s }))];
+    setQueue([...queueRef.current]);
+    // Limpiar relacionadas para que no se añadan duplicados después
+    relatedRef.current = [];
+    return true;
   }, [currentSong]);
 
-  const autoNext = useCallback(() => {
-    // If queue is empty, refill from playlist
-    if (!queueRef.current.length && playlistRef.current.length) {
-      fillQueueFromPlaylist();
-    }
-
-    if (!queueRef.current.length) {
-      setPlaying(false);
-      return false;
-    }
+  // ── Obtener siguiente canción ──
+  const getNext = useCallback(() => {
+    const q = queueRef.current;
+    if (!q.length) return null;
 
     let next;
-    const q = queueRef.current;
     if (shuffle) {
       const idx = Math.floor(Math.random() * q.length);
       next = q[idx];
@@ -72,12 +82,7 @@ export function MusicProvider({ children }) {
     queueRef.current = [...q];
     setQueue([...q]);
     return next;
-  }, [shuffle, fillQueueFromPlaylist]);
-
-  // Exponer la playlist para auto‑queue
-  const setPlaylist = useCallback((songs) => {
-    playlistRef.current = Array.isArray(songs) ? [...songs] : [];
-  }, []);
+  }, [shuffle]);
 
   const playSong = useCallback(async (song, addToQueue = false) => {
     if (!audioRef.current) return;
@@ -136,8 +141,10 @@ export function MusicProvider({ children }) {
       setCurrentSong(song);
       historyRef.current = [...historyRef.current, song];
 
-      // Auto‑fill queue con el resto de la playlist
-      fillQueueFromPlaylist();
+      // Si shuffle está activo, cargar relacionadas y llenar cola
+      if (shuffle) {
+        loadRelatedSongs(song.id);
+      }
     } catch (err) {
       console.error('[Music] Error playing:', err.message);
       setCurrentSong(null);
@@ -145,25 +152,41 @@ export function MusicProvider({ children }) {
     } finally {
       setLoadingStream(false);
     }
-  }, [currentSong, playing, fillQueueFromPlaylist]);
+  }, [currentSong, playing, shuffle, loadRelatedSongs]);
 
   const togglePlay = useCallback(() => {
     const a = audioRef.current;
     if (!a || !currentSong) return;
-    if (playing) {
-      a.pause();
-      setPlaying(false);
-    } else {
-      a.play().then(() => setPlaying(true)).catch(() => {});
-    }
+    if (playing) { a.pause(); setPlaying(false); }
+    else { a.play().then(() => setPlaying(true)).catch(() => {}); }
   }, [currentSong, playing]);
 
   const playNext = useCallback(() => {
-    const next = autoNext();
-    if (!next) return;
+    // Try getting next from queue
+    let next = getNext();
+
+    // If queue is empty, try filling from related songs
+    if (!next) {
+      const filled = fillQueue();
+      if (filled) next = getNext();
+    }
+
+    // If still nothing, load more related based on current song
+    if (!next && currentSong) {
+      loadRelatedSongs(currentSong.id);
+      // Will play on next onEnded after related songs load
+      setPlaying(false);
+      return;
+    }
+
+    if (!next) {
+      setPlaying(false);
+      return;
+    }
+
     historyRef.current = [...historyRef.current, currentSong].filter(Boolean);
     playSong(next);
-  }, [autoNext, currentSong, playSong]);
+  }, [getNext, fillQueue, currentSong, loadRelatedSongs, playSong]);
 
   const playPrev = useCallback(() => {
     const h = historyRef.current;
@@ -190,16 +213,11 @@ export function MusicProvider({ children }) {
 
   const seek = useCallback((pct) => {
     const a = audioRef.current;
-    if (a && duration > 0) {
-      a.currentTime = pct * duration;
-    }
+    if (a && duration > 0) a.currentTime = pct * duration;
   }, [duration]);
 
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
     setCurrentSong(null);
     setPlaying(false);
     setCurrentTime(0);
@@ -207,31 +225,16 @@ export function MusicProvider({ children }) {
     queueRef.current = [];
     setQueue([]);
     historyRef.current = [];
-    playlistRef.current = [];
+    relatedRef.current = [];
   }, []);
 
   const value = {
-    currentSong,
-    playing,
-    duration,
-    currentTime,
-    volume,
-    muted,
-    queue,
-    shuffle,
-    loadingStream,
-    setVolume,
-    setMuted,
-    setShuffle,
-    playSong,
-    togglePlay,
-    playNext,
-    playPrev,
-    addToQueue,
-    removeFromQueue,
-    seek,
-    stop,
-    setPlaylist,
+    currentSong, playing, duration, currentTime, volume, muted,
+    queue, shuffle, loadingStream,
+    setVolume, setMuted, setShuffle,
+    playSong, togglePlay, playNext, playPrev,
+    addToQueue, removeFromQueue,
+    seek, stop,
   };
 
   return (
