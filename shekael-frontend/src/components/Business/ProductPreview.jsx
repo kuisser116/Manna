@@ -6,7 +6,6 @@ import styles from './ProductPreview.module.css';
 export default function ProductPreview({ product, closing, onClose }) {
   const modalRef = useRef(null);
 
-  // Intro animation on mount
   useEffect(() => {
     if (!closing) {
       gsap.fromTo(
@@ -15,9 +14,8 @@ export default function ProductPreview({ product, closing, onClose }) {
         { scale: 1, y: 0, autoAlpha: 1, duration: 0.35, ease: 'back.out(1.7)' }
       );
     }
-  }, []); // only on mount
+  }, []);
 
-  // Outro animation when closing becomes true
   useEffect(() => {
     if (!closing) return;
     gsap.to(modalRef.current, {
@@ -43,16 +41,16 @@ export default function ProductPreview({ product, closing, onClose }) {
           )}
         </div>
         <div className={styles.infoCol}>
-          <div className={styles.header}>
+          <div>
             <h3 className={styles.name}>{product.name}</h3>
             <span className={styles.price}>{product.price}</span>
+            <p className={styles.description}>{product.description}</p>
           </div>
           {product.category && (
             <span className={styles.category}>
               <Tag size={13} /> {product.category}
             </span>
           )}
-          <p className={styles.description}>{product.description}</p>
         </div>
       </div>
     </div>
