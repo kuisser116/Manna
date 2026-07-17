@@ -445,9 +445,6 @@ function PrivacyModal({ isOpen, onClose, showProducts, showReviews, onToggleProd
               onToggle={() => toggle('showStats')}
             />
             <PrivacyToggle
-              desc="Muestra tu saldo de puntos de lealtad"
-            />
-            <PrivacyToggle
               label="Mostrar biografía"
               desc="Tu bio se muestra en tu perfil público"
               enabled={privacy.showBio !== false}

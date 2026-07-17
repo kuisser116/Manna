@@ -398,7 +398,6 @@ export default function Profile() {
                   </div>
                 )}
                 <div className={styles.chips}>
-                  )}
                   {profileData?.stellarPublicKey && (isOwnProfile ? privacy.showStellarKey !== false : true) && (
                     <div
                       className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress} ${copied ? styles.chipCopied : ''}`}
@@ -524,7 +523,6 @@ function PrivacyModal({ isOpen, onClose }) {
               onToggle={() => toggle('showStats')}
             />
             <PrivacyToggle
-              desc="Muestra tu saldo de puntos de lealtad"
               desc="Tu bio se muestra en tu perfil público"
               enabled={privacy.showBio !== false}
               onToggle={() => toggle('showBio')}
