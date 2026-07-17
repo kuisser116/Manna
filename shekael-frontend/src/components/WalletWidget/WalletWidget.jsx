@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { getMxnRate } from '../../api/price.api';
 import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase.js';
 import { motion } from 'framer-motion';
@@ -24,6 +25,12 @@ export function WalletWidget({ variant = 'default' }) {
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
     const [isDepositOpen, setIsDepositOpen] = useState(false);
     const [shouldRender, setShouldRender] = useState(false);
+    const [mxnRate, setMxnRate] = useState(18.50);
+
+    // Obtener tipo de cambio USD/MXN
+    useEffect(() => {
+        getMxnRate().then(setMxnRate).catch(() => {});
+    }, []);
 
     const panelRef = useRef(null);
     const contentRef = useRef(null);
@@ -160,12 +167,12 @@ export function WalletWidget({ variant = 'default' }) {
                             className={styles.balanceDisplay}
                         >
                             <span className={styles.balanceAmount}>
-                                {usdcAmount.toLocaleString(undefined, {
+                                { (usdcAmount * mxnRate).toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2
                                 })}
                             </span>
-                            <span className={styles.balanceCurrency}>{currency || 'USDC'}</span>
+                            <span className={styles.balanceCurrency}>MXN</span>
                         </motion.div>
                         {shortKey && (
                             <span className={styles.pubKey}>{shortKey}</span>
@@ -177,7 +184,7 @@ export function WalletWidget({ variant = 'default' }) {
             <div className={styles.xlmNotice}>
                 <span className={styles.xlmNoticeIcon}>ⓘ</span>
                 <span className={styles.xlmNoticeText}>
-                    Para activar tu cuenta necesitas enviar <strong>~2 XLM</strong> desde Bitso a tu dirección. Después puedes depositar USDC sin límite.
+                    Para activar tu cuenta necesitas enviar <strong>~2 XLM</strong> desde Bitso a tu dirección. Después puedes depositar USDC (lo ves como MXN).
                 </span>
             </div>
 

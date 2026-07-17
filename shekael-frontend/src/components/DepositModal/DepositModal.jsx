@@ -96,7 +96,7 @@ export default function DepositModal({ isOpen, onClose }) {
             >
                 <div className={styles.header}>
                     <div className={styles.titleGroup}>
-                        <h3>Depositar USDC</h3>
+                        <h3>Depositar fondos</h3>
                         <p className={styles.subtitle}>Recibe XLM desde cualquier exchange</p>
                     </div>
                     <button className={styles.closeBtn} onClick={onClose}>
@@ -177,7 +177,7 @@ export default function DepositModal({ isOpen, onClose }) {
                                         Confirma el retiro. Los fondos llegan en <strong>~3 segundos</strong>
                                     </li>
                                     <li>
-                                        Envía USDC directamente a tu dirección
+                                        Envía USDC a esta dirección. Se convertirá automáticamente a MXN en tu wallet
                                     </li>
                                 </ol>
                             </div>

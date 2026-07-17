@@ -1,4 +1,5 @@
 import * as StellarSdk from '@stellar/stellar-sdk';
+import { convertToMXN } from './price.service.js';
 import dotenv from 'dotenv';
 dotenv.config({ override: true });
 
@@ -69,10 +70,14 @@ export async function getBalance(publicKey) {
         const mainBalance = usdcBalanceValue?.balance || '0.00';
         const mainCurrency = 'USDC';
 
+        // Convertir a MXN para visualización (solo frontend)
+        const mxnBalance = await convertToMXN(usdcVal);
+
         return {
             xlm: xlmBalance?.balance || '0',
             usdc: usdcBalanceValue?.balance || '0.00',
             balance: mainBalance,
+            mxnBalance, // ← para mostrar solo MXN en el frontend
             currency: mainCurrency,
             usdcActive: hasUsdcTrustline,
             publicKey,
@@ -80,10 +85,10 @@ export async function getBalance(publicKey) {
     } catch (err) {
         // Cuenta no fondeada aún
         if (err.response?.status === 404) {
-            return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'USDC', publicKey, notFunded: true, usdcActive: false };
+            return { xlm: '0', usdc: '0.00', balance: '0.00', mxnBalance: '0.00', currency: 'USDC', publicKey, notFunded: true, usdcActive: false };
         }
         console.error('getBalance error:', err.message);
-        return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'USDC', publicKey, usdcActive: false };
+        return { xlm: '0', usdc: '0.00', balance: '0.00', mxnBalance: '0.00', currency: 'USDC', publicKey, usdcActive: false };
     }
 }
 

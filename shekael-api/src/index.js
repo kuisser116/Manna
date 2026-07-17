@@ -94,6 +94,17 @@ app.use('/chats', chatRoutes);
 app.use('/businesses', businessesRoutes);
 app.use('/payments', paymentsRoutes);
 
+// ── Tipo de cambio USD/MXN para el frontend ──
+import { getMxnRate } from './services/price.service.js';
+app.get('/price/usd-mxn', async (_req, res) => {
+  try {
+    const rate = await getMxnRate();
+    res.json({ rate, currency: 'MXN', updatedAt: new Date().toISOString() });
+  } catch {
+    res.json({ rate: 18.50, currency: 'MXN', fallback: true });
+  }
+});
+
 // ── Health check ─────────────────────────────────
 app.get('/health', (req, res) => {
     res.json({

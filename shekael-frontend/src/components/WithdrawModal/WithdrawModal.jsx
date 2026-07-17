@@ -129,7 +129,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                         <h3 className={styles.title}>Retirar fondos</h3>
                         <p className={styles.balanceLabel}>
                             <Wallet size={12} />
-                            {usdcAmount.toFixed(2)} USDC disponibles
+                            {usdcAmount.toFixed(2)} MXN disponibles
                         </p>
                     </div>
                     <button className={styles.closeBtn} onClick={handleClose}>
@@ -234,7 +234,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                     <div className={styles.conversionNote}>
                                         <ArrowDownToLine size={14} />
                                         <span>
-                                            USDC &rarr; XLM vía Stellar DEX &middot; Comisión ≈ $0.003 USD
+                                            MXN &rarr; XLM vía Stellar DEX &middot; Comisión ≈ $0.003 USD
                                         </span>
                                     </div>
                                 )}

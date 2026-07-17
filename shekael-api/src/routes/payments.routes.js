@@ -96,7 +96,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
     const balance = await getBalance(payer.stellar_public_key);
     const mxneBalance = parseFloat(balance.mxne || '0');
     if (mxneBalance < finalAmount) {
-      return res.status(400).json({ message: `Saldo insuficiente. Tienes USDC ${mxneBalance.toFixed(2)}, necesitas ${finalAmount.toFixed(2)}` });
+      return res.status(400).json({ message: `Saldo insuficiente. Saldo insuficiente. ${mxneBalance.toFixed(2)}, necesitas ${finalAmount.toFixed(2)}` });
     }
 
     // Desencriptar clave secreta del pagador
@@ -166,7 +166,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         userId: biz.owner_id,
         type: 'payment_received',
         title: '¡Pago recibido!',
-        message: `Has recibido USDC ${finalAmount.toFixed(2)} de parte de un cliente.`,
+        message: `Has recibido ${finalAmount.toFixed(2)} de parte de un cliente.`,
         metadata: { paymentId: payment.id, businessName: biz.name },
       });
 
@@ -178,7 +178,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         discountApplied: discount,
         stellarTxHash: txHash,
         message: discount > 0
-          ? `Pago exitoso. Descuento del 5% aplicado: ahorraste USDC ${discount.toFixed(2)}`
+          ? 'Pago exitoso. Descuento del 5% aplicado.'
           : 'Pago exitoso',
       });
     } catch (stellarErr) {
@@ -275,7 +275,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
     const balance = await getBalance(biz.stellar_public_key);
     const usdcBalance = parseFloat(balance.usdc || '0');
     if (usdcBalance < parsedAmount) {
-      return res.status(400).json({ message: `Saldo insuficiente. USDC disponible: ${usdcBalance.toFixed(2)}` });
+      return res.status(400).json({ message: `Saldo insuficiente. saldo disponible: ${usdcBalance.toFixed(2)}` });
     }
 
     // Desencriptar clave y enviar directo a Bitso
