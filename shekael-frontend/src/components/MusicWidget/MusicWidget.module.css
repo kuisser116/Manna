@@ -3,7 +3,7 @@
 .floatingWrapper {
   position: fixed;
   bottom: 24px;
-  right: 104px; /* 24px (gap derecho) + ancho wallet btn (~60px) + 15px gap + 4px */
+  right: 164px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -11,10 +11,24 @@
   gap: 12px;
 }
 
+.floatingLeft {
+  right: auto;
+  left: 24px;
+}
+
+.floatingLeft .floatingPanel {
+  transform-origin: bottom left;
+}
+
 @media (max-width: 700px) {
   .floatingWrapper {
     bottom: 72px;
-    right: 96px;
+    right: 156px;
+  }
+  
+  .floatingLeft {
+    right: auto;
+    left: 16px;
   }
 }
 

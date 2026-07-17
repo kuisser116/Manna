@@ -9,7 +9,7 @@ import {
 import { useMusic } from '../../context/MusicContext';
 import styles from './MusicWidget.module.css';
 
-export default function MusicWidget() {
+export default function MusicWidget({ position = 'right' }) {
   const {
     currentSong, playing, duration, currentTime, volume, muted,
     queue, shuffle, loadingStream,
@@ -25,6 +25,7 @@ export default function MusicWidget() {
   const buttonRef = useRef(null);
 
   // ── Animación entrada ──
+  const origin = position === 'left' ? 'bottom left' : 'bottom right';
   const animateIn = useCallback(() => {
     setShouldRender(true);
     requestAnimationFrame(() => {
@@ -63,7 +64,7 @@ export default function MusicWidget() {
       y: 24,
       opacity: 0,
       scale: 0.92,
-      rotate: -2,
+      rotate: position === 'left' ? 2 : -2,
       filter: 'blur(6px)',
       duration: 0.3,
       ease: 'power2.in',
@@ -116,7 +117,7 @@ export default function MusicWidget() {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className={styles.floatingWrapper}>
+    <div className={`${styles.floatingWrapper} ${position === 'left' ? styles.floatingLeft : ''}`}>
       {shouldRender && (
         <div ref={panelRef} className={styles.floatingPanel}>
           <div ref={contentRef} className={styles.panelContent}>
