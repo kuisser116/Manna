@@ -10,7 +10,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 const FALLBACK_RATE = 18.50;
 
 /**
- * Obtiene la tasa USD → MXN desde DolarAPI (gratis, sin key)
+ * Obtiene la tasa USD → MXN desde ExchangeRate-API (gratis, sin key)
  */
 async function fetchRate() {
     const now = Date.now();
@@ -19,13 +19,13 @@ async function fetchRate() {
     }
 
     try {
-        // DolarAPI — gratuita, sin autenticación, tasa USD/MXN
-        const res = await fetch('https://dolarapi.com/v1/dolares/blue', {
+        // ExchangeRate-API — gratuita, sin autenticación, tasas mundiales
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
             signal: AbortSignal.timeout(5000)
         });
         const data = await res.json();
-        // Blue: { compra, venta, ... } — usamos venta (el usuario compra USD caro)
-        const rate = parseFloat(data.venta) || FALLBACK_RATE;
+        // rates.MXN tiene la tasa USD → MXN
+        const rate = parseFloat(data.rates?.MXN) || FALLBACK_RATE;
         cachedRate = rate;
         lastFetch = now;
         return rate;
