@@ -3,13 +3,13 @@ import gsap from 'gsap';
 import { motion } from 'framer-motion';
 import {
   Music, Play, Pause, SkipForward, SkipBack,
-  Shuffle, Shuffle as ShuffleOff,
+  Shuffle,
   X
 } from 'lucide-react';
 import { useMusic } from '../../context/MusicContext';
 import styles from './MusicWidget.module.css';
 
-export default function MusicWidget({ position = 'right' }) {
+export default function MusicWidget({ leftOffset = 24 }) {
   const {
     currentSong, playing, duration, currentTime, volume, muted,
     queue, shuffle, loadingStream,
@@ -25,7 +25,6 @@ export default function MusicWidget({ position = 'right' }) {
   const buttonRef = useRef(null);
 
   // ── Animación entrada ──
-  const origin = position === 'left' ? 'bottom left' : 'bottom right';
   const animateIn = useCallback(() => {
     setShouldRender(true);
     requestAnimationFrame(() => {
@@ -33,9 +32,9 @@ export default function MusicWidget({ position = 'right' }) {
       gsap.set(panelRef.current, {
         y: 36,
         scale: 0.85,
-        rotate: 3,
+        rotate: -3,
         filter: 'blur(8px)',
-        transformOrigin: 'bottom right',
+        transformOrigin: 'bottom left',
       });
       gsap.to(panelRef.current, {
         y: 0,
@@ -64,7 +63,7 @@ export default function MusicWidget({ position = 'right' }) {
       y: 24,
       opacity: 0,
       scale: 0.92,
-      rotate: position === 'left' ? 2 : -2,
+      rotate: 2,
       filter: 'blur(6px)',
       duration: 0.3,
       ease: 'power2.in',
@@ -117,7 +116,7 @@ export default function MusicWidget({ position = 'right' }) {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className={`${styles.floatingWrapper} ${position === 'left' ? styles.floatingLeft : ''}`}>
+    <div className={styles.floatingWrapper} style={{ left: leftOffset }}>
       {shouldRender && (
         <div ref={panelRef} className={styles.floatingPanel}>
           <div ref={contentRef} className={styles.panelContent}>
@@ -186,8 +185,8 @@ export default function MusicWidget({ position = 'right' }) {
               <button className={styles.ctrlBtn} onClick={playNext} disabled={!queue.length}>
                 <SkipForward size={15} />
               </button>
-              <button className={styles.ctrlBtn} disabled>
-                <ShuffleOff size={14} style={{ opacity: 0 }} />
+              <button className={styles.ctrlBtn} disabled style={{ visibility: 'hidden' }}>
+                <Shuffle size={14} />
               </button>
             </div>
           </div>

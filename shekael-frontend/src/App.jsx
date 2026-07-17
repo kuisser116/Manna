@@ -144,7 +144,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isMusicRoute && <MusicWidget position={isChatRoute ? 'left' : 'right'} />}
+        {!isMusicRoute && <MusicWidget leftOffset={isChatRoute ? 40 : 24} />}
         {!isChatRoute && !isMusicRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />

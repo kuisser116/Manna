@@ -1,34 +1,18 @@
-/* ── MusicWidget ── Mismo estilo que WalletWidget pero música ── */
+/* ── MusicWidget ── Mismo estilo que WalletWidget ── */
 
 .floatingWrapper {
   position: fixed;
   bottom: 24px;
-  right: 164px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 12px;
-}
-
-.floatingLeft {
-  right: auto;
-  left: 24px;
-}
-
-.floatingLeft .floatingPanel {
-  transform-origin: bottom left;
 }
 
 @media (max-width: 700px) {
   .floatingWrapper {
     bottom: 72px;
-    right: 156px;
-  }
-  
-  .floatingLeft {
-    right: auto;
-    left: 16px;
   }
 }
 
