@@ -16,10 +16,10 @@
   gap: 4px;
   padding: 6px;
   border-radius: 14px;
-  background: rgba(26, 26, 46, 0.7);
+  background: color-mix(in srgb, var(--color-surface, #1a1a2e) 70%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border, #333);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -31,7 +31,7 @@
   border-radius: 10px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-secondary, #999);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -40,13 +40,13 @@
 }
 
 .navTab:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--color-surface-2, #2a2a3e);
+  color: var(--color-text, #fff);
 }
 
 .navTabActive {
-  background: rgba(225, 29, 72, 0.25);
-  color: #fff;
+  background: color-mix(in srgb, var(--color-primary, #e11d48) 20%, transparent);
+  color: var(--color-text, #fff);
 }
 
 .badge {
@@ -56,8 +56,8 @@
   letter-spacing: 0.5px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.4);
+  background: var(--color-surface-3, #3a3a4e);
+  color: var(--color-text-dim, #666);
   white-space: nowrap;
 }
 
@@ -102,7 +102,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50% 50% 50% 0;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--color-primary, #e11d48), var(--color-primary-dark, #9f1239));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,7 +110,7 @@
   font-weight: 700;
   color: #fff;
   transform: rotate(-45deg);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary, #e11d48) 40%, transparent);
   transition: transform 0.2s;
   margin: 6px auto 0;
 }
@@ -123,7 +123,6 @@
   transform: rotate(-45deg) scale(1.15);
 }
 
-/* Drop pin tail */
 .marker::after {
   content: '';
   position: absolute;
@@ -133,7 +132,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.3);
+  background: color-mix(in srgb, var(--color-primary, #e11d48) 30%, transparent);
   filter: blur(2px);
 }
 
