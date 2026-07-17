@@ -6,6 +6,7 @@ export function MusicProvider({ children }) {
   const audioRef = useRef(null);
   const queueRef = useRef([]);
   const historyRef = useRef([]);
+  const playlistRef = useRef([]);
 
   const [currentSong, setCurrentSong] = useState(null);
   const [playing, setPlaying] = useState(false);
@@ -32,6 +33,52 @@ export function MusicProvider({ children }) {
     }
   }, [volume]);
 
+  const fillQueueFromPlaylist = useCallback(() => {
+    const pl = playlistRef.current;
+    if (!pl.length) return;
+
+    // Songs already in queue (by id)
+    const queuedIds = new Set(queueRef.current.map(s => s.id));
+    const currentId = currentSong?.id;
+
+    // Add songs from playlist that aren't queued and aren't currently playing
+    const toAdd = pl.filter(s => s.id !== currentId && !queuedIds.has(s.id));
+    if (toAdd.length) {
+      queueRef.current = [...queueRef.current, ...toAdd.map(s => ({ ...s }))];
+      setQueue([...queueRef.current]);
+    }
+  }, [currentSong]);
+
+  const autoNext = useCallback(() => {
+    // If queue is empty, refill from playlist
+    if (!queueRef.current.length && playlistRef.current.length) {
+      fillQueueFromPlaylist();
+    }
+
+    if (!queueRef.current.length) {
+      setPlaying(false);
+      return false;
+    }
+
+    let next;
+    const q = queueRef.current;
+    if (shuffle) {
+      const idx = Math.floor(Math.random() * q.length);
+      next = q[idx];
+      q.splice(idx, 1);
+    } else {
+      next = q.shift();
+    }
+    queueRef.current = [...q];
+    setQueue([...q]);
+    return next;
+  }, [shuffle, fillQueueFromPlaylist]);
+
+  // Exponer la playlist para auto‑queue
+  const setPlaylist = useCallback((songs) => {
+    playlistRef.current = Array.isArray(songs) ? [...songs] : [];
+  }, []);
+
   const playSong = useCallback(async (song, addToQueue = false) => {
     if (!audioRef.current) return;
     if (addToQueue) {
@@ -40,7 +87,6 @@ export function MusicProvider({ children }) {
       return;
     }
     if (currentSong?.id === song.id && playing) {
-      // toggle pause
       const a = audioRef.current;
       a.pause();
       setPlaying(false);
@@ -61,7 +107,6 @@ export function MusicProvider({ children }) {
       audio.src = proxyUrl;
       audio.load();
 
-      // Esperar canplay con timeout largo (30s para primera descarga)
       await new Promise((resolve, reject) => {
         const ok = () => { cleanup(); resolve(); };
         const fail = () => { cleanup(); reject(new Error('No se pudo cargar')); };
@@ -75,7 +120,6 @@ export function MusicProvider({ children }) {
         audio.addEventListener('error', fail);
       });
 
-      // Reintentar play si no está listo
       let attempts = 0;
       while (attempts < 5) {
         try {
@@ -90,6 +134,10 @@ export function MusicProvider({ children }) {
 
       setPlaying(true);
       setCurrentSong(song);
+      historyRef.current = [...historyRef.current, song];
+
+      // Auto‑fill queue con el resto de la playlist
+      fillQueueFromPlaylist();
     } catch (err) {
       console.error('[Music] Error playing:', err.message);
       setCurrentSong(null);
@@ -97,7 +145,7 @@ export function MusicProvider({ children }) {
     } finally {
       setLoadingStream(false);
     }
-  }, [currentSong, playing]);
+  }, [currentSong, playing, fillQueueFromPlaylist]);
 
   const togglePlay = useCallback(() => {
     const a = audioRef.current;
@@ -111,29 +159,11 @@ export function MusicProvider({ children }) {
   }, [currentSong, playing]);
 
   const playNext = useCallback(() => {
-    const q = queueRef.current;
-    if (!q.length) {
-      setPlaying(false);
-      return;
-    }
-
-    let next;
-    if (shuffle) {
-      const idx = Math.floor(Math.random() * q.length);
-      next = q[idx];
-      q.splice(idx, 1);
-    } else {
-      next = q.shift();
-    }
-
-    queueRef.current = [...q];
-    setQueue([...q]);
-
-    if (next) {
-      historyRef.current = [...historyRef.current, currentSong].filter(Boolean);
-      playSong(next);
-    }
-  }, [shuffle, currentSong, playSong]);
+    const next = autoNext();
+    if (!next) return;
+    historyRef.current = [...historyRef.current, currentSong].filter(Boolean);
+    playSong(next);
+  }, [autoNext, currentSong, playSong]);
 
   const playPrev = useCallback(() => {
     const h = historyRef.current;
@@ -177,6 +207,7 @@ export function MusicProvider({ children }) {
     queueRef.current = [];
     setQueue([]);
     historyRef.current = [];
+    playlistRef.current = [];
   }, []);
 
   const value = {
@@ -189,12 +220,9 @@ export function MusicProvider({ children }) {
     queue,
     shuffle,
     loadingStream,
-    audioRef,
     setVolume,
     setMuted,
     setShuffle,
-    setCurrentTime,
-    setDuration,
     playSong,
     togglePlay,
     playNext,
@@ -203,6 +231,7 @@ export function MusicProvider({ children }) {
     removeFromQueue,
     seek,
     stop,
+    setPlaylist,
   };
 
   return (
@@ -219,13 +248,7 @@ export function MusicProvider({ children }) {
           }
         }}
         onEnded={() => {
-          // Auto-next when song ends
-          const q = queueRef.current;
-          if (q.length) {
-            playNext();
-          } else {
-            setPlaying(false);
-          }
+          playNext();
         }}
       />
     </MusicContext.Provider>

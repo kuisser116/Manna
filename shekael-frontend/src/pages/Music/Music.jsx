@@ -20,7 +20,7 @@ export default function Music() {
     currentSong, playing, duration, currentTime, volume, muted,
     queue, shuffle, loadingStream,
     playSong, togglePlay, playNext, playPrev, setShuffle,
-    addToQueue, removeFromQueue, seek,
+    addToQueue, removeFromQueue, seek, setPlaylist,
     setVolume, setMuted,
   } = useMusic();
 
@@ -39,14 +39,17 @@ export default function Music() {
       setLoading(true);
       setError('');
       searchMusic(q).then(data => {
-        setResults(data.results || []);
-        if (!data.results?.length) setError('Sin resultados');
+        const list = data.results || [];
+        setResults(list);
+        setPlaylist(list);
+        if (!list.length) setError('Sin resultados');
       }).catch(() => setError('Error al buscar'))
       .finally(() => setLoading(false));
     } else {
       setResults([]);
+      setPlaylist([]);
     }
-  }, [q]);
+  }, [q, setPlaylist]);
 
   // ── Animación del panel ──
   useEffect(() => {
