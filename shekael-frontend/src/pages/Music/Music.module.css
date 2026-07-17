@@ -312,6 +312,8 @@
 
 .ctrlBtn:disabled { opacity: 0.3; cursor: default; }
 
+.ctrlBtn.active { color: var(--color-primary); }
+
 .playBtn {
   width: 52px; height: 52px;
   border: none; border-radius: 50%;

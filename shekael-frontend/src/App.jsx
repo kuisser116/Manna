@@ -18,6 +18,7 @@ import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import Studio from './pages/Studio';
 import Music from './pages/Music/Music';
+import { MusicProvider } from './context/MusicContext';
 import Search from './pages/Search/Search';
 import Explorar from './pages/Explorar/Explorar';
 import Chat from './pages/Chat/Chat';
@@ -31,6 +32,7 @@ import ToastContainer from './components/Toast/Toast';
 import QRScanner from './components/QRScanner/QRScanner';
 import MyQRModal from './components/MyQRModal/MyQRModal';
 import WalletWidget from './components/WalletWidget/WalletWidget';
+import MusicWidget from './components/MusicWidget/MusicWidget';
 import LockScreen from './components/LockScreen/LockScreen';
 import useSessionLock from './hooks/useSessionLock';
 
@@ -142,7 +144,8 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isChatRoute && !isMusicRoute && <WalletWidget variant="floating" />}
+        {!isChatRoute && <MusicWidget />}
+        {!isChatRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
@@ -212,6 +215,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <MusicProvider>
       <Routes>
         {/* Landing sin layout de app */}
         <Route path="/" element={<Landing />} />
@@ -280,6 +284,7 @@ function App() {
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </MusicProvider>
     </BrowserRouter>
   );
 }

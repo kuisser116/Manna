@@ -73,6 +73,10 @@ router.get('/search', async (req, res) => {
 router.get('/proxy/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params;
+    // Sanitizar videoId (solo caracteres seguros)
+    if (!/^[\w-]+$/.test(videoId)) {
+      return res.status(400).json({ error: 'Invalid video ID' });
+    }
     const cachePath = path.join(CACHE_DIR, `${videoId}.webm`);
 
     // ¿Ya tenemos el archivo descargado?
@@ -85,6 +89,7 @@ router.get('/proxy/:videoId', async (req, res) => {
         '-f', 'bestaudio[abr<=128]/bestaudio',
         '-o', cachePath,
         '--no-warnings',
+        '--user-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
         videoUrl,
       ], { timeout: 120000, windowsHide: true });
 
