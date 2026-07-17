@@ -63,31 +63,27 @@ export async function getBalance(publicKey) {
         const usdcVal = parseFloat(usdcBalanceValue?.balance || '0');
         const xlmVal = parseFloat(xlmBalance?.balance || '0');
 
-        let mainBalance = '0.00';
-        let mainCurrency = 'USDC';
-
-        if (usdcVal > 0) {
-            mainBalance = usdcBalanceValue.balance;
-            mainCurrency = 'USDC';
-        } else if (xlmVal > 1) {
-            mainBalance = xlmBalance?.balance || '0.00';
-            mainCurrency = 'XLM';
-        }
+        // Siempre mostramos USDC como moneda principal, incluso en 0
+        // XLM solo se muestra como dato informativo (reserva de la red)
+        const hasUsdcTrustline = !!usdcBalanceValue;
+        const mainBalance = usdcBalanceValue?.balance || '0.00';
+        const mainCurrency = 'USDC';
 
         return {
             xlm: xlmBalance?.balance || '0',
             usdc: usdcBalanceValue?.balance || '0.00',
             balance: mainBalance,
             currency: mainCurrency,
+            usdcActive: hasUsdcTrustline,
             publicKey,
         };
     } catch (err) {
         // Cuenta no fondeada aún
         if (err.response?.status === 404) {
-            return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'XLM', publicKey, notFunded: true };
+            return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'USDC', publicKey, notFunded: true, usdcActive: false };
         }
         console.error('getBalance error:', err.message);
-        return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'XLM', publicKey };
+        return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'USDC', publicKey, usdcActive: false };
     }
 }
 

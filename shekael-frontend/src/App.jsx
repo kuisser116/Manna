@@ -140,7 +140,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        <WalletWidget variant="floating" />
+        {!isChatRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
