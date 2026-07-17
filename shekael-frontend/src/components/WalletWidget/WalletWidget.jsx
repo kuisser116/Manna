@@ -101,6 +101,23 @@ export function WalletWidget({ variant = 'default' }) {
         ? `${user.stellarPublicKey.slice(0, 5)}...${user.stellarPublicKey.slice(-4)}`
         : '';
 
+    // ── Click outside handler ──
+    useEffect(() => {
+        if (!isExpanded || variant !== 'floating') return;
+
+        const handleClickOutside = (e) => {
+            if (
+                panelRef.current && !panelRef.current.contains(e.target) &&
+                buttonRef.current && !buttonRef.current.contains(e.target)
+            ) {
+                setIsExpanded(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isExpanded, variant]);
+
     // ── Toggle handler ──
     const togglePanel = useCallback(() => {
         if (isExpanded) {

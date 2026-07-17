@@ -140,7 +140,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isProfileRoute && !isChatRoute && !isBusinessRoute && !isExplorarRoute && <WalletWidget variant="floating" />}
+        <WalletWidget variant="floating" />
       </div>
       <CommentModal />
       <ToastContainer />
