@@ -144,8 +144,8 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isChatRoute && <MusicWidget />}
-        {!isChatRoute && <WalletWidget variant="floating" />}
+        {!isChatRoute && !isMusicRoute && <MusicWidget />}
+        {!isChatRoute && !isMusicRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
