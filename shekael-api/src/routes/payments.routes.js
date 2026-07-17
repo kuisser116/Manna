@@ -143,34 +143,6 @@ router.post('/pay', authMiddleware, async (req, res) => {
         metadata: { paymentId: payment.id, businessName: biz.name },
       });
 
-      // ⭐ First-purchase bonus: $1 USDC al usuario por su primera compra
-      let bonusGiven = false;
-      try {
-        const { data: prevPayments } = await supabase
-          .from('payments')
-          .select('id')
-          .eq('from_user_id', userId)
-          .eq('status', 'completed')
-          .limit(2);
-
-        // Si este es su primer pago (solo 1 = el que acaba de hacer)
-        if ((prevPayments?.length || 0) <= 1) {
-          const bonusWalletSecret = process.env.BONUS_WALLET_SECRET;
-          if (bonusWalletSecret) {
-            await sendPayment({
-              fromSecretKey: bonusWalletSecret,
-              toPublicKey: payer.stellar_public_key,
-              amount: '1',
-              memo: 'Shekael:bienvenida',
-            });
-            bonusGiven = true;
-          }
-        }
-      } catch (bonusErr) {
-        console.error('Error al dar bono de primera compra:', bonusErr.message);
-        // No bloqueamos el pago si el bono falla
-      }
-
       res.json({
         status: 'completed',
         paymentId: payment.id,
@@ -178,7 +150,6 @@ router.post('/pay', authMiddleware, async (req, res) => {
         originalAmount: parsedAmount,
         discountApplied: discount,
         stellarTxHash: txHash,
-        bonusGiven,
         message: discount > 0
           ? `Pago exitoso. Descuento del 5% aplicado: ahorraste USDC ${discount.toFixed(2)}`
           : 'Pago exitoso',

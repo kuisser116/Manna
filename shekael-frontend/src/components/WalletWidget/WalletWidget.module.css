@@ -241,3 +241,37 @@
 }
 
 
+
+.xlmNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+    margin: 0 14px 8px;
+    background: var(--color-warning-bg, rgba(234, 179, 8, 0.1));
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+}
+
+.xlmNoticeIcon {
+    flex-shrink: 0;
+    font-size: 14px;
+    margin-top: 1px;
+}
+
+.xlmNoticeText {
+    flex: 1;
+}
+
+.xlmNoticeText strong {
+    color: var(--color-text);
+}
+
+.balanceMxn {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}

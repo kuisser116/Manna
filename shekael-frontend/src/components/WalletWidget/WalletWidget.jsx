@@ -18,7 +18,7 @@ try {
 }
 
 export function WalletWidget({ variant = 'default' }) {
-    const { mxneBalance, balance, currency, user, balanceLoading } = useStore();
+    const { mxneBalance, balance, currency, user, balanceLoading, balanceMXN } = useStore();
     const { fetchBalance } = useWallet();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -156,6 +156,13 @@ export function WalletWidget({ variant = 'default' }) {
                 {shortKey && (
                     <span className={styles.pubKey}>{shortKey}</span>
                 )}
+            </div>
+
+            <div className={styles.xlmNotice}>
+                <span className={styles.xlmNoticeIcon}>ⓘ</span>
+                <span className={styles.xlmNoticeText}>
+                    Para activar tu cuenta necesitas enviar <strong>~2 XLM</strong> desde Bitso a tu dirección. Después puedes depositar USDC sin límite.
+                </span>
             </div>
 
             <div className={styles.actions}>

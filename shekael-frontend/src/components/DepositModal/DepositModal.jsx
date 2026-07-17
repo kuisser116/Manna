@@ -135,6 +135,15 @@ export default function DepositModal({ isOpen, onClose }) {
                                 </p>
                             </div>
 
+                            {/* XLM Activation Notice */}
+                            <div className={styles.activationNotice}>
+                                <span style={{ fontSize: 14, flexShrink: 0 }}>ⓘ</span>
+                                <span>
+                                    Para activar tu cuenta, envía primero <strong>~2 XLM</strong> desde Bitso a tu dirección.
+                                    Una vez activada, puedes depositar USDC sin límite.
+                                </span>
+                            </div>
+
                             {/* Address */}
                             <div className={styles.addressSection}>
                                 <label className={styles.addressLabel}>Tu dirección Stellar</label>
