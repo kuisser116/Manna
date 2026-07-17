@@ -2,10 +2,18 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
-import { getBalance, sendPayment } from '../services/stellar.service.js';
+import { getBalance, sendPayment, ensureTrustline } from '../services/stellar.service.js';
+import * as StellarSdk from '@stellar/stellar-sdk';
 import { decryptWithFallback } from '../services/crypto.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { repairWallet } from '../services/quest.service.js';
+
+const HORIZON_URL = process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org';
+const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET;
+const server = new StellarSdk.Horizon.Server(HORIZON_URL);
+
+const MXNE_ISSUER = process.env.MXNE_ISSUER || 'GAGCSH6VQL5Q5JXOOWGAL3HV7XBUEGR5FO5WUP3TKEBRSXJGSZAOKIJH';
+const MXNE_ASSET = new StellarSdk.Asset('MXNe', MXNE_ISSUER.trim());
 
 const router = Router({ strict: false });
 
@@ -214,6 +222,200 @@ router.post('/withdraw-exchange', authMiddleware, async (req, res) => {
         }
         res.status(500).json({ message: err.message || 'Error al procesar el retiro' });
     }
+});
+
+// ─── Swap XLM → MXNe ──────────────────────────────────────
+// El usuario manda XLM a la wallet swap master y recibe MXNe en su wallet
+router.post('/swap-xlm-to-mxne', authMiddleware, async (req, res) => {
+  try {
+    const supabase = getDB();
+    const { amount } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ message: 'Monto requerido' });
+
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, stellar_public_key, stellar_secret_key_encrypted')
+      .eq('id', req.user.id)
+      .single();
+
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    // Obtener swap master wallet
+    const swapMasterSecret = process.env.SWAP_MASTER_SECRET;
+    if (!swapMasterSecret) {
+      return res.status(500).json({ message: 'Swap master no configurado. Contacta al equipo.' });
+    }
+
+    const masterKeypair = StellarSdk.Keypair.fromSecret(swapMasterSecret);
+
+    // 1. Usuario envía XLM al master (path payment para dejar rastro)
+    let secretKey;
+    try {
+      secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
+    } catch {
+      return res.status(500).json({ message: 'Error al desencriptar clave' });
+    }
+
+    const sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
+    const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
+
+    // Verificar saldo XLM
+    const xlmBalance = sourceAccount.balances.find(b => b.asset_type === 'native');
+    const parsedAmount = parseFloat(amount);
+    // Reserve 1 XLM + fee
+    if (parseFloat(xlmBalance?.balance || '0') < parsedAmount + 1.5) {
+      return res.status(400).json({ message: `XLM insuficiente. Necesitas ${(parsedAmount + 1.5).toFixed(2)}, tienes ${parseFloat(xlmBalance?.balance || '0').toFixed(2)}` });
+    }
+
+    // Enviar XLM al master
+    const paymentTx = new StellarSdk.TransactionBuilder(sourceAccount, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        StellarSdk.Operation.payment({
+          destination: masterKeypair.publicKey(),
+          asset: StellarSdk.Asset.native(),
+          amount: String(parsedAmount.toFixed(7)),
+        })
+      )
+      .addMemo(StellarSdk.Memo.text('SWAP:XLM2MXNE'))
+      .setTimeout(30)
+      .build();
+
+    paymentTx.sign(sourceKeypair);
+    await server.submitTransaction(paymentTx);
+
+    // 2. Master envía MXNe al usuario (misma cantidad, tasa 1:1 por ahora)
+    const masterAccount = await server.loadAccount(masterKeypair.publicKey());
+
+    const payoutTx = new StellarSdk.TransactionBuilder(masterAccount, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        StellarSdk.Operation.payment({
+          destination: user.stellar_public_key,
+          asset: MXNE_ASSET,
+          amount: String(parsedAmount.toFixed(7)),
+        })
+      )
+      .addMemo(StellarSdk.Memo.text('Shekael:swap'))
+      .setTimeout(30)
+      .build();
+
+    payoutTx.sign(masterKeypair);
+    const result = await server.submitTransaction(payoutTx);
+
+    res.json({
+      message: `MXNe ${parsedAmount.toFixed(2)} depositados en tu wallet`,
+      xlmSpent: parsedAmount,
+      mxneReceived: parsedAmount,
+      txHash: result.hash,
+    });
+  } catch (err) {
+    console.error('Swap XLM→MXNe error:', err);
+    res.status(500).json({ message: err.message || 'Error al convertir' });
+  }
+});
+
+// ─── Swap MXNe → XLM ──────────────────────────────────────
+// El usuario envía MXNe al master y recibe XLM
+router.post('/swap-mxne-to-xlm', authMiddleware, async (req, res) => {
+  try {
+    const supabase = getDB();
+    const { amount } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ message: 'Monto requerido' });
+
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, stellar_public_key, stellar_secret_key_encrypted')
+      .eq('id', req.user.id)
+      .single();
+
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    const swapMasterSecret = process.env.SWAP_MASTER_SECRET;
+    if (!swapMasterSecret) {
+      return res.status(500).json({ message: 'Swap master no configurado' });
+    }
+
+    const masterKeypair = StellarSdk.Keypair.fromSecret(swapMasterSecret);
+
+    // 1. Usuario envía MXNe al master
+    let secretKey;
+    try {
+      secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
+    } catch {
+      return res.status(500).json({ message: 'Error al desencriptar clave' });
+    }
+
+    const sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
+    const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
+
+    const parsedAmount = parseFloat(amount);
+
+    // Verificar saldo MXNe
+    const mxneBalance = sourceAccount.balances.find(b => b.asset_code === 'MXNe');
+    if (parseFloat(mxneBalance?.balance || '0') < parsedAmount) {
+      return res.status(400).json({ message: `MXNe insuficiente. Tienes ${parseFloat(mxneBalance?.balance || '0').toFixed(2)}` });
+    }
+
+    const paymentTx = new StellarSdk.TransactionBuilder(sourceAccount, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        StellarSdk.Operation.payment({
+          destination: masterKeypair.publicKey(),
+          asset: MXNE_ASSET,
+          amount: String(parsedAmount.toFixed(7)),
+        })
+      )
+      .addMemo(StellarSdk.Memo.text('SWAP:MXNE2XLM'))
+      .setTimeout(30)
+      .build();
+
+    paymentTx.sign(sourceKeypair);
+    await server.submitTransaction(paymentTx);
+
+    // 2. Master envía XLM al usuario (misma cantidad)
+    const masterAccount = await server.loadAccount(masterKeypair.publicKey());
+
+    // Dejar 1 XLM de reserva
+    const xlmBalance = masterAccount.balances.find(b => b.asset_type === 'native');
+    if (parseFloat(xlmBalance?.balance || '0') < parsedAmount + 1.5) {
+      return res.status(400).json({ message: 'El pool de swap no tiene suficiente XLM en este momento. Intenta con un monto menor.' });
+    }
+
+    const payoutTx = new StellarSdk.TransactionBuilder(masterAccount, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        StellarSdk.Operation.payment({
+          destination: user.stellar_public_key,
+          asset: StellarSdk.Asset.native(),
+          amount: String(parsedAmount.toFixed(7)),
+        })
+      )
+      .addMemo(StellarSdk.Memo.text('Shekael:swap'))
+      .setTimeout(30)
+      .build();
+
+    payoutTx.sign(masterKeypair);
+    const result = await server.submitTransaction(payoutTx);
+
+    res.json({
+      message: `XLM ${parsedAmount.toFixed(2)} depositados en tu wallet. Ya puedes retirarlos a tu exchange.`,
+      mxneSpent: parsedAmount,
+      xlmReceived: parsedAmount,
+      txHash: result.hash,
+    });
+  } catch (err) {
+    console.error('Swap MXNe→XLM error:', err);
+    res.status(500).json({ message: err.message || 'Error al convertir' });
+  }
 });
 
 export default router;

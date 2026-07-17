@@ -4,9 +4,9 @@
 -- 1. Tabla de pagos entre usuarios y comercios
 CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  from_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   to_business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
-  to_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  to_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   amount_mxne DECIMAL(12, 2) NOT NULL,
   original_amount DECIMAL(12, 2) NOT NULL, -- monto antes del descuento
   discount_applied DECIMAL(12, 2) NOT NULL DEFAULT 0,
