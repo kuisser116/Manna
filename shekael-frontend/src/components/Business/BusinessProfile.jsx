@@ -279,7 +279,11 @@ export default function BusinessProfile() {
 
                 <div className={profileStyles.chips}>
                   {biz.location?.address && (
-                    <div className={profileStyles.chip}>
+                    <div
+                      className={`${profileStyles.chip} ${profileStyles.chipClickable}`}
+                      onClick={() => navigate('/explorar', { state: { flyTo: { lng: biz.location.lng, lat: biz.location.lat, name: biz.name } } })}
+                      title="Ver en el mapa"
+                    >
                       <MapPin size={12} /> {biz.location.address}
                     </div>
                   )}

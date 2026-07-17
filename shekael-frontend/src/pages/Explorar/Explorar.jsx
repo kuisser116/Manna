@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import mapboxgl from 'mapbox-gl';
 import { Store, Bus, MapPin } from 'lucide-react';
@@ -35,6 +35,7 @@ const MOCK_BUSINESSES = [
 
 export default function Explorar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -56,6 +57,12 @@ export default function Explorar() {
     map.on('load', () => {
       mapRef.current = map;
       setLoaded(true);
+
+      // Fly to location if coming from profile
+      const flyToTarget = location.state?.flyTo;
+      if (flyToTarget) {
+        map.flyTo({ center: [flyToTarget.lng, flyToTarget.lat], zoom: 15, duration: 2000 });
+      }
 
       MOCK_BUSINESSES.forEach((biz) => {
         const el = document.createElement('div');
