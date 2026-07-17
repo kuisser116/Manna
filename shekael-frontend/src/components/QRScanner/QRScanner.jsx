@@ -171,7 +171,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
         // ------------------------------------
 
         try {
-            const { data } = await payQR(scanData.publicKey, amount, 'MXNe');
+            const { data } = await payQR(scanData.publicKey, amount, 'USDC');
             
             if (data.success) {
                 setStep('success');
@@ -272,7 +272,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                                     onChange={(e) => setAmount(e.target.value)}
                                     autoFocus
                                 />
-                                <span className={styles.currencyCode}>MXNe</span>
+                                <span className={styles.currencyCode}>USDC</span>
                             </div>
 
                             {scanData.isVerified && (
@@ -295,7 +295,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                             <div className={styles.summary}>
                                 <div className={styles.summaryRow}>
                                     <span>Total a pagar</span>
-                                    <span>${(parseFloat(amount || 0) * (scanData.isVerified ? 0.95 : 1.0)).toFixed(2)} MXNe</span>
+                                    <span>${(parseFloat(amount || 0) * (scanData.isVerified ? 0.95 : 1.0)).toFixed(2)} USDC</span>
                                 </div>
                             </div>
 
@@ -322,11 +322,11 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                             <div className={styles.receipt}>
                                 <div className={styles.receiptRow}>
                                     <span>Pagado</span>
-                                    <span>${(parseFloat(amount || 0) * 0.95).toFixed(2)} MXNe</span>
+                                    <span>${(parseFloat(amount || 0) * 0.95).toFixed(2)} USDC</span>
                                 </div>
                                 <div className={styles.receiptRow}>
                                     <span>Subsidio Regional</span>
-                                    <span>${(parseFloat(amount || 0) * 0.05).toFixed(2)} MXNe</span>
+                                    <span>${(parseFloat(amount || 0) * 0.05).toFixed(2)} USDC</span>
                                 </div>
                             </div>
 

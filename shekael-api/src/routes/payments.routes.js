@@ -91,7 +91,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
     const balance = await getBalance(payer.stellar_public_key);
     const mxneBalance = parseFloat(balance.mxne || '0');
     if (mxneBalance < finalAmount) {
-      return res.status(400).json({ message: `Saldo insuficiente. Tienes MXNe ${mxneBalance.toFixed(2)}, necesitas ${finalAmount.toFixed(2)}` });
+      return res.status(400).json({ message: `Saldo insuficiente. Tienes USDC ${mxneBalance.toFixed(2)}, necesitas ${finalAmount.toFixed(2)}` });
     }
 
     // Desencriptar clave secreta del pagador
@@ -119,7 +119,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
 
     if (payError) throw payError;
 
-    // Enviar pago MXNe vía Stellar
+    // Enviar pago USDC vía Stellar
     try {
       const txHash = await sendPayment({
         fromSecretKey: secretKey,
@@ -179,7 +179,7 @@ router.get('/history', authMiddleware, async (req, res) => {
     const { data: sent, error: sentErr } = await supabase
       .from('payments')
       .select(`
-        id, amount_mxne, original_amount, discount_applied, status, stellar_tx_hash, created_at,
+        id, amount_usdc, original_amount, discount_applied, status, stellar_tx_hash, created_at,
         to_business:to_business_id (id, name, avatar_url)
       `)
       .eq('from_user_id', userId)
@@ -191,7 +191,7 @@ router.get('/history', authMiddleware, async (req, res) => {
     const { data: received, error: recErr } = await supabase
       .from('payments')
       .select(`
-        id, amount_mxne, original_amount, discount_applied, status, stellar_tx_hash, created_at,
+        id, amount_usdc, original_amount, discount_applied, status, stellar_tx_hash, created_at,
         from_user:from_user_id (id, display_name, avatar_url)
       `)
       .eq('to_business_id', userId)  // business owner gets payments as "received" for their businesses

@@ -6,7 +6,7 @@ import useStore from '../../store';
 import styles from './WithdrawModal.module.css';
 
 export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
-    const { mxneBalance } = useStore();
+    const { balance } = useStore();
     const overlayRef = useRef(null);
     const panelRef = useRef(null);
     const contentRef = useRef(null);
@@ -18,7 +18,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
     const [error, setError] = useState(null);
     const [shouldRender, setShouldRender] = useState(false);
 
-    const mxneAmount = parseFloat(mxneBalance || 0);
+    const usdcAmount = parseFloat(balance || "0");
 
     const animateIn = useCallback(() => {
         setShouldRender(true);
@@ -129,7 +129,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                         <h3 className={styles.title}>Retirar fondos</h3>
                         <p className={styles.balanceLabel}>
                             <Wallet size={12} />
-                            {mxneAmount.toFixed(2)} MXNe disponibles
+                            {usdcAmount.toFixed(2)} USDC disponibles
                         </p>
                     </div>
                     <button className={styles.closeBtn} onClick={handleClose}>
@@ -197,7 +197,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                     <label className={styles.fieldLabel}>
                                         Monto a retirar
                                         <span className={styles.fieldHint}>
-                                            Máximo {mxneAmount.toFixed(2)} MXNe
+                                            Máximo {usdcAmount.toFixed(2)} USDC
                                         </span>
                                     </label>
                                     <div className={styles.amountInputWrapper}>
@@ -205,7 +205,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                             type="number"
                                             step="0.01"
                                             min="0.01"
-                                            max={mxneAmount}
+                                            max={usdcAmount}
                                             placeholder="0.00"
                                             value={amount}
                                             onChange={e => setAmount(e.target.value)}
@@ -213,7 +213,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                             disabled={sending}
                                             className={styles.amountInput}
                                         />
-                                        <span className={styles.currencyBadge}>MXNe</span>
+                                        <span className={styles.currencyBadge}>USDC</span>
                                     </div>
                                     <div className={styles.amountQuickRow}>
                                         {[50, 100, 200, 500].map(n => (
@@ -221,8 +221,8 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                                 key={n}
                                                 type="button"
                                                 className={styles.quickAmountBtn}
-                                                onClick={() => setAmount(Math.min(n, mxneAmount))}
-                                                disabled={sending || mxneAmount < n}
+                                                onClick={() => setAmount(Math.min(n, usdcAmount))}
+                                                disabled={sending || usdcAmount < n}
                                             >
                                                 ${n}
                                             </button>
@@ -234,7 +234,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                     <div className={styles.conversionNote}>
                                         <ArrowDownToLine size={14} />
                                         <span>
-                                            MXNe &rarr; XLM vía Stellar DEX &middot; Comisión ≈ $0.003 MXN
+                                            USDC &rarr; XLM vía Stellar DEX &middot; Comisión ≈ $0.003 USD
                                         </span>
                                     </div>
                                 )}
@@ -272,7 +272,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                     <div className={styles.stepNumber}>1</div>
                                     <div className={styles.stepInfo}>
                                         <strong>Ingresa el monto</strong>
-                                        <p>Elige cuánto retirar de tu saldo MXNe</p>
+                                        <p>Elige cuánto retirar de tu saldo USDC</p>
                                     </div>
                                 </div>
                                 <div className={styles.mgStep}>
@@ -300,7 +300,7 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
                                 <p>
                                     Shekael utilizará <strong>MoneyGram Ramps API</strong> (SEP-24) para
                                     habilitar retiros en efectivo. Cada transacción tiene un límite
-                                    de $8,000 MXN y requiere identificación oficial.
+                                    de $8,000 y requiere identificación oficial.
                                 </p>
                             </div>
                         </div>

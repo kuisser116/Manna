@@ -19,8 +19,7 @@ export const updateUserState = (state) => transAPI.post('/regional-fund/update-s
 export const simulateAd = () => transAPI.post('/admin/simulate-ad');
 export const payQR = (toPublicKey, amount, assetCode) => transAPI.post('/regional-fund/pay', { toPublicKey, amount, assetCode });
 
-export const swapXlmToMxne = (amount) => transAPI.post('/wallet/swap-xlm-to-mxne', { amount });
-export const swapMxneToXlm = (amount) => transAPI.post('/wallet/swap-mxne-to-xlm', { amount });
+// Swap endpoints eliminados (USDC directo, sin pool de intercambio)
 export const withdrawToExchange = (to, amount) => transAPI.post('/wallet/withdraw-exchange', { to, amount });
 
 export default transAPI;

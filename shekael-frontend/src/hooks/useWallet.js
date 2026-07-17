@@ -10,7 +10,7 @@ export function useWallet() {
         setBalanceLoading(true);
         try {
             const { data } = await getWalletBalance();
-            setBalance(data.balance || '0.00', data.currency || 'XLM', data.balanceMXN || '0.00', data.usdc || '0.00');
+            setBalance(data.balance || '0.00', data.currency || 'XLM');
         } catch (err) {
             console.error('Error fetching balance:', err);
         } finally {
@@ -20,7 +20,7 @@ export function useWallet() {
 
     const sendSupport = useCallback(async (recipientPublicKey, postId, amount = '0.01') => {
         const { data } = await apiSupport({ to: recipientPublicKey, amount, postId });
-        if (data.newBalance) setBalance(data.newBalance, data.currency || 'USDC', data.balanceMXN || '0.00', data.usdc || '0.00');
+        if (data.newBalance) setBalance(data.newBalance, data.currency || 'USDC');
         if (postId) updatePostSupports(postId);
         return data;
     }, [setBalance, updatePostSupports]);

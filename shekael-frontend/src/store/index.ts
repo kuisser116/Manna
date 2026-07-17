@@ -72,23 +72,19 @@ const useStore = create((set, get) => ({
     // No borrar flags de términos — la aceptación es permanente, no por sesión
     // Si cambia la versión, se maneja con la comparación de version en DB
     localStorage.removeItem('shekael_pin_hash');
-    set({ user: null, token: null, balance: '0.00', mxneBalance: '0.00', posts: [] });
+    set({ user: null, token: null, balance: '0.00', posts: [] });
     // Notificar a toda la app que se cerró sesión
     window.dispatchEvent(new CustomEvent('Shekael:logout'));
   },
 
-  // â”€â”€ Wallet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Wallet ───────────────────────────────────────────────
   balance: '0.00',
-  mxneBalance: '0.00',
-  balanceMXN: '0.00',
   currency: 'XLM',
   balanceLoading: false,
 
-  setBalance: (balance, currency, balanceMXN, mxneBalance = '0.00') => set({
-    balance,
-    currency: currency || 'XLM',
-    balanceMXN: balanceMXN || '0.00',
-    mxneBalance: mxneBalance || '0.00'
+  setBalance: (balance, currency = 'USDC') => set({
+    balance: balance || '0.00',
+    currency: currency || 'USDC',
   }),
   setBalanceLoading: (balanceLoading) => set({ balanceLoading }),
 

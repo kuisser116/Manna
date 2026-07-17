@@ -398,11 +398,6 @@ export default function Profile() {
                   </div>
                 )}
                 <div className={styles.chips}>
-                  {isOwnProfile && privacy.showMXNe !== false && (
-                    <div className={styles.chip}>
-                      <Icons.Heart />
-                      0.00 MXNe
-                    </div>
                   )}
                   {profileData?.stellarPublicKey && (isOwnProfile ? privacy.showStellarKey !== false : true) && (
                     <div
@@ -519,7 +514,6 @@ function PrivacyModal({ isOpen, onClose }) {
             />
             <PrivacyToggle
               label="Mostrar llave Stellar"
-              desc="Necesaria para recibir pagos MXNe de otros usuarios"
               enabled={privacy.showStellarKey !== false}
               onToggle={() => toggle('showStellarKey')}
             />
@@ -530,13 +524,7 @@ function PrivacyModal({ isOpen, onClose }) {
               onToggle={() => toggle('showStats')}
             />
             <PrivacyToggle
-              label="Mostrar MXNe"
               desc="Muestra tu saldo de puntos de lealtad"
-              enabled={privacy.showMXNe !== false}
-              onToggle={() => toggle('showMXNe')}
-            />
-            <PrivacyToggle
-              label="Mostrar biografía"
               desc="Tu bio se muestra en tu perfil público"
               enabled={privacy.showBio !== false}
               onToggle={() => toggle('showBio')}

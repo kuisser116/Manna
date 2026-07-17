@@ -59,17 +59,17 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
                 availableBalance = parseFloat(balance.usdc);
                 currencyName = 'USDC';
                 break;
-            case 'MXNe':
-            case 'MXNc':
+            case 'USDC':
+            case 'USDC':
                 availableBalance = parseFloat(balance.mxne);
-                currencyName = 'MXNe';
+                currencyName = 'USDC';
                 break;
             case 'XLM':
                 availableBalance = parseFloat(balance.xlm);
                 currencyName = 'XLM';
                 break;
             default:
-                return res.status(400).json({ message: 'Moneda no soportada. Use USDC, MXNe o XLM.' });
+                return res.status(400).json({ message: 'Moneda no soportada. Use USDC, USDC o XLM.' });
         }
         
         // Validar que el usuario tenga saldo suficiente

@@ -493,7 +493,7 @@ function LandingInner() {
       {/* ═══ BAND 2: ECONOMY ═══ */}
       <section className={`${styles.band} ${styles.bandDark}`} ref={band2Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Economia MXNe — Hecha en Mexico</span>
+          <span className={styles.bandEyebrow}>Economia USDC — Hecha en Mexico</span>
           <h2 className={styles.bandTitle}>Gana mientras formas parte</h2>
           <div className={styles.econLine}>
             <svg width="60" height="3" viewBox="0 0 60 3">
@@ -503,7 +503,7 @@ function LandingInner() {
           <div className={styles.econSteps} ref={econStepsRef}>
             <div className={styles.econStep}>
               <span className={styles.econNum}>01</span>
-              <span className={styles.econLabel}>Ganas MXNe</span>
+              <span className={styles.econLabel}>Ganas USDC</span>
             </div>
             <div className={styles.econArrow}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

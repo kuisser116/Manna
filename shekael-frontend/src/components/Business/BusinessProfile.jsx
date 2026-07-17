@@ -435,7 +435,6 @@ function PrivacyModal({ isOpen, onClose, showProducts, showReviews, onToggleProd
             />
             <PrivacyToggle
               label="Mostrar llave Stellar"
-              desc="Necesaria para recibir pagos MXNe de otros usuarios"
               enabled={privacy.showStellarKey !== false}
               onToggle={() => toggle('showStellarKey')}
             />
@@ -446,10 +445,7 @@ function PrivacyModal({ isOpen, onClose, showProducts, showReviews, onToggleProd
               onToggle={() => toggle('showStats')}
             />
             <PrivacyToggle
-              label="Mostrar MXNe"
               desc="Muestra tu saldo de puntos de lealtad"
-              enabled={privacy.showMXNe !== false}
-              onToggle={() => toggle('showMXNe')}
             />
             <PrivacyToggle
               label="Mostrar biografía"

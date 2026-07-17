@@ -11,7 +11,7 @@ function currentMonthYear() {
     return new Date().toISOString().slice(0, 7);
 }
 
-const MAX_DISCOUNT_PER_TX = 50.00; // Máximo descuento por transacción (MXNe)
+const MAX_DISCOUNT_PER_TX = 50.00; // Máximo descuento por transacción (USDC)
 
 // GET /regional-fund/balance — Saldo del fondo regional del usuario
 router.get('/balance', authMiddleware, async (req, res) => {
@@ -119,7 +119,7 @@ router.post('/admin/simulate-ad', authMiddleware, async (req, res) => {
 // POST /regional-fund/pay — Pagar con QR (P2M/P2P)
 router.post('/pay', authMiddleware, async (req, res) => {
     try {
-        const { toPublicKey, amount, assetCode = 'MXNe' } = req.body;
+        const { toPublicKey, amount, assetCode = 'USDC' } = req.body;
         if (!toPublicKey || !amount) return res.status(400).json({ message: 'Datos incompletos' });
         
         void(`[QR Pay] Iniciando pago: ${amount} ${assetCode} para ${toPublicKey}`);

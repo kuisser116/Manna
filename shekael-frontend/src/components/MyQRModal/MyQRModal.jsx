@@ -65,7 +65,7 @@ export default function MyQRModal({ isOpen, onClose }) {
                             </div>
                         </div>
 
-                        <p className={styles.hint}>Muestra este código para recibir MXNe al instante.</p>
+                        <p className={styles.hint}>Muestra este código para recibir USDC al instante.</p>
 
                         <div className={styles.addressBox} onClick={copyToClipboard}>
                             <code className={styles.address}>

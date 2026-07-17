@@ -31,12 +31,12 @@ export default function WalletRamp({ isOpen, onClose, onRefreshBalance }) {
         setError(null);
 
         try {
-            // Retiro directo de MXNe (1 MXNe = 1 Peso)
+            // Retiro directo de USDC (1 USDC = 1 Peso)
             // No hacemos conversión ya que el usuario ingresa pesos y el activo es peso digital
             const mxnAmount = parseFloat(amount).toFixed(2);
             
             const { data } = await api.post('/anchor/withdraw', 
-                { assetCode: 'MXNe', amount: mxnAmount }
+                { assetCode: 'USDC', amount: mxnAmount }
             );
 
             if (data.url) {
@@ -112,10 +112,10 @@ export default function WalletRamp({ isOpen, onClose, onRefreshBalance }) {
                                         required
                                         autoFocus
                                     />
-                                    <span className={styles.currencyBadge}>MXNe</span>
+                                    <span className={styles.currencyBadge}>USDC</span>
                                 </div>
                                 <p className={styles.hint}>
-                                    Retiras en Oxxo/MoneyGram. Usaremos tu balance de <strong>MXNe</strong> para completar la operación.
+                                    Retiras en Oxxo/MoneyGram. Usaremos tu balance de <strong>USDC</strong> para completar la operación.
                                 </p>
                             </div>
 

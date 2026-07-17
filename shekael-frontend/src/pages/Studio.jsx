@@ -218,7 +218,7 @@ export default function Studio() {
               <StatCard icon={Eye} label="Vistas totales" value={overview?.totalViews} />
               <StatCard icon={Heart} label="Me gusta" value={overview?.totalLikes} />
               <StatCard icon={MessageSquare} label="Comentarios" value={overview?.totalComments} />
-              <StatCard icon={Coins} label="Apoyos (MXNe)" value={overview?.totalSupports} format="decimal" />
+              <StatCard icon={Coins} label="Apoyos (USDC)" value={overview?.totalSupports} format="decimal" />
             </div>
 
             <div className={styles.statsGrid}>
@@ -413,7 +413,7 @@ export default function Studio() {
                 <strong>{(overview?.totalComments || 0).toLocaleString()}</strong>
               </div>
               <div className={styles.summaryItem}>
-                <span>Total apoyos MXNe</span>
+                <span>Total apoyos USDC</span>
                 <strong>{(overview?.totalSupports || 0).toFixed(2)}</strong>
               </div>
               <div className={styles.summaryItem}>
@@ -482,14 +482,14 @@ export default function Studio() {
                   <div className={styles.featureIcon}>📢</div>
                   <div>
                     <strong>Anuncios</strong>
-                    <p>Gana MXNe cuando otros usuarios vean anuncios en tu contenido</p>
+                    <p>Gana USDC cuando otros usuarios vean anuncios en tu contenido</p>
                   </div>
                 </div>
                 <div className={styles.monetizeFeature}>
                   <div className={styles.featureIcon}>💛</div>
                   <div>
                     <strong>Apoyos directos</strong>
-                    <p>Recibe donaciones en MXNe de tu comunidad</p>
+                    <p>Recibe donaciones en USDC de tu comunidad</p>
                   </div>
                 </div>
                 <div className={styles.monetizeFeature}>

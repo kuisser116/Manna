@@ -36,7 +36,7 @@ function Particles({ show, originX, originY }) {
 }
 
 export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
-    const { user, mxneBalance, addToast } = useStore();
+    const { user, balance, addToast } = useStore();
     const { sendSupport } = useWallet();
     const [supported, setSupported] = useState(false);
     const [count, setCount] = useState(supportsCount);
@@ -58,7 +58,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
         return () => { document.body.style.overflow = ''; };
     }, [modalOpen]);
 
-    const currentBalance = parseFloat(mxneBalance || '0');
+    const currentBalance = parseFloat(balance || "0");
 
     const handleClick = (e) => {
         if (supported || !user || loading) return;

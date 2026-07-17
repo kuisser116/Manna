@@ -1,5 +1,4 @@
 import * as StellarSdk from '@stellar/stellar-sdk';
-import { convertToMXN } from './price.service.js';
 import dotenv from 'dotenv';
 dotenv.config({ override: true });
 
@@ -10,8 +9,6 @@ const server = new StellarSdk.Horizon.Server(HORIZON_URL);
 
 const STABLECOIN_CODE = process.env.STABLECOIN_CODE || 'USDC';
 const STABLECOIN_ISSUER = process.env.STABLECOIN_ISSUER || 'GAPL3WK52DTYQB23DP7IU3OJAR2YTBXMTAYF54ZG5V377YY7GU2G2UNW';
-const MXNE_ISSUER = process.env.MXNE_ISSUER || 'GAGCSH6VQL5Q5JXOOWGAL3HV7XBUEGR5FO5WUP3TKEBRSXJGSZAOKIJH';
-const MXNC_ISSUER = process.env.MXNC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 
 // Función para validar si una clave pública de Stellar es válida
 function isValidPublicKey(key) {
@@ -23,22 +20,15 @@ function isValidPublicKey(key) {
     }
 }
 
-// Inicializar activos con validación
-let STABLECOIN_ASSET, MXNC_ASSET, MXNE_ASSET;
+// Inicializar activo con validación
+let STABLECOIN_ASSET;
 
 try {
     if (!isValidPublicKey(STABLECOIN_ISSUER)) throw new Error(`STABLECOIN_ISSUER inválido: ${STABLECOIN_ISSUER}`);
-    if (!isValidPublicKey(MXNC_ISSUER)) throw new Error(`MXNC_ISSUER inválido: ${MXNC_ISSUER}`);
-    if (!isValidPublicKey(MXNE_ISSUER)) throw new Error(`MXNE_ISSUER inválido: ${MXNE_ISSUER}`);
-    
     STABLECOIN_ASSET = new StellarSdk.Asset(STABLECOIN_CODE, STABLECOIN_ISSUER.trim());
-    MXNC_ASSET = new StellarSdk.Asset('MXNc', MXNC_ISSUER.trim());
-    MXNE_ASSET = new StellarSdk.Asset('MXNe', MXNE_ISSUER.trim());
 } catch (err) {
-    console.error('❌ CRITICAL: Error inicializando activos de Stellar:', err.message);
+    console.error('❌ CRITICAL: Error inicializando activo de Stellar:', err.message);
     STABLECOIN_ASSET = StellarSdk.Asset.native();
-    MXNC_ASSET = StellarSdk.Asset.native();
-    MXNE_ASSET = StellarSdk.Asset.native();
 }
 
 // Crear un nuevo keypair Stellar
@@ -69,19 +59,14 @@ export async function getBalance(publicKey) {
         const account = await server.loadAccount(publicKey);
         const xlmBalance = account.balances.find((b) => b.asset_type === 'native');
         const usdcBalanceValue = account.balances.find((b) => b.asset_code === STABLECOIN_CODE);
-        const mxncBalanceValue = account.balances.find((b) => b.asset_code === 'MXNc');
-        const mxneBalanceValue = account.balances.find((b) => b.asset_code === 'MXNe');
-        
+
         const usdcVal = parseFloat(usdcBalanceValue?.balance || '0');
-        const mxncVal = parseFloat(mxncBalanceValue?.balance || '0');
-        const mxneVal = parseFloat(mxneBalanceValue?.balance || '0');
         const xlmVal = parseFloat(xlmBalance?.balance || '0');
 
         let mainBalance = '0.00';
         let mainCurrency = 'USDC';
 
-        const usdcAmt = parseFloat(usdcBalanceValue?.balance || '0');
-        if (usdcAmt > 0) {
+        if (usdcVal > 0) {
             mainBalance = usdcBalanceValue.balance;
             mainCurrency = 'USDC';
         } else if (xlmVal > 1) {
@@ -89,42 +74,36 @@ export async function getBalance(publicKey) {
             mainCurrency = 'XLM';
         }
 
-        // Convert USDC to MXN for display
-        const mxnRate = 18.50; // aproximado, se puede actualizar con price.service
-        const balanceMXN = (usdcAmt * mxnRate).toFixed(2);
-
         return {
             xlm: xlmBalance?.balance || '0',
             usdc: usdcBalanceValue?.balance || '0.00',
-            mxne: (mxneVal + mxncVal).toFixed(7),
             balance: mainBalance,
-            currency: 'USDC',
-            balanceMXN,
+            currency: mainCurrency,
             publicKey,
         };
     } catch (err) {
         // Cuenta no fondeada aún
         if (err.response?.status === 404) {
-            return { xlm: '0', usdc: '0.00', balance: '0.00', balanceMXN: '0.00', currency: 'XLM', publicKey, notFunded: true };
+            return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'XLM', publicKey, notFunded: true };
         }
         console.error('getBalance error:', err.message);
-        return { xlm: '0', usdc: '0.00', balance: '0.00', balanceMXN: '0.00', currency: 'XLM', publicKey };
+        return { xlm: '0', usdc: '0.00', balance: '0.00', currency: 'XLM', publicKey };
     }
 }
-// Verifica si la cuenta destino existe y tiene trustlines (Misiones completadas)
+
+// Verifica si la cuenta destino existe y tiene trustline del stablecoin
 export async function isWalletActive(publicKey) {
     try {
         const account = await server.loadAccount(publicKey);
         const hasUSDC = account.balances.some(b => b.asset_code === STABLECOIN_CODE);
-        const hasMXNe = account.balances.some(b => b.asset_code === 'MXNe');
-        return hasUSDC || hasMXNe;
+        return hasUSDC;
     } catch (err) {
         if (err.response?.status === 404) return false;
         return false;
     }
 }
 
-// Enviar pago en Stellar Testnet
+// Enviar pago en Stellar
 export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = STABLECOIN_CODE, memo = 'Shekael' }) {
     if (!fromSecretKey || fromSecretKey === 'enc-placeholder') {
         throw new Error('Clave secreta no válida para esta wallet de sistema');
@@ -149,9 +128,6 @@ export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCod
         throw e;
     }
 
-    // Asegurar trustline para USDT antes de pagar (si es necesario)
-    // En este flujo, el sender debe tener el trustline para poseer USDC.
-    
     const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
         fee: StellarSdk.BASE_FEE,
         networkPassphrase: NETWORK_PASSPHRASE,
@@ -159,7 +135,7 @@ export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCod
         .addOperation(
             StellarSdk.Operation.payment({
                 destination: toPublicKey,
-                asset: assetCode === 'MXNe' ? MXNE_ASSET : (assetCode === 'MXNc' ? MXNC_ASSET : STABLECOIN_ASSET),
+                asset: STABLECOIN_ASSET,
                 amount: String(parseFloat(amount).toFixed(7)),
             })
         )
@@ -168,7 +144,7 @@ export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCod
         .build();
 
     transaction.sign(sourceKeypair);
-    
+
     try {
         const result = await server.submitTransaction(transaction);
         return result.hash;
@@ -176,7 +152,7 @@ export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCod
         if (err.response && err.response.data && err.response.data.extras) {
             const resultCodes = err.response.data.extras.result_codes;
             console.error('Stellar submit failed with Result Codes:', resultCodes);
-            
+
             const ops = resultCodes.operations || [];
             if (ops.includes('op_underfunded')) {
                 throw new Error(`Saldo insuficiente de ${assetCode} (o falta de XLM para comisiones) para completar esta transacción.`);
@@ -217,16 +193,6 @@ export async function getTransactionHistory(publicKey, limit = 10) {
 
 /**
  * Registra la autoría de un CID en la blockchain de Stellar usando manageData.
- * 
- * Técnica: Graba `Shekael:cid:{CID_slice}` en los datos de la cuenta del creador.
- * Esto es una prueba criptográfica inmutable de que esa wallet publicó ese contenido.
- * 
- * Cuando el contrato ContentOwnership de Soroban esté desplegado, solo hay que
- * cambiar la implementación aquí — el resto del código no necesita cambiar.
- * 
- * @param {string} secretKey  - Clave secreta de la wallet del creador (custodial)
- * @param {string} cid        - CID del contenido (calculado localmente)
- * @returns {string|null}     - Hash de la transacción en Stellar, o null si falla
  */
 export async function registerContentOwnership(secretKey, cid) {
     if (!secretKey || secretKey === 'enc-placeholder') {
@@ -237,8 +203,6 @@ export async function registerContentOwnership(secretKey, cid) {
         const sourceKeypair = StellarSdk.Keypair.fromSecret(secretKey);
         const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
 
-        // manageData graba un par clave-valor en la cuenta on-chain.
-        // La clave tiene límite de 64 bytes. Usamos los primeros 56 chars del CID.
         const dataKey = `Shekael:${cid.slice(0, 56)}`;
         const dataValue = 'owned';
 
@@ -261,13 +225,10 @@ export async function registerContentOwnership(secretKey, cid) {
         void(`✅ ContentOwnership registrado on-chain. Hash: ${result.hash}`);
         return result.hash;
     } catch (err) {
-        // Si la cuenta no existe en Horizon (404), es porque está en modo 'off-chain' (esperando misiones)
         if (err.response?.status === 404) {
             void(`ℹ️  ContentOwnership: cuenta del creador aún off-chain. Registro pospuesto.`);
             return null;
         }
-
-        // Otros errores no críticos
         console.warn('registerContentOwnership: no pudo registrar on-chain:', err.message);
         return null;
     }
@@ -275,12 +236,6 @@ export async function registerContentOwnership(secretKey, cid) {
 
 /**
  * Registra el consentimiento de datos del usuario en Stellar como prueba inmutable.
- * Usa manageData para grabar el memo de consentimiento en la cuenta del usuario.
- * Esto crea un timestamp irrefutable y verificable en Stellar Explorer.
- *
- * @param {object} user - { stellar_public_key, stellar_secret_key_encrypted }
- * @param {string} memoText - 'Shekael_CONSENT_V1' | 'Shekael_REVOKE_V1'
- * @returns {{ hash: string }|null}
  */
 export async function sendConsentMemo(user, memoText) {
     if (!user?.stellar_secret_key_encrypted || user.stellar_secret_key_encrypted === 'enc-placeholder') {
@@ -289,7 +244,6 @@ export async function sendConsentMemo(user, memoText) {
     }
 
     try {
-        // Desencriptar clave per-user con userId
         const { decryptWithFallback } = await import('./crypto.service.js');
         const secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
 
@@ -321,18 +275,14 @@ export async function sendConsentMemo(user, memoText) {
 }
 
 /**
- * Establece la línea de confianza para USDT en una cuenta.
- * Requerido para poder recibir y enviar USDC.
- */
-/**
  * Invoca el contrato de Soroban para distribuir recompensas de anuncios.
  */
-export async function invokeAdDistribution({ 
-    advertiserSecret, 
-    viewerPublicKey, 
-    creatorPublicKey = null, 
-    amount, 
-    isFeed 
+export async function invokeAdDistribution({
+    advertiserSecret,
+    viewerPublicKey,
+    creatorPublicKey = null,
+    amount,
+    isFeed
 }) {
     if (!advertiserSecret || advertiserSecret === 'enc-placeholder') {
         throw new Error('Clave secreta no válida para Soroban');
@@ -349,31 +299,31 @@ export async function invokeAdDistribution({
     try {
         const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
         const contract = new StellarSdk.Contract(contractId);
-        
+
         // Soroban usa montos en i128. Multiplicamos por 10^7 (stroops)
         const amountI128 = StellarSdk.nativeToScVal(
-            BigInt(Math.round(parseFloat(amount) * 10_000_000)), 
+            BigInt(Math.round(parseFloat(amount) * 10_000_000)),
             { type: 'i128' }
         );
 
-        // SAC (Stellar Asset Contract) ID para MXNe
-        const mxneTokenAddress = MXNE_ASSET.contractId(NETWORK_PASSPHRASE);
+        // SAC (Stellar Asset Contract) ID para el stablecoin
+        const tokenAddress = STABLECOIN_ASSET.contractId(NETWORK_PASSPHRASE);
 
         const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
-            fee: (parseInt(StellarSdk.BASE_FEE) * 100).toString(), // Fee más alta para Soroban
+            fee: (parseInt(StellarSdk.BASE_FEE) * 100).toString(),
             networkPassphrase: NETWORK_PASSPHRASE,
         })
         .addOperation(
             contract.call(
                 'distribute',
                 ...[
-                    sourceKeypair.publicKey(), // advertiser
-                    viewerPublicKey,           // viewer
-                    creatorPublicKey,          // creator (Option handling needed if using nativeToScVal)
-                    mxneTokenAddress,          // token_id
-                    amountI128,                // amount
-                    isFeed,                    // is_feed
-                    process.env.Shekael_DEV_WALLET, 
+                    sourceKeypair.publicKey(),
+                    viewerPublicKey,
+                    creatorPublicKey,
+                    tokenAddress,
+                    amountI128,
+                    isFeed,
+                    process.env.Shekael_DEV_WALLET,
                     process.env.Shekael_BARN_WALLET
                 ].map(val => {
                     if (val === null) return StellarSdk.nativeToScVal(null);
@@ -398,15 +348,13 @@ export async function invokeAdDistribution({
 }
 
 /**
- * Establece la línea de confianza para USDT y MXNe en una cuenta.
+ * Establece la línea de confianza para el stablecoin en una cuenta.
  */
 export async function ensureTrustline(secretKey, retries = 3) {
     try {
         const keypair = StellarSdk.Keypair.fromSecret(secretKey);
         let account;
-        
-        // Loop de reintento para manejar el 404 (Not Found) de Horizon
-        // Útil si la cuenta acaba de ser fondeada y Horizon aún no la ve (Sync delay)
+
         for (let i = 0; i < retries; i++) {
             try {
                 account = await server.loadAccount(keypair.publicKey());
@@ -421,33 +369,26 @@ export async function ensureTrustline(secretKey, retries = 3) {
             }
         }
 
-        const assets = [STABLECOIN_ASSET, MXNE_ASSET]; // Priorizar MXNe
+        const hasTrustline = account.balances.some(
+            (b) => b.asset_code === STABLECOIN_ASSET.code && b.asset_issuer === STABLECOIN_ASSET.issuer
+        );
+
+        if (hasTrustline) return true;
+
         const transaction = new StellarSdk.TransactionBuilder(account, {
             fee: StellarSdk.BASE_FEE,
             networkPassphrase: NETWORK_PASSPHRASE,
-        });
+        })
+            .addOperation(StellarSdk.Operation.changeTrust({ asset: STABLECOIN_ASSET }))
+            .setTimeout(30)
+            .build();
 
-        let ops = 0;
-        for (const asset of assets) {
-            const hasTrustline = account.balances.some(
-                (b) => b.asset_code === asset.code && b.asset_issuer === asset.issuer
-            );
-            if (!hasTrustline) {
-                transaction.addOperation(StellarSdk.Operation.changeTrust({ asset }));
-                ops++;
-            }
-        }
-
-        if (ops === 0) return true;
-
-        transaction.setTimeout(30);
-        const builtTx = transaction.build();
-        builtTx.sign(keypair);
-        await server.submitTransaction(builtTx);
-        void(`✅ Trustlines creadas para ${keypair.publicKey()}`);
+        transaction.sign(keypair);
+        await server.submitTransaction(transaction);
+        void(`✅ Trustline creada para ${keypair.publicKey()}`);
         return true;
     } catch (err) {
-        console.error('Error al crear trustlines:', err.message);
+        console.error('Error al crear trustline:', err.message);
         return false;
     }
 }

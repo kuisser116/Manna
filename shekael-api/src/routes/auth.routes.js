@@ -42,12 +42,12 @@ Términos y Condiciones de Shekael v1.3
 
 1. NATURALEZA DE LA PLATAFORMA
 Shekael es una red social descentralizada que opera sobre la red Stellar (testnet).
-MXNe es un token digital (asset) emitido en la blockchain de Stellar. MXNe no es
+USDC es un token digital (asset) emitido en la blockchain de Stellar. USDC no es
 una moneda fiduciaria, no está respaldado por ningún gobierno ni entidad financiera,
 y no cuenta con seguro de depósitos ni garantía de convertibilidad a moneda fiduciaria.
 
 2. RIESGOS
-El valor de MXNe depende de la oferta y demanda dentro del ecosistema Shekael y,
+El valor de USDC depende de la oferta y demanda dentro del ecosistema Shekael y,
 en el futuro, de la integración con anchors de Stellar. El uso de tecnología blockchain
 implica riesgos técnicos: pérdida de llaves privadas, errores de smart contract,
 y volatilidad de red. Shekael no se responsabiliza por pérdidas derivadas de estos
@@ -55,16 +55,16 @@ riesgos. El usuario es el único custodio de su llave privada.
 
 3. PROHIBICIONES
 - No está permitido el lavado de dinero, evasión fiscal, fraude, o cualquier
-  actividad ilícita usando MXNe.
-- No está permitido presentar MXNe como una inversión, acción, bono, o cualquier
+  actividad ilícita usando USDC.
+- No está permitido presentar USDC como una inversión, acción, bono, o cualquier
   valor financiero regulado.
-- No está permitido operar MXNe en mercados secundarios no autorizados.
+- No está permitido operar USDC en mercados secundarios no autorizados.
 - No está permitido el uso de la plataforma por menores de 13 años.
 
 4. NATURALEZA DIGITAL, NO SERVICIO FINANCIERO
 Shekael es una plataforma de contenido social. No es una institución de dinero
 electrónico, casa de cambio, banco, ni proveedor de servicios financieros.
-La transferencia de MXNe entre usuarios es una transferencia directa en la
+La transferencia de USDC entre usuarios es una transferencia directa en la
 blockchain de Stellar, no un servicio de pagos regulado.
 
 5. PRIVACIDAD Y DATOS
@@ -275,7 +275,7 @@ router.get('/terms/current', (req, res) => {
         version: TERMS_VERSION,
         last_updated: TERMS_LAST_UPDATED,
         hash: TERMS_CONTENT_HASH,
-        summary: 'Al usar Shekael aceptas estos términos. MXNe es un token digital en Stellar, no una moneda fiduciaria ni un servicio financiero regulado.'
+        summary: 'Al usar Shekael aceptas estos términos. USDC es un token digital en Stellar, no una moneda fiduciaria ni un servicio financiero regulado.'
     });
 });
 

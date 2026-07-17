@@ -18,7 +18,7 @@ try {
 }
 
 export function WalletWidget({ variant = 'default' }) {
-    const { mxneBalance, balance, currency, user, balanceLoading, balanceMXN } = useStore();
+    const { balance, currency, user, balanceLoading } = useStore();
     const { fetchBalance } = useWallet();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -96,7 +96,7 @@ export function WalletWidget({ variant = 'default' }) {
         }
     }, [isExpanded, animateIn, animateOut, shouldRender]);
 
-    const usdcAmount = parseFloat(mxneBalance || balance || 0);
+    const usdcAmount = parseFloat(balance || "0");
     const shortKey = user?.stellarPublicKey
         ? `${user.stellarPublicKey.slice(0, 5)}...${user.stellarPublicKey.slice(-4)}`
         : '';
@@ -135,26 +135,25 @@ export function WalletWidget({ variant = 'default' }) {
                 {balanceLoading ? (
                     <div className={styles.skeleton} />
                 ) : (
-                    <motion.div
-                        key={`usdc-${usdcAmount}`}
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={styles.balanceDisplay}
-                    >
-                        <span className={styles.balanceAmount}>
-                            {usdcAmount.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            })}
-                        </span>
-                        <span className={styles.balanceCurrency}>{currency || 'USDC'}</span>
-                        <span className={styles.balanceMxn}>
-                            ≈ ${parseFloat(balanceMXN || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
-                        </span>
-                    </motion.div>
-                )}
-                {shortKey && (
-                    <span className={styles.pubKey}>{shortKey}</span>
+                    <>
+                        <motion.div
+                            key={`usdc-${usdcAmount}`}
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={styles.balanceDisplay}
+                        >
+                            <span className={styles.balanceAmount}>
+                                {usdcAmount.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })}
+                            </span>
+                            <span className={styles.balanceCurrency}>{currency || 'USDC'}</span>
+                        </motion.div>
+                        {shortKey && (
+                            <span className={styles.pubKey}>{shortKey}</span>
+                        )}
+                    </>
                 )}
             </div>
 

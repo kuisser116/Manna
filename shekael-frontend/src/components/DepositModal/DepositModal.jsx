@@ -96,7 +96,7 @@ export default function DepositModal({ isOpen, onClose }) {
             >
                 <div className={styles.header}>
                     <div className={styles.titleGroup}>
-                        <h3>Depositar MXNe</h3>
+                        <h3>Depositar USDC</h3>
                         <p className={styles.subtitle}>Recibe XLM desde cualquier exchange</p>
                     </div>
                     <button className={styles.closeBtn} onClick={onClose}>
@@ -177,7 +177,7 @@ export default function DepositModal({ isOpen, onClose }) {
                                         Confirma el retiro. Los fondos llegan en <strong>~3 segundos</strong>
                                     </li>
                                     <li>
-                                        Al recibirlos, se convertirán automáticamente a <strong>MXNe</strong> (1 MXNe = $1 MXN)
+                                        Envía USDC directamente a tu dirección
                                     </li>
                                 </ol>
                             </div>
