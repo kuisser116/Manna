@@ -240,9 +240,9 @@ export function WalletWidget({ variant = 'default' }) {
                 >
                     <Wallet size={15} />
                     <span className={styles.floatBalance}>
-                        {usdcAmount.toFixed(2)}
+                        {(usdcAmount * mxnRate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                     </span>
-                    <span className={styles.floatCurrency}>{currency || 'USDC'}</span>
+                    <span className={styles.floatCurrency}>MXN</span>
                 </motion.button>
             </div>
         );

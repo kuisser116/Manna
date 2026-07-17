@@ -82,9 +82,9 @@ const useStore = create((set, get) => ({
   currency: 'XLM',
   balanceLoading: false,
 
-  setBalance: (balance, currency = 'USDC') => set({
+  setBalance: (balance, _currency = 'USDC') => set({
     balance: balance || '0.00',
-    currency: currency || 'USDC',
+    currency: 'MXN',
   }),
   setBalanceLoading: (balanceLoading) => set({ balanceLoading }),
 
