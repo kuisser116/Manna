@@ -36,7 +36,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) {
+    if (!query.trim() || isMusicRoute) {
       setSuggestions(null);
       setShowSuggestions(false);
       return;
@@ -63,6 +63,8 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const isMusicRoute = location.pathname === '/music';
+
   const showBackBtn =
     location.pathname !== "/feed" && location.pathname !== "/";
 
@@ -70,7 +72,11 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
     e.preventDefault();
     if (query.trim()) {
       setShowSuggestions(false);
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      if (isMusicRoute) {
+        navigate(`/music?q=${encodeURIComponent(query.trim())}`);
+      } else {
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
     }
   };
 
@@ -115,7 +121,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                 ref={inputRef}
                 type="text"
                 className={styles.searchInput}
-                placeholder={t('topbar.search')}
+                placeholder={isMusicRoute ? 'Buscar canción…' : t('topbar.search')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => {

@@ -17,6 +17,7 @@ import Terms from './pages/Terms';
 import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import Studio from './pages/Studio';
+import Music from './pages/Music/Music';
 import Search from './pages/Search/Search';
 import Explorar from './pages/Explorar/Explorar';
 import Chat from './pages/Chat/Chat';
@@ -64,6 +65,7 @@ function AppLayout({ children }) {
   const isChatRoute = location.pathname.startsWith('/chat');
   const isBusinessRoute = location.pathname.startsWith('/business');
   const isExplorarRoute = location.pathname.startsWith('/explorar');
+  const isMusicRoute = location.pathname.startsWith('/music');
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -140,7 +142,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isChatRoute && <WalletWidget variant="floating" />}
+        {!isChatRoute && !isMusicRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
@@ -259,6 +261,11 @@ function App() {
         <Route path="/explorar" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><Explorar /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/music" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><Music /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/search" element={

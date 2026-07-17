@@ -17,6 +17,7 @@ import anchorRoutes from './routes/anchor.routes.js';
 import chatRoutes from './routes/chats.routes.js';
 import businessesRoutes from './routes/businesses.routes.js';
 import paymentsRoutes from './routes/payments.routes.js';
+import musicRoutes from './routes/music.routes.js';
 
 import { apiLimiter, uploadLimiter, chatLimiter } from './middleware/rateLimiter.js';
 import { initSocketIO } from './services/socket.js';
@@ -93,6 +94,7 @@ app.use('/anchor', anchorRoutes);
 app.use('/chats', chatRoutes);
 app.use('/businesses', businessesRoutes);
 app.use('/payments', paymentsRoutes);
+app.use('/music', musicRoutes);
 
 // ── Tipo de cambio USD/MXN para el frontend ──
 import { getMxnRate } from './services/price.service.js';

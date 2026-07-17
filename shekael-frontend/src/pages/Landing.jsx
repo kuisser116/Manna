@@ -457,33 +457,27 @@ function LandingInner() {
       {/* ═══ BAND 1: FEATURES ═══ */}
       <section className={`${styles.band} ${styles.bandLight}`} ref={band1Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Tu red, tu terruno</span>
+          <span className={styles.bandEyebrow}>Tu red, tu terreno</span>
           <h2 className={styles.bandTitle}>Lo que ya puedes hacer</h2>
           <div className={styles.featGrid} ref={tagsRef}>
             <div className={styles.featInner}>
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M8 10h8M8 14h5"/></svg>
-                <span className={styles.featLabel}>Feed</span>
+                <span className={styles.featLabel}>Publicaciones</span>
               </div>
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                 <span className={styles.featLabel}>Chat</span>
               </div>
-              <div className={styles.featItem}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
-                <span className={styles.featLabel}>Perfil</span>
-              </div>
+
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 <span className={styles.featLabel}>Fotos</span>
               </div>
-              <div className={styles.featItem}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                <span className={styles.featLabel}>Audio</span>
-              </div>
+
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                <span className={styles.featLabel}>Gente</span>
+                <span className={styles.featLabel}>Comunidad</span>
               </div>
             </div>
           </div>
@@ -503,7 +497,7 @@ function LandingInner() {
           <div className={styles.econSteps} ref={econStepsRef}>
             <div className={styles.econStep}>
               <span className={styles.econNum}>01</span>
-              <span className={styles.econLabel}>Ganas USDC</span>
+              <span className={styles.econLabel}>Ingresa USDC</span>
             </div>
             <div className={styles.econArrow}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
