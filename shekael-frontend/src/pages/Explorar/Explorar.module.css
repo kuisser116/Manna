@@ -1,0 +1,134 @@
+.page {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Nav flotante semitransparente */
+.nav {
+  position: fixed;
+  top: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(26, 26, 46, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.navTab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.navTab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.navTabActive {
+  background: rgba(225, 29, 72, 0.25);
+  color: #fff;
+}
+
+.badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+/* Map */
+.mapContainer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.mapContainer :global(.mapboxgl-ctrl-logo) {
+  display: none !important;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-dim);
+  gap: 8px;
+  background: var(--color-surface);
+  z-index: 5;
+}
+
+.loading p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Marker */
+.marker {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.marker:hover {
+  transform: scale(1.15);
+  z-index: 10;
+}
+
+.markerInner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-primary, #e11d48);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Popup */
+.popupContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.popupContent strong {
+  font-size: 14px;
+}
+
+.popupContent span {
+  color: #666;
+  font-size: 12px;
+}

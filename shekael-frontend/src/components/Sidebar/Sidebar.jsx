@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { Home, Search, QrCode, Bell, User, PlusSquare, MessageCircle } from 'lucide-react';
+import { Home, Search, QrCode, Bell, User, PlusSquare, MessageCircle, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import styles from './Sidebar.module.css';
 import useStore from '../../store';
@@ -49,6 +49,16 @@ export function Sidebar({ collapsed = false, hidden = false, isMobile = false, o
                     data-label={t('sidebar.qr', 'Mi QR')}
                 >
                     <QrCode size={24} strokeWidth={2} />
+                </button>
+
+                {/* Explorar */}
+                <button
+                    className={styles.iconBtn}
+                    title="Explorar"
+                    data-label="Explorar"
+                    onClick={() => handleNav('/explorar')}
+                >
+                    <MapPin size={24} strokeWidth={2} />
                 </button>
 
                 {/* Chat */}

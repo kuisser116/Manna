@@ -18,6 +18,7 @@ import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import Studio from './pages/Studio';
 import Search from './pages/Search/Search';
+import Explorar from './pages/Explorar/Explorar';
 import Chat from './pages/Chat/Chat';
 import BusinessProfile from './components/Business/BusinessProfile';
 import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistration';
@@ -62,6 +63,7 @@ function AppLayout({ children }) {
   const isProfileRoute = location.pathname.startsWith('/profile');
   const isChatRoute = location.pathname.startsWith('/chat');
   const isBusinessRoute = location.pathname.startsWith('/business');
+  const isExplorarRoute = location.pathname.startsWith('/explorar');
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -138,7 +140,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isProfileRoute && !isChatRoute && !isBusinessRoute && <WalletWidget variant="floating" />}
+        {!isProfileRoute && !isChatRoute && !isBusinessRoute && !isExplorarRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
@@ -252,6 +254,11 @@ function App() {
         <Route path="/business/:id" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><BusinessProfile /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/explorar" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><Explorar /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/search" element={
