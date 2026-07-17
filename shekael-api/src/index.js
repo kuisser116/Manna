@@ -16,6 +16,7 @@ import notificationsRoutes from './routes/notifications.routes.js';
 import anchorRoutes from './routes/anchor.routes.js';
 import chatRoutes from './routes/chats.routes.js';
 import businessesRoutes from './routes/businesses.routes.js';
+import paymentsRoutes from './routes/payments.routes.js';
 
 import { apiLimiter, uploadLimiter, chatLimiter } from './middleware/rateLimiter.js';
 import { initSocketIO } from './services/socket.js';
@@ -91,6 +92,7 @@ app.use('/notifications', notificationsRoutes);
 app.use('/anchor', anchorRoutes);
 app.use('/chats', chatRoutes);
 app.use('/businesses', businessesRoutes);
+app.use('/payments', paymentsRoutes);
 
 // ── Health check ─────────────────────────────────
 app.get('/health', (req, res) => {
