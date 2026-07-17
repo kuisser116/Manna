@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS payments (
   from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   to_business_id UUID REFERENCES businesses(id) ON DELETE SET NULL,
   to_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-  amount_mxne DECIMAL(12, 2) NOT NULL,
+  amount_usdc DECIMAL(12, 2) NOT NULL,
   original_amount DECIMAL(12, 2) NOT NULL, -- monto antes del descuento
   discount_applied DECIMAL(12, 2) NOT NULL DEFAULT 0,
   stellar_tx_hash TEXT,
@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_payments_to_biz ON payments(to_business_id, creat
 CREATE TABLE IF NOT EXISTS withdrawals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-  amount_mxne DECIMAL(12, 2) NOT NULL,
+  amount_usdc DECIMAL(12, 2) NOT NULL,
   amount_mxn DECIMAL(12, 2) NOT NULL,       -- equivalente en MXN
   stellar_tx_hash TEXT,
   bank_account_info TEXT,                    -- CLABE o información bancaria

@@ -104,6 +104,13 @@
     color: var(--color-text-muted);
 }
 
+.balanceMxn {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-dim);
+    margin-top: 2px;
+}
+
 .pubKey {
     font-size: 10px;
     font-family: 'SF Mono', 'Fira Code', monospace;

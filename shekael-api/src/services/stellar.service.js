@@ -77,30 +77,28 @@ export async function getBalance(publicKey) {
         const xlmVal = parseFloat(xlmBalance?.balance || '0');
 
         let mainBalance = '0.00';
-        let mainCurrency = 'XLM';
+        let mainCurrency = 'USDC';
 
-        if (mxneVal > 0 || mxncVal > 0) {
-            mainBalance = (mxneVal + mxncVal).toFixed(7);
-            mainCurrency = 'MXNe';
-        }
- else if (usdcVal > 0) {
+        const usdcAmt = parseFloat(usdcBalanceValue?.balance || '0');
+        if (usdcAmt > 0) {
             mainBalance = usdcBalanceValue.balance;
             mainCurrency = 'USDC';
-        } else {
+        } else if (xlmVal > 1) {
             mainBalance = xlmBalance?.balance || '0.00';
             mainCurrency = 'XLM';
         }
 
-        // Siempre mostrar el balance real de MXNe desde blockchain
-        const realMXNeBalance = mxneBalanceValue?.balance || '0.00';
-        
+        // Convert USDC to MXN for display
+        const mxnRate = 18.50; // aproximado, se puede actualizar con price.service
+        const balanceMXN = (usdcAmt * mxnRate).toFixed(2);
+
         return {
             xlm: xlmBalance?.balance || '0',
             usdc: usdcBalanceValue?.balance || '0.00',
             mxne: (mxneVal + mxncVal).toFixed(7),
             balance: mainBalance,
-            currency: mainCurrency,
-            balanceMXN: (mxneVal + mxncVal).toFixed(2), // Suma ambos para visualización
+            currency: 'USDC',
+            balanceMXN,
             publicKey,
         };
     } catch (err) {
@@ -112,7 +110,6 @@ export async function getBalance(publicKey) {
         return { xlm: '0', usdc: '0.00', balance: '0.00', balanceMXN: '0.00', currency: 'XLM', publicKey };
     }
 }
-
 // Verifica si la cuenta destino existe y tiene trustlines (Misiones completadas)
 export async function isWalletActive(publicKey) {
     try {

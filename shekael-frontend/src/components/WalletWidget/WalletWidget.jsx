@@ -163,7 +163,7 @@ export function WalletWidget({ variant = 'default' }) {
                     <ArrowDownToLine size={14} />
                     Depositar
                 </button>
-                {mxneAmount > 0 && (
+                {usdcAmount > 0 && (
                     <button
                         className={styles.withdrawBtn}
                         onClick={(e) => { e.stopPropagation(); setIsWithdrawOpen(true); }}
@@ -207,9 +207,9 @@ export function WalletWidget({ variant = 'default' }) {
                 >
                     <Wallet size={15} />
                     <span className={styles.floatBalance}>
-                        {mxneAmount.toFixed(2)}
+                        {usdcAmount.toFixed(2)}
                     </span>
-                    <span className={styles.floatCurrency}>MXNe</span>
+                    <span className={styles.floatCurrency}>USDC</span>
                 </motion.button>
             </div>
         );

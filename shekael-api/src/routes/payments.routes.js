@@ -103,7 +103,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
       .insert({
         from_user_id: userId,
         to_business_id: businessId,
-        amount_mxne: finalAmount,
+        amount_usdc: finalAmount,
         original_amount: parsedAmount,
         discount_applied: discount,
         status: 'pending',
@@ -120,7 +120,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         fromSecretKey: secretKey,
         toPublicKey: biz.stellar_public_key,
         amount: String(finalAmount),
-        assetCode: 'MXNe',
+        assetCode: 'USDC',
         memo: `Shekael:${payment.id.slice(0, 20)}`,
       });
 
@@ -135,7 +135,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         userId: biz.owner_id,
         type: 'payment_received',
         title: '¡Pago recibido!',
-        message: `Has recibido MXNe ${finalAmount.toFixed(2)} de parte de un cliente.`,
+        message: `Has recibido USDC ${finalAmount.toFixed(2)} de parte de un cliente.`,
         metadata: { paymentId: payment.id, businessName: biz.name },
       });
 
@@ -147,7 +147,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
         discountApplied: discount,
         stellarTxHash: txHash,
         message: discount > 0
-          ? `Pago exitoso. Descuento del 5% aplicado: ahorraste MXNe ${discount.toFixed(2)}`
+          ? `Pago exitoso. Descuento del 5% aplicado: ahorraste USDC ${discount.toFixed(2)}`
           : 'Pago exitoso',
       });
     } catch (stellarErr) {
@@ -229,9 +229,9 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
     if (!biz.stellar_public_key) return res.status(400).json({ message: 'El comercio no tiene billetera Stellar' });
 
     const balance = await getBalance(biz.stellar_public_key);
-    const mxneBalance = parseFloat(balance.mxne || '0');
-    if (mxneBalance < parseFloat(amount)) {
-      return res.status(400).json({ message: `Saldo insuficiente. MXNe disponible: ${mxneBalance.toFixed(2)}` });
+    const usdcBalance = parseFloat(balance.usdc || '0');
+    if (usdcBalance < parseFloat(amount)) {
+      return res.status(400).json({ message: `Saldo insuficiente. USDC disponible: ${usdcBalance.toFixed(2)}` });
     }
 
     // Registrar solicitud de retiro
@@ -239,8 +239,8 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
       .from('withdrawals')
       .insert({
         business_id: businessId,
-        amount_mxne: parseFloat(amount),
-        amount_mxn: parseFloat(amount), // tasa 1:1 MXNe/MXN por ahora
+        amount_usdc: parseFloat(amount),
+        amount_mxn: parseFloat(amount), // tasa 1:1 USDC/MXN temporal
         bank_account_info: bankAccountInfo,
         status: 'pending',
       })
@@ -254,7 +254,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
       userId: userId,
       type: 'withdrawal_requested',
       title: 'Solicitud de retiro',
-      message: `Has solicitado retirar MXNe ${amount}. El equipo procesará tu solicitud.`,
+      message: `Has solicitado retirar USDC ${amount}. El equipo procesará tu solicitud.`,
       metadata: { withdrawalId: withdrawal.id, businessName: biz.name },
     });
 
