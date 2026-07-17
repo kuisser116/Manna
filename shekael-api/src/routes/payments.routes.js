@@ -120,7 +120,6 @@ router.post('/pay', authMiddleware, async (req, res) => {
         fromSecretKey: secretKey,
         toPublicKey: biz.stellar_public_key,
         amount: String(finalAmount),
-        assetCode: 'USDC',
         memo: `Shekael:${payment.id.slice(0, 20)}`,
       });
 

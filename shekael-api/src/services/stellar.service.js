@@ -8,7 +8,8 @@ const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET;
 
 const server = new StellarSdk.Horizon.Server(HORIZON_URL);
 
-const USDC_ISSUER = process.env.USDC_ISSUER || 'GAPL3WK52DTYQB23DP7IU3OJAR2YTBXMTAYF54ZG5V377YY7GU2G2UNW';
+const STABLECOIN_CODE = process.env.STABLECOIN_CODE || 'USDC';
+const STABLECOIN_ISSUER = process.env.STABLECOIN_ISSUER || 'GAPL3WK52DTYQB23DP7IU3OJAR2YTBXMTAYF54ZG5V377YY7GU2G2UNW';
 const MXNE_ISSUER = process.env.MXNE_ISSUER || 'GAGCSH6VQL5Q5JXOOWGAL3HV7XBUEGR5FO5WUP3TKEBRSXJGSZAOKIJH';
 const MXNC_ISSUER = process.env.MXNC_ISSUER || 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 
@@ -23,19 +24,19 @@ function isValidPublicKey(key) {
 }
 
 // Inicializar activos con validación
-let USDC_ASSET, MXNC_ASSET, MXNE_ASSET;
+let STABLECOIN_ASSET, MXNC_ASSET, MXNE_ASSET;
 
 try {
-    if (!isValidPublicKey(USDC_ISSUER)) throw new Error(`USDC_ISSUER inválido: ${USDC_ISSUER}`);
+    if (!isValidPublicKey(STABLECOIN_ISSUER)) throw new Error(`STABLECOIN_ISSUER inválido: ${STABLECOIN_ISSUER}`);
     if (!isValidPublicKey(MXNC_ISSUER)) throw new Error(`MXNC_ISSUER inválido: ${MXNC_ISSUER}`);
     if (!isValidPublicKey(MXNE_ISSUER)) throw new Error(`MXNE_ISSUER inválido: ${MXNE_ISSUER}`);
     
-    USDC_ASSET = new StellarSdk.Asset('USDC', USDC_ISSUER.trim());
+    STABLECOIN_ASSET = new StellarSdk.Asset(STABLECOIN_CODE, STABLECOIN_ISSUER.trim());
     MXNC_ASSET = new StellarSdk.Asset('MXNc', MXNC_ISSUER.trim());
     MXNE_ASSET = new StellarSdk.Asset('MXNe', MXNE_ISSUER.trim());
 } catch (err) {
     console.error('❌ CRITICAL: Error inicializando activos de Stellar:', err.message);
-    USDC_ASSET = StellarSdk.Asset.native();
+    STABLECOIN_ASSET = StellarSdk.Asset.native();
     MXNC_ASSET = StellarSdk.Asset.native();
     MXNE_ASSET = StellarSdk.Asset.native();
 }
@@ -67,7 +68,7 @@ export async function getBalance(publicKey) {
     try {
         const account = await server.loadAccount(publicKey);
         const xlmBalance = account.balances.find((b) => b.asset_type === 'native');
-        const usdcBalanceValue = account.balances.find((b) => b.asset_code === 'USDC');
+        const usdcBalanceValue = account.balances.find((b) => b.asset_code === STABLECOIN_CODE);
         const mxncBalanceValue = account.balances.find((b) => b.asset_code === 'MXNc');
         const mxneBalanceValue = account.balances.find((b) => b.asset_code === 'MXNe');
         
@@ -114,7 +115,7 @@ export async function getBalance(publicKey) {
 export async function isWalletActive(publicKey) {
     try {
         const account = await server.loadAccount(publicKey);
-        const hasUSDC = account.balances.some(b => b.asset_code === 'USDC');
+        const hasUSDC = account.balances.some(b => b.asset_code === STABLECOIN_CODE);
         const hasMXNe = account.balances.some(b => b.asset_code === 'MXNe');
         return hasUSDC || hasMXNe;
     } catch (err) {
@@ -124,7 +125,7 @@ export async function isWalletActive(publicKey) {
 }
 
 // Enviar pago en Stellar Testnet
-export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = 'USDC', memo = 'Shekael' }) {
+export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = STABLECOIN_CODE, memo = 'Shekael' }) {
     if (!fromSecretKey || fromSecretKey === 'enc-placeholder') {
         throw new Error('Clave secreta no válida para esta wallet de sistema');
     }
@@ -148,7 +149,7 @@ export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCod
         throw e;
     }
 
-    // Asegurar trustline para USDC antes de pagar (si es necesario)
+    // Asegurar trustline para USDT antes de pagar (si es necesario)
     // En este flujo, el sender debe tener el trustline para poseer USDC.
     
     const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
@@ -158,7 +159,7 @@ export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCod
         .addOperation(
             StellarSdk.Operation.payment({
                 destination: toPublicKey,
-                asset: assetCode === 'MXNe' ? MXNE_ASSET : (assetCode === 'MXNc' ? MXNC_ASSET : USDC_ASSET),
+                asset: assetCode === 'MXNe' ? MXNE_ASSET : (assetCode === 'MXNc' ? MXNC_ASSET : STABLECOIN_ASSET),
                 amount: String(parseFloat(amount).toFixed(7)),
             })
         )
@@ -320,7 +321,7 @@ export async function sendConsentMemo(user, memoText) {
 }
 
 /**
- * Establece la línea de confianza para USDC en una cuenta.
+ * Establece la línea de confianza para USDT en una cuenta.
  * Requerido para poder recibir y enviar USDC.
  */
 /**
@@ -397,7 +398,7 @@ export async function invokeAdDistribution({
 }
 
 /**
- * Establece la línea de confianza para USDC y MXNe en una cuenta.
+ * Establece la línea de confianza para USDT y MXNe en una cuenta.
  */
 export async function ensureTrustline(secretKey, retries = 3) {
     try {
@@ -420,7 +421,7 @@ export async function ensureTrustline(secretKey, retries = 3) {
             }
         }
 
-        const assets = [USDC_ASSET, MXNE_ASSET]; // Priorizar MXNe
+        const assets = [STABLECOIN_ASSET, MXNE_ASSET]; // Priorizar MXNe
         const transaction = new StellarSdk.TransactionBuilder(account, {
             fee: StellarSdk.BASE_FEE,
             networkPassphrase: NETWORK_PASSPHRASE,

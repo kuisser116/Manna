@@ -96,7 +96,7 @@ export function WalletWidget({ variant = 'default' }) {
         }
     }, [isExpanded, animateIn, animateOut, shouldRender]);
 
-    const mxneAmount = parseFloat(mxneBalance || balance || 0);
+    const usdcAmount = parseFloat(mxneBalance || balance || 0);
     const shortKey = user?.stellarPublicKey
         ? `${user.stellarPublicKey.slice(0, 5)}...${user.stellarPublicKey.slice(-4)}`
         : '';
@@ -136,18 +136,21 @@ export function WalletWidget({ variant = 'default' }) {
                     <div className={styles.skeleton} />
                 ) : (
                     <motion.div
-                        key={`mxne-${mxneAmount}`}
+                        key={`usdc-${usdcAmount}`}
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
                         className={styles.balanceDisplay}
                     >
                         <span className={styles.balanceAmount}>
-                            {mxneAmount.toLocaleString(undefined, {
+                            {usdcAmount.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2
                             })}
                         </span>
-                        <span className={styles.balanceCurrency}>MXNe</span>
+                        <span className={styles.balanceCurrency}>{currency || 'USDC'}</span>
+                        <span className={styles.balanceMxn}>
+                            ≈ ${parseFloat(balanceMXN || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
+                        </span>
                     </motion.div>
                 )}
                 {shortKey && (
@@ -209,7 +212,7 @@ export function WalletWidget({ variant = 'default' }) {
                     <span className={styles.floatBalance}>
                         {usdcAmount.toFixed(2)}
                     </span>
-                    <span className={styles.floatCurrency}>USDC</span>
+                    <span className={styles.floatCurrency}>{currency || 'USDC'}</span>
                 </motion.button>
             </div>
         );
