@@ -7,7 +7,6 @@ import useAuth from "../../hooks/useAuth";
 import { searchGlobal } from "../../api/search.api";
 import Avatar from "../Avatar/Avatar";
 import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdown";
-import BusinessRegistrationModal from "../Business/BusinessRegistrationModal";
 
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
@@ -28,7 +27,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showBusinessForm, setShowBusinessForm] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const inputRef = useRef(null);
@@ -229,7 +228,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                   className={styles.userMenuItem}
                   onClick={() => {
                     setShowUserMenu(false);
-                    setShowBusinessForm(true);
+                    navigate('/business/register');
                   }}
                 >
                   <Store size={16} /> Registrar comercio
@@ -274,14 +273,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
         </div>
       )}
     </header>
-      {showBusinessForm && (
-        <BusinessRegistrationModal
-          onClose={() => setShowBusinessForm(false)}
-          onCreated={(biz) => {
-            navigate(`/business/${biz.id}`);
-          }}
-        />
-      )}
+
     </>
   );
 }

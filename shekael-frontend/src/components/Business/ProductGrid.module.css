@@ -10,27 +10,35 @@
 
 .empty p { font-size: 14px; margin: 0; }
 
+.gridWrapper {
+  position: relative;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--color-border, #222);
-  border: 1px solid var(--color-border, #222);
-  border-radius: 4px;
-  overflow: hidden;
+  gap: 12px;
 }
 
 .productCard {
-  position: relative;
-  aspect-ratio: 3 / 4;
   background: var(--color-surface-2, #2a2a3e);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.productCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  border-color: var(--color-border, #444);
 }
 
 .productImage {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
 }
 
 .productImage img {
@@ -48,44 +56,40 @@
   background: var(--color-surface-2, #2a2a3e);
 }
 
-.productOverlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24px 10px 10px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.85));
+.productLabel {
+  padding: 10px 12px;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity 0.25s;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.productCard:hover .productOverlay {
-  opacity: 1;
-}
-
-.productName {
+.labelName {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text, #fff);
 }
 
-.productPrice {
+.labelPrice {
   font-size: 14px;
   font-weight: 700;
-  color: var(--color-primary, #e11d48);
+  color: var(--color-success, #10b981);
 }
 
-.productDesc {
-  font-size: 11px;
-  color: rgba(255,255,255,0.7);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.previewAnchor {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
 }
 
-@media (max-width: 600px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
+.previewAnchor > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 800px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; gap: 8px; }
 }

@@ -20,8 +20,7 @@ import Studio from './pages/Studio';
 import Search from './pages/Search/Search';
 import Chat from './pages/Chat/Chat';
 import BusinessProfile from './components/Business/BusinessProfile';
-
-
+import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistration';
 
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -243,6 +242,11 @@ function App() {
         <Route path="/admin/control-center" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><ControlCenter /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/business/register" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><BusinessRegistration /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/business/:id" element={
