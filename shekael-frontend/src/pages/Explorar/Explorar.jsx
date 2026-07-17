@@ -3,35 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import mapboxgl from 'mapbox-gl';
 import { Store, Bus, MapPin } from 'lucide-react';
+import { getBusinesses } from '../../api/businesses.api';
 import styles from './Explorar.module.css';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
 const MAP_STYLE = 'mapbox://styles/kuisser/cmroeipik008m01qtdmk9ho18';
-
-const MOCK_BUSINESSES = [
-  {
-    id: 'biz_1',
-    name: 'Taquería El Pastor',
-    category: 'Comida y Bebida',
-    avatarUrl: null,
-    location: { lat: 19.4326, lng: -99.1332 },
-  },
-  {
-    id: 'biz_2',
-    name: 'Cafetería La Esquina',
-    category: 'Comida y Bebida',
-    avatarUrl: null,
-    location: { lat: 19.4200, lng: -99.1450 },
-  },
-  {
-    id: 'biz_3',
-    name: 'Taller Mecánico El Rápido',
-    category: 'Taller Mecánico',
-    avatarUrl: null,
-    location: { lat: 19.4450, lng: -99.1200 },
-  },
-];
 
 export default function Explorar() {
   const navigate = useNavigate();
@@ -54,7 +31,7 @@ export default function Explorar() {
 
     map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
-    map.on('load', () => {
+    map.on('load', async () => {
       mapRef.current = map;
       setLoaded(true);
 
@@ -64,30 +41,40 @@ export default function Explorar() {
         map.flyTo({ center: [flyToTarget.lng, flyToTarget.lat], zoom: 15, duration: 2000 });
       }
 
-      MOCK_BUSINESSES.forEach((biz) => {
-        const el = document.createElement('div');
-        el.className = styles.marker;
-        el.innerHTML = `<div class="${styles.markerLabel}">${biz.name}</div><div class="${styles.markerDot}"></div>`;
-        el.title = biz.name;
+      // Fetch real businesses from API
+      try {
+        const { data } = await getBusinesses();
+        const businesses = data.businesses || [];
 
-        const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(`
-          <div class="${styles.popupContent}">
-            <strong>${biz.name}</strong>
-            <span>${biz.category}</span>
-          </div>
-        `);
+        businesses.forEach((biz) => {
+          if (!biz.location_lat || !biz.location_lng) return;
 
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat([biz.location.lng, biz.location.lat])
-          .setPopup(popup)
-          .addTo(map);
+          const el = document.createElement('div');
+          el.className = styles.marker;
+          el.innerHTML = `<div class="${styles.markerLabel}">${biz.name}</div><div class="${styles.markerDot}"></div>`;
+          el.title = biz.name;
 
-        el.addEventListener('click', () => {
-          navigate(`/business/${biz.id}`);
+          const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(`
+            <div class="${styles.popupContent}">
+              <strong>${biz.name}</strong>
+              <span>${biz.category || ''}</span>
+            </div>
+          `);
+
+          const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([biz.location_lng, biz.location_lat])
+            .setPopup(popup)
+            .addTo(map);
+
+          el.addEventListener('click', () => {
+            navigate(`/business/${biz.id}`);
+          });
+
+          markersRef.current.push(marker);
         });
-
-        markersRef.current.push(marker);
-      });
+      } catch (err) {
+        console.error('Error loading businesses for map:', err);
+      }
     });
 
     return () => {

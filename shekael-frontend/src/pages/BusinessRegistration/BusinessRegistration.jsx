@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createBusiness } from '../../api/businesses.api';
 import { ChevronLeft, ChevronRight, Check, MapPin, Upload, Store, Lock, Eye } from 'lucide-react';
 import styles from './BusinessRegistration.module.css';
 
@@ -74,21 +75,25 @@ export default function BusinessRegistration() {
     update('banner', file);
   };
 
-  const handleSubmit = () => {
-    const business = {
-      id: 'biz_' + Date.now(),
-      name: form.name,
-      description: form.description,
-      category: form.category,
-      avatarUrl: avatarPreview,
-      coverUrl: bannerPreview,
-      location: form.location,
-      createdAt: new Date().toISOString(),
-      products: [],
-      reviews: [],
-      followers: 0,
-    };
-    navigate(`/business/${business.id}`);
+  const handleSubmit = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('description', form.description);
+      formData.append('category', form.category);
+      formData.append('address', form.location.address);
+      formData.append('lat', form.location.lat);
+      formData.append('lng', form.location.lng);
+      formData.append('password', form.password);
+      if (form.avatar) formData.append('avatar', form.avatar);
+      if (form.banner) formData.append('cover', form.banner);
+
+      const { data } = await createBusiness(formData);
+      navigate(`/business/${data.business.id}`);
+    } catch (err) {
+      console.error('Error creating business:', err);
+      setErrors({ submit: 'Error al registrar el comercio. Intenta de nuevo.' });
+    }
   };
 
   const handleCancel = () => navigate(-1);
@@ -266,6 +271,7 @@ export default function BusinessRegistration() {
             <button className={styles.navBtn} onClick={prev}><ChevronLeft size={18} /> Atrás</button>
           )}
           <div style={{ flex: 1 }} />
+          {errors.submit && <span className={styles.error}>{errors.submit}</span>}
           {step < STEPS.length - 1 ? (
             <button className={styles.navBtn} onClick={next}>Siguiente <ChevronRight size={18} /></button>
           ) : (

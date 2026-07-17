@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import useStore from '../../store';
 import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../../api/users.api';
+import { getBusiness, toggleFollowBusiness, updateBusinessPrivacy } from '../../api/businesses.api';
 import { getUserPosts } from '../../api/posts.api';
 import PostCard from '../PostCard/PostCard';
 import ProductGrid from './ProductGrid';
@@ -32,33 +33,6 @@ const Icons = {
   ),
 };
 
-const MOCK_BIZ = {
-  id: 'biz_1',
-  name: 'Taquería El Pastor',
-  description: 'Las mejores tortas y tacos al pastor de la colonia. Hacemos todo con receta tradicional, masa hecha a mano y carne marinada 24 hrs.',
-  category: 'Comida y Bebida',
-  avatarUrl: null,
-  coverUrl: null,
-  location: { lat: 19.4326, lng: -99.1332, address: 'Calle Hidalgo #123, Centro, Cuernavaca, Mor.' },
-  rating: 4.5,
-  totalReviews: 128,
-  followers: 342,
-  joinedDate: '2025-03-15',
-  stellarPublicKey: 'GALI7N2OV...',
-  products: [
-    { id: 'p1', name: 'Taco al Pastor', price: '$25', description: 'Taco de pastor con piña, cebolla y cilantro.', image: null, category: 'Tacos' },
-    { id: 'p2', name: 'Torta al Pastor', price: '$65', description: 'Torta de pastor con aguacate, frijoles, queso.', image: null, category: 'Tortas' },
-    { id: 'p3', name: 'Taco de Suadero', price: '$30', description: 'Taco de suadero bien doradito.', image: null, category: 'Tacos' },
-    { id: 'p4', name: 'Orden de Cebollitas', price: '$20', description: 'Cebollitas asadas con queso y crema.', image: null, category: 'Guarniciones' },
-    { id: 'p5', name: 'Agua de Horchata', price: '$15', description: 'Agua de horchata hecha con canela.', image: null, category: 'Bebidas' },
-    { id: 'p6', name: 'Taco de Canasta', price: '$12', description: 'Taco de canasta de chicharrón, papa o frijoles.', image: null, category: 'Tacos' },
-  ],
-  reviews: [
-    { id: 'r1', user: 'María G.', rating: 5, text: 'Los mejores tacos de Cuernavaca, sin duda.', date: '2025-06-15' },
-    { id: 'r2', user: 'Juan P.', rating: 4, text: 'Muy buenos tacos, el pastor bien sazonado.', date: '2025-06-10' },
-    { id: 'r3', user: 'Ana L.', rating: 5, text: 'Excelente atención, todo muy fresco.', date: '2025-06-05' },
-  ],
-};
 
 export default function BusinessProfile() {
   const { t } = useTranslation();
@@ -82,14 +56,28 @@ export default function BusinessProfile() {
   const [copied, setCopied] = useState(false);
   const [showProducts, setShowProducts] = useState(true);
   const [showReviews, setShowReviews] = useState(true);
-
-  const isOwner = true; // mock: dueño viendo su perfil de comercio
+  const isOwner = currentUser && biz?.isOwner;
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    setBiz(MOCK_BIZ);
-    setLoading(false);
+    loadBusiness();
   }, [profileId]);
+
+  async function loadBusiness() {
+    try {
+      setLoading(true);
+      const { data } = await getBusiness(profileId);
+      setBiz(data.business);
+      setIsFollowing(false);
+      setShowProducts(data.business.show_products !== false);
+      setShowReviews(data.business.show_reviews !== false);
+      if (data.business.coverUrl) setCoverUrl(data.business.coverUrl);
+    } catch (err) {
+      console.error('Error loading business:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Simular posts del comercio
   useEffect(() => {
@@ -149,7 +137,7 @@ export default function BusinessProfile() {
     );
   }
 
-  const memberSince = biz.joinedDate ? new Date(biz.joinedDate).toLocaleDateString('es-MX', {
+  const memberSince = biz.created_at ? new Date(biz.created_at).toLocaleDateString('es-MX', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -270,10 +258,10 @@ export default function BusinessProfile() {
 
                 <div className={profileStyles.statsRow}>
                   <span><b>{biz.products?.length || 0}</b> Productos</span>
-                  <span><b>{biz.followers || 0}</b> Seguidores</span>
+                  <span><b>{biz.followersCount || 0}</b> Seguidores</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     <Star size={14} fill="#f59e0b" color="#f59e0b" />
-                    <b>{biz.rating}</b> ({biz.totalReviews} reseñas)
+                    <b>{biz.rating}</b> ({biz.reviewsCount} reseñas)
                   </span>
                 </div>
 
@@ -383,8 +371,16 @@ export default function BusinessProfile() {
             onClose={() => setIsPrivacyModalOpen(false)}
             showProducts={showProducts}
             showReviews={showReviews}
-            onToggleProducts={() => setShowProducts(!showProducts)}
-            onToggleReviews={() => setShowReviews(!showReviews)}
+            onToggleProducts={async () => {
+              const next = !showProducts;
+              setShowProducts(next);
+              try { await updateBusinessPrivacy(profileId, { showProducts: next }); } catch (e) { setShowProducts(!next); }
+            }}
+            onToggleReviews={async () => {
+              const next = !showReviews;
+              setShowReviews(next);
+              try { await updateBusinessPrivacy(profileId, { showReviews: next }); } catch (e) { setShowReviews(!next); }
+            }}
           />
         )}
       </AnimatePresence>
