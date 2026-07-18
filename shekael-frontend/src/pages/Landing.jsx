@@ -213,16 +213,16 @@ function LandingInner() {
           });
 
           tl
-            // Primera mitad: Shekael se encoge (centrado)
+            // Fase 1: Shekael se encoge centrado
             .to(splashWordmark, {
               fontSize: '200px',
               duration: 1,
               ease: 'none'
             }, 0)
-            // Segunda mitad: splashInner va a esquina, wordmark se achica
+            // Fase 2: splashInner va a esquina, wordmark se achica
             .to(splashInner, {
               left: '40px',
-              top: '32px',
+              top: '28px',
               xPercent: 0,
               yPercent: 0,
               duration: 1,
@@ -233,7 +233,7 @@ function LandingInner() {
               duration: 1,
               ease: 'power3.out'
             }, '-=1')
-            // Contenido aparece
+            // Fase 3: contenido aparece
             .to(heroContent, {
               opacity: 1,
               y: 0,
@@ -597,7 +597,7 @@ function LandingInner() {
       <section className={`${styles.band} ${styles.bandLight}`} ref={band4Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Nuestra manera</span>
-          <h2 className={styles.bandTitle}>Como construimos Shekael</h2>
+          <h2 className={styles.bandTitle}>Como construimos <span className={styles.shekaelNormal}>Shekael</span></h2>
           <div className={styles.principlesList} ref={principleListRef}>
             {PRINCIPLES.map((item, i) => (
               <article key={i} className={styles.principleItem}>
@@ -613,7 +613,7 @@ function LandingInner() {
       <section className={`${styles.band} ${styles.bandDark} ${styles.bandClosing}`} ref={closingRef}>
         <div className={styles.bandInner}>
           <p className={styles.closingMission}>Hecho en Mexico. Para todos.</p>
-          <h2 className={styles.bandTitle}>Shekael te espera</h2>
+          <h2 className={styles.bandTitle}><span className={styles.shekaelNormal}>Shekael</span> te espera</h2>
           <p className={styles.closingVision}>La super app de Mexico, hecha para el mundo</p>
           <div className={styles.closingCta}>
             <GoogleLogin
