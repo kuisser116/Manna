@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-gsap.registerPlugin(ScrollTrigger);
 import { searchMusic } from '../../api/music.api';
 import { useMusic } from '../../context/MusicContext';
 import {
@@ -78,7 +76,7 @@ export default function Music() {
     if (!sentinelRef.current || !hasMore) return;
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) loadMore();
-    }, { rootMargin: '1200px' });
+    }, { rootMargin: '2000px' });
     obs.observe(sentinelRef.current);
     return () => obs.disconnect();
   }, [hasMore, loadMore]);
@@ -107,7 +105,10 @@ export default function Music() {
     });
   }, [results]);
 
-  // ── Smooth scroll (lerp suave) ──
+  // ── Smooth scroll + Parallax por columnas (todo en un loop) ──
+  const colsRef = useRef([]);
+  const movesRef = useRef([-2000, -1000, -500, -2000, -1000]);
+
   useEffect(() => {
     if (!q) return;
     let target = window.scrollY;
@@ -115,14 +116,30 @@ export default function Music() {
     let raf = null;
     const lerp = 0.009;
 
+    // Recolectar columnas en cada tick
+    const updateCols = () => {
+      const items = listRef.current?.children;
+      if (!items) return;
+      const cols = [[], [], [], [], []];
+      Array.from(items).forEach((el, i) => cols[i % 5].push(el));
+      colsRef.current = cols;
+    };
+    updateCols();
+
+    // Posición inicial del parallax acorde al scroll actual
+    const pageH = () => document.documentElement.scrollHeight - window.innerHeight;
+    const pct = pageH() > 0 ? current / pageH() : 0;
+    const cols = colsRef.current;
+    cols.forEach((group, idx) => {
+      gsap.set(group, { y: movesRef.current[idx] * pct, overwrite: 'auto' });
+    });
+
     const onWheel = (e) => {
-      // No interceptar scroll dentro del panel
       const panel = e.target.closest('[class*="panel"]');
       if (panel) return;
-
       e.preventDefault();
       target += e.deltaY;
-      target = Math.max(0, Math.min(target, document.documentElement.scrollHeight - window.innerHeight));
+      target = Math.max(0, Math.min(target, pageH()));
 
       if (!raf) {
         const tick = () => {
@@ -134,6 +151,17 @@ export default function Music() {
             return;
           }
           window.scroll(0, Math.round(current));
+
+          // Parallax: actualizar posición en cada frame
+          const ph = pageH();
+          if (ph > 0) {
+            const p = current / ph;
+            const c = colsRef.current;
+            c.forEach((group, idx) => {
+              gsap.set(group, { y: movesRef.current[idx] * p, overwrite: 'auto' });
+            });
+          }
+
           raf = requestAnimationFrame(tick);
         };
         raf = requestAnimationFrame(tick);
@@ -141,48 +169,29 @@ export default function Music() {
     };
 
     window.addEventListener('wheel', onWheel, { passive: false });
-    ScrollTrigger.refresh();
 
     return () => {
       window.removeEventListener('wheel', onWheel);
       if (raf) cancelAnimationFrame(raf);
       window.scroll(0, Math.round(current));
-      ScrollTrigger.refresh();
     };
   }, [q]);
 
-  // ── Parallax por columnas ──
+  // ── Recalcular columnas cuando cambian los resultados ──
   useEffect(() => {
-    if (results.length === 0) return;
     const items = listRef.current?.children;
     if (!items || items.length === 0) return;
-
-    // Agrupar por columna (grid de 5)
     const cols = [[], [], [], [], []];
     Array.from(items).forEach((el, i) => cols[i % 5].push(el));
+    colsRef.current = cols;
 
-    // Velocidades: col1 rápida, col2 lenta, col3 más lenta, col4 rápida, col5 lenta
-    const moves = [-2000, -1000, -500, -2000, -1000];
-
+    // Posición actual del parallax
+    const currentY = window.scrollY;
+    const ph = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = ph > 0 ? currentY / ph : 0;
     cols.forEach((group, idx) => {
-      gsap.fromTo(group, {
-        y: 0
-      }, {
-        y: moves[idx],
-        ease: 'none',
-        immediateRender: true,
-        scrollTrigger: {
-          trigger: listRef.current,
-          scrub: 2,
-          start: 'top bottom',
-          end: 'bottom top'
-        }
-      });
+      gsap.set(group, { y: movesRef.current[idx] * pct, overwrite: 'auto' });
     });
-
-    ScrollTrigger.refresh();
-
-    return () => ScrollTrigger.getAll().forEach(st => st.kill());
   }, [results]);
 
   // ── Animación del panel ──
