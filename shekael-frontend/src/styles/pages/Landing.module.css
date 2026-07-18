@@ -157,12 +157,13 @@
   margin: 0;
   font-size: clamp(36px, 6vw, 68px);
   line-height: 1.05;
-  letter-spacing: -2.5px;
+  letter-spacing: 1.5px;
   font-weight: 800;
   color: var(--color-text);
   max-width: 680px;
   perspective: 600px;
   font-family: 'Theodore And Scarlett', 'Plus Jakarta Sans', sans-serif;
+  text-align: center;
 }
 
 .heroWord {
@@ -288,7 +289,7 @@
   font-size: 22px;
   font-weight: 800;
   color: var(--color-text-secondary);
-  letter-spacing: -0.5px;
+  letter-spacing: 1.5px;
   font-family: 'Theodore And Scarlett', 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -316,7 +317,7 @@
   margin: 0 0 16px;
   font-size: clamp(30px, 4.5vw, 52px);
   line-height: 1.0;
-  letter-spacing: -1.5px;
+  letter-spacing: 2px;
   font-weight: 800;
   color: var(--color-text);
   white-space: nowrap;
@@ -327,7 +328,7 @@
   margin: 0 0 16px;
   font-size: clamp(30px, 4.5vw, 52px);
   line-height: 1.0;
-  letter-spacing: -1.5px;
+  letter-spacing: 2px;
   font-weight: 800;
   color: var(--color-white);
   white-space: nowrap;
