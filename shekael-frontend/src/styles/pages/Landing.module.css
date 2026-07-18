@@ -97,7 +97,7 @@
   line-height: 1;
   color: var(--color-text);
   text-transform: uppercase;
-  letter-spacing: 14px;
+  letter-spacing: normal;
   white-space: nowrap;
   will-change: transform, opacity;
 }
