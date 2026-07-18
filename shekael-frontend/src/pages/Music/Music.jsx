@@ -41,11 +41,25 @@ export default function Music() {
       setError('');
       setPage(1);
       setResults([]);
-      searchMusic(q, 20, 1).then(data => {
+      // Cargar más resultados de golpe para evitar huecos
+      searchMusic(q, 40, 1).then(data => {
         const list = data.results || [];
         setResults(list);
         setHasMore(data.hasMore || false);
         if (!list.length) setError('Sin resultados');
+        // Precargar página 2 inmediatamente
+        if (data.hasMore) {
+          searchMusic(q, 40, 2).then(d2 => {
+            const more = d2.results || [];
+            if (more.length) {
+              requestAnimationFrame(() => {
+                setResults(prev => [...prev, ...more]);
+                setPage(2);
+              });
+            }
+            setHasMore(d2.hasMore || false);
+          }).catch(() => {});
+        }
       }).catch(() => setError('Error al buscar'))
       .finally(() => setLoading(false));
     } else {
@@ -60,7 +74,7 @@ export default function Music() {
     setLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const data = await searchMusic(q, 20, nextPage);
+      const data = await searchMusic(q, 40, nextPage);
       const list = data.results || [];
       if (list.length) {
         // Usar rAF para no bloquear el frame actual
@@ -80,7 +94,7 @@ export default function Music() {
     if (!sentinelRef.current || !hasMore) return;
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) loadMore();
-    }, { rootMargin: '2000px' });
+    }, { rootMargin: '3000px' });
     obs.observe(sentinelRef.current);
     return () => obs.disconnect();
   }, [hasMore, loadMore]);
