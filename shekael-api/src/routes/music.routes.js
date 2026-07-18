@@ -42,7 +42,7 @@ router.get('/search', async (req, res) => {
 
     const raw = await ytExec([
       '--flat-playlist', '--dump-json', '--no-warnings',
-      `ytsearch${totalToFetch}:${query}`,
+      `ytsearch${totalToFetch}:${query} topic`,
     ]);
 
     const allItems = [];
