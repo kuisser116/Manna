@@ -107,7 +107,7 @@ export default function Music() {
     let target = window.scrollY;
     let current = window.scrollY;
     let raf = null;
-    const lerp = 0.06;
+    const lerp = 1;
 
     const onWheel = (e) => {
       // No interceptar scroll dentro del panel
@@ -164,7 +164,7 @@ export default function Music() {
         ease: 'none',
         scrollTrigger: {
           trigger: listRef.current,
-          scrub: 3,
+          scrub: 10,
           start: 'top bottom',
           end: 'bottom top'
         }
