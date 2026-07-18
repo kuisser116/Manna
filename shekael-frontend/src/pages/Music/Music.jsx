@@ -78,27 +78,33 @@ export default function Music() {
     if (!sentinelRef.current || !hasMore) return;
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) loadMore();
-    }, { rootMargin: '400px' });
+    }, { rootMargin: '1200px' });
     obs.observe(sentinelRef.current);
     return () => obs.disconnect();
   }, [hasMore, loadMore]);
 
-  // ── Stagger de entrada ──
+  // ── Stagger de entrada (solo items nuevos) ──
+  const prevLenRef = useRef(0);
   useEffect(() => {
-    if (results.length === 0) return;
+    const len = results.length;
+    if (len === 0) { prevLenRef.current = 0; return; }
+
     const items = listRef.current?.children;
     if (!items || items.length === 0) return;
 
-    gsap.set(items, { opacity: 0, y: 12 });
-    gsap.to(items, {
-      opacity: 1,
-      y: 0,
-      duration: 0.35,
-      stagger: { amount: 0.4, from: 'start' },
+    const prevLen = prevLenRef.current;
+    const newItems = Array.from(items).slice(prevLen);
+    prevLenRef.current = len;
+
+    if (newItems.length === 0) return;
+
+    // Solo animar los nuevos
+    gsap.set(newItems, { opacity: 0, y: 12 });
+    gsap.to(newItems, {
+      opacity: 1, y: 0, duration: 0.35,
+      stagger: { amount: Math.min(0.3, newItems.length * 0.02), from: 'start' },
       ease: 'power3.out'
     });
-
-    return () => gsap.killTweensOf(items);
   }, [results]);
 
   // ── Smooth scroll (lerp suave) ──
@@ -159,9 +165,12 @@ export default function Music() {
     const moves = [-2000, -1000, -500, -2000, -1000];
 
     cols.forEach((group, idx) => {
-      gsap.to(group, {
+      gsap.fromTo(group, {
+        y: 0
+      }, {
         y: moves[idx],
         ease: 'none',
+        immediateRender: true,
         scrollTrigger: {
           trigger: listRef.current,
           scrub: 2,
@@ -170,6 +179,8 @@ export default function Music() {
         }
       });
     });
+
+    ScrollTrigger.refresh();
 
     return () => ScrollTrigger.getAll().forEach(st => st.kill());
   }, [results]);
