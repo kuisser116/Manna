@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+gsap.registerPlugin(ScrollTrigger);
 import { searchMusic } from '../../api/music.api';
 import { useMusic } from '../../context/MusicContext';
 import {
@@ -62,6 +64,35 @@ export default function Music() {
     });
 
     return () => gsap.killTweensOf(items);
+  }, [results]);
+
+  // ── Parallax por columnas ──
+  useEffect(() => {
+    if (results.length === 0) return;
+    const items = listRef.current?.children;
+    if (!items || items.length === 0) return;
+
+    // Agrupar por columna (grid de 5)
+    const cols = [[], [], [], [], []];
+    Array.from(items).forEach((el, i) => cols[i % 5].push(el));
+
+    // Velocidades: col1 rápida, col2 lenta, col3 más lenta, col4 rápida, col5 lenta
+    const speeds = [1.4, 0.7, 0.3, 1.4, 0.7];
+
+    cols.forEach((group, idx) => {
+      gsap.to(group, {
+        y: (1 - speeds[idx]) * 80,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: listRef.current,
+          scrub: 1,
+          start: 'top bottom',
+          end: 'bottom top'
+        }
+      });
+    });
+
+    return () => ScrollTrigger.getAll().forEach(st => st.kill());
   }, [results]);
 
   // ── Animación del panel ──
