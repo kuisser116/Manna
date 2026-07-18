@@ -84,10 +84,11 @@
   position: absolute;
   inset: 0;
   z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   pointer-events: none;
+}
+
+.splashInner {
+  position: absolute;
 }
 
 .splashWordmark {

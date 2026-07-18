@@ -183,12 +183,21 @@ function LandingInner() {
           });
         }
 
-        // ── 2. SHEKAEL SE ENCOGE + FLOTA + CONTENIDO APARECE ──
+        // ── 2. SHEKAEL SE ENCOGE + VA A ESQUINA + CONTENIDO APARECE ──
+        const splashInner = splashRef.current?.querySelector(`.${styles.splashInner}`);
         const splashWordmark = splashRef.current?.querySelector(`.${styles.splashWordmark}`);
         const heroContent = heroRef.current?.querySelector(`.${styles.heroContent}`);
         
-        if (splashWordmark && heroContent) {
+        if (splashInner && splashWordmark && heroContent) {
           const viewH = window.innerHeight;
+
+          // Centrar splashInner vía GSAP (sin CSS conflictivo)
+          gsap.set(splashInner, {
+            top: '50%',
+            left: '50%',
+            xPercent: -50,
+            yPercent: -50
+          });
 
           gsap.set(heroContent, { opacity: 0, y: viewH * 0.6 });
 
@@ -196,7 +205,7 @@ function LandingInner() {
             scrollTrigger: {
               trigger: heroRef.current,
               start: 'top top',
-              end: `+=${viewH * 2}`,  // 200vh de scroll total
+              end: `+=${viewH * 2}`,
               pin: true,
               pinSpacing: true,
               scrub: 0.5
@@ -204,25 +213,33 @@ function LandingInner() {
           });
 
           tl
-            // Primera mitad: Shekael se encoge
+            // Primera mitad: Shekael se encoge (centrado)
             .to(splashWordmark, {
               fontSize: '200px',
               duration: 1,
               ease: 'none'
             }, 0)
-            // Segunda mitad: Shekael flota + contenido sube
-            .to(splashWordmark, {
-              y: -viewH * 0.7,
-              opacity: 0,
+            // Segunda mitad: splashInner va a esquina, wordmark se achica
+            .to(splashInner, {
+              left: '40px',
+              top: '32px',
+              xPercent: 0,
+              yPercent: 0,
               duration: 1,
-              ease: 'power2.in'
+              ease: 'power3.out'
             })
+            .to(splashWordmark, {
+              fontSize: '50px',
+              duration: 1,
+              ease: 'power3.out'
+            }, '-=1')
+            // Contenido aparece
             .to(heroContent, {
               opacity: 1,
               y: 0,
               duration: 0.9,
               ease: 'power3.out'
-            }, '-=0.5');  // empieza antes de que Shekael termine de flotar
+            }, '-=0.5');
         }
 
         // ── 3. SCRAMBLE TEXT on section headlines ──
@@ -420,12 +437,12 @@ function LandingInner() {
         <div className={styles.patternOverlay} />
 
         <div className={styles.heroSplash} ref={splashRef}>
-          <span className={styles.splashWordmark}>Shekael</span>
+          <div className={styles.splashInner}>
+            <span className={styles.splashWordmark}>Shekael</span>
+          </div>
         </div>
 
         <div className={styles.heroContent}>
-          <span className={styles.logoTag}>Porque la luz no deberia estar escondida</span>
-
           <div className={styles.mxMotif} aria-hidden="true">
             <span className={styles.mxMotifLine} />
             <span className={styles.mxMotifDot} />
@@ -444,9 +461,7 @@ function LandingInner() {
           </h1>
 
           <p className={styles.heroSub}>
-            Una red social con proposito, hecha en Mexico para el mundo.
-            Aqui el contenido vuelve a sentirse humano, tu comunidad local
-            cobra vida y tu tiempo vale. Menos ruido, mas valor.
+            Porque la luz no deberia estar escondida.
           </p>
 
           <div className={styles.heroCta}>
