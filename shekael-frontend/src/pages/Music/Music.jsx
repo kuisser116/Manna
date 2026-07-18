@@ -101,6 +101,50 @@ export default function Music() {
     return () => gsap.killTweensOf(items);
   }, [results]);
 
+  // ── Smooth scroll (lerp suave) ──
+  useEffect(() => {
+    if (!q) return;
+    let target = window.scrollY;
+    let current = window.scrollY;
+    let raf = null;
+    const lerp = 0.06;
+
+    const onWheel = (e) => {
+      // No interceptar scroll dentro del panel
+      const panel = e.target.closest('[class*="panel"]');
+      if (panel) return;
+
+      e.preventDefault();
+      target += e.deltaY;
+      target = Math.max(0, Math.min(target, document.documentElement.scrollHeight - window.innerHeight));
+
+      if (!raf) {
+        const tick = () => {
+          current += (target - current) * lerp;
+          if (Math.abs(current - target) < 0.5) {
+            current = target;
+            raf = null;
+            window.scroll(0, Math.round(current));
+            return;
+          }
+          window.scroll(0, Math.round(current));
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+      }
+    };
+
+    window.addEventListener('wheel', onWheel, { passive: false });
+    ScrollTrigger.refresh();
+
+    return () => {
+      window.removeEventListener('wheel', onWheel);
+      if (raf) cancelAnimationFrame(raf);
+      window.scroll(0, Math.round(current));
+      ScrollTrigger.refresh();
+    };
+  }, [q]);
+
   // ── Parallax por columnas ──
   useEffect(() => {
     if (results.length === 0) return;
@@ -120,7 +164,7 @@ export default function Music() {
         ease: 'none',
         scrollTrigger: {
           trigger: listRef.current,
-          scrub: 1.5,
+          scrub: 3,
           start: 'top bottom',
           end: 'bottom top'
         }
