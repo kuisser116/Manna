@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { Home, Search, QrCode, Bell, User, PlusSquare, MessageCircle, MapPin, Music } from 'lucide-react';
+import { Home, Search, QrCode, Bell, User, PlusSquare, MessageCircle, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import styles from './Sidebar.module.css';
 import useStore from '../../store';
@@ -59,16 +59,6 @@ export function Sidebar({ collapsed = false, hidden = false, isMobile = false, o
                     onClick={() => handleNav('/explorar')}
                 >
                     <MapPin size={24} strokeWidth={2} />
-                </button>
-
-                {/* Music */}
-                <button
-                    className={styles.iconBtn}
-                    title="Música"
-                    data-label="Música"
-                    onClick={() => handleNav('/music')}
-                >
-                    <Music size={24} strokeWidth={2} />
                 </button>
 
                 {/* Chat */}

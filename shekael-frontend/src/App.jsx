@@ -17,8 +17,7 @@ import Terms from './pages/Terms';
 import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import Studio from './pages/Studio';
-import Music from './pages/Music/Music';
-import { MusicProvider } from './context/MusicContext';
+
 import Search from './pages/Search/Search';
 import Explorar from './pages/Explorar/Explorar';
 import Chat from './pages/Chat/Chat';
@@ -32,7 +31,7 @@ import ToastContainer from './components/Toast/Toast';
 import QRScanner from './components/QRScanner/QRScanner';
 import MyQRModal from './components/MyQRModal/MyQRModal';
 import WalletWidget from './components/WalletWidget/WalletWidget';
-import MusicWidget from './components/MusicWidget/MusicWidget';
+
 import LockScreen from './components/LockScreen/LockScreen';
 import useSessionLock from './hooks/useSessionLock';
 
@@ -67,7 +66,6 @@ function AppLayout({ children }) {
   const isChatRoute = location.pathname.startsWith('/chat');
   const isBusinessRoute = location.pathname.startsWith('/business');
   const isExplorarRoute = location.pathname.startsWith('/explorar');
-  const isMusicRoute = location.pathname.startsWith('/music');
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -144,8 +142,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isMusicRoute && <MusicWidget leftOffset={88} />}
-        {!isChatRoute && !isMusicRoute && <WalletWidget variant="floating" />}
+        {!isChatRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
@@ -215,7 +212,6 @@ function App() {
 
   return (
     <BrowserRouter>
-      <MusicProvider>
       <Routes>
         {/* Landing sin layout de app */}
         <Route path="/" element={<Landing />} />
@@ -267,11 +263,7 @@ function App() {
             <AppLayout><Explorar /></AppLayout>
           </ProtectedRoute>
         } />
-        <Route path="/music" element={
-          <ProtectedRoute authLoading={authLoading}>
-            <AppLayout><Music /></AppLayout>
-          </ProtectedRoute>
-        } />
+
         <Route path="/search" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><Search /></AppLayout>
@@ -284,7 +276,6 @@ function App() {
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      </MusicProvider>
     </BrowserRouter>
   );
 }
