@@ -56,6 +56,7 @@
   padding: 24px;
   position: relative;
   z-index: 1;
+  contain: layout;
   transition: margin-right 0.3s ease;
 }
 
@@ -74,6 +75,7 @@
   overflow: hidden;
   background: var(--color-surface);
   transition: background 0.15s;
+  will-change: transform;
 }
 
 .song:hover {

@@ -54,7 +54,7 @@ export default function Music() {
     }
   }, [q]);
 
-  // ── Cargar más resultados ──
+  // ── Cargar más resultados (sin bloquear) ──
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
@@ -63,12 +63,16 @@ export default function Music() {
       const data = await searchMusic(q, 20, nextPage);
       const list = data.results || [];
       if (list.length) {
-        setResults(prev => [...prev, ...list]);
-        setPage(nextPage);
+        // Usar rAF para no bloquear el frame actual
+        requestAnimationFrame(() => {
+          setResults(prev => [...prev, ...list]);
+          setPage(nextPage);
+        });
       }
       setHasMore(data.hasMore || false);
     } catch {}
-    setLoadingMore(false);
+    // Delay para evitar múltiples cargas simultáneas
+    setTimeout(() => setLoadingMore(false), 200);
   }, [q, page, hasMore, loadingMore]);
 
   // ── IntersectionObserver para scroll infinito ──
@@ -96,13 +100,18 @@ export default function Music() {
 
     if (newItems.length === 0) return;
 
-    // Solo animar los nuevos
-    gsap.set(newItems, { opacity: 0, y: 12 });
-    gsap.to(newItems, {
-      opacity: 1, y: 0, duration: 0.35,
-      stagger: { amount: Math.min(0.3, newItems.length * 0.02), from: 'start' },
-      ease: 'power3.out'
-    });
+    if (prevLen === 0) {
+      // Primera carga: animación de entrada con stagger
+      gsap.set(newItems, { opacity: 0, y: 12 });
+      gsap.to(newItems, {
+        opacity: 1, y: 0, duration: 0.35,
+        stagger: { amount: 0.4, from: 'start' },
+        ease: 'power3.out'
+      });
+    } else {
+      // Cargas posteriores: aparecen sin animación (ya están bajo el fold)
+      gsap.set(newItems, { opacity: 1, y: 0 });
+    }
   }, [results]);
 
   // ── Smooth scroll + Parallax por columnas (todo en un loop) ──
@@ -280,8 +289,6 @@ export default function Music() {
         ))}
         {hasMore && <div ref={sentinelRef} className={styles.sentinel} />}
       </div>
-
-      {loadingMore && <div className={styles.loading}>Cargando más…</div>}
 
       {/* ═══ Panel lateral con cola integrada ═══ */}
       {currentSong && (
