@@ -107,7 +107,7 @@ export default function Music() {
     let target = window.scrollY;
     let current = window.scrollY;
     let raf = null;
-    const lerp = 1;
+    const lerp = 0.009;
 
     const onWheel = (e) => {
       // No interceptar scroll dentro del panel
@@ -156,7 +156,7 @@ export default function Music() {
     Array.from(items).forEach((el, i) => cols[i % 5].push(el));
 
     // Velocidades: col1 rápida, col2 lenta, col3 más lenta, col4 rápida, col5 lenta
-    const moves = [-1000, -700, -300, -1000, -700];
+    const moves = [-2000, -1000, -500, -2000, -1000];
 
     cols.forEach((group, idx) => {
       gsap.to(group, {
@@ -164,7 +164,7 @@ export default function Music() {
         ease: 'none',
         scrollTrigger: {
           trigger: listRef.current,
-          scrub: 10,
+          scrub: 2,
           start: 'top bottom',
           end: 'bottom top'
         }
