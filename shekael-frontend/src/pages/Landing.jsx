@@ -52,6 +52,7 @@ function LandingInner() {
   const recaptchaLoaded = useRef(false);
 
   const heroRef = useRef(null);
+  const splashRef = useRef(null);
   const band1Ref = useRef(null);
   const band2Ref = useRef(null);
   const band3Ref = useRef(null);
@@ -182,32 +183,46 @@ function LandingInner() {
           });
         }
 
-        // ── 2. HERO: 3D word stagger including period ──
-        const heroWords = heroRef.current?.querySelectorAll(`.${styles.heroWord}, .${styles.headlinePeriod}`);
-        if (heroWords?.length) {
-          gsap.fromTo(heroWords,
-            { opacity: 0, y: 60, rotateX: -40, scale: 0.8, filter: 'blur(8px)' },
-            {
-              opacity: 1, y: 0, rotateX: 0, scale: 1, filter: 'blur(0px)',
-              stagger: 0.1, duration: 0.8, ease: 'shekael-bounce', delay: 0.4
+        // ── 2. SHEKAEL SE ENCOGE + FLOTA + CONTENIDO APARECE ──
+        const splashWordmark = splashRef.current?.querySelector(`.${styles.splashWordmark}`);
+        const heroContent = heroRef.current?.querySelector(`.${styles.heroContent}`);
+        
+        if (splashWordmark && heroContent) {
+          const viewH = window.innerHeight;
+
+          gsap.set(heroContent, { opacity: 0, y: viewH * 0.6 });
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: heroRef.current,
+              start: 'top top',
+              end: `+=${viewH * 2}`,  // 200vh de scroll total
+              pin: true,
+              pinSpacing: true,
+              scrub: 0.5
             }
-          );
-        }
+          });
 
-        const heroSub = heroRef.current?.querySelector(`.${styles.heroSub}`);
-        if (heroSub) {
-          gsap.fromTo(heroSub,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.6, delay: 1.1, ease: 'power2.out' }
-          );
-        }
-
-        const heroCta = heroRef.current?.querySelector(`.${styles.heroCta}`);
-        if (heroCta) {
-          gsap.fromTo(heroCta,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.6, delay: 1.4, ease: 'power2.out' }
-          );
+          tl
+            // Primera mitad: Shekael se encoge
+            .to(splashWordmark, {
+              fontSize: '200px',
+              duration: 1,
+              ease: 'none'
+            }, 0)
+            // Segunda mitad: Shekael flota + contenido sube
+            .to(splashWordmark, {
+              y: -viewH * 0.7,
+              opacity: 0,
+              duration: 1,
+              ease: 'power2.in'
+            })
+            .to(heroContent, {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: 'power3.out'
+            }, '-=0.5');  // empieza antes de que Shekael termine de flotar
         }
 
         // ── 3. SCRAMBLE TEXT on section headlines ──
@@ -400,57 +415,52 @@ function LandingInner() {
         <Palette size={18} />
       </button>
 
-      {/* ═══ HERO ═══ */}
+      {/* ═══ HERO — Solo Shekael centrado ═══ */}
       <section className={styles.hero} ref={heroRef}>
         <div className={styles.patternOverlay} />
 
-        <div className={styles.heroInner}>
-          <div className={styles.heroContent}>
-            <div className={styles.logoArea}>
-              <span className={styles.logoWordmark}>Shekael</span>
-              <span className={styles.logoTag}>Porque la luz no deberia estar escondida</span>
-            </div>
-
-            <div className={styles.mxMotif} aria-hidden="true">
-              <span className={styles.mxMotifLine} />
-              <span className={styles.mxMotifDot} />
-              <span className={styles.mxMotifDiamond} />
-              <span className={styles.mxMotifDot} />
-              <span className={styles.mxMotifLine} />
-            </div>
-
-            <h1 className={styles.headline}>
-              {headlineWords.map((word, i) => (
-                <span key={i} className={styles.heroWord}>
-                  {word}{i < headlineWords.length - 1 ? '\u00A0' : ''}
-                </span>
-              ))}
-              <span className={styles.headlinePeriod}>.</span>
-            </h1>
-
-            <p className={styles.heroSub}>
-              Una red social con proposito, hecha en Mexico para el mundo.
-              Aqui el contenido vuelve a sentirse humano, tu comunidad local
-              cobra vida y tu tiempo vale. Menos ruido, mas valor.
-            </p>
-
-            <div className={styles.heroCta}>
-              <div className={styles.googleWrap}>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
-                  shape="pill"
-                  theme="outline"
-                  text="continue_with"
-                  width={320}
-                />
-              </div>
-            </div>
-          </div>
+        <div className={styles.heroSplash} ref={splashRef}>
+          <span className={styles.splashWordmark}>Shekael</span>
         </div>
 
-        <div className={styles.scrollHint}>
-          <span>Desplazate para conocer mas</span>
+        <div className={styles.heroContent}>
+          <span className={styles.logoTag}>Porque la luz no deberia estar escondida</span>
+
+          <div className={styles.mxMotif} aria-hidden="true">
+            <span className={styles.mxMotifLine} />
+            <span className={styles.mxMotifDot} />
+            <span className={styles.mxMotifDiamond} />
+            <span className={styles.mxMotifDot} />
+            <span className={styles.mxMotifLine} />
+          </div>
+
+          <h1 className={styles.headline}>
+            {headlineWords.map((word, i) => (
+              <span key={i} className={styles.heroWord}>
+                {word}{i < headlineWords.length - 1 ? '\u00A0' : ''}
+              </span>
+            ))}
+            <span className={styles.headlinePeriod}>.</span>
+          </h1>
+
+          <p className={styles.heroSub}>
+            Una red social con proposito, hecha en Mexico para el mundo.
+            Aqui el contenido vuelve a sentirse humano, tu comunidad local
+            cobra vida y tu tiempo vale. Menos ruido, mas valor.
+          </p>
+
+          <div className={styles.heroCta}>
+            <div className={styles.googleWrap}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
+                shape="pill"
+                theme="outline"
+                text="continue_with"
+                width={320}
+              />
+            </div>
+          </div>
         </div>
       </section>
 
