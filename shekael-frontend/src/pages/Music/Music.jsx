@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
 import { searchMusic } from '../../api/music.api';
@@ -9,6 +9,7 @@ import {
   ListMusic, ChevronDown
 } from 'lucide-react';
 import styles from './Music.module.css';
+import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 
 export default function Music() {
   const [searchParams] = useSearchParams();
@@ -27,7 +28,6 @@ export default function Music() {
 
   const panelRef = useRef(null);
   const listRef = useRef(null);
-  const songRefs = useRef({});
   const q = searchParams.get('q') || '';
 
   // ── Búsqueda ──
@@ -45,6 +45,24 @@ export default function Music() {
       setResults([]);
     }
   }, [q]);
+
+  // ── Stagger de entrada ──
+  useEffect(() => {
+    if (results.length === 0) return;
+    const items = listRef.current?.children;
+    if (!items || items.length === 0) return;
+
+    gsap.set(items, { opacity: 0, y: 12 });
+    gsap.to(items, {
+      opacity: 1,
+      y: 0,
+      duration: 0.35,
+      stagger: { amount: 0.4, from: 'start' },
+      ease: 'power3.out'
+    });
+
+    return () => gsap.killTweensOf(items);
+  }, [results]);
 
   // ── Animación del panel ──
   useEffect(() => {
@@ -70,21 +88,11 @@ export default function Music() {
     }
   }, [currentSong]);
 
-  const animateCard = useCallback((songId) => {
-    const el = songRefs.current[songId];
-    if (!el) return;
-    gsap.fromTo(el,
-      { scale: 1 },
-      { scale: 1.02, duration: 0.2, ease: 'power1.out', yoyo: true, repeat: 1 }
-    );
-  }, []);
-
   const handlePlaySong = async (song, addToQueueOnly = false) => {
     if (addToQueueOnly) {
       addToQueue(song);
       return;
     }
-    animateCard(song.id);
     playSong(song);
   };
 
@@ -103,7 +111,7 @@ export default function Music() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       {/* ═══ Placeholder ═══ */}
       {!q && !results.length && (
         <div className={styles.empty}>
@@ -123,11 +131,12 @@ export default function Music() {
         {results.map(song => (
           <div
             key={song.id}
-            ref={el => songRefs.current[song.id] = el}
             className={`${styles.song} ${currentSong?.id === song.id ? styles.songActive : ''}`}
             onClick={() => handlePlaySong(song)}
           >
-            <img src={song.thumbnail || ''} alt="" className={styles.thumb} loading="lazy" />
+            <div className={styles.thumbWrap}>
+              <img src={song.thumbnail || ''} alt="" className={styles.thumb} loading="lazy" />
+            </div>
             <div className={styles.songInfo}>
               <div className={styles.songTitle}>{song.title}</div>
               <div className={styles.songMeta}>
@@ -136,22 +145,6 @@ export default function Music() {
                 <span>{song.durationLabel}</span>
                 {song.views > 0 && <><span className={styles.dot}>·</span><span>{nf(song.views)}</span></>}
               </div>
-            </div>
-            <div className={styles.songActions}>
-              {currentSong?.id === song.id && playing ? (
-                <span className={styles.songPlaying}>
-                  <span /><span /><span />
-                </span>
-              ) : (
-                <Play size={18} className={styles.songPlayIcon} />
-              )}
-              <button
-                className={styles.addBtn}
-                onClick={e => { e.stopPropagation(); handlePlaySong(song, true); }}
-                title="Agregar a cola"
-              >
-                <span style={{fontSize:'1.1rem',lineHeight:1}}>+</span>
-              </button>
             </div>
           </div>
         ))}
