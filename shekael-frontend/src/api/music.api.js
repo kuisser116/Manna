@@ -1,7 +1,7 @@
 const API = import.meta.env.VITE_API_URL || '/api';
 
-export async function searchMusic(query, limit = 20) {
-  const res = await fetch(`${API}/music/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+export async function searchMusic(query, limit = 20, page = 1) {
+  const res = await fetch(`${API}/music/search?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}`);
   if (!res.ok) throw new Error('Error al buscar música');
   return res.json();
 }

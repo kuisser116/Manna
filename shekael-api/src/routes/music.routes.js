@@ -26,7 +26,7 @@ async function ytExec(args) {
   return stdout.trim();
 }
 
-// ─── Buscar canciones ───
+// ─── Buscar canciones (con paginación) ───
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
@@ -34,19 +34,24 @@ router.get('/search', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere un término de búsqueda' });
 
     const query = q.trim();
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    // Para la paginación, pedimos más resultados de los necesarios para poder saltar los primeros
+    const totalToFetch = Math.min(page * limit + limit, 100);
+    const startIdx = (page - 1) * limit;
+
     const raw = await ytExec([
       '--flat-playlist', '--dump-json', '--no-warnings',
-      `ytsearch${limit}:${query}`,
+      `ytsearch${totalToFetch}:${query}`,
     ]);
 
-    const results = [];
-    if (!raw) return res.json({ results: [] });
+    const allItems = [];
+    if (!raw) return res.json({ results: [], hasMore: false });
     for (const line of raw.split('\n').filter(Boolean)) {
       try {
         const item = JSON.parse(line);
         if (item?.id && item?.title) {
-          results.push({
+          allItems.push({
             id: item.id,
             title: item.title,
             duration: item.duration || 0,
@@ -60,7 +65,10 @@ router.get('/search', async (req, res) => {
         }
       } catch {}
     }
-    res.json({ results });
+
+    const results = allItems.slice(startIdx, startIdx + limit);
+    const hasMore = allItems.length > startIdx + limit;
+    res.json({ results, hasMore });
   } catch (err) {
     console.error('[Music] Search error:', err.message);
     res.status(500).json({ error: 'Error al buscar música' });

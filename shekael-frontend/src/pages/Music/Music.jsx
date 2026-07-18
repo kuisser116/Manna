@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -17,8 +17,12 @@ export default function Music() {
   const [searchParams] = useSearchParams();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [showQueue, setShowQueue] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const sentinelRef = useRef(null);
 
   const {
     currentSong, playing, duration, currentTime, volume, muted,
@@ -32,21 +36,52 @@ export default function Music() {
   const listRef = useRef(null);
   const q = searchParams.get('q') || '';
 
-  // ── Búsqueda ──
+  // ── Búsqueda inicial (cuando cambia el query) ──
   useEffect(() => {
     if (q) {
       setLoading(true);
       setError('');
-      searchMusic(q).then(data => {
+      setPage(1);
+      setResults([]);
+      searchMusic(q, 20, 1).then(data => {
         const list = data.results || [];
         setResults(list);
+        setHasMore(data.hasMore || false);
         if (!list.length) setError('Sin resultados');
       }).catch(() => setError('Error al buscar'))
       .finally(() => setLoading(false));
     } else {
       setResults([]);
+      setHasMore(false);
     }
   }, [q]);
+
+  // ── Cargar más resultados ──
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const data = await searchMusic(q, 20, nextPage);
+      const list = data.results || [];
+      if (list.length) {
+        setResults(prev => [...prev, ...list]);
+        setPage(nextPage);
+      }
+      setHasMore(data.hasMore || false);
+    } catch {}
+    setLoadingMore(false);
+  }, [q, page, hasMore, loadingMore]);
+
+  // ── IntersectionObserver para scroll infinito ──
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) loadMore();
+    }, { rootMargin: '400px' });
+    obs.observe(sentinelRef.current);
+    return () => obs.disconnect();
+  }, [hasMore, loadMore]);
 
   // ── Stagger de entrada ──
   useEffect(() => {
@@ -179,7 +214,10 @@ export default function Music() {
             </div>
           </div>
         ))}
+        {hasMore && <div ref={sentinelRef} className={styles.sentinel} />}
       </div>
+
+      {loadingMore && <div className={styles.loading}>Cargando más…</div>}
 
       {/* ═══ Panel lateral con cola integrada ═══ */}
       {currentSong && (
