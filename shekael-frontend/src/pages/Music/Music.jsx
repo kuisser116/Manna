@@ -112,15 +112,15 @@ export default function Music() {
     Array.from(items).forEach((el, i) => cols[i % 5].push(el));
 
     // Velocidades: col1 rápida, col2 lenta, col3 más lenta, col4 rápida, col5 lenta
-    const speeds = [1.4, 0.7, 0.3, 1.4, 0.7];
+    const moves = [-1000, -700, -300, -1000, -700];
 
     cols.forEach((group, idx) => {
       gsap.to(group, {
-        y: (1 - speeds[idx]) * 80,
+        y: moves[idx],
         ease: 'none',
         scrollTrigger: {
           trigger: listRef.current,
-          scrub: 1,
+          scrub: 1.5,
           start: 'top bottom',
           end: 'bottom top'
         }
