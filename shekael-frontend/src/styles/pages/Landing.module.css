@@ -121,12 +121,12 @@
 }
 
 .logoWordmark {
-  font-family: 'Caesar Dressing', 'Plus Jakarta Sans', sans-serif;
-  font-size: 46px;
-  line-height: 1;
+  font-family: 'Theodore And Scarlett', 'Caesar Dressing', 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(80px, 15vw, 200px);
+  line-height: 0.95;
   color: var(--color-text);
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 4px;
 }
 
 .logoTag {
@@ -144,6 +144,7 @@
   color: var(--color-text);
   max-width: 680px;
   perspective: 600px;
+  font-family: 'Theodore And Scarlett', 'Plus Jakarta Sans', sans-serif;
 }
 
 .heroWord {
@@ -270,6 +271,7 @@
   font-weight: 800;
   color: var(--color-text-secondary);
   letter-spacing: -0.5px;
+  font-family: 'Theodore And Scarlett', 'Plus Jakarta Sans', sans-serif;
 }
 
 .bandEyebrow {
@@ -300,6 +302,7 @@
   font-weight: 800;
   color: var(--color-text);
   white-space: nowrap;
+  font-family: 'Theodore And Scarlett', 'Plus Jakarta Sans', sans-serif;
 }
 
 .bandTitleWhite {
@@ -310,6 +313,7 @@
   font-weight: 800;
   color: var(--color-white);
   white-space: nowrap;
+  font-family: 'Theodore And Scarlett', 'Plus Jakarta Sans', sans-serif;
 }
 
 .bandText {
