@@ -347,4 +347,90 @@ router.get('/withdrawals/:businessId', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── POST /wallet/withdraw — Retiro personal a Bitso ───
+router.post('/wallet/withdraw', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const { destinationAddress, amountMXN, pinHash } = req.body;
+
+        if (!destinationAddress || !amountMXN || !pinHash) {
+            return res.status(400).json({ message: 'Dirección, monto y PIN requeridos' });
+        }
+
+        // Validar dirección Stellar
+        try {
+            StellarSdk.Keypair.fromPublicKey(destinationAddress);
+        } catch {
+            return res.status(400).json({ message: 'Dirección Stellar inválida. Usa la dirección de depósito USDC de tu Bitso.' });
+        }
+
+        // Validar monto
+        const parsedMXN = parseFloat(amountMXN);
+        if (isNaN(parsedMXN) || parsedMXN <= 0) {
+            return res.status(400).json({ message: 'Monto inválido' });
+        }
+        if (parsedMXN > 10000) {
+            return res.status(400).json({ message: 'Monto máximo: $10,000 MXN por transacción' });
+        }
+
+        // Verificar PIN
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('pin_hash, stellar_secret_key_encrypted, stellar_public_key')
+            .eq('id', userId)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+        if (!user.pin_hash) {
+            return res.status(400).json({ message: 'No tienes PIN configurado. Configúralo en Seguridad.' });
+        }
+        if (user.pin_hash !== pinHash) {
+            return res.status(403).json({ message: 'PIN incorrecto' });
+        }
+        if (!user.stellar_secret_key_encrypted) {
+            return res.status(400).json({ message: 'No tienes billetera Stellar configurada' });
+        }
+
+        // Convertir MXN → USDC
+        const { convertToUSDC } = await import('../services/price.service.js');
+        const amountUSDC = parseFloat(await convertToUSDC(parsedMXN));
+
+        // Verificar saldo
+        const { getBalance } = await import('../services/stellar.service.js');
+        const balance = await getBalance(user.stellar_public_key);
+        const usdcBalance = parseFloat(balance.usdc || '0');
+        if (usdcBalance < amountUSDC) {
+            return res.status(400).json({
+                message: `Saldo insuficiente. Tienes ${usdcBalance.toFixed(2)} USDC (≈ $${(usdcBalance * await (await import('../services/price.service.js')).getMxnRate()).toFixed(2)} MXN).`
+            });
+        }
+
+        // Desencriptar clave y enviar
+        const { decryptWithFallback } = await import('../services/crypto.service.js');
+        const { sendPayment } = await import('../services/stellar.service.js');
+        const secretKey = decryptWithFallback(userId, user.stellar_public_key, user.stellar_secret_key_encrypted);
+
+        const txHash = await sendPayment({
+            fromSecretKey: secretKey,
+            toPublicKey: destinationAddress,
+            amount: String(amountUSDC),
+            memo: `Shekael:wd:${userId.slice(0, 10)}`,
+        });
+
+        res.json({
+            success: true,
+            txHash,
+            amountUSDC: amountUSDC.toFixed(4),
+            amountMXN: parsedMXN.toFixed(2),
+            message: `$${parsedMXN.toFixed(2)} MXN (${amountUSDC.toFixed(4)} USDC) enviado a tu Bitso.`,
+        });
+    } catch (err) {
+        console.error('[Wallet] Withdrawal error:', err);
+        res.status(500).json({ message: err.message || 'Error al procesar el retiro' });
+    }
+});
+
 export default router;
