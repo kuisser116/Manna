@@ -39,7 +39,8 @@ import useSessionLock from './hooks/useSessionLock';
 
 
 function ProtectedRoute({ children, authLoading }) {
-  const { token, setVideoMode } = useStore();
+  const { token, user, setVideoMode } = useStore();
+  const location = useLocation();
   if (authLoading) {
     return (
       <div className={styles.loadingWrapper}>
@@ -50,7 +51,12 @@ function ProtectedRoute({ children, authLoading }) {
       </div>
     );
   }
-  return token ? children : <Navigate to="/" replace />;
+  if (!token) return <Navigate to="/" replace />;
+  // Auto-redirect al tutorial si no lo ha visto (excepto si ya estamos en /onboarding)
+  if (user && user.tutorial_completed === false && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+  return children;
 }
 
 // Layout con TopBar + Sidebar para rutas protegidas
@@ -250,7 +256,11 @@ function App() {
             <AppLayout><ControlCenter /></AppLayout>
           </ProtectedRoute>
         } />
-        <Route path="/onboarding" element={<TutorialOnboarding />} />
+        <Route path="/onboarding" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <TutorialOnboarding />
+          </ProtectedRoute>
+        } />
         <Route path="/admin/posts" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><AdminPostApproval /></AppLayout>

@@ -284,6 +284,11 @@ export default function TutorialOnboarding({ onComplete }) {
                 await fetch(`${API_URL}/users/tutorial-complete`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
                 });
+                // Actualizar store local para que el redirect check no mande al tutorial otra vez
+                const store = useStore.getState();
+                if (store.user) {
+                    store.setUser({ ...store.user, tutorial_completed: true });
+                }
             }
         } catch (_) {}
         gsap.to(root.current, { autoAlpha: 0, duration: 0.5, ease: 'power2.inOut', onComplete: () => {
