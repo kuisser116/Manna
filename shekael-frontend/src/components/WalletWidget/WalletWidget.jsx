@@ -113,6 +113,8 @@ export function WalletWidget({ variant = 'default' }) {
         if (!isExpanded || variant !== 'floating') return;
 
         const handleClickOutside = (e) => {
+            // No cerrar si hay un modal abierto (retiro o depósito)
+            if (isWithdrawOpen || isDepositOpen) return;
             if (
                 panelRef.current && !panelRef.current.contains(e.target) &&
                 buttonRef.current && !buttonRef.current.contains(e.target)
@@ -123,7 +125,7 @@ export function WalletWidget({ variant = 'default' }) {
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isExpanded, variant]);
+    }, [isExpanded, variant, isWithdrawOpen, isDepositOpen]);
 
     // ── Toggle handler ──
     const togglePanel = useCallback(() => {
