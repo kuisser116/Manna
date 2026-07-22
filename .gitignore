@@ -4,3 +4,6 @@ dist/
 *.log
 .vite/
 .music-cache/
+
+# Issuer keys (sensitive)
+.issuer-keys.json

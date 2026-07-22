@@ -88,10 +88,12 @@ export function decryptRecovery(encryptedText) {
     return decrypt(encryptedText, masterKey);
 }
 
-// Semilla de emergencia — derivada de la clave pública Stellar del usuario.
-// La clave pública es inmutable y única por usuario, sin depender de .env ni variables externas.
+// Semilla de emergencia — derivada de la clave pública + ENCRYPTION_KEY.
+// Ya no depende solo de la clave pública (que es visible).
 function getEmergencySeed(stellarPublicKey) {
-    return 'shekael-v1-' + stellarPublicKey;
+    const masterKey = process.env.ENCRYPTION_KEY;
+    if (!masterKey) throw new Error('ENCRYPTION_KEY no configurada para emergencia');
+    return masterKey + stellarPublicKey;
 }
 
 /**

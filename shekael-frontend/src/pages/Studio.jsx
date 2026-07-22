@@ -9,6 +9,8 @@ import {
 import useStore from '../store';
 import Avatar from '../components/Avatar/Avatar';
 import { deletePost, updatePost, getMyComments, getMyStats, getMyOverview } from '../api/posts.api';
+import ShekaelLogo from '../components/ShekaelLogo/ShekaelLogo';
+import BounceReveal from '../components/BounceReveal/BounceReveal';
 import styles from '../styles/pages/Studio.module.css';
 
 const TABS = [
@@ -181,7 +183,7 @@ export default function Studio() {
             <ArrowLeft size={20} />
           </button>
           <div className={styles.brand}>
-            <span className={styles.brandName}>Shekael Studio</span>
+            <span className={styles.brandName}><BounceReveal><ShekaelLogo size="xs" /></BounceReveal> Studio</span>
           </div>
         </div>
         <div className={styles.headerRight}>

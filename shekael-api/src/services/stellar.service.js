@@ -59,7 +59,7 @@ export async function getBalance(publicKey) {
     try {
         const account = await server.loadAccount(publicKey);
         const xlmBalance = account.balances.find((b) => b.asset_type === 'native');
-        const usdcBalanceValue = account.balances.find((b) => b.asset_code === STABLECOIN_CODE);
+        const usdcBalanceValue = account.balances.find((b) => b.asset_code === STABLECOIN_CODE && b.asset_issuer === STABLECOIN_ISSUER);
 
         const usdcVal = parseFloat(usdcBalanceValue?.balance || '0');
         const xlmVal = parseFloat(xlmBalance?.balance || '0');

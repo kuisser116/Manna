@@ -19,7 +19,7 @@ try {
 }
 
 export function WalletWidget({ variant = 'default' }) {
-    const { balance, currency, user, balanceLoading } = useStore();
+    const { balance, currency, user, balanceLoading, walletNotFunded } = useStore();
     const { fetchBalance } = useWallet();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -56,7 +56,7 @@ export function WalletWidget({ variant = 'default' }) {
                 filter: 'blur(8px)',
                 transformOrigin: 'bottom right',
             });
-            // Animacion mas exagerada: slide+rotate+blur con bounce
+            // Animacion: slide+rotate+blur con elastic bounce (como tutorial Shekael)
             gsap.to(panelRef.current, {
                 y: 0,
                 opacity: 1,
@@ -64,13 +64,13 @@ export function WalletWidget({ variant = 'default' }) {
                 rotate: 0,
                 filter: 'blur(0px)',
                 duration: 0.6,
-                ease: 'shekael-bounce',
+                ease: 'elastic.out(1, 0.5)',
                 onStart: () => {
                     // Los hijos con stagger mas marcado
                     if (contentRef.current) {
                         gsap.fromTo(contentRef.current.children,
-                            { opacity: 0, y: 12 },
-                            { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, delay: 0.12, ease: 'power3.out' }
+                            { opacity: 0, y: 12, scale: 0.95 },
+                            { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.05, delay: 0.12, ease: 'elastic.out(1, 0.5)' }
                         );
                     }
                 }
@@ -181,12 +181,14 @@ export function WalletWidget({ variant = 'default' }) {
                 )}
             </div>
 
-            <div className={styles.xlmNotice}>
-                <span className={styles.xlmNoticeIcon}>ⓘ</span>
-                <span className={styles.xlmNoticeText}>
-                    Para activar tu cuenta necesitas enviar <strong>~2 XLM</strong> desde Bitso a tu dirección. Después puedes depositar USDC (lo ves como MXN).
-                </span>
-            </div>
+            {walletNotFunded && (
+                <div className={styles.xlmNotice}>
+                    <span className={styles.xlmNoticeIcon}>ⓘ</span>
+                    <span className={styles.xlmNoticeText}>
+                        Para activar tu cuenta necesitas enviar <strong>~2 XLM</strong> desde Bitso a tu dirección. Después puedes depositar USDC (lo ves como MXN).
+                    </span>
+                </div>
+            )}
 
             <div className={styles.actions}>
                 <button

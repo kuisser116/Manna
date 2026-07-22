@@ -10,7 +10,12 @@ export function useWallet() {
         setBalanceLoading(true);
         try {
             const { data } = await getWalletBalance();
-            setBalance(data.balance || '0.00', data.currency || 'XLM');
+            setBalance(
+                data.balance || '0.00',
+                data.currency || 'XLM',
+                data.notFunded || false,
+                data.usdcActive || false
+            );
         } catch (err) {
             console.error('Error fetching balance:', err);
         } finally {

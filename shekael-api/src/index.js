@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config({ override: true });
 import http from 'http';
 import express from 'express';
+import helmet from 'helmet';
 
 import authRoutes from './routes/auth.routes.js';
 import postsRoutes from './routes/posts.routes.js';
@@ -18,6 +19,7 @@ import chatRoutes from './routes/chats.routes.js';
 import businessesRoutes from './routes/businesses.routes.js';
 import paymentsRoutes from './routes/payments.routes.js';
 import musicRoutes from './routes/music.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 import { apiLimiter, uploadLimiter, chatLimiter } from './middleware/rateLimiter.js';
 import { initSocketIO } from './services/socket.js';
@@ -29,6 +31,12 @@ const PORT = process.env.PORT || 3000;
 
 // Configuración para que express-rate-limit funcione correctamente tras el proxy de Render
 app.set('trust proxy', 1);
+
+// ── Seguridad: Helmet ────────────────────────────
+app.use(helmet({
+    contentSecurityPolicy: false, // Desactivado porque el frontend maneja su propio CSP
+    crossOriginEmbedderPolicy: false,
+}));
 
 // ── CORS Bulletproof ──────────────────────────────
 const ALLOWED_ORIGINS = [
@@ -84,7 +92,7 @@ app.use('/posts', postsRoutes);
 app.use('/transactions', transactionsRoutes);
 app.use('/wallet', transactionsRoutes);
 app.use('/regional-fund', regionalFundRoutes);
-app.use('/admin', regionalFundRoutes);
+app.use('/admin', adminRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/quests', questsRoutes);
 app.use('/moderation', moderationRoutes);

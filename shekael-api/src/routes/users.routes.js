@@ -478,6 +478,27 @@ router.put('/me/avatar', authMiddleware, upload.single('avatar'), handleMulterEr
     }
 });
 
+// POST /users/tutorial-complete — Marca el tutorial como completado
+router.post('/tutorial-complete', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { error } = await supabase
+            .from('users')
+            .update({ tutorial_completed: true })
+            .eq('id', req.user.id);
+
+        if (error) {
+            console.error('Error saving tutorial:', error);
+            return res.status(500).json({ message: 'Error al guardar progreso' });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Tutorial error:', err);
+        res.status(500).json({ message: 'Error interno' });
+    }
+});
+
 // GET /users/me/verify-wallet — Fuerza la activación de trustlines y fondeo si hubo errores
 router.get('/me/verify-wallet', authMiddleware, async (req, res) => {
     try {

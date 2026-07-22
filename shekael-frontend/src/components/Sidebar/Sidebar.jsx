@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { Home, Search, QrCode, Bell, User, PlusSquare, MessageCircle, MapPin } from 'lucide-react';
+import { Home, Search, QrCode, Bell, User, PlusSquare, MessageCircle, MapPin, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import styles from './Sidebar.module.css';
 import useStore from '../../store';
@@ -80,6 +80,17 @@ export function Sidebar({ collapsed = false, hidden = false, isMobile = false, o
                 >
                     <User size={24} strokeWidth={2} />
                 </button>
+
+                {user?.is_admin && (
+                    <button
+                        className={styles.iconBtn}
+                        title="Admin — Aprobar Posts"
+                        data-label="Admin Posts"
+                        onClick={() => handleNav('/admin/posts')}
+                    >
+                        <Shield size={24} strokeWidth={2} />
+                    </button>
+                )}
             </div>
         </div>
     );

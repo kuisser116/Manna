@@ -123,7 +123,7 @@ router.post('/support', authMiddleware, async (req, res) => {
         res.json({ hash: txHash, newBalance: balanceData.balance, ...balanceData, amount });
     } catch (err) {
         console.error('Support error:', err.message || err);
-        res.status(500).json({ message: err.message || 'Error al procesar el apoyo (MXne)' });
+        res.status(500).json({ message: err.message || 'Error al procesar el apoyo (USDC)' });
     }
 });
 

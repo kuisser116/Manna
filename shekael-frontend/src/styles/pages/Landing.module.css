@@ -104,6 +104,23 @@
   will-change: transform, opacity;
 }
 
+.bandWordmark {
+  display: inline;
+}
+.bandWordmarkInner {
+  all: initial;
+  font-family: 'Theodore And Scarlett', 'Caesar Dressing', 'Plus Jakarta Sans', sans-serif;
+  font-size: inherit;
+  color: inherit;
+  line-height: inherit;
+  text-transform: uppercase;
+  letter-spacing: normal;
+  font-weight: 400;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  -webkit-font-variant-ligatures: normal;
+}
+
 
 
 .patternOverlay {
@@ -342,6 +359,22 @@
   color: var(--color-white);
   white-space: nowrap;
   font-family: 'Theodore And Scarlett', 'Plus Jakarta Sans', sans-serif;
+}
+
+.scrambleTarget {
+  display: inline;
+}
+
+.bandLogoAnim {
+  /* Initial state set by GSAP: opacity: 0, y: 15 */
+}
+
+.bandTitleStacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  white-space: normal;
 }
 
 .bandText {

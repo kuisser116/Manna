@@ -10,6 +10,7 @@ import { CustomEase } from 'gsap/CustomEase.js';
 import { Palette } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useStore from '../store';
+import ShekaelLogo from '../components/ShekaelLogo/ShekaelLogo';
 import styles from '../styles/pages/Landing.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
@@ -243,17 +244,28 @@ function LandingInner() {
         }
 
         // ── 3. SCRAMBLE TEXT on section headlines ──
-        const bandTitles = mainRef.current?.querySelectorAll(`.${styles.bandTitle}, .${styles.bandTitleWhite}`);
-        if (bandTitles?.length) {
-          bandTitles.forEach(title => {
-            const originalText = title.textContent || '';
-            if (title.closest(`.${styles.bandAccent}`)) return; // Skip accent band (it has white title that looks weird scrambling)
+        // Target only .scrambleTarget spans, preserving child elements like ShekaelLogo
+        const scrambleTargets = mainRef.current?.querySelectorAll(`.${styles.scrambleTarget}`);
+        const bandLogos = mainRef.current?.querySelectorAll(`.${styles.bandLogoAnim}`);
+
+        // Hide logos initially — they'll appear with elastic bounce like the tutorial
+        if (bandLogos?.length) {
+          gsap.set(bandLogos, { autoAlpha: 0, scale: 0.4, rotate: -8 });
+        }
+
+        if (scrambleTargets?.length) {
+          scrambleTargets.forEach(el => {
+            const originalText = el.textContent || '';
+            const band = el.closest(`.${styles.band}`);
+            const logo = band?.querySelector(`.${styles.bandLogoAnim}`);
 
             ScrollTrigger.create({
-              trigger: title.closest(`.${styles.band}`) || title.parentElement,
+              trigger: band || el.parentElement,
               start: 'top 75%',
               onEnter: () => {
-                gsap.to(title, {
+                const tl = gsap.timeline();
+                // Scramble the text
+                tl.to(el, {
                   duration: 1.2,
                   scrambleText: {
                     text: originalText,
@@ -264,6 +276,16 @@ function LandingInner() {
                   },
                   ease: 'none'
                 });
+                // Logo aparece con elastic bounce como en el tutorial
+                if (logo) {
+                  tl.to(logo, {
+                    autoAlpha: 1,
+                    scale: 1,
+                    rotate: 0,
+                    duration: 0.8,
+                    ease: 'elastic.out(1, 0.5)'
+                  }, '-=0.5');
+                }
               },
               once: true
             });
@@ -438,7 +460,7 @@ function LandingInner() {
 
         <div className={styles.heroSplash} ref={splashRef}>
           <div className={styles.splashInner}>
-            <span className={styles.splashWordmark}>Shekael</span>
+            <ShekaelLogo size="splash" className={styles.splashWordmark} />
           </div>
         </div>
 
@@ -483,7 +505,7 @@ function LandingInner() {
       <section className={`${styles.band} ${styles.bandLight}`} ref={band1Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Tu red, tu terreno</span>
-          <h2 className={styles.bandTitle}>Lo que ya puedes hacer</h2>
+          <h2 className={styles.bandTitle}><span className={styles.scrambleTarget}>Lo que ya puedes hacer</span></h2>
           <div className={styles.featGrid} ref={tagsRef}>
             <div className={styles.featInner}>
               <div className={styles.featItem}>
@@ -513,7 +535,7 @@ function LandingInner() {
       <section className={`${styles.band} ${styles.bandDark}`} ref={band2Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Economia USDC — Hecha en Mexico</span>
-          <h2 className={styles.bandTitle}>Gana mientras formas parte</h2>
+          <h2 className={styles.bandTitle}><span className={styles.scrambleTarget}>Gana mientras formas parte</span></h2>
           <div className={styles.econLine}>
             <svg width="60" height="3" viewBox="0 0 60 3">
               <path d="M0 1.5h60" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" />
@@ -597,7 +619,7 @@ function LandingInner() {
       <section className={`${styles.band} ${styles.bandLight}`} ref={band4Ref}>
         <div className={styles.bandInner}>
           <span className={styles.bandEyebrow}>Nuestra manera</span>
-          <h2 className={styles.bandTitle}>Como construimos <span className={styles.shekaelNormal}>Shekael</span></h2>
+          <h2 className={styles.bandTitle}><span className={styles.scrambleTarget}>Como lo construimos</span></h2>
           <div className={styles.principlesList} ref={principleListRef}>
             {PRINCIPLES.map((item, i) => (
               <article key={i} className={styles.principleItem}>
@@ -613,7 +635,7 @@ function LandingInner() {
       <section className={`${styles.band} ${styles.bandDark} ${styles.bandClosing}`} ref={closingRef}>
         <div className={styles.bandInner}>
           <p className={styles.closingMission}>Hecho en Mexico. Para todos.</p>
-          <h2 className={styles.bandTitle}><span className={styles.shekaelNormal}>Shekael</span> te espera</h2>
+          <h2 className={`${styles.bandTitle} ${styles.bandTitleStacked}`}><span className={styles.bandLogoAnim}><ShekaelLogo size="lg" /></span><span className={styles.scrambleTarget}>te espera</span></h2>
           <p className={styles.closingVision}>La super app de Mexico, hecha para el mundo</p>
           <div className={styles.closingCta}>
             <GoogleLogin

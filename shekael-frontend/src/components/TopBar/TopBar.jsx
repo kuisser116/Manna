@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Bell, Menu, ArrowLeft, QrCode, Palette, Store } from "lucide-react";
+import { Search, Bell, Menu, ArrowLeft, QrCode, Palette, Store, BookOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
 import { searchGlobal } from "../../api/search.api";
 import Avatar from "../Avatar/Avatar";
 import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdown";
+import ShekaelLogo from "../ShekaelLogo/ShekaelLogo";
+import BounceReveal from "../BounceReveal/BounceReveal";
 
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
@@ -101,7 +103,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
           </button>
           <Link to="/feed" className={styles.logo}>
             <img src={logoImg} alt="Shekael" className={styles.logoImg} />
-            Shekael
+            <BounceReveal><ShekaelLogo size="sm" /></BounceReveal>
           </Link>
           {showBackBtn && (
             <button
@@ -248,6 +250,15 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                     Control Center
                   </Link>
                 )}
+                <button
+                  className={styles.userMenuItem}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/onboarding');
+                  }}
+                >
+                  <BookOpen size={16} /> Tutorial
+                </button>
                 <button
                   className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
                   onClick={() => {

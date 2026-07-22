@@ -82,7 +82,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
         }
 
         if (currentBalance < amountToDonate) {
-            addToast('error', 'Fondos insuficientes', `Tu saldo es ${currentBalance.toFixed(2)} MXne y quieres enviar ${amountToDonate} MXne.`);
+            addToast('error', 'Fondos insuficientes', `Tu saldo es ${currentBalance.toFixed(2)} USDC y quieres enviar ${amountToDonate} USDC.`);
             setModalOpen(false);
             return;
         }
@@ -110,7 +110,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             const hashResult = result?.hash;
             const explorerMsg = hashResult && !hashResult.startsWith('demo-')
                 ? `TX confirmada · Ver en Stellar Explorer`
-                : `${customAmount} MXne enviado al creador`;
+                : `${customAmount} USDC enviado al creador`;
 
             addToast('success', '¡Apoyo enviado!', explorerMsg);
         } catch (err) {
@@ -168,12 +168,12 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
 
                             <h3 className={styles.modalTitle}>Apoyar contenido</h3>
                             <p className={styles.modalDesc}>
-                                Elige cuánto MXne enviar a este creador como reconocimiento.
+                                Elige cuánto USDC enviar a este creador como reconocimiento.
                             </p>
 
                             <div className={styles.balance}>
                                 <span className={styles.balanceLabel}>Disponible</span>
-                                <span className={styles.balanceValue}>{currentBalance.toFixed(2)} MXne</span>
+                                <span className={styles.balanceValue}>{currentBalance.toFixed(2)} USDC</span>
                             </div>
 
                             <div className={styles.presets}>
@@ -184,7 +184,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                                         className={`${styles.presetBtn} ${customAmount === String(val) && !showCustom ? styles.presetActive : ''}`}
                                         onClick={() => selectPreset(val)}
                                     >
-                                        {val} MXne
+                                        {val} USDC
                                     </button>
                                 ))}
                                 <button
@@ -215,7 +215,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                                             className={styles.amountInput}
                                             autoFocus
                                         />
-                                        <span className={styles.inputSuffix}>MXne</span>
+                                        <span className={styles.inputSuffix}>USDC</span>
                                     </div>
                                 </motion.div>
                             )}
@@ -238,7 +238,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                                     ) : (
                                         <>
                                             <Heart size={15} />
-                                            Apoyar con {customAmount || '0'} MXne
+                                            Apoyar con {customAmount || '0'} USDC
                                         </>
                                     )}
                                 </button>
@@ -267,7 +267,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                         onComplete={handlePinVerified}
                         onCancel={() => setPinModalOpen(false)}
                         title="Confirmar transacción"
-                        subtitle={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
+                        subtitle={`Estás por enviar ${customAmount} USDC. Ingresa tu PIN de seguridad.`}
                     />
                 </div>,
                 document.body

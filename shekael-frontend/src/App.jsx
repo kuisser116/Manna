@@ -16,6 +16,8 @@ import Profile from './pages/Profile';
 import Terms from './pages/Terms';
 import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
+import AdminPostApproval from './pages/AdminPostApproval/AdminPostApproval';
+import TutorialOnboarding from './pages/TutorialOnboarding/TutorialOnboarding';
 import Studio from './pages/Studio';
 
 import Search from './pages/Search/Search';
@@ -246,6 +248,12 @@ function App() {
         <Route path="/admin/control-center" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><ControlCenter /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/onboarding" element={<TutorialOnboarding />} />
+        <Route path="/admin/posts" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><AdminPostApproval /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/business/register" element={

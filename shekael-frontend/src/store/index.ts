@@ -81,10 +81,14 @@ const useStore = create((set, get) => ({
   balance: '0.00',
   currency: 'XLM',
   balanceLoading: false,
+  walletNotFunded: false,
+  walletUsdcActive: false,
 
-  setBalance: (balance, _currency = 'USDC') => set({
+  setBalance: (balance, _currency = 'USDC', walletNotFunded = false, walletUsdcActive = false) => set({
     balance: balance || '0.00',
     currency: 'MXN',
+    walletNotFunded,
+    walletUsdcActive,
   }),
   setBalanceLoading: (balanceLoading) => set({ balanceLoading }),
 

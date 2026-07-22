@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 40" fill="none">
+  <rect x="2" y="2" width="36" height="36" rx="10" fill="#00B4D8"/>
+  <text x="20" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="22" fill="white">b</text>
+  <text x="44" y="27" font-family="Arial, sans-serif" font-weight="600" font-size="16" fill="currentColor">Bitso</text>
+</svg>

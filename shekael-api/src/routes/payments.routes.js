@@ -94,9 +94,9 @@ router.post('/pay', authMiddleware, async (req, res) => {
 
     // Verificar saldo
     const balance = await getBalance(payer.stellar_public_key);
-    const mxneBalance = parseFloat(balance.mxne || '0');
-    if (mxneBalance < finalAmount) {
-      return res.status(400).json({ message: `Saldo insuficiente. Saldo insuficiente. ${mxneBalance.toFixed(2)}, necesitas ${finalAmount.toFixed(2)}` });
+    const usdcBalance = parseFloat(balance.usdc || '0');
+    if (usdcBalance < finalAmount) {
+      return res.status(400).json({ message: `Saldo insuficiente. Tienes ${usdcBalance.toFixed(2)} USDC, necesitas ${finalAmount.toFixed(2)} USDC.` });
     }
 
     // Desencriptar clave secreta del pagador
