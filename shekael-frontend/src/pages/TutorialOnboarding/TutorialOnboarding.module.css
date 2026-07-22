@@ -5,10 +5,11 @@
     font-family: var(--font-family);
 }
 
-/* ── Partículas de fondo ── */
+/* ── Partículas de fondo — letras flotantes de Shekael ── */
 .particle {
-    position: absolute; border-radius: 50%;
-    background: var(--color-primary); pointer-events: none;
+    position: absolute;
+    pointer-events: none;
+    user-select: none;
 }
 
 /* ── Progress dots ── */
@@ -114,7 +115,7 @@
     width: 140px; height: 140px;
     display: flex; align-items: center; justify-content: center;
     z-index: 2;
-    border-radius: 20px;
+    border-radius: 25px;
     overflow: hidden;
     background: var(--color-surface);
     box-shadow: 0 8px 24px var(--color-shadow);

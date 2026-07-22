@@ -40,24 +40,86 @@ export default function TutorialOnboarding({ onComplete }) {
     // Bitso refs
     const bitsoWrap = useRef(null);
 
-    // Particles
+    // Particles — letras flotantes + click para spawnear
     useEffect(() => {
         const box = root.current;
         if (!box) return;
-        const elms = [];
-        for (let i = 0; i < 20; i++) {
-            const d = document.createElement('div');
+        const particles = [];
+        const letters = ['S','H','E','K','A','E','L'];
+        const font = "'Theodore And Scarlett','Caesar Dressing',sans-serif";
+        const MAX = 60;
+
+        function makeLetter(text, x, y, size) {
+            const d = document.createElement('span');
+            d.textContent = text;
             d.className = styles.particle;
-            d.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${2+Math.random()*4}px;height:${2+Math.random()*4}px`;
+            const s = size || 12 + Math.random() * 30;
+            d.style.cssText = [
+                `left:${x}%;top:${y}%`,
+                `font-size:${s}px`,
+                `color:var(--color-primary)`,
+                `opacity:${0.12 + Math.random() * 0.2}`,
+                `font-family:${font}`,
+                'text-transform:uppercase',
+                'font-weight:400',
+                'letter-spacing:normal',
+                'pointer-events:none',
+                'user-select:none',
+                'white-space:nowrap'
+            ].join(';');
             box.appendChild(d);
-            elms.push(d);
+            particles.push(d);
+            // Remove oldest if over limit
+            if (particles.length > MAX) {
+                const old = particles.shift();
+                if (old.parentNode) old.remove();
+            }
+            return d;
         }
-        gsap.to(elms, {
-            y: 'random(-25,25)', x: 'random(-12,12)',
-            duration: 'random(3,5)', repeat: -1, yoyo: true,
-            ease: 'sine.inOut', stagger: { each: 0.06, from: 'random' }
-        });
-        return () => elms.forEach(d => d.remove());
+
+        // Spawn iniciales
+        for (let i = 0; i < 30; i++) {
+            const d = makeLetter(letters[i % letters.length], Math.random()*100, Math.random()*100);
+            gsap.to(d, {
+                y: 'random(-200,200)', x: 'random(-120,120)',
+                rotation: 'random(-25,25)',
+                duration: 'random(3,6)', repeat: -1, yoyo: true,
+                ease: 'sine.inOut', delay: Math.random() * 0.5
+            });
+        }
+
+        // Click handler — spawn letter y flota para arriba
+        function onClick(e) {
+            const rect = box.getBoundingClientRect();
+            const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+            const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+            const letter = letters[Math.floor(Math.random() * letters.length)];
+            const size = 14 + Math.random() * 36; // 14-50px
+            const spawn = makeLetter(letter, xPct, yPct, size);
+            gsap.fromTo(spawn,
+                { opacity: 1, scale: 0.5, rotation: 0 },
+                {
+                    y: -(100 + Math.random() * 200),
+                    x: (Math.random() - 0.5) * 150,
+                    rotation: -20 + Math.random() * 40,
+                    opacity: 0,
+                    scale: 1.3,
+                    duration: 1.5 + Math.random() * 2,
+                    ease: 'power2.out',
+                    onComplete: () => {
+                        const idx = particles.indexOf(spawn);
+                        if (idx !== -1) particles.splice(idx, 1);
+                        if (spawn.parentNode) spawn.remove();
+                    }
+                }
+            );
+        }
+        box.addEventListener('click', onClick);
+
+        return () => {
+            box.removeEventListener('click', onClick);
+            particles.forEach(d => d.remove());
+        };
     }, []);
 
     /* ─── Animators ─── */
@@ -83,7 +145,7 @@ export default function TutorialOnboarding({ onComplete }) {
             tl.add(() => {
                 gsap.fromTo(h1.current,
                     { autoAlpha: 0, x: -60, scale: 0.9 },
-                    { autoAlpha: 1, x: 0, scale: 1, duration: 0.6, ease: 'power4.out' }
+                    { autoAlpha: 1, x: 0, scale: 1, duration: 0.7, ease: 'elastic.out(1, 0.5)' }
                 );
                 gsap.fromTo(logo.current,
                     { autoAlpha: 0, scale: 0.4, rotate: -8 },
@@ -91,11 +153,11 @@ export default function TutorialOnboarding({ onComplete }) {
                 );
                 gsap.fromTo(p.current[0],
                     { autoAlpha: 0, x: 60, scale: 0.9 },
-                    { autoAlpha: 1, x: 0, scale: 1, duration: 0.6, ease: 'power4.out' }
+                    { autoAlpha: 1, x: 0, scale: 1, duration: 0.7, ease: 'elastic.out(1, 0.5)' }
                 );
             }, 0);
             // Button slides up slightly after
-            tl.fromTo(btn.current, { autoAlpha: 0, y: 24, scale: 0.92 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'back.out(1.7)' }, '-=0.15');
+            tl.fromTo(btn.current, { autoAlpha: 0, y: 24, scale: 0.92 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
         };
 
         // SLIDE 1: Chest
@@ -114,9 +176,9 @@ export default function TutorialOnboarding({ onComplete }) {
                 ease: 'back.out(1.5)'
             }, '-=0.3');
 
-            tl.fromTo(fiftyText.current, { autoAlpha: 0, y: 20, filter: 'blur(8px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.6 }, '-=0.2');
-            tl.fromTo(fiftyLabel.current, { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.4 }, '-=0.15');
-            tl.fromTo(btn.current, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.35 }, '-=0.1');
+            tl.fromTo(fiftyText.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.2');
+            tl.fromTo(fiftyLabel.current, { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
+            tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.92 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
         };
 
         // SLIDE 2: Authentic + Mockup
@@ -125,11 +187,11 @@ export default function TutorialOnboarding({ onComplete }) {
             showSlide(2);
             gsap.set(btn.current, { autoAlpha: 0 });
             const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-            tl.fromTo(h2.current[2], { autoAlpha: 0, y: 16, filter: 'blur(6px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.5 });
-            tl.fromTo(p.current[2], { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.4 }, '-=0.2');
-            tl.fromTo(mockup.current, { autoAlpha: 0, y: 60, filter: 'blur(10px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.8, ease: 'power4.out' }, '-=0.1');
-            tl.fromTo(createPulse.current, { scale: 0 }, { scale: 1, duration: 0.5, ease: 'back.out(2.5)' }, '-=0.3');
-            tl.fromTo(btn.current, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.35 }, '-=0.1');
+            tl.fromTo(h2.current[2], { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' });
+            tl.fromTo(p.current[2], { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
+            tl.fromTo(mockup.current, { autoAlpha: 0, y: 60, scale: 0.92, filter: 'blur(10px)' }, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.9, ease: 'elastic.out(0.7, 0.4)' }, '-=0.1');
+            tl.fromTo(createPulse.current, { scale: 0 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.3');
+            tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.92 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
         };
 
         // SLIDE 3: Withdraw
@@ -171,9 +233,9 @@ export default function TutorialOnboarding({ onComplete }) {
                 stagger: 0.04
             }, '-=0.1');
 
-            tl.fromTo(h2.current[3], { autoAlpha: 0, y: 20, filter: 'blur(6px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.5 }, '-=0.2');
-            tl.fromTo(p.current[3], { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.4 }, '-=0.1');
-            tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.4, ease: 'back.out(1.5)' }, '-=0.1');
+            tl.fromTo(h2.current[3], { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.2');
+            tl.fromTo(p.current[3], { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
+            tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
         };
 
         return f;
