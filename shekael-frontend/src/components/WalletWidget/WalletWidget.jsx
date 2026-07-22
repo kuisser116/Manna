@@ -190,6 +190,37 @@ export function WalletWidget({ variant = 'default' }) {
                 </div>
             )}
 
+            {/* Bonus promocional */}
+            {user?.bonus_total_mxn > 0 && user?.tutorial_completed && (
+                <div className={styles.bonusSection}>
+                    <div className={styles.bonusHeader}>
+                        <span className={styles.bonusLabel}>Ganado del bono</span>
+                        <span className={styles.bonusAmount}>
+                            ${parseFloat(user.bonus_released_mxn || 0).toFixed(2)} MXN
+                            <span className={styles.bonusTotal}> / ${user.bonus_total_mxn} MXN</span>
+                        </span>
+                    </div>
+                    <div className={styles.bonusBar}>
+                        <div
+                            className={styles.bonusBarFill}
+                            style={{
+                                width: `${Math.min(100, ((user.bonus_released_mxn || 0) / user.bonus_total_mxn) * 100)}%`
+                            }}
+                        />
+                    </div>
+                    {user.bonus_expires_at && !user.bonus_expired && (
+                        <span className={styles.bonusExpiry}>
+                            Expira {(new Date(user.bonus_expires_at)).toLocaleDateString()}
+                        </span>
+                    )}
+                    {user.bonus_expired && (
+                        <span className={styles.bonusExpired}>
+                            Bono expirado
+                        </span>
+                    )}
+                </div>
+            )}
+
             <div className={styles.actions}>
                 <button
                     className={styles.depositBtn}

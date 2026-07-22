@@ -84,7 +84,39 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             return res.status(404).json({ message: 'Autor no encontrado' });
         }
 
-        // 2. Activar wallet si no está activa
+        // 2. Verificar que completó el tutorial
+        if (!author.tutorial_completed) {
+            return res.status(400).json({ message: 'El usuario debe completar el tutorial primero.' });
+        }
+
+        // 3. Verificar si el bonus ya expiró
+        if (author.bonus_expired) {
+            return res.status(400).json({ message: 'El periodo de bonus de 70 días ha expirado para este usuario.' });
+        }
+        if (author.bonus_expires_at && new Date() > new Date(author.bonus_expires_at)) {
+            // Marcar como expirado y rechazar
+            await supabase.from('users').update({ bonus_expired: true }).eq('id', author.id);
+            return res.status(400).json({ message: 'El periodo de bonus de 70 días ha expirado. Los fondos no reclamados regresan a tesorería.' });
+        }
+
+        // 4. Verificar límite de 1 post aprobado por día por usuario
+        if (author.last_post_approved_at) {
+            const lastApproved = new Date(author.last_post_approved_at);
+            const today = new Date();
+            if (lastApproved.toDateString() === today.toDateString()) {
+                return res.status(400).json({
+                    message: 'Este usuario ya tuvo un post aprobado hoy. Máximo 1 por día.'
+                });
+            }
+        }
+
+        // 5. Verificar si alcanzó el tope de $50
+        const currentReleased = parseFloat(author.bonus_released_mxn || 0);
+        if (currentReleased >= 50) {
+            return res.status(400).json({ message: 'Este usuario ya alcanzó el tope de $50 MXN del bono promocional.' });
+        }
+
+        // 6. Activar wallet si no está activa
         if (!author.wallet_activated) {
             console.log(`[Admin] Activando wallet de ${author.display_name}...`);
             await activateWallet(author);
@@ -94,7 +126,7 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
                 .eq('id', author.id);
         }
 
-        // 3. Calcular cuánto liberar ($1 MXN ≈ 0.057 USDC)
+        // 7. Calcular cuánto liberar ($1 MXN ≈ 0.057 USDC)
         const releaseAmountUSDC = await convertToUSDC(1);
         console.log(`[Admin] Liberando ${releaseAmountUSDC} USDC (equivalente a $1 MXN)`);
 
@@ -111,14 +143,22 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             memo: `Shekael:bonus-post-${postId.slice(0, 8)}`
         });
 
-        // 5. Actualizar bonus del usuario
+        // 8. Actualizar bonus del usuario
         const newReleased = (parseFloat(author.bonus_released_mxn || 0) + 1).toFixed(2);
+        const updateData = {
+            bonus_released_mxn: newReleased,
+            last_post_approved_at: new Date().toISOString()
+        };
+        // Si es el primer post aprobado, registrar fecha y expiración
+        if (!author.first_post_approved_at) {
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 70);
+            updateData.first_post_approved_at = new Date().toISOString();
+            updateData.bonus_expires_at = expiresAt.toISOString();
+        }
         await supabase
             .from('users')
-            .update({
-                bonus_released_mxn: newReleased,
-                last_post_approved_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', author.id);
 
         // 6. Marcar post como aprobado
@@ -138,7 +178,8 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             message: `Post aprobado. $1 MXN liberado a ${author.display_name}.`,
             txHash,
             bonus_released_mxn: newReleased,
-            bonus_total_mxn: author.bonus_total_mxn || 50
+            bonus_total_mxn: author.bonus_total_mxn || 50,
+            bonus_expires_at: updateData.bonus_expires_at || author.bonus_expires_at
         });
 
     } catch (err) {

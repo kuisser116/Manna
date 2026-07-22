@@ -166,7 +166,12 @@ router.post('/google', strictLimiter, async (req, res) => {
                     stellar_secret_key_encrypted: encSecret,
                     target_watch_seconds: targetWatchSeconds,
                     target_likes: targetLikes,
-                    target_follows: targetFollows
+                    target_follows: targetFollows,
+                    bonus_total_mxn: 50,
+                    bonus_released_mxn: 0,
+                    wallet_activated: false,
+                    tutorial_completed: false,
+                    bonus_expired: false
                 })
                 .select()
                 .single();

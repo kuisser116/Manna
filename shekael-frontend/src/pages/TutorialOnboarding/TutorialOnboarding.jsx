@@ -341,7 +341,7 @@ export default function TutorialOnboarding({ onComplete }) {
                     </svg>
 
                     <div ref={fiftyText} className={styles.amount}>$50 MXN</div>
-                    <p ref={fiftyLabel} className={styles.desc}>Publica contenido para liberarlos.</p>
+                    <p ref={fiftyLabel} className={styles.desc}>Gana hasta $50 MXN. Cada post aprobado = $1 MXN.</p>
                 </div>
 
                 {/* ═══ SLIDE 2 ── Authentic + Mockup ═══ */}
