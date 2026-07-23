@@ -137,6 +137,44 @@
 .btnFinish { background: var(--color-success); }
 
 /* ── Responsive ── */
+/* ── Ad Slides ── */
+.adEarnIcon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+}
+
+.adCoinAnim {
+    font-size: 5rem;
+    margin-bottom: 20px;
+    animation: coinFloat 3s ease-in-out infinite;
+}
+
+@keyframes coinFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(8deg); }
+}
+
+.adTimerAnim {
+    font-size: 4.5rem;
+    margin-bottom: 20px;
+    width: 110px;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #34d399, #059669);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(52, 211, 153, 0.3);
+}
+
 @media (max-width: 480px) {
     .wrap { padding: 24px 16px; }
     .titleLarge { font-size: 1.7rem; }

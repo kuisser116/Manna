@@ -327,3 +327,76 @@
     margin-top: 4px;
     font-style: italic;
 }
+
+/* ── Ad Earnings ── */
+.adEarnings {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+
+.adEarningsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.adEarningsLabel {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.adEarningsAmount {
+    font-size: 15px;
+    font-weight: 700;
+    color: #818cf8;
+}
+
+.adEarningsStats {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 6px;
+}
+
+.adStatsToday {
+    font-size: 11px;
+    color: var(--color-text-dim);
+}
+
+.adStatsRemaining {
+    font-size: 11px;
+    color: var(--color-text-dim);
+}
+
+.claimBtn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.claimBtn:hover {
+    opacity: 0.9;
+}
+
+.claimBtn:active {
+    transform: scale(0.98);
+}
+
+.adNextClaim {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--color-text-dim);
+    text-align: center;
+}

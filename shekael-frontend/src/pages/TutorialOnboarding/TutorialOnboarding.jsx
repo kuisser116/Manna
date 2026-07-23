@@ -7,7 +7,7 @@ import useStore from '../../store';
 import styles from './TutorialOnboarding.module.css';
 
 const API_URL = import.meta.env.VITE_API_URL || location.origin;
-const TOTAL = 4;
+const TOTAL = 7;
 
 export default function TutorialOnboarding({ onComplete }) {
     const navigate = useNavigate();
@@ -40,6 +40,11 @@ export default function TutorialOnboarding({ onComplete }) {
     // Bitso refs
     const bitsoWrap = useRef(null);
 
+    // Ad slides refs
+    const adCoin = useRef(null);
+    const adIcon = useRef(null);
+    const adTimer = useRef(null);
+
     // Particles — letras flotantes + click para spawnear
     useEffect(() => {
         const box = root.current;
@@ -69,7 +74,6 @@ export default function TutorialOnboarding({ onComplete }) {
             ].join(';');
             box.appendChild(d);
             particles.push(d);
-            // Remove oldest if over limit
             if (particles.length > MAX) {
                 const old = particles.shift();
                 if (old.parentNode) old.remove();
@@ -77,7 +81,6 @@ export default function TutorialOnboarding({ onComplete }) {
             return d;
         }
 
-        // Spawn iniciales
         for (let i = 0; i < 30; i++) {
             const d = makeLetter(letters[i % letters.length], Math.random()*100, Math.random()*100);
             gsap.to(d, {
@@ -88,13 +91,12 @@ export default function TutorialOnboarding({ onComplete }) {
             });
         }
 
-        // Click handler — spawn letter y flota para arriba
         function onClick(e) {
             const rect = box.getBoundingClientRect();
             const xPct = ((e.clientX - rect.left) / rect.width) * 100;
             const yPct = ((e.clientY - rect.top) / rect.height) * 100;
             const letter = letters[Math.floor(Math.random() * letters.length)];
-            const size = 14 + Math.random() * 36; // 14-50px
+            const size = 14 + Math.random() * 36;
             const spawn = makeLetter(letter, xPct, yPct, size);
             gsap.fromTo(spawn,
                 { opacity: 1, scale: 0.5, rotation: 0 },
@@ -135,13 +137,12 @@ export default function TutorialOnboarding({ onComplete }) {
             if (slides) gsap.set(slides, { autoAlpha: 0 });
         };
 
-        // SLIDE 0: Welcome — elements appear together, dynamic
+        // SLIDE 0: Welcome
         f[0] = () => {
             hideAll();
             showSlide(0);
             gsap.set(btn.current, { autoAlpha: 0 });
             const tl = gsap.timeline();
-            // All three main elements animate simultaneously
             tl.add(() => {
                 gsap.fromTo(h1.current,
                     { autoAlpha: 0, x: -60, scale: 0.9 },
@@ -156,18 +157,16 @@ export default function TutorialOnboarding({ onComplete }) {
                     { autoAlpha: 1, x: 0, scale: 1, duration: 0.7, ease: 'elastic.out(1, 0.5)' }
                 );
             }, 0);
-            // Button slides up slightly after
             tl.fromTo(btn.current, { autoAlpha: 0, y: 24, scale: 0.92 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
         };
 
-        // SLIDE 1: Chest
+        // SLIDE 1: Chest + $20
         f[1] = () => {
             hideAll();
             showSlide(1);
             gsap.set(btn.current, { autoAlpha: 0 });
             const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
             tl.fromTo(chestSvg.current, { autoAlpha: 0, scale: 0.3, rotate: -10 }, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.9, ease: 'elastic.out(1, 0.5)' });
-            // Minecraft-style chest open: lid scales down (flattens backward)
             tl.to(chestLid.current, {
                 scaleY: 0.3,
                 y: -14,
@@ -175,7 +174,6 @@ export default function TutorialOnboarding({ onComplete }) {
                 duration: 0.6,
                 ease: 'back.out(1.5)'
             }, '-=0.3');
-
             tl.fromTo(fiftyText.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.2');
             tl.fromTo(fiftyLabel.current, { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
             tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.92 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
@@ -194,47 +192,72 @@ export default function TutorialOnboarding({ onComplete }) {
             tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.92 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
         };
 
-        // SLIDE 3: Withdraw
+        // SLIDE 3 — Anuncios: Atención
         f[3] = () => {
             hideAll();
             showSlide(3);
             gsap.set(btn.current, { autoAlpha: 0 });
             const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-            const coinEls = root.current.querySelectorAll(`.${styles.floatingCoin}`);
+            gsap.set(adIcon, { autoAlpha: 0, scale: 0.4, rotate: -12 });
+            tl.to(adIcon, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: 'elastic.out(1, 0.5)' });
+            tl.fromTo(h2.current[3], { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.3');
+            tl.fromTo(p.current[3], { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
+            tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
+        };
 
-            // Coins aparecen todas simultaneamente con elastic bounce
+        // SLIDE 4 — Anuncios: Cada anuncio genera dinero
+        f[4] = () => {
+            hideAll();
+            showSlide(4);
+            gsap.set(btn.current, { autoAlpha: 0 });
+            const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            gsap.set(adCoin, { autoAlpha: 0, scale: 0.3, rotate: -12 });
+            tl.to(adCoin, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: 'elastic.out(1, 0.5)' });
+            tl.fromTo(h2.current[4], { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.3');
+            tl.fromTo(p.current[4], { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
+            tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
+        };
+
+        // SLIDE 5 — Anuncios: Acumula y retira cada mes
+        f[5] = () => {
+            hideAll();
+            showSlide(5);
+            gsap.set(btn.current, { autoAlpha: 0 });
+            const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            gsap.set(adTimer, { autoAlpha: 0, scale: 0.4, rotate: -8 });
+            tl.to(adTimer, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: 'elastic.out(1, 0.5)' });
+            tl.fromTo(h2.current[5], { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.3');
+            tl.fromTo(p.current[5], { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
+            tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
+        };
+
+        // SLIDE 6: Withdraw (cierre)
+        f[6] = () => {
+            hideAll();
+            showSlide(6);
+            gsap.set(btn.current, { autoAlpha: 0 });
+            const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            const coinEls = root.current.querySelectorAll(`.${styles.floatingCoin}`);
             gsap.set(coinEls, { autoAlpha: 0, scale: 0.4, rotate: -12 });
             tl.to(coinEls, {
-                autoAlpha: 1,
-                scale: 1,
-                rotate: 0,
-                duration: 0.5,
-                ease: 'elastic.out(0.7, 0.4)',
+                autoAlpha: 1, scale: 1, rotate: 0,
+                duration: 0.5, ease: 'elastic.out(0.7, 0.4)',
                 stagger: 0.07
             });
-
-            // Bitso logo con elastic bounce + mas grande
             tl.fromTo(bitsoWrap.current,
                 { autoAlpha: 0, scale: 0.4, rotate: -6 },
                 { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: 'elastic.out(1, 0.5)' },
                 '-=0.25'
             );
-
-            // Monedas vuelan al centro y se absorben en Bitso
             tl.to(coinEls, {
-                left: '50%',
-                top: '50%',
-                xPercent: -50,
-                yPercent: -50,
-                scale: 0,
-                opacity: 0,
-                duration: 0.5,
-                ease: 'back.in(1.3)',
+                left: '50%', top: '50%',
+                xPercent: -50, yPercent: -50,
+                scale: 0, opacity: 0,
+                duration: 0.5, ease: 'back.in(1.3)',
                 stagger: 0.04
             }, '-=0.1');
-
-            tl.fromTo(h2.current[3], { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.2');
-            tl.fromTo(p.current[3], { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
+            tl.fromTo(h2.current[6], { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, '-=0.2');
+            tl.fromTo(p.current[6], { autoAlpha: 0, y: 16, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }, '-=0.15');
             tl.fromTo(btn.current, { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'elastic.out(1, 0.5)' }, '-=0.1');
         };
 
@@ -247,12 +270,10 @@ export default function TutorialOnboarding({ onComplete }) {
     // Animate on slide change
     useEffect(() => {
         if (done) return;
-        // Immediately hide all slides to prevent flash
         const slides = root.current?.querySelectorAll(`.${styles.slide}`);
         if (slides) gsap.set(slides, { autoAlpha: 0 });
         gsap.set(btn.current, { autoAlpha: 0, clearProps: 'all' });
         const timer = setTimeout(() => fnRef.current[slide](), 100);
-        // Update progress dots
         dots.current.forEach((el, i) => {
             if (!el) return;
             el.className = i === slide ? `${styles.pdot} ${styles.pdotActive}`
@@ -284,7 +305,6 @@ export default function TutorialOnboarding({ onComplete }) {
                 await fetch(`${API_URL}/users/tutorial-complete`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
                 });
-                // Actualizar store local para que el redirect check no mande al tutorial otra vez
                 const store = useStore.getState();
                 if (store.user) {
                     store.setUser({ ...store.user, tutorial_completed: true });
@@ -299,52 +319,41 @@ export default function TutorialOnboarding({ onComplete }) {
 
     return (
         <div className={styles.overlay} ref={root}>
-            {/* Progress dots */}
             <div className={styles.progress}>
-                {[0,1,2,3].map(i => <div key={i} ref={el => dots.current[i] = el} className={styles.pdot} />)}
+                {[0,1,2,3,4,5,6].map(i => <div key={i} ref={el => dots.current[i] = el} className={styles.pdot} />)}
             </div>
 
             <div className={styles.wrap}>
-                {/* ═══ SLIDE 0 ── Hero ═══ */}
+                {/* ─── SLIDE 0 ── Welcome ─── */}
                 <div className={styles.slide} data-slide="0">
                     <h1 ref={h1} className={styles.titleLarge}>Bienvenido</h1>
                     <div className={styles.brandTitle} ref={logo}><ShekaelLogo size="hero" /></div>
                     <p ref={el => p.current[0] = el} className={styles.sub}>Aquí tu atención vale.</p>
                 </div>
 
-                {/* ═══ SLIDE 1 ── Chest + $50 ═══ */}
+                {/* ─── SLIDE 1 ── Chest + $20 ─── */}
                 <div className={styles.slide} data-slide="1">
                     <svg ref={chestSvg} className={styles.chest} viewBox="0 12 150 108" fill="none" overflow="visible">
-                        {/* Chest interior — dark background visible between lid and body when open */}
                         <rect x="14" y="18" width="122" height="42" rx="2" fill="#1F1307"/>
-                        {/* Chest bottom */}
                         <rect x="10" y="60" width="130" height="55" rx="2" fill="#7B5B2A" stroke="#5C431E" strokeWidth="3"/>
-                        {/* Bottom trim */}
                         <rect x="10" y="60" width="130" height="6" rx="1" fill="#C4932F" stroke="#5C431E" strokeWidth="1.5"/>
-                        {/* Bottom handle */}
                         <rect x="50" y="65" width="50" height="8" rx="2" fill="#5C431E"/>
-                        {/* Chest lid */}
                         <g ref={chestLid}>
                             <rect x="8" y="20" width="134" height="42" rx="2" fill="#8B6914" stroke="#5C431E" strokeWidth="3"/>
-                            {/* Lid top trim */}
                             <rect x="8" y="20" width="134" height="5" rx="1" fill="#C4932F" stroke="#5C431E" strokeWidth="1.5"/>
-                            {/* Lock on front */}
                             <rect x="66" y="42" width="18" height="22" rx="3" fill="#5C431E"/>
                             <rect x="70" y="46" width="10" height="10" rx="2" fill="#C4932F"/>
                             <circle cx="75" cy="51" r="3" fill="#8B6914"/>
                         </g>
-                        {/* Side brackets */}
                         <rect x="18" y="72" width="12" height="8" rx="2" fill="#5C431E"/>
                         <rect x="120" y="72" width="12" height="8" rx="2" fill="#5C431E"/>
-                        {/* Glow from inside */}
                         <ellipse ref={chestGlow} cx="75" cy="45" rx="55" ry="15" fill="#FFD700" opacity="0"/>
                     </svg>
-
-                    <div ref={fiftyText} className={styles.amount}>$50 MXN</div>
-                    <p ref={fiftyLabel} className={styles.desc}>Gana hasta $50 MXN. Cada post aprobado = $1 MXN.</p>
+                    <div ref={fiftyText} className={styles.amount}>$20 MXN</div>
+                    <p ref={fiftyLabel} className={styles.desc}>$20 MXN de regalo por unirte. Retíralos cuando quieras, aunque sea $1.</p>
                 </div>
 
-                {/* ═══ SLIDE 2 ── Authentic + Mockup ═══ */}
+                {/* ─── SLIDE 2 ── Authentic + Mockup ─── */}
                 <div className={styles.slide} data-slide="2">
                     <h2 ref={el => h2.current[2] = el} className={styles.titleMed}>Ya son tuyos.</h2>
                     <p ref={el => p.current[2] = el} className={styles.desc} style={{marginBottom:16}}>
@@ -371,8 +380,41 @@ export default function TutorialOnboarding({ onComplete }) {
                     </div>
                 </div>
 
-                {/* ═══ SLIDE 3 ── Withdraw ═══ */}
+                {/* ─── SLIDE 3 ── Anuncios: Atención ─── */}
                 <div className={styles.slide} data-slide="3">
+                    <div className={styles.adEarnIcon} ref={adIcon}>📱</div>
+                    <h2 ref={el => h2.current[3] = el} className={styles.titleMed}>
+                        Las otras apps se roban tu atención
+                    </h2>
+                    <p ref={el => p.current[3] = el} className={styles.desc}>
+                        y no te dan nada a cambio. Aquí valoramos tu tiempo.
+                    </p>
+                </div>
+
+                {/* ─── SLIDE 4 ── Anuncios: Ganas ─── */}
+                <div className={styles.slide} data-slide="4">
+                    <div className={styles.adCoinAnim} ref={adCoin}>🪙</div>
+                    <h2 ref={el => h2.current[4] = el} className={styles.titleMed}>
+                        Cada anuncio que veas genera dinero
+                    </h2>
+                    <p ref={el => p.current[4] = el} className={styles.desc}>
+                        Si lo ves completo y en foco, una parte es para ti. Así de simple.
+                    </p>
+                </div>
+
+                {/* ─── SLIDE 5 ── Anuncios: Retiro mensual ─── */}
+                <div className={styles.slide} data-slide="5">
+                    <div className={styles.adTimerAnim} ref={adTimer}>📆</div>
+                    <h2 ref={el => h2.current[5] = el} className={styles.titleMed}>
+                        Acumula y retira cada mes
+                    </h2>
+                    <p ref={el => p.current[5] = el} className={styles.desc}>
+                        Tus ganancias se acumulan en tu wallet y las retiras cuando llegue el pago mensual. Transparente y real.
+                    </p>
+                </div>
+
+                {/* ─── SLIDE 6 ── Withdraw (cierre) ─── */}
+                <div className={styles.slide} data-slide="6">
                     <div className={styles.bitsoAnim}>
                         <span className={styles.floatingCoin} style={{top:'-19%',left:'11%'}}>💰</span>
                         <span className={styles.floatingCoin} style={{top:'-14%',right:'16%'}}>💎</span>
@@ -383,13 +425,13 @@ export default function TutorialOnboarding({ onComplete }) {
                             <img src="/brands/bitso.png" alt="Bitso" className={styles.bitsoSvg} />
                         </div>
                     </div>
-                    <h2 ref={el => h2.current[3] = el} className={styles.titleMed}>Retira cuando quieras a Bitso.</h2>
-                    <p ref={el => p.current[3] = el} className={styles.desc}>Así de simple.</p>
+                    <h2 ref={el => h2.current[6] = el} className={styles.titleMed}>Retira cuando quieras a Bitso.</h2>
+                    <p ref={el => p.current[6] = el} className={styles.desc}>Así de simple.</p>
                 </div>
 
-                {/* ═══ Button ═══ */}
-                <button className={`${styles.btn} ${slide === 3 ? styles.btnFinish : ''}`} ref={btn} onClick={goNext}>
-                    {slide === 3 ? 'Comenzar ahora' : 'Siguiente'}
+                {/* ─── Button ─── */}
+                <button className={`${styles.btn} ${slide === 6 ? styles.btnFinish : ''}`} ref={btn} onClick={goNext}>
+                    {slide === 6 ? 'Comenzar ahora' : 'Siguiente'}
                     <ArrowRight size={18} />
                 </button>
             </div>

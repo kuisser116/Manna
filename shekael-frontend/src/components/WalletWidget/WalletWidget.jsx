@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Wallet, RefreshCw, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
+import useAdEarnings from '../../hooks/useAdEarnings';
 import WithdrawModal from '../WithdrawModal/WithdrawModal';
 import DepositModal from '../DepositModal/DepositModal';
 import styles from './WalletWidget.module.css';
@@ -21,6 +22,7 @@ try {
 export function WalletWidget({ variant = 'default' }) {
     const { balance, currency, user, balanceLoading, walletNotFunded } = useStore();
     const { fetchBalance } = useWallet();
+    const { earnings: adEarnings, stats: adStats, loading: adLoading, claimMonthly, canClaimMonthly } = useAdEarnings();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
     const [isDepositOpen, setIsDepositOpen] = useState(false);
@@ -189,6 +191,47 @@ export function WalletWidget({ variant = 'default' }) {
                     <span className={styles.xlmNoticeText}>
                         Para activar tu cuenta necesitas enviar <strong>~2 XLM</strong> desde Bitso a tu dirección. Después puedes depositar USDC (lo ves como MXN).
                     </span>
+                </div>
+            )}
+
+            {/* Ganancias por anuncios */}
+            {!adLoading && adEarnings !== null && (
+                <div className={styles.adEarnings}>
+                    <div className={styles.adEarningsHeader}>
+                        <span className={styles.adEarningsLabel}>Ganancias por anuncios</span>
+                        <span className={styles.adEarningsAmount}>
+                            ${parseFloat(adEarnings.balance || 0).toFixed(2)} MXN
+                        </span>
+                    </div>
+                    {adStats && (
+                        <div className={styles.adEarningsStats}>
+                            <span className={styles.adStatsToday}>
+                                Hoy: ${adStats.today.earned.toFixed(2)} ({adStats.today.count} ads)
+                            </span>
+                            <span className={styles.adStatsRemaining}>
+                                {adStats.dailyRemaining} ads disponibles hoy
+                            </span>
+                        </div>
+                    )}
+                    {parseFloat(adEarnings.balance || 0) > 0 && canClaimMonthly && (
+                        <button
+                            className={styles.claimBtn}
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                const result = await claimMonthly();
+                                if (result.success) {
+                                    fetchBalance();
+                                }
+                            }}
+                        >
+                            Retirar ganancias
+                        </button>
+                    )}
+                    {!canClaimMonthly && adEarnings?.next_claim_date && (
+                        <span className={styles.adNextClaim}>
+                            Próximo retiro: {new Date(adEarnings.next_claim_date).toLocaleDateString()}
+                        </span>
+                    )}
                 </div>
             )}
 

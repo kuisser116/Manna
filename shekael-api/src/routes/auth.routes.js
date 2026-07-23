@@ -167,7 +167,7 @@ router.post('/google', strictLimiter, async (req, res) => {
                     target_watch_seconds: targetWatchSeconds,
                     target_likes: targetLikes,
                     target_follows: targetFollows,
-                    bonus_total_mxn: 50,
+                    bonus_total_mxn: 20,
                     bonus_released_mxn: 0,
                     wallet_activated: false,
                     tutorial_completed: false,

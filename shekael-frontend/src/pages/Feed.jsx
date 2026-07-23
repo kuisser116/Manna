@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
+import AdSlot, { shouldShowAd } from '../components/AdSlot/AdSlot';
 import useStore from '../store';
 import useFeed from '../hooks/useFeed';
 import { markPostAsSeen } from '../api/posts.api';
@@ -111,15 +112,20 @@ export default function Feed() {
   const unseenPosts = displayPosts.filter(p => !p.seen_at);
   const seenPosts = displayPosts.filter(p => p.seen_at);
 
-  // ── Render ──
+  // ── Render con anuncios intercalados ──
   const renderPostList = (postList, showLabel = false, label = '') => (
     <>
       {showLabel && postList.length > 0 && (
         <div className={styles.sectionLabel}>{label}</div>
       )}
-      {postList.map((item) => (
-        <div key={item.id} ref={(node) => { if (!item.seen_at) postRefCallback(node, item.id); }}>
-          <PostCard post={item} />
+      {postList.map((item, index) => (
+        <div key={item.id}>
+          <div ref={(node) => { if (!item.seen_at) postRefCallback(node, item.id); }}>
+            <PostCard post={item} />
+          </div>
+          {shouldShowAd(index) && (
+            <AdSlot postIndex={index} source="feed" />
+          )}
         </div>
       ))}
     </>
