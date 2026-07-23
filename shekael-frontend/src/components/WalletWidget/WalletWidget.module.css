@@ -400,3 +400,21 @@
     color: var(--color-text-dim);
     text-align: center;
 }
+
+.adEarningsEst {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--color-text-dim);
+    margin-left: 4px;
+}
+
+.adPoolNotice {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}

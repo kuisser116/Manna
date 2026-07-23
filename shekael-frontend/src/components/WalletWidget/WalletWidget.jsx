@@ -22,7 +22,7 @@ try {
 export function WalletWidget({ variant = 'default' }) {
     const { balance, currency, user, balanceLoading, walletNotFunded } = useStore();
     const { fetchBalance } = useWallet();
-    const { earnings: adEarnings, stats: adStats, loading: adLoading, claimMonthly, canClaimMonthly } = useAdEarnings();
+    const { earnings: adEarnings, stats: adStats, pool, loading: adLoading, claimMonthly, canClaimMonthly, perViewRate, poolSettled, monthlyImpressions } = useAdEarnings();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
     const [isDepositOpen, setIsDepositOpen] = useState(false);
@@ -194,11 +194,16 @@ export function WalletWidget({ variant = 'default' }) {
                 </div>
             )}
 
-            {/* Ganancias por anuncios */}
+            {/* Ganancias por anuncios (Pool Prorrateado) */}
             {!adLoading && adEarnings !== null && (
                 <div className={styles.adEarnings}>
                     <div className={styles.adEarningsHeader}>
-                        <span className={styles.adEarningsLabel}>Ganancias por anuncios</span>
+                        <span className={styles.adEarningsLabel}>
+                            Ganancias por anuncios
+                            {!poolSettled && (
+                                <span className={styles.adEarningsEst}>(estimado)</span>
+                            )}
+                        </span>
                         <span className={styles.adEarningsAmount}>
                             ${parseFloat(adEarnings.balance || 0).toFixed(2)} MXN
                         </span>
@@ -206,14 +211,25 @@ export function WalletWidget({ variant = 'default' }) {
                     {adStats && (
                         <div className={styles.adEarningsStats}>
                             <span className={styles.adStatsToday}>
-                                Hoy: ${adStats.today.earned.toFixed(2)} ({adStats.today.count} ads)
+                                Hoy: {adStats.today.count} ads
+                                {poolSettled
+                                    ? ` — $${adStats.today.earned.toFixed(4)} MXN`
+                                    : ` — ~$${adStats.today.earned.toFixed(4)} MXN`
+                                }
+                            </span>
+                            <span className={styles.adStatsToday}>
+                                Este mes: ${(monthlyImpressions * perViewRate).toFixed(2)} MXN ({monthlyImpressions} ads)
                             </span>
                             <span className={styles.adStatsRemaining}>
                                 {adStats.dailyRemaining} ads disponibles hoy
+                                {poolSettled
+                                    ? ` · Tasa: $${perViewRate.toFixed(4)}/ad`
+                                    : ` · Tasa est.: $${perViewRate.toFixed(4)}/ad`
+                                }
                             </span>
                         </div>
                     )}
-                    {parseFloat(adEarnings.balance || 0) > 0 && canClaimMonthly && (
+                    {parseFloat(adEarnings.balance || 0) > 0 && canClaimMonthly && poolSettled && (
                         <button
                             className={styles.claimBtn}
                             onClick={async (e) => {
@@ -224,8 +240,13 @@ export function WalletWidget({ variant = 'default' }) {
                                 }
                             }}
                         >
-                            Retirar ganancias
+                            Retirar ganancias del mes
                         </button>
+                    )}
+                    {!poolSettled && parseFloat(adEarnings.balance || 0) > 0 && (
+                        <div className={styles.adPoolNotice}>
+                            El pool del mes aún no está cerrado. Las ganancias se calcularán cuando Kuki cierre el mes con el revenue real de Google.
+                        </div>
                     )}
                     {!canClaimMonthly && adEarnings?.next_claim_date && (
                         <span className={styles.adNextClaim}>

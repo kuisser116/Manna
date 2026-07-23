@@ -68,3 +68,15 @@ export async function getAdStats() {
     if (!res.ok) throw new Error('Error al obtener estadísticas');
     return res.json();
 }
+
+/**
+ * Estado del pool mensual
+ */
+export async function getPoolStatus() {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/ads/pool`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Error al obtener pool');
+    return res.json();
+}

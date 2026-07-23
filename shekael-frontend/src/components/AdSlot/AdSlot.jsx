@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { recordAdImpression } from '../../api/ads.api';
+import { recordAdImpression, getPoolStatus } from '../../api/ads.api';
 import { Sparkles, TrendingUp } from 'lucide-react';
 import styles from './AdSlot.module.css';
 
@@ -17,14 +17,23 @@ export function shouldShowAd(postIndex) {
  */
 export default function AdSlot({ postIndex, source = 'feed' }) {
     const adRef = useRef(null);
-    const [status, setStatus] = useState('pending'); // pending | inProgress | completed | error
+    const [status, setStatus] = useState('pending');
     const [focusTime, setFocusTime] = useState(0);
     const [recorded, setRecorded] = useState(false);
+    const [perViewRate, setPerViewRate] = useState(0.05);
+    const [poolSettled, setPoolSettled] = useState(false);
     const focusTimerRef = useRef(null);
     const wasInViewRef = useRef(false);
-    const rewardAmount = 0.15; // ~$0.15 MXN por ad en feed
 
-    // Intersection Observer para detectar visibilidad
+    // Cargar la tasa del pool al montar
+    useEffect(() => {
+        getPoolStatus().then(data => {
+            if (data?.pool?.perViewMxn) setPerViewRate(data.pool.perViewMxn);
+            if (data?.pool?.isSettled) setPoolSettled(data.pool.isSettled);
+        }).catch(() => {});
+    }, []);
+
+    // Intersection Observer
     useEffect(() => {
         const el = adRef.current;
         if (!el) return;
@@ -34,7 +43,6 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
                 if (entry.isIntersecting) {
                     wasInViewRef.current = true;
                     setStatus('inProgress');
-                    // Iniciar timer de foco si no está corriendo
                     if (!focusTimerRef.current) {
                         focusTimerRef.current = setInterval(() => {
                             if (document.visibilityState === 'visible') {
@@ -44,7 +52,6 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
                     }
                 } else {
                     if (wasInViewRef.current && status === 'inProgress') {
-                        // Ya no está visible, detener timer
                         if (focusTimerRef.current) {
                             clearInterval(focusTimerRef.current);
                             focusTimerRef.current = null;
@@ -52,14 +59,13 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
                     }
                 }
             },
-            { threshold: 0.7 } // 70% visible
+            { threshold: 0.7 }
         );
 
         observer.observe(el);
         return () => observer.disconnect();
     }, [status]);
 
-    // Cuando se alcanza el tiempo mínimo, registrar la impresión
     useEffect(() => {
         if (focusTime >= 5 && !recorded && wasInViewRef.current) {
             setRecorded(true);
@@ -70,6 +76,9 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
                 source,
                 creator_id: null,
                 focus_duration: focusTime
+            }).then(res => {
+                if (res.rewarded) setPerViewRate(res.rewarded);
+                if (res.isEstimated) setPoolSettled(false);
             }).catch(() => {
                 setStatus('error');
             });
@@ -81,14 +90,15 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
         }
     }, [focusTime, recorded, source]);
 
-    // Limpiar al desmontar
     useEffect(() => {
         return () => {
-            if (focusTimerRef.current) {
-                clearInterval(focusTimerRef.current);
-            }
+            if (focusTimerRef.current) clearInterval(focusTimerRef.current);
         };
     }, []);
+
+    const rewardStr = poolSettled
+        ? `$${perViewRate.toFixed(4)} MXN`
+        : `~$${perViewRate.toFixed(4)} MXN`;
 
     return (
         <div className={styles.adSlot} ref={adRef}>
@@ -104,8 +114,8 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
                 <div className={styles.adText}>
                     <h4 className={styles.adTitle}>¿Cansado de redes que no te pagan?</h4>
                     <p className={styles.adDesc}>
-                        Shekael valora tu atención. Sigue viendo contenido y gana MXN por cada anuncio que veas. 
-                        Acumula y retira cada mes.
+                        Shekael valora tu atención. Sigue viendo contenido y gana MXN por cada anuncio que veas.
+                        Tu ganancia se calcula del pool mensual — entre más veas, más ganas.
                     </p>
                 </div>
             </div>
@@ -117,12 +127,13 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
                 {status === 'inProgress' && (
                     <span className={styles.adStatusActive}>
                         Viendo... {focusTime}s / 5s
-                        {focusTime >= 5 ? ' ✅ ¡Ganaste $0.15 MXN!' : ''}
                     </span>
                 )}
                 {status === 'completed' && (
                     <span className={styles.adStatusDone}>
-                        ✅ +${rewardAmount.toFixed(2)} MXN
+                        ✅ {poolSettled ? '+' : '~+'}
+                        {rewardStr} estimado
+                        {poolSettled ? ' (pool cerrado)' : ''}
                     </span>
                 )}
                 {status === 'error' && (
@@ -132,7 +143,6 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
                 )}
             </div>
 
-            {/* Barra de progreso cuando está en progreso */}
             {status === 'inProgress' && (
                 <div className={styles.progressBar}>
                     <div
