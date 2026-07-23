@@ -1,7 +1,8 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
 import AdSlot, { shouldShowAd } from '../components/AdSlot/AdSlot';
+import FederatedFeed from '../components/FederatedFeed/FederatedFeed';
 import useStore from '../store';
 import useFeed from '../hooks/useFeed';
 import { markPostAsSeen } from '../api/posts.api';
@@ -19,6 +20,7 @@ export default function Feed() {
   const { t } = useTranslation();
   const { posts, feedLoading, feedError, token, activeFilter } = useStore();
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
+  const [feedType, setFeedType] = useState('local'); // 'local' | 'global'
 
   useEffect(() => {
     if (token) fetchFeed();
@@ -134,44 +136,66 @@ export default function Feed() {
   return (
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <div className={styles.main}>
-        {feedError && (
-          <div className={styles.errorBanner}>
-            {feedError}
-          </div>
-        )}
+        {/* Tabs: Local / Global */}
+        <div className={styles.feedTabs}>
+          <button
+            className={`${styles.feedTab} ${feedType === 'local' ? styles.feedTabActive : ''}`}
+            onClick={() => setFeedType('local')}
+          >
+            En Shekael
+          </button>
+          <button
+            className={`${styles.feedTab} ${feedType === 'global' ? styles.feedTabActive : ''}`}
+            onClick={() => setFeedType('global')}
+          >
+            Global 🌐
+          </button>
+        </div>
 
-        {feedLoading ? (
-          <div className={styles.loadingList}>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={styles.skeleton} />
-            ))}
-          </div>
-        ) : displayPosts.length === 0 ? (
-          <div className={styles.emptyState}>
-            <img src={logoImg} alt="Empty Feed" className={styles.emptyLogo} />
-            <p>{t('feed.noPostsYet', 'Todavía no hay publicaciones.')}</p>
-            <a href="/create" className={styles.createLink}>{t('feed.createPost', 'Crear publicación')}</a>
-          </div>
+        {feedType === 'global' ? (
+          <FederatedFeed />
         ) : (
-          <div className={styles.postList}>
-            {renderPostList(unseenPosts, true, '· Nuevo')}
-            {renderPostList(seenPosts, unseenPosts.length > 0, '· Anterior')}
-
-            {loadingMore && (
-              <div className={styles.loadingMore}>
-                <div className={styles.skeleton} />
+          <>
+            {feedError && (
+              <div className={styles.errorBanner}>
+                {feedError}
               </div>
             )}
-            {!hasMore && displayPosts.length > 0 && (
-              <div className={styles.endMessage}>
-                {seenPosts.length > 0 && unseenPosts.length === 0 ? (
-                  <p>{t('feed.allSeen', 'Ya viste todo lo nuevo. Vuelve más tarde o cambia de filtro.')}</p>
-                ) : (
-                  <p>{t('feed.endOfFeed', 'Has llegado al final.')}</p>
+
+            {feedLoading ? (
+              <div className={styles.loadingList}>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={styles.skeleton} />
+                ))}
+              </div>
+            ) : displayPosts.length === 0 ? (
+              <div className={styles.emptyState}>
+                <img src={logoImg} alt="Empty Feed" className={styles.emptyLogo} />
+                <p>{t('feed.noPostsYet', 'Todavía no hay publicaciones.')}</p>
+                <a href="/create" className={styles.createLink}>{t('feed.createPost', 'Crear publicación')}</a>
+              </div>
+            ) : (
+              <div className={styles.postList}>
+                {renderPostList(unseenPosts, true, '· Nuevo')}
+                {renderPostList(seenPosts, unseenPosts.length > 0, '· Anterior')}
+
+                {loadingMore && (
+                  <div className={styles.loadingMore}>
+                    <div className={styles.skeleton} />
+                  </div>
+                )}
+                {!hasMore && displayPosts.length > 0 && (
+                  <div className={styles.endMessage}>
+                    {seenPosts.length > 0 && unseenPosts.length === 0 ? (
+                      <p>{t('feed.allSeen', 'Ya viste todo lo nuevo. Vuelve más tarde o cambia de filtro.')}</p>
+                    ) : (
+                      <p>{t('feed.endOfFeed', 'Has llegado al final.')}</p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>

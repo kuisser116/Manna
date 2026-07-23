@@ -167,3 +167,167 @@
   height: 1px;
 }
 
+/* ── Fediverso Results ── */
+
+.fediverseResults {
+  margin-top: 16px;
+}
+
+.fedLoading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 40px;
+  justify-content: center;
+  color: var(--color-text-dim);
+  font-size: 14px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fedSection {
+  margin-bottom: 24px;
+}
+
+.fedSectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fedAccounts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fedAccountCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s;
+}
+
+.fedAccountCard:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.fedAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-surface);
+}
+
+.fedAccountInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fedAccountName {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.fedAccountHandle {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+
+.fedAccountStats {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.fedExternalIcon {
+  color: var(--color-text-dim);
+  flex-shrink: 0;
+}
+
+.fedPosts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fedPostCard {
+  display: block;
+  padding: 14px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s;
+}
+
+.fedPostCard:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.fedPostAuthor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.fedPostAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-surface);
+}
+
+.fedPostAuthorInfo {}
+
+.fedPostAuthorName {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.fedPostAuthorHandle {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-dim);
+}
+
+.fedPostText {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin: 0 0 8px;
+}
+
+.fedPostMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--color-text-dim);
+}
+
