@@ -4,9 +4,10 @@
 -- ═══════════════════════════════════════════════════
 
 -- 1. Tabla de señales de engagement
+-- Nota: user_id es TEXT porque users.id en Supabase es TEXT, no UUID
 CREATE TABLE IF NOT EXISTS engagement_signals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     post_id TEXT NOT NULL,
     signal_type TEXT NOT NULL,
     source TEXT DEFAULT 'shekael',
@@ -22,7 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_signals_created ON engagement_signals(created_at)
 -- 2. Tabla de scores de afinidad usuario→creador
 CREATE TABLE IF NOT EXISTS affinity_scores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     author_id TEXT NOT NULL,
     affinity_score DECIMAL(5,2) DEFAULT 0,
     interaction_count INT DEFAULT 0,
