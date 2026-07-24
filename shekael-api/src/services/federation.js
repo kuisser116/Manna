@@ -131,7 +131,6 @@ async function fetchInstanceTimeline(instance, limit = 20) {
         const headers = {};
     if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
     const data = await fetchWithTimeout(endpoint, { headers }, 8000);
-        // Si pixelfed devuelve estructura diferente, entrarla
         const statuses = Array.isArray(data) ? data : [];
 
         const posts = statuses
@@ -150,7 +149,7 @@ async function fetchInstanceTimeline(instance, limit = 20) {
 /**
  * Obtener timeline combinada de varias instancias
  */
-export async function getFederatedTimeline({ limit = 20, instances = null } = {}) {
+export async function getFederatedTimeline({ limit = 20, instances = null, lang = null } = {}) {
     const targets = instances
         ? INSTANCES.filter(i => instances.includes(i.url))
         : INSTANCES;
@@ -166,8 +165,18 @@ export async function getFederatedTimeline({ limit = 20, instances = null } = {}
         }
     }
 
-    // Ordenar por fecha (más reciente primero)
-    posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Ordenar: primero por idioma preferido, luego por fecha
+    posts.sort((a, b) => {
+        // Si lang param está presente, priorizar ese idioma
+        if (lang) {
+            const aLang = (a.language || '').toLowerCase();
+            const bLang = (b.language || '').toLowerCase();
+            if (aLang === lang && bLang !== lang) return -1;
+            if (bLang === lang && aLang !== lang) return 1;
+        }
+        // Luego por fecha (más reciente primero)
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
     // Limitar al total solicitado
     return posts.slice(0, limit);
@@ -190,8 +199,8 @@ export async function getFederatedTrending({ limit = 20 } = {}) {
         try {
             const endpoint = `${inst.url}/api/v1/trends/statuses?limit=${limit}`;
             const headers = {};
-    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
-    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
+            if (inst.token) headers['Authorization'] = 'Bearer ' + inst.token;
+            const data = await fetchWithTimeout(endpoint, { headers }, 8000);
             const posts = (data || []).map(s => normalizePost(s, inst));
             setCache(cacheKey, posts);
             results.push(...posts);
@@ -221,8 +230,8 @@ export async function searchFediverse(query, { limit = 20 } = {}) {
         try {
             const endpoint = `${inst.url}/api/v2/search?q=${encodeURIComponent(query)}&type=statuses&limit=${Math.ceil(limit / 3)}`;
             const headers = {};
-    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
-    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
+            if (inst.token) headers['Authorization'] = 'Bearer ' + inst.token;
+            const data = await fetchWithTimeout(endpoint, { headers }, 8000);
             const statuses = data?.statuses || [];
             const posts = statuses
                 .filter(s => !s.sensitive)
@@ -281,8 +290,8 @@ export async function searchFediverseAccounts(query, { limit = 10 } = {}) {
         try {
             const endpoint = `${inst.url}/api/v1/accounts/search?q=${encodeURIComponent(query)}&limit=${limit}`;
             const headers = {};
-    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
-    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
+            if (inst.token) headers['Authorization'] = 'Bearer ' + inst.token;
+            const data = await fetchWithTimeout(endpoint, { headers }, 8000);
             const accounts = (data || []).slice(0, limit).map(acc => ({
                 id: acc.id,
                 handle: `@${acc.acct}@${inst.name.toLowerCase().replace(/\s/g, '')}`,

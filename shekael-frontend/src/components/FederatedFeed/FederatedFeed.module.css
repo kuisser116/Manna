@@ -93,6 +93,19 @@
     white-space: nowrap;
 }
 
+.fedRight {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.langBadge {
+    font-size: 14px;
+    line-height: 1;
+    cursor: help;
+}
+
 /* ── Content ── */
 .postContent {
     margin-bottom: 10px;

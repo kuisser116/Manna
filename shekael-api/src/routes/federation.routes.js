@@ -31,15 +31,17 @@ router.get('/timeline', async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 20, 50);
         const instances = req.query.instance ? [req.query.instance] : null;
+        const lang = req.query.lang || 'es'; // Priorizar español por defecto
 
-        const posts = await getFederatedTimeline({ limit, instances });
+        const posts = await getFederatedTimeline({ limit, instances, lang });
 
         res.json({
             success: true,
             posts,
             total: posts.length,
             source: 'fediverso',
-            cached: true // Siemruega cacheado (TTL 15 min)
+            lang,
+            cached: true
         });
     } catch (error) {
         console.error('[Federation] Error in timeline:', error.message);
