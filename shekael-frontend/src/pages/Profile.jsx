@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ExternalLink, FileText,
@@ -184,6 +184,16 @@ export { FediverseProfileView };
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
+
+  // Redirigir perfiles fed__ a la ruta dedicada
+  if (profileId && profileId.startsWith('fed__')) {
+    const parts = profileId.replace('fed__', '').split('__');
+    const instanceDomain = parts[0] || '';
+    const username = parts.slice(1).join('__');
+    if (instanceDomain && username) {
+      return <Navigate to={`/fediverse-profile/${encodeURIComponent(instanceDomain)}/${encodeURIComponent(username)}`} replace />;
+    }
+  }
   const navigate = useNavigate();
   const { user: currentUser, privacy } = useStore();
 
