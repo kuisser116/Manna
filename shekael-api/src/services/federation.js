@@ -8,7 +8,7 @@ const INSTANCES = [
     { url: 'https://mastodon.social', name: 'Mastodon Social', type: 'mastodon', token: '' },
     { url: 'https://mastodon.world', name: 'Mastodon World', type: 'mastodon', token: 'xUTItO8rfaa6NegZE0G7FYYNNN3N7g5UGCR1lolGGxg' },
     { url: 'https://mastodon.online', name: 'Mastodon Online', type: 'mastodon', token: '0hGBdAhBJKfR5AzPGoy5QexuD1Egcauyuea1a5-39SQ' },
-    { url: 'https://mastodonapp.uk', name: 'Mastodon UK', type: 'mastodon', token: 'RRToUlAq-Sm1GxNmwg-Vi5O5lZ3c-MaQw7PTOJvDJII' },{
+    { url: 'https://mastodonapp.uk', name: 'Mastodon UK', type: 'mastodon', token: 'RRToUlAq-Sm1GxNmwg-Vi5O5lZ3c-MaQw7PTOJvDJII' },
     { url: 'https://mastodon.cloud', name: 'Mastodon Cloud', type: 'mastodon', token: 'm7SOM43H--o9pgwGA0Dldul4eIjNMiMZVdh6RkCVc5g' },
     { url: 'https://fosstodon.org', name: 'Fosstodon', type: 'mastodon', token: 'p6qYbgY0A-JKE7S8WOs9wRgRmGkA1f1TzCwKCAZHL8s' },
     { url: 'https://hachyderm.io', name: 'Hachyderm', type: 'mastodon', token: 'bghDmmFUyeSiBiG6a3TtgAobCDlJYm_PPAt1i16eXMo' },
