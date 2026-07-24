@@ -173,25 +173,47 @@ export async function getFederatedTimeline({ limit = 20, instances = null, lang 
         }
     }
 
-    // Filtrar SOLO español cuando lang=es — estricto
-    // Mastodon reporta 'es', 'es-MX', 'es-ES', o null
+    // División 80/20 por idioma:
+    // - 80% en el idioma del usuario
+    // - 20% en otros idiomas (descubrimiento cross-cultural)
     if (lang) {
-        posts = posts.filter(p => {
-            const l = (p.language || '').toLowerCase();
-            return l.startsWith('es');
-        });
-    }
+        const userLang = lang.toLowerCase().split('-')[0]; // 'es-MX' → 'es'
 
-    // Ordenar: primero español, luego por fecha
-    posts.sort((a, b) => {
-        if (lang) {
-            const aLang = (a.language || '').toLowerCase();
-            const bLang = (b.language || '').toLowerCase();
-            if (aLang.startsWith('es') && !bLang.startsWith('es')) return -1;
-            if (bLang.startsWith('es') && !aLang.startsWith('es')) return 1;
+        // Separar en dos pools
+        const langPosts = [];
+        const otherPosts = [];
+
+        for (const p of posts) {
+            const pLang = (p.language || '').toLowerCase().split('-')[0];
+            if (pLang === userLang) {
+                langPosts.push(p);
+            } else {
+                otherPosts.push(p);
+            }
         }
-        return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+
+        // Ordenar cada pool por fecha (reciente primero)
+        langPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        otherPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Mezclar: por cada 4 posts en idioma del usuario, 1 de otro idioma
+        const mixed = [];
+        let li = 0, oi = 0;
+        while (li < langPosts.length || oi < otherPosts.length) {
+            for (let i = 0; i < 4 && li < langPosts.length; i++, li++) {
+                mixed.push(langPosts[li]);
+            }
+            if (oi < otherPosts.length) {
+                mixed.push(otherPosts[oi]);
+                oi++;
+            }
+        }
+
+        posts = mixed;
+    } else {
+        // Sin filtro de idioma: solo ordenar por fecha
+        posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
 
     // Paginar: saltar offset, tomar limit
     return posts.slice(offset, offset + limit);

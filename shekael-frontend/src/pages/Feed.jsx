@@ -19,15 +19,19 @@ const TYPE_MAP = {
 };
 
 const USER_LANG = (() => {
-  const nav = navigator.language || '';
-  return nav.startsWith('es') ? 'es' : 'es';
+  // Idioma real del usuario (navegador)
+  try {
+    return navigator.language?.split('-')[0] || 'es';
+  } catch {
+    return 'es';
+  }
 })();
 
-// ── Fetch federated timeline (solo español) ──
+// ── Fetch federated timeline (80% idioma usuario, 20% otros) ──
 async function fetchFedTimeline(offset = 0) {
   const token = localStorage.getItem('Shekael_token');
   const res = await fetch(
-    `${API_URL}/federation/timeline?limit=20&offset=${offset}&lang=es`,
+    `${API_URL}/federation/timeline?limit=20&offset=${offset}&lang=${USER_LANG}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   if (!res.ok) return [];
@@ -190,11 +194,14 @@ export default function Feed() {
     else if (activeFilter === 'video') f = f.filter(p => p.contentType === 'video');
     else if (activeFilter === 'text') f = f.filter(p => p.contentType === 'text' || !p.contentType);
 
-    // Español primero
+    // Idioma del usuario primero
     f = [...f].sort((a, b) => {
-      const aL = a.language === USER_LANG ? 1 : 0;
-      const bL = b.language === USER_LANG ? 1 : 0;
-      if (bL !== aL) return bL - aL;
+      const aLang = (a.language || '').toLowerCase().split('-')[0];
+      const bLang = (b.language || '').toLowerCase().split('-')[0];
+      const target = USER_LANG.split('-')[0];
+      const aMatch = aLang === target ? 1 : 0;
+      const bMatch = bLang === target ? 1 : 0;
+      if (bMatch !== aMatch) return bMatch - aMatch;
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
