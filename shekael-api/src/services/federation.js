@@ -173,13 +173,22 @@ export async function getFederatedTimeline({ limit = 20, instances = null, lang 
         }
     }
 
-    // Ordenar: primero por idioma preferido, luego por fecha
+    // Filtrar SOLO español cuando lang=es — estricto
+    // Mastodon reporta 'es', 'es-MX', 'es-ES', o null
+    if (lang) {
+        posts = posts.filter(p => {
+            const l = (p.language || '').toLowerCase();
+            return l.startsWith('es');
+        });
+    }
+
+    // Ordenar: primero español, luego por fecha
     posts.sort((a, b) => {
         if (lang) {
             const aLang = (a.language || '').toLowerCase();
             const bLang = (b.language || '').toLowerCase();
-            if (aLang === lang && bLang !== lang) return -1;
-            if (bLang === lang && aLang !== lang) return 1;
+            if (aLang.startsWith('es') && !bLang.startsWith('es')) return -1;
+            if (bLang.startsWith('es') && !aLang.startsWith('es')) return 1;
         }
         return new Date(b.createdAt) - new Date(a.createdAt);
     });

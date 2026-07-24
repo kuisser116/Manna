@@ -1,7 +1,8 @@
-import { Heart, Repeat2, MessageCircle, ExternalLink } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, ExternalLink, Bookmark } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../../store';
+import { trackSignal } from '../../api/algorithm.api';
 import styles from '../PostCard/PostCard.module.css';
 
 const LANG_LABELS = {
@@ -46,6 +47,14 @@ export default function FediversePostCard({ post }) {
   const [imgError, setImgError] = useState(false);
   const langIcon = LANG_LABELS[post.language] || '🌐';
 
+  const [fedSaved, setFedSaved] = useState(() => {
+    try {
+      const raw = localStorage.getItem('shekael_saved');
+      if (raw) return JSON.parse(raw).includes(String(post.id));
+    } catch {}
+    return false;
+  });
+
   const openDetail = useCallback(() => {
     const instanceDomain = extractInstanceDomain(post.instanceUrl);
     if (instanceDomain && post.id) {
@@ -65,6 +74,27 @@ export default function FediversePostCard({ post }) {
     e.stopPropagation();
     window.open(post.url, '_blank', 'noopener,noreferrer');
   }, [post.url]);
+
+  const handleFedSave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newSaved = !fedSaved;
+    setFedSaved(newSaved);
+    try {
+      const raw = localStorage.getItem('shekael_saved');
+      let ids = raw ? JSON.parse(raw) : [];
+      if (newSaved) {
+        if (!ids.includes(post.id)) ids.push(post.id);
+      } else {
+        ids = ids.filter(id => id !== post.id);
+      }
+      if (ids.length > 500) ids = ids.slice(-500);
+      localStorage.setItem('shekael_saved', JSON.stringify(ids));
+    } catch {}
+    const instanceDomain = extractInstanceDomain(post.instanceUrl);
+    const fedId = `fed__${instanceDomain}__${post.id}`;
+    trackSignal(fedId, newSaved ? 'save' : 'view', 'fediverso');
+  }, [post, fedSaved]);
 
   return (
     <article className={styles.card} onClick={openDetail} style={{ cursor: 'pointer' }}>
@@ -132,6 +162,13 @@ export default function FediversePostCard({ post }) {
         </button>
         <button className={styles.actionBtn} onClick={handleAction}>
           <Repeat2 size={16} /> {post.stats?.shares || 0}
+        </button>
+        <button
+          className={styles.actionBtn}
+          onClick={handleFedSave}
+          title={fedSaved ? 'Guardado' : 'Guardar'}
+        >
+          <Bookmark size={16} fill={fedSaved ? 'var(--color-primary)' : 'none'} stroke={fedSaved ? 'var(--color-primary)' : 'currentColor'} />
         </button>
         <button
           className={`${styles.actionBtn} ${styles.saveBtn}`}

@@ -5,6 +5,7 @@ import FediversePostCard from '../components/FediversePostCard/FediversePostCard
 import AdSlot, { shouldShowAd } from '../components/AdSlot/AdSlot';
 import useStore from '../store';
 import useFeed from '../hooks/useFeed';
+import { getRankedFeed } from '../api/algorithm.api';
 import { FilesIcon } from 'lucide-react';
 import styles from '../styles/pages/Feed.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
@@ -22,11 +23,11 @@ const USER_LANG = (() => {
   return nav.startsWith('es') ? 'es' : 'es';
 })();
 
-// ── Fetch federated timeline ──
+// ── Fetch federated timeline (solo español) ──
 async function fetchFedTimeline(offset = 0) {
   const token = localStorage.getItem('Shekael_token');
   const res = await fetch(
-    `${API_URL}/federation/timeline?limit=20&offset=${offset}&lang=${USER_LANG}`,
+    `${API_URL}/federation/timeline?limit=20&offset=${offset}&lang=es`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   if (!res.ok) return [];
@@ -94,9 +95,24 @@ export default function Feed() {
     observerRef.current.observe(node);
   }, [markSeen]);
 
-  // ── Fetch local feed ──
+  // ── Fetch local feed (rankeado por algoritmo) ──
   useEffect(() => {
-    if (token) fetchFeed();
+    if (!token) return;
+
+    // Intentar ranked endpoint primero
+    getRankedFeed({ filter: activeFilter === 'all' ? 'all' : activeFilter })
+      .then(data => {
+        if (data?.success && data.posts?.length > 0) {
+          // Mapear posts rankeados al formato que usa el feed
+          const feed = useStore.getState();
+          feed.setPosts(data.posts);
+          feed.setFeedLoading(false);
+          return;
+        }
+        // Fallback al feed normal
+        fetchFeed();
+      })
+      .catch(() => fetchFeed());
   }, [token, activeFilter]);
 
   // ── Fetch federated on mount ──
