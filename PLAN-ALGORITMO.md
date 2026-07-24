@@ -121,34 +121,38 @@ Parámetros:
 **Lógica del backend:**
 
 ```
-1. Obtener affinity scores del usuario hacia creadores
+1. Obtener afinidades del usuario + lista de seguidos
 2. Obtener post_value_scores de los últimos N posts
-3. Calcular ranking compuesto:
+3. Dividir en dos pools:
 
-   ranking_score = (
-       affinity(user, author) × 0.3 +
-       value_score(post) × 0.5 +
-       freshness(post) × 0.15 +
-       diversity_bonus × 0.05
-   )
+   Pool A — Seguidos:
+   - Posts de cuentas que el usuario sigue (Shekael + Fediverso)
+   - Ordenados por: freshness × 0.4 + affinity × 0.3 + value_score × 0.3
+   - SIEMPRE se muestran primero — prioridad máxima
 
-   donde:
-   - affinity: qué tanto interactúa el usuario con ese creador (0-1)
-   - value_score: qué tan valioso es el post (normalizado 0-1)
-   - freshness: qué tan reciente (última hora = 1, > 1 semana ≈ 0)
-   - diversity_bonus: asegura variedad de creadores y tipos de contenido
+   Pool B — Descubrimiento:
+   - Posts de NO seguidos
+   - Ordenados por: value_score × 0.6 + freshness × 0.25 + diversity × 0.15
+   - Solo aparecen cuando el usuario ya vio lo nuevo de sus seguidos
+   - O intercalados al final del scroll
 
-4. Interleaving:
-   - 70% posts rankeados (locales + federados mezclados por score)
-   - 20% descubrimiento (posts de no-seguidos con alto value_score)
-   - 10% aleatorio (exploración, contenido fresco sin señales aún)
+4. Interleaving final:
+   - PRIMERO: todos los posts de seguidos que el usuario no ha visto
+   - DESPUÉS: mezcla de descubrimiento (80% value-ranked, 20% exploración)
+   - Si no hay suficientes seguidos nuevos → entra descubrimiento antes
 
 5. Para Fediverso:
    - Los posts federados también reciben engagement_signals
    - saves/shares/comments en Mastodon NO son trackeables (limitación)
    - Pero el dwell time y completion rate SÍ son medibles en Shekael
    - Los posts federados parten con value_score base = 0 y suben con señales locales
+   - Si SIGUES a un creador del Fediverso, sus posts van al Pool A
 ```
+
+**En términos simples:**
+1. Lo que tus seguidos publican → siempre lo ves primero
+2. Lo que la comunidad valora → después, como descubrimiento
+3. Contenido nuevo sin señales → exploración, al final
 
 ### Fórmula de Affinity Score
 
@@ -230,9 +234,9 @@ if (visibleTime >= 30000) trackSignal('dwell_30s');
 ```
 
 El usuario puede cambiar entre:
-- **"Para ti"** (default) — algoritmo de valor
-- **"Siguiendo"** — solo cuentas que sigues, cronológico
-- **"Reciente"** — último 24h, ordenado por score
+- **"Para ti"** (default) — seguidos primero + descubrimiento después
+- **"Siguiendo"** — solo seguidos, ordenado por afinidad + fresco
+- **"Explorar"** — solo descubrimiento, para cuando quieres algo nuevo
 
 ---
 
