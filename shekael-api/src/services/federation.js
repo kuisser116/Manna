@@ -79,7 +79,7 @@ function normalizePost(status, instance) {
         id: status.id,
         uri: status.uri,
         url: status.url || status.uri,
-        instance: instance.name,
+        instance: instance.url.replace('https://', '').replace(/\/.*$/, ''),
         instanceUrl: instance.url,
         createdAt: status.created_at,
         content: status.content || '', // HTML
