@@ -361,4 +361,61 @@ export async function getAccountTimeline(accountHandle, { limit = 20 } = {}) {
     }
 }
 
+/**
+ * Obtener un status individual + su contexto (replies) del Fediverso
+ */
+export async function getStatusWithContext(instanceUrl, statusId) {
+    const instance = INSTANCES.find(i => i.url === instanceUrl);
+    if (!instance) {
+        // Si no está en nuestra config, intentar sin token
+        const headers = {};
+        try {
+            const [statusData, ctxData] = await Promise.allSettled([
+                fetchWithTimeout(`${instanceUrl}/api/v1/statuses/${statusId}`, {}, 8000),
+                fetchWithTimeout(`${instanceUrl}/api/v1/statuses/${statusId}/context`, {}, 8000),
+            ]);
+            const status = statusData.status === 'fulfilled' ? statusData.value : null;
+            const context = ctxData.status === 'fulfilled' ? ctxData.value : { ancestors: [], descendants: [] };
+            if (!status) return null;
+            return {
+                post: normalizePost(status, { url: instanceUrl, name: instanceUrl.replace('https://', '') }),
+                replies: (context.descendants || []).filter(s => !s.sensitive).map(s => normalizePost(s, { url: instanceUrl, name: instanceUrl.replace('https://', '') })),
+            };
+        } catch (e) {
+            console.error(`[Federation] Error fetching status context: ${e.message}`);
+            return null;
+        }
+    }
+
+    const cacheKey = `status:${instanceUrl}:${statusId}`;
+    const cached = getCache(cacheKey);
+    if (cached) return cached;
+
+    try {
+        const headers = {};
+        if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+
+        const [statusData, ctxData] = await Promise.allSettled([
+            fetchWithTimeout(`${instance.url}/api/v1/statuses/${statusId}`, { headers }, 8000),
+            fetchWithTimeout(`${instance.url}/api/v1/statuses/${statusId}/context`, { headers }, 8000),
+        ]);
+
+        const status = statusData.status === 'fulfilled' ? statusData.value : null;
+        const context = ctxData.status === 'fulfilled' ? ctxData.value : { ancestors: [], descendants: [] };
+
+        if (!status) return null;
+
+        const result = {
+            post: normalizePost(status, instance),
+            replies: (context.descendants || []).filter(s => !s.sensitive).map(s => normalizePost(s, instance)),
+        };
+
+        setCache(cacheKey, result);
+        return result;
+    } catch (e) {
+        console.error(`[Federation] Error fetching status context: ${e.message}`);
+        return null;
+    }
+}
+
 export { INSTANCES };

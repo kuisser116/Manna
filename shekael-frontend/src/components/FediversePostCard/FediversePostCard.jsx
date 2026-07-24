@@ -1,5 +1,6 @@
-import { Heart, Repeat2, MessageCircle, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, ExternalLink } from 'lucide-react';
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useStore from '../../store';
 import styles from '../PostCard/PostCard.module.css';
 
@@ -12,17 +13,11 @@ function stripHtml(html) {
   if (!html) return '';
   return html
     .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<p>/gi, '')
-    .replace(/<\/p>/gi, ' ')
-    .replace(/<a[^>]*>/gi, '')
-    .replace(/<\/a>/gi, '')
+    .replace(/<p>/gi, '').replace(/<\/p>/gi, ' ')
+    .replace(/<a[^>]*>/gi, '').replace(/<\/a>/gi, '')
     .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;/g, "'")
-    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'")
     .trim();
 }
 
@@ -40,34 +35,39 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
 }
 
+function extractInstanceDomain(instanceUrl) {
+  if (!instanceUrl) return '';
+  return instanceUrl.replace('https://', '');
+}
+
 export default function FediversePostCard({ post }) {
+  const navigate = useNavigate();
   const { addToast } = useStore();
   const [imgError, setImgError] = useState(false);
   const langIcon = LANG_LABELS[post.language] || '🌐';
 
+  const openDetail = useCallback(() => {
+    const instanceDomain = extractInstanceDomain(post.instanceUrl);
+    if (instanceDomain && post.id) {
+      navigate(`/federated-post/${instanceDomain}/${post.id}`, { state: { post } });
+    } else {
+      // Fallback: abrir en Mastodon directamente
+      window.open(post.url, '_blank', 'noopener,noreferrer');
+    }
+  }, [navigate, post]);
+
   const openOriginal = useCallback((e) => {
-    if (e) e.preventDefault();
+    if (e) e.stopPropagation();
     window.open(post.url, '_blank', 'noopener,noreferrer');
-    addToast?.('Abriendo en Mastodon', 'info');
-  }, [post.url, addToast]);
+  }, [post.url]);
 
-  const handleLike = useCallback((e) => {
+  const handleAction = useCallback((e) => {
     e.stopPropagation();
-    openOriginal();
-  }, [openOriginal]);
-
-  const handleComment = useCallback((e) => {
-    e.stopPropagation();
-    openOriginal();
-  }, [openOriginal]);
-
-  const handleShare = useCallback((e) => {
-    e.stopPropagation();
-    openOriginal();
-  }, [openOriginal]);
+    window.open(post.url, '_blank', 'noopener,noreferrer');
+  }, [post.url]);
 
   return (
-    <article className={styles.card} onClick={openOriginal} style={{ cursor: 'pointer' }}>
+    <article className={styles.card} onClick={openDetail} style={{ cursor: 'pointer' }}>
       {/* ── Header ── */}
       <div className={styles.header}>
         <img
@@ -124,18 +124,18 @@ export default function FediversePostCard({ post }) {
 
       {/* ── Actions ── */}
       <div className={styles.actions}>
-        <button className={styles.actionBtn} onClick={handleLike}>
+        <button className={styles.actionBtn} onClick={handleAction}>
           <Heart size={16} /> {post.stats?.likes || 0}
         </button>
-        <button className={styles.actionBtn} onClick={handleComment}>
+        <button className={styles.actionBtn} onClick={handleAction}>
           <MessageCircle size={16} /> {post.stats?.replies || 0}
         </button>
-        <button className={styles.actionBtn} onClick={handleShare}>
+        <button className={styles.actionBtn} onClick={handleAction}>
           <Repeat2 size={16} /> {post.stats?.shares || 0}
         </button>
         <button
           className={`${styles.actionBtn} ${styles.saveBtn}`}
-          onClick={(e) => { e.stopPropagation(); openOriginal(); }}
+          onClick={openOriginal}
           title="Abrir en Mastodon"
         >
           <ExternalLink size={16} />

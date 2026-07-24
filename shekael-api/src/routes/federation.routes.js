@@ -7,6 +7,7 @@ import {
     searchFediverse,
     searchFediverseAccounts,
     getAccountTimeline,
+    getStatusWithContext,
     getInstanceInfo,
     INSTANCES
 } from '../services/federation.js';
@@ -137,6 +138,25 @@ router.get('/account/:handle', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('[Federation] Error fetching account:', error.message);
         res.status(500).json({ message: 'Error al obtener timeline del perfil' });
+    }
+});
+
+/**
+ * GET /federation/status/:instance/:id
+ * Obtener un post individual + sus respuestas (context)
+ */
+router.get('/status/:instance/:id', async (req, res) => {
+    try {
+        const instanceUrl = `https://${req.params.instance}`;
+        const statusId = req.params.id;
+        const result = await getStatusWithContext(instanceUrl, statusId);
+        if (!result) {
+            return res.status(404).json({ message: 'Post no encontrado en el Fediverso' });
+        }
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('[Federation] Error fetching status:', error.message);
+        res.status(500).json({ message: 'Error al obtener el post' });
     }
 });
 

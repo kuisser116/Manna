@@ -1,0 +1,120 @@
+.container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.backBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.backBtn:hover {
+    background: var(--color-card);
+    color: var(--color-text);
+}
+
+.originalLink {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-primary);
+    font-size: 13px;
+    text-decoration: none;
+    padding: 8px 14px;
+    border: 1px solid var(--color-primary);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.originalLink:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+.postSection {
+    margin-bottom: 24px;
+}
+
+.repliesSection {
+    border-top: 1px solid var(--color-border);
+    padding-top: 16px;
+}
+
+.repliesTitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin: 0 0 16px;
+}
+
+.repliesList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Cada reply dentro es un FediversePostCard que ya tiene su propio estilo */
+
+.noReplies {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 32px;
+}
+
+.noReplies a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.noReplies a:hover {
+    text-decoration: underline;
+}
+
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 80px 20px;
+    color: var(--color-text-dim);
+    font-size: 14px;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px 20px;
+    color: var(--color-text-muted);
+    text-align: center;
+    font-size: 14px;
+}

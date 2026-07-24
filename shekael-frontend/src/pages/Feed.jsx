@@ -171,6 +171,9 @@ export default function Feed() {
   // ── Filtrar posts locales según activeFilter ──
   const filteredLocal = useMemo(() => {
     return posts.filter((item) => {
+      // Posts ya vistos no se repiten (excepto en 'supported' que es popular)
+      if (item.seen_at && activeFilter !== 'supported') return false;
+
       if (activeFilter === 'all' || activeFilter === 'supported') return true;
       if (activeFilter === 'recent') {
         const yesterday = Date.now() - 86400000;
@@ -255,9 +258,7 @@ export default function Feed() {
     return result;
   }, [filteredLocal, filteredFed, activeFilter]);
 
-  // ── Dividir en no-leídos / leídos (solo locales) ──
-  const unseenLocal = filteredLocal.filter(p => !p.seen_at);
-  const hasUnseen = unseenLocal.length > 0;
+  // Ya no dividimos en no-leídos/leídos — los vistos se filtran
 
   // Marcar federados como vistos al renderizar
   useEffect(() => {
@@ -289,15 +290,8 @@ export default function Feed() {
           </div>
         ) : (
           <div className={styles.postList}>
-            {hasUnseen && <div className={styles.sectionLabel}>· Nuevo</div>}
-
             {mergedFeed.map((item, index) => (
               <div key={item.type === 'local' ? `l-${item.post.id}` : `f-${item.post.id || index}`}>
-                {/* Label "Anterior" al pasar de no-leídos a leídos */}
-                {hasUnseen && item.type === 'local' && item.post.seen_at && (
-                  (index === 0 || (mergedFeed[index - 1]?.type === 'local' && !mergedFeed[index - 1]?.post?.seen_at))
-                ) && <div className={styles.sectionLabel}>· Anterior</div>}
-
                 {shouldShowAd(index) && <AdSlot postIndex={index} source="feed" />}
 
                 {item.type === 'local' ? (
