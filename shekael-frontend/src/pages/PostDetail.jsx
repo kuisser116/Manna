@@ -1,9 +1,10 @@
-﻿import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPostDetail, createComment, getFeed } from '../api/posts.api';
 
+import FediversePostDetail from './FediversePostDetailHandler';
 import PostCard from '../components/PostCard/PostCard';
 import VideoDetailLayout from '../components/VideoDetailLayout/VideoDetailLayout';
 import ImageDetailLayout from '../components/ImageDetailLayout/ImageDetailLayout';
@@ -13,11 +14,22 @@ import { likePostCounter, unlikePost } from '../api/quests.api';
 import { useQuests } from '../hooks/useQuests';
 import styles from '../styles/pages/PostDetail.module.css';
 
+const API_URL = import.meta.env.VITE_API_URL || location.origin;
+
 export default function PostDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { token, setVideoMode } = useStore();
 
+    // ── Detectar si es post federado ──
+    // Formato: fed__instanceDomain__postId
+    const isFed = id.startsWith('fed__');
+    if (isFed) {
+        return <FediversePostDetail id={id} />;
+    }
+
+    // ── Post normal de Shekael ──
     const [post, setPost] = useState(null);
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -27,7 +39,6 @@ export default function PostDetail() {
     const [recommendedImagePosts, setRecommendedImagePosts] = useState([]);
     const [recommendedTextPosts, setRecommendedTextPosts] = useState([]);
 
-    // Likes
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
     const [viewRegistered, setViewRegistered] = useState(false);
@@ -57,43 +68,18 @@ export default function PostDetail() {
 
         fetchPost();
 
-        // Limpiar modo video al salir de la pÃ¡gina
-        return () => {
-            setVideoMode('default');
-        };
+        return () => { setVideoMode('default'); };
     }, [id, setVideoMode]);
 
-    // Cargar posts recomendados (videos)
+    // Cargar posts recomendados
     useEffect(() => {
-        if (!post || post.type !== 'video') return;
-        getFeed(0)
-            .then(({ data }) => {
-                const posts = Array.isArray(data) ? data : (data.posts || []);
-                setRecommendedPosts(posts.filter((p) => p.type === 'video' && p.id !== post.id));
-            })
-            .catch(() => { });
-    }, [post?.id, post?.type]);
-
-    // Cargar posts recomendados (imÃ¡genes)
-    useEffect(() => {
-        if (!post || post.type !== 'image') return;
-        getFeed(0)
-            .then(({ data }) => {
-                const posts = Array.isArray(data) ? data : (data.posts || []);
-                setRecommendedImagePosts(posts.filter((p) => p.type === 'image' && p.id !== post.id));
-            })
-            .catch(() => { });
-    }, [post?.id, post?.type]);
-
-    // Cargar posts recomendados (texto)
-    useEffect(() => {
-        if (!post || (post.type === 'video' || post.type === 'image')) return;
-        getFeed(0)
-            .then(({ data }) => {
-                const posts = Array.isArray(data) ? data : (data.posts || []);
-                setRecommendedTextPosts(posts.filter((p) => p.type !== 'video' && p.type !== 'image' && p.id !== post.id));
-            })
-            .catch(() => { });
+        if (!post) return;
+        getFeed(0).then(({ data }) => {
+            const posts = Array.isArray(data) ? data : (data.posts || []);
+            if (post.type === 'video') setRecommendedPosts(posts.filter(p => p.type === 'video' && p.id !== post.id));
+            else if (post.type === 'image') setRecommendedImagePosts(posts.filter(p => p.type === 'image' && p.id !== post.id));
+            else setRecommendedTextPosts(posts.filter(p => p.type !== 'video' && p.type !== 'image' && p.id !== post.id));
+        }).catch(() => {});
     }, [post?.id, post?.type]);
 
     const handleLike = async () => {
@@ -102,58 +88,30 @@ export default function PostDetail() {
         const wasLiked = isLiked;
         try {
             setIsLiked(!wasLiked);
-            setLikesCount((prev) => wasLiked ? Math.max(0, prev - 1) : prev + 1);
-
-            let res;
-            if (wasLiked) {
-                res = await unlikePost(id);
-            } else {
-                res = await likePostCounter(id);
-            }
-
+            setLikesCount(prev => wasLiked ? Math.max(0, prev - 1) : prev + 1);
+            const res = wasLiked ? await unlikePost(id) : await likePostCounter(id);
             if (!wasLiked && res?.data?.missionCompleted) verifyCompletion(true);
         } catch {
             setIsLiked(wasLiked);
-            setLikesCount((prev) => wasLiked ? prev + 1 : Math.max(0, prev - 1));
-        } finally {
-            setIsLiking(false);
-        }
+            setLikesCount(prev => wasLiked ? prev + 1 : Math.max(0, prev - 1));
+        } finally { setIsLiking(false); }
     };
 
     const registerView = async (watchedSeconds = 0, videoDuration = 0) => {
         if (viewRegistered) return;
         setViewRegistered(true);
         try {
-            const API_URL = (import.meta.env.VITE_API_URL || location.origin);
             const res = await fetch(`${API_URL}/posts/${id}/view`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ watchedSeconds, videoDuration })
             });
-
-            if (res.ok) {
-                void("Vista registrada exitosamente");
-                // Importante: Refrescar misiones para que suba la barra
-                verifyCompletion(true);
-            } else {
-                const errorData = await res.json();
-                console.warn("Error en registro de vista:", errorData.message);
-                // Refrescar de todos modos para sincronizar estado
-                verifyCompletion(false);
-            }
-        } catch (e) {
-            console.error('Error registrando vista', e);
-            verifyCompletion(false);
-        }
+            if (res.ok) { verifyCompletion(true); } else { verifyCompletion(false); }
+        } catch (e) { verifyCompletion(false); }
     };
 
     useEffect(() => {
-        if (post && post.type !== 'video' && !viewRegistered) {
-            registerView();
-        }
+        if (post && post.type !== 'video' && !viewRegistered) registerView();
     }, [post, viewRegistered]);
 
     const handleSubmitComment = async (e) => {
@@ -162,54 +120,39 @@ export default function PostDetail() {
         setIsSubmitting(true);
         try {
             const { data } = await createComment(id, commentText);
-            setComments((prev) => [...prev, data.comment]);
+            setComments(prev => [...prev, data.comment]);
             setCommentText('');
             addToast('success', 'Comentario enviado');
         } catch (err) {
-            console.error(err);
             addToast('error', 'Error', 'No se pudo enviar el comentario');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleDeletePost = () => {
-        showConfirm('¿Eliminar publicación?', 'Esta acción no se puede deshacer y borrará permanentemente tu contenido y sus interacciones.', confirmDelete, { confirmLabel: 'Eliminar permanentemente', danger: true });
+        } finally { setIsSubmitting(false); }
     };
 
     const confirmDelete = async () => {
         try {
-            const API_URL = (import.meta.env.VITE_API_URL || location.origin);
             const res = await fetch(`${API_URL}/posts/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            if (res.ok) {
-                addToast('success', 'Publicación eliminada', 'Tu contenido ha sido borrado permanentemente.');
-                setTimeout(() => navigate('/feed'), 2000);
-            } else {
-                const data = await res.json();
-                addToast('error', 'Error', data.message || 'No se pudo eliminar la publicación');
-            }
-        } catch (err) {
-            addToast('error', 'Error', 'Fallo de conexión');
-        }
+            if (res.ok) { addToast('success', 'Publicación eliminada'); setTimeout(() => navigate('/feed'), 2000); }
+            else { const data = await res.json(); addToast('error', 'Error', data.message || 'No se pudo eliminar'); }
+        } catch { addToast('error', 'Error', 'Fallo de conexión'); }
     };
 
-    // â”€â”€ Loading â”€â”€
+    const handleDeletePost = () => {
+        showConfirm('¿Eliminar publicación?', 'Esta acción no se puede deshacer.', confirmDelete, { confirmLabel: 'Eliminar permanentemente', danger: true });
+    };
+
     if (loading) {
         return (
             <div className={styles.layout}>
                 <main className={styles.main}>
                     <div className={styles.loadingSpinner} />
                 </main>
-
             </div>
         );
     }
 
-    // â”€â”€ Not found â”€â”€
     if (!post) {
         return (
             <div className={styles.layout}>
@@ -221,73 +164,17 @@ export default function PostDetail() {
                         <h2>Publicación no encontrada</h2>
                     </div>
                 </main>
-
             </div>
         );
     }
 
-    // â”€â”€ Video â”€â”€
     if (post.type === 'video') {
-        return (
-            <>
-                <VideoDetailLayout
-                    post={post}
-                    comments={comments}
-                    commentText={commentText}
-                    onCommentChange={setCommentText}
-                    onSubmitComment={handleSubmitComment}
-                    isSubmitting={isSubmitting}
-                    recommendedPosts={recommendedPosts}
-                    likesCount={likesCount}
-                    isLiked={isLiked}
-                    onLike={handleLike}
-                    onBack={() => navigate(-1)}
-                    registerView={registerView}
-                    onDelete={handleDeletePost}
-                />
-            </>
-        );
+        return <VideoDetailLayout post={post} comments={comments} commentText={commentText} onCommentChange={setCommentText} onSubmitComment={handleSubmitComment} isSubmitting={isSubmitting} recommendedPosts={recommendedPosts} likesCount={likesCount} isLiked={isLiked} onLike={handleLike} onBack={() => navigate(-1)} registerView={registerView} onDelete={handleDeletePost} />;
     }
 
-    // â”€â”€ Image â”€â”€
     if (post.type === 'image') {
-        return (
-            <>
-                <ImageDetailLayout
-                    post={post}
-                    comments={comments}
-                    commentText={commentText}
-                    onCommentChange={setCommentText}
-                    onSubmitComment={handleSubmitComment}
-                    isSubmitting={isSubmitting}
-                    recommendedPosts={recommendedImagePosts}
-                    likesCount={likesCount}
-                    isLiked={isLiked}
-                    onLike={handleLike}
-                    onBack={() => navigate(-1)}
-                    onDelete={handleDeletePost}
-                />
-            </>
-        );
+        return <ImageDetailLayout post={post} comments={comments} commentText={commentText} onCommentChange={setCommentText} onSubmitComment={handleSubmitComment} isSubmitting={isSubmitting} recommendedPosts={recommendedImagePosts} likesCount={likesCount} isLiked={isLiked} onLike={handleLike} onBack={() => navigate(-1)} onDelete={handleDeletePost} />;
     }
 
-    // â”€â”€ Text / Others (Base Mode) â”€â”€
-    return (
-        <>
-            <TextDetailLayout
-                post={post}
-                comments={comments}
-                commentText={commentText}
-                onCommentChange={setCommentText}
-                onSubmitComment={handleSubmitComment}
-                isSubmitting={isSubmitting}
-                recommendedPosts={recommendedTextPosts}
-                likesCount={likesCount}
-                isLiked={isLiked}
-                onLike={handleLike}
-                onDelete={handleDeletePost}
-            />
-        </>
-    );
+    return <TextDetailLayout post={post} comments={comments} commentText={commentText} onCommentChange={setCommentText} onSubmitComment={handleSubmitComment} isSubmitting={isSubmitting} recommendedPosts={recommendedTextPosts} likesCount={likesCount} isLiked={isLiked} onLike={handleLike} onDelete={handleDeletePost} />;
 }
-

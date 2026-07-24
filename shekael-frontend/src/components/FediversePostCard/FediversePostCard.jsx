@@ -49,9 +49,9 @@ export default function FediversePostCard({ post }) {
   const openDetail = useCallback(() => {
     const instanceDomain = extractInstanceDomain(post.instanceUrl);
     if (instanceDomain && post.id) {
-      navigate(`/federated-post/${instanceDomain}/${post.id}`, { state: { post } });
+      const fedId = `fed__${instanceDomain}__${post.id}`;
+      navigate(`/post/${fedId}`, { state: { fedPost: post } });
     } else {
-      // Fallback: abrir en Mastodon directamente
       window.open(post.url, '_blank', 'noopener,noreferrer');
     }
   }, [navigate, post]);

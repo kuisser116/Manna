@@ -15,7 +15,6 @@ import FondoRegional from './pages/FondoRegional';
 import Profile from './pages/Profile';
 import Terms from './pages/Terms';
 import PostDetail from './pages/PostDetail';
-import FediversePostDetail from './pages/FediversePostDetail/FediversePostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import AdminPostApproval from './pages/AdminPostApproval/AdminPostApproval';
 import TutorialOnboarding from './pages/TutorialOnboarding/TutorialOnboarding';
@@ -245,11 +244,6 @@ function App() {
         <Route path="/post/:id" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><PostDetail /></AppLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/federated-post/:instance/:id" element={
-          <ProtectedRoute authLoading={authLoading}>
-            <AppLayout><FediversePostDetail /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/studio" element={
