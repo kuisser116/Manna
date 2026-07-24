@@ -36,6 +36,7 @@ export function TextDetailLayout({
     isLiked = false,
     onLike,
     onDelete,
+    hideActions = false,
 }) {
     const { user } = useStore();
     const isOwner = user?.id === post.author_id;
