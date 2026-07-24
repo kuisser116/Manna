@@ -40,11 +40,15 @@ export default function Feed() {
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
 
   // ── Seen tracking con localStorage (persiste entre recargas) ──
-  const [seenIds, setSeenIds] = useState(() => {
+  const [seenIds, setSeenIds] = useState(function initSeen() {
     try {
-      const saved = localStorage.getItem('shekael_feed_seen');
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch { return new Set(); }
+      var saved = localStorage.getItem('shekael_feed_seen');
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch (e) { /* ignore */ }
+    return new Set();
   });
 
   const markSeen = useCallback((id) => {
@@ -55,7 +59,7 @@ export default function Feed() {
         const arr = Array.from(next);
         if (arr.length > 500) arr.splice(0, arr.length - 500);
         localStorage.setItem('shekael_feed_seen', JSON.stringify(arr));
-      } catch { /* localStorage may be full */ }
+      } catch (e) { /* localStorage may be full */ }
       return new Set(arr);
     });
   }, []);
