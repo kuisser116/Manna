@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Loader2, Globe, MessageCircle, Heart, Repeat2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Heart, MessageCircle, Repeat2, Globe, Loader2 } from 'lucide-react';
 import FediversePostCard from '../../components/FediversePostCard/FediversePostCard';
-import useStore from '../../store';
-import styles from './FediversePostDetail.module.css';
+import styles from '../PostDetail.module.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -28,7 +27,6 @@ function formatDate(dateStr) {
 export default function FediversePostDetail() {
   const { id, instance } = useParams();
   const navigate = useNavigate();
-  const { addToast, user } = useStore();
 
   const [post, setPost] = useState(null);
   const [replies, setReplies] = useState([]);
@@ -60,8 +58,8 @@ export default function FediversePostDetail() {
   // ── Loading ──
   if (loading) {
     return (
-      <div className={styles.page}>
-        <main className={styles.mainCol}>
+      <div className={styles.layout}>
+        <main className={styles.main}>
           <div className={styles.loadingSpinner} />
         </main>
       </div>
@@ -69,19 +67,19 @@ export default function FediversePostDetail() {
   }
 
   // ── Error ──
-  if (error || !post) {
+  if (!post) {
     return (
-      <div className={styles.page}>
-        <main className={styles.mainCol}>
-          <div className={styles.headerBar}>
+      <div className={styles.layout}>
+        <main className={styles.main}>
+          <div className={styles.header}>
             <button onClick={() => navigate(-1)} className={styles.backBtn}>
               <ArrowLeft size={24} />
             </button>
-            <h2 className={styles.notFoundTitle}>Post no encontrado</h2>
+            <h2>Post no encontrado</h2>
           </div>
-          <div className={styles.errorState}>
+          <div style={{ padding: 60, textAlign: 'center', color: 'var(--color-text-muted)' }}>
             <Globe size={32} opacity={0.4} />
-            <p>{error || 'Este post no está disponible en el Fediverso'}</p>
+            <p style={{ marginTop: 12 }}>{error || 'Este post no está disponible'}</p>
           </div>
         </main>
       </div>
@@ -90,156 +88,111 @@ export default function FediversePostDetail() {
 
   const formattedDate = formatDate(post.createdAt);
   const content = stripHtml(post.content);
+  const isOwner = false; // Federated posts never owned by local user
 
   return (
-    <div className={styles.page}>
-      <div className={styles.contentGrid}>
-        {/* ═══ Columna Principal ═══ */}
-        <main className={styles.mainCol}>
-          <div className={styles.mainPostContainer}>
-            {/* ── Cabecera ── */}
-            <div className={styles.headerBar}>
-              <button onClick={() => navigate(-1)} className={styles.backBtn}>
-                <ArrowLeft size={24} />
-              </button>
-              <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.originalBtn}>
-                <ExternalLink size={16} />
-                Abrir en {post.instance}
+    <div className={styles.layout}>
+      <main className={styles.main}>
+        {/* ── Header (exactamente igual a PostDetail) ── */}
+        <div className={styles.header}>
+          <button onClick={() => navigate(-1)} className={styles.backBtn}>
+            <ArrowLeft size={24} />
+          </button>
+          <h2>Publicación</h2>
+          <a
+            href={post.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              marginLeft: 'auto',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 13, color: 'var(--color-primary)',
+              textDecoration: 'none', padding: '6px 12px',
+              border: '1px solid var(--color-primary)',
+              borderRadius: 8,
+            }}
+          >
+            <ExternalLink size={14} />
+            Original
+          </a>
+        </div>
+
+        {/* ── FediversePostCard (ya se ve idéntica a PostCard) ── */}
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '20px 24px' }}>
+          <FediversePostCard post={post} isDetail />
+        </div>
+
+        {/* ── Acciones (mismo estilo que PostDetail) ── */}
+        <div style={{
+          maxWidth: 680, margin: '0 auto', padding: '0 24px 16px',
+          display: 'flex', gap: 8, flexWrap: 'wrap',
+        }}>
+          <a href={post.url} target="_blank" rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', border: '1px solid var(--color-border)',
+              borderRadius: 8, color: 'var(--color-text-muted)',
+              fontSize: 13, textDecoration: 'none', cursor: 'pointer',
+            }}>
+            <Heart size={16} /> {post.stats?.likes || 0}
+          </a>
+          <a href={post.url} target="_blank" rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', border: '1px solid var(--color-border)',
+              borderRadius: 8, color: 'var(--color-text-muted)',
+              fontSize: 13, textDecoration: 'none', cursor: 'pointer',
+            }}>
+            <MessageCircle size={16} /> {post.stats?.replies || 0}
+          </a>
+          <a href={post.url} target="_blank" rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', border: '1px solid var(--color-border)',
+              borderRadius: 8, color: 'var(--color-text-muted)',
+              fontSize: 13, textDecoration: 'none', cursor: 'pointer',
+            }}>
+            <Repeat2 size={16} /> {post.stats?.shares || 0}
+          </a>
+          <a href={post.url} target="_blank" rel="noopener noreferrer"
+            style={{
+              marginLeft: 'auto',
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', border: '1px solid var(--color-primary)',
+              borderRadius: 8, color: 'var(--color-primary)',
+              fontSize: 13, textDecoration: 'none', cursor: 'pointer',
+            }}>
+            <ExternalLink size={14} /> Abrir en Mastodon
+          </a>
+        </div>
+
+        {/* ── Respuestas (misma estructura que comment section de PostDetail) ── */}
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 24px 80px' }}>
+          <h3 style={{
+            fontSize: 17, fontWeight: 600, color: 'var(--color-text)',
+            margin: '24px 0 16px', paddingTop: 16, borderTop: '1px solid var(--color-border)',
+          }}>
+            Respuestas ({replies.length})
+          </h3>
+
+          {replies.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-muted)' }}>
+              <MessageCircle size={24} opacity={0.3} />
+              <p style={{ marginTop: 8, fontSize: 14 }}>No hay respuestas visibles desde Shekael</p>
+              <a href={post.url} target="_blank" rel="noopener noreferrer"
+                style={{ color: 'var(--color-primary)', fontSize: 13, textDecoration: 'none' }}>
+                Ver en Mastodon →
               </a>
             </div>
-
-            {/* ── Autor ── */}
-            <div className={styles.authorHeader}>
-              <a href={post.author?.url} target="_blank" rel="noopener noreferrer" className={styles.authorRow}>
-                <img
-                  src={post.author?.avatar}
-                  alt=""
-                  className={styles.avatar}
-                  onError={e => { e.target.style.display = 'none'; }}
-                />
-                <div className={styles.authorInfo}>
-                  <span className={styles.displayName}>
-                    {post.author?.displayName || post.author?.username}
-                  </span>
-                  <span className={styles.dateText}>
-                    {post.author?.handle} · {formattedDate}
-                  </span>
-                </div>
-              </a>
-              <span className={styles.instanceBadge}>{post.instance}</span>
-            </div>
-
-            {/* ── Contenido ── */}
-            <div className={styles.postBody}>
-              <p className={styles.postText}>{content}</p>
-
-              {post.firstMedia?.type === 'image' && !imgError && (
-                <a href={post.firstMedia.url} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={post.firstMedia.preview_url || post.firstMedia.url}
-                    alt={post.firstMedia.description || ''}
-                    className={styles.postImage}
-                    loading="lazy"
-                    onError={() => setImgError(true)}
-                  />
-                </a>
-              )}
-
-              {post.firstMedia?.type === 'video' && (
-                <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.videoPlaceholder}>
-                  <span>▶</span> Ver video en {post.instance}
-                </a>
-              )}
-            </div>
-
-            {/* ── Stats ── */}
-            <div className={styles.statsRow}>
-              <span className={styles.statItem}>
-                <Heart size={16} /> {post.stats?.likes || 0}
-              </span>
-              <span className={styles.statItem}>
-                <Repeat2 size={16} /> {post.stats?.shares || 0}
-              </span>
-              <span className={styles.statItem}>
-                <MessageCircle size={16} /> {post.stats?.replies || 0}
-              </span>
-            </div>
-
-            {/* ── Acción ── */}
-            <div className={styles.actionRow}>
-              <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.actionBtn}>
-                <Heart size={18} /> {post.stats?.likes || 0}
-              </a>
-              <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.actionBtn}>
-                <MessageCircle size={18} /> {post.stats?.replies || 0}
-              </a>
-              <a href={post.url} target="_blank" rel="noopener noreferrer" className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}>
-                <ExternalLink size={16} />
-                Responder en Mastodon
-              </a>
-            </div>
-
-            {/* ── Tags ── */}
-            {post.tags?.length > 0 && (
-              <div className={styles.tagsRow}>
-                {post.tags.slice(0, 8).map(t => (
-                  <span key={t} className={styles.tag}>#{t}</span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ═══ Respuestas ═══ */}
-          <div className={styles.repliesSection}>
-            <h3 className={styles.repliesTitle}>Respuestas ({replies.length})</h3>
-
-            {replies.length === 0 ? (
-              <div className={styles.noReplies}>
-                <MessageCircle size={24} opacity={0.3} />
-                <p>No hay respuestas visibles</p>
-                <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.replyLink}>
-                  <ExternalLink size={14} /> Ver en Mastodon
-                </a>
-              </div>
-            ) : (
-              <div className={styles.repliesList}>
-                {replies.map((reply, i) => (
-                  <FediversePostCard key={reply.id || i} post={reply} />
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* ═══ Sidebar (similar a PostDetail) ═══ */}
-        <aside className={styles.sideCol}>
-          <div className={styles.sideCard}>
-            <h4 className={styles.sideTitle}>Sobre este post</h4>
-            <p className={styles.sideText}>
-              Post desde <strong>{post.instance}</strong>, parte del Fediverso.
-              Las interacciones (likes, respuestas) ocurren en la instancia original.
-            </p>
-            <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.sideLink}>
-              <ExternalLink size={14} /> Abrir original
-            </a>
-          </div>
-
-          {post.language && (
-            <div className={styles.sideCard}>
-              <h4 className={styles.sideTitle}>Idioma</h4>
-              <p className={styles.sideText}>
-                {post.language === 'es' ? '🇪🇸 Español' :
-                 post.language === 'en' ? '🇬🇧 Inglés' :
-                 post.language === 'pt' ? '🇧🇷 Portugués' :
-                 post.language === 'fr' ? '🇫🇷 Francés' :
-                 post.language === 'de' ? '🇩🇪 Alemán' :
-                 post.language === 'it' ? '🇮🇹 Italiano' :
-                 post.language === 'ja' ? '🇯🇵 Japonés' : `🌐 ${post.language}`}
-              </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {replies.map((reply, i) => (
+                <FediversePostCard key={reply.id || i} post={reply} />
+              ))}
             </div>
           )}
-        </aside>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

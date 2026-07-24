@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
-import rateLimit from 'express-rate-limit';
 import {
     getFederatedTimeline,
     getFederatedTrending,
@@ -14,14 +13,7 @@ import {
 
 const router = Router({ strict: false });
 
-// Rate limit: 30 requests/min para no abusar de APIs externas
-const fedLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 30,
-    message: { message: 'Demasiadas solicitudes. Espera un momento.' }
-});
-
-router.use(fedLimiter);
+// Sin rate limit — las instancias externas ya tienen sus propios límites
 
 /**
  * GET /federation/timeline
