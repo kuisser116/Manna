@@ -43,6 +43,7 @@ export function VideoDetailLayout({
     onBack,
     registerView,
     onDelete,
+    hideActions = false,
 }) {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     // Empieza en `true` para evitar el flash de apertura al cargar
@@ -175,7 +176,7 @@ export function VideoDetailLayout({
                                 </div>
                             </Link>
 
-                            <div className={styles.actions}>
+                            {!hideActions && <div className={styles.actions}>
                                 <button
                                     className={`${styles.actionBtn} ${isLiked ? styles.likedBtn : ''}`}
                                     onClick={onLike}
@@ -205,7 +206,7 @@ export function VideoDetailLayout({
                                         <Trash2 size={18} />
                                     </button>
                                 )}
-                            </div>
+                            </div>}
                         </div>
 
                         {/* Descripción expandible */}

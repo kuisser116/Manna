@@ -69,6 +69,7 @@ export function ImageDetailLayout({
     onLike,
     onBack,
     onDelete,
+    hideActions = false,
 }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -166,7 +167,7 @@ export function ImageDetailLayout({
                                 </div>
                             </Link>
 
-                            <div className={styles.actions}>
+                            {!hideActions && <div className={styles.actions}>
                                 <button
                                     className={`${styles.actionBtn} ${isLiked ? styles.likedBtn : ''}`}
                                     onClick={onLike}
@@ -195,7 +196,7 @@ export function ImageDetailLayout({
                                         <Trash2 size={18} />
                                     </button>
                                 )}
-                            </div>
+                            </div>}
                         </div>
 
                         {/* Descripción expandible */}

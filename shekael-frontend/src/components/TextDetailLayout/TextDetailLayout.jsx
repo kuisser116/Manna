@@ -92,7 +92,7 @@ export function TextDetailLayout({
                         </motion.div>
 
                         {/* Acciones e interacciones */}
-                        <div className={styles.interactionsRow}>
+                        {!hideActions && <div className={styles.interactionsRow}>
                             <div className={styles.actions}>
                                 <button
                                     className={`${styles.actionBtn} ${isLiked ? styles.likedBtn : ''}`}
@@ -129,7 +129,7 @@ export function TextDetailLayout({
                                     </button>
                                 )}
                             </div>
-                        </div>
+                        </div>}
                     </div>
 
                     <div className={styles.divider} />

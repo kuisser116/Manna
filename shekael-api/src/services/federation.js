@@ -77,8 +77,9 @@ function normalizePost(status, instance) {
         contentType,
         media,
         firstMedia,
+        instanceDomain: instance.url.replace('https://', '').replace(/\/.*$/, ''),
         author: {
-            handle: `@${account.acct}@${instance.name.toLowerCase().replace(/\s/g, '')}`,
+            handle: `@${account.acct}@${instance.url.replace('https://', '').replace(/\/.*$/, '')}`,
             username: account.username,
             displayName: account.display_name || account.username,
             avatar: account.avatar_static || account.avatar,
@@ -99,6 +100,54 @@ function normalizePost(status, instance) {
 /**
  * Stripear HTML manteniendo saltos de línea
  */
+/**
+ * Normalizar un post desde ActivityPub (outbox) a formato Shekael
+ */
+function normalizeAPPost(obj, instanceDomain, actor) {
+    const content = typeof obj.content === 'string' ? obj.content : '';
+    const media = (obj.attachment || []).filter(a => a.type === 'Image' || a.type === 'Video').map(m => ({
+        url: m.url,
+        preview_url: m.url,
+        type: m.type === 'Image' ? 'image' : 'video',
+        description: m.name || ''
+    }));
+    const firstMedia = media[0] || null;
+    let contentType = 'text';
+    if (firstMedia?.type === 'image') contentType = 'image';
+    else if (firstMedia?.type === 'video') contentType = 'video';
+
+    return {
+        id: obj.id,
+        uri: obj.id,
+        url: obj.url || obj.id,
+        instance: instanceDomain,
+        instanceUrl: `https://${instanceDomain}`,
+        instanceDomain,
+        createdAt: obj.published || new Date().toISOString(),
+        content,
+        contentText: stripHtml(content),
+        contentType,
+        media,
+        firstMedia,
+        author: {
+            handle: `@${actor.preferredUsername || actor.name}@${instanceDomain}`,
+            username: actor.preferredUsername || '',
+            displayName: actor.name || '',
+            avatar: actor.icon?.url || '',
+            url: actor.url || '',
+        },
+        stats: {
+            likes: 0,
+            shares: 0,
+            replies: 0,
+        },
+        sensitive: obj.sensitive || false,
+        spoilerText: obj.summary || '',
+        language: '',
+        tags: (obj.tag || []).map(t => typeof t === 'string' ? t : t.name).filter(Boolean),
+    };
+}
+
 function stripHtml(html) {
     if (!html) return '';
     return html
@@ -397,45 +446,95 @@ export async function getFediverseAccountProfile(accountHandle, { limit = 20 } =
 
     const username = match[1];
     const instanceDomain = match[2];
-    const instance = INSTANCES.find(i => i.url.includes(instanceDomain));
-    if (!instance) return null;
 
     const cacheKey = `profile:${accountHandle}`;
     const cached = getCache(cacheKey);
     if (cached) return cached;
 
     try {
-        const headers = {};
-        if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+        // 1. WebFinger → resuelve al ActivityPub actor (cross-instance público)
+        const wfUrl = `https://${instanceDomain}/.well-known/webfinger?resource=acct:${username}@${instanceDomain}`;
+        const wfData = await fetchWithTimeout(wfUrl, {}, 5000);
+        if (!wfData || !wfData.links) {
+            console.error(`[Federation] WebFinger sin resultados para ${accountHandle}`);
+            return null;
+        }
 
-        // Buscar account
-        const searchUrl = `${instance.url}/api/v1/accounts/search?q=${username}&limit=1`;
-        const searchData = await fetchWithTimeout(searchUrl, { headers }, 5000);
-        const account = Array.isArray(searchData) ? searchData[0] : null;
-        if (!account) return null;
+        // Extraer ActivityPub URL del link self
+        const selfLink = wfData.links.find(l => l.type === 'application/activity+json' || l.rel === 'self');
+        if (!selfLink || !selfLink.href) {
+            console.error(`[Federation] No se encontró link self en WebFinger para ${accountHandle}`);
+            return null;
+        }
 
-        // Obtener timeline
-        const timelineUrl = `${instance.url}/api/v1/accounts/${account.id}/statuses?limit=${limit}`;
-        const postsData = await fetchWithTimeout(timelineUrl, { headers }, 8000);
-        const posts = (postsData || []).map(s => normalizePost(s, instance));
+        // 2. Fetchear el ActivityPub actor directamente (cross-instance, público)
+        const acctResp = await fetch(selfLink.href, {
+            headers: { 'Accept': 'application/activity+json, application/json' }
+        });
+        if (!acctResp.ok) {
+            console.error(`[Federation] HTTP ${acctResp.status} al obtener actor: ${selfLink.href}`);
+            return null;
+        }
+        const actor = await acctResp.json();
+        if (!actor || !actor.id) return null;
 
-        // Normalizar account
+        // 3. Obtener posts via ActivityPub outbox
+        let posts = [];
+        let statusesCount = 0;
+
+        try {
+            const outboxUrl = actor.outbox ? `${actor.outbox}?page=true&limit=${limit}` : null;
+            if (outboxUrl) {
+                const outboxResp = await fetch(outboxUrl, {
+                    headers: { 'Accept': 'application/activity+json, application/json' }
+                });
+                if (outboxResp.ok) {
+                    const outboxData = await outboxResp.json();
+                    const items = outboxData.orderedItems || [];
+                    // Filtrar solo Create (posts originales), no Announce (boosts)
+                    const createItems = items.filter(i => i.type === 'Create' && i.object);
+                    statusesCount = createItems.length;
+                    for (const item of createItems.slice(0, limit)) {
+                        const obj = item.object;
+                        if (typeof obj === 'string') continue;
+                        posts.push(normalizeAPPost(obj, instanceDomain, actor));
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(`[Federation] Error fetching outbox: ${e.message}`);
+        }
+
+        // Obtener followers/following counts desde ActivityPub Collection
+        let followersCount = 0, followingCount = 0;
+        try {
+            const [followersData, followingData] = await Promise.all([
+                actor.followers ? fetch(actor.followers + '?page=true', { headers: { 'Accept': 'application/activity+json' } }).then(r => r.ok ? r.json() : null) : null,
+                actor.following ? fetch(actor.following + '?page=true', { headers: { 'Accept': 'application/activity+json' } }).then(r => r.ok ? r.json() : null) : null,
+            ]);
+            if (followersData) followersCount = followersData.totalItems || 0;
+            if (followingData) followingCount = followingData.totalItems || 0;
+        } catch (e) {
+            // Ignorar
+        }
+
+        // 4. Normalizar datos del actor
         const normalized = {
-            id: account.id,
-            username: account.username,
-            acct: account.acct,
-            displayName: account.display_name,
-            avatar: account.avatar,
-            avatarStatic: account.avatar_static,
-            header: account.header,
-            headerStatic: account.header_static,
-            note: account.note,
-            url: account.url,
-            followersCount: account.followers_count,
-            followingCount: account.following_count,
-            statusesCount: account.statuses_count,
-            createdAt: account.created_at,
-            fields: account.fields || [],
+            id: actor.id,
+            username: actor.preferredUsername || username,
+            acct: `${actor.preferredUsername || username}@${instanceDomain}`,
+            displayName: actor.name || actor.preferredUsername || username,
+            avatar: actor.icon?.url || actor.icon || '',
+            avatarStatic: actor.icon?.url || '',
+            header: actor.image?.url || actor.image || '',
+            headerStatic: actor.image?.url || '',
+            note: actor.summary || '',
+            url: actor.url || selfLink.href,
+            followersCount,
+            followingCount,
+            statusesCount,
+            createdAt: actor.published || '',
+            fields: actor.attachment || [],
             source: 'fediverso',
         };
 

@@ -164,6 +164,7 @@ function FediverseDetailSection({ rawId, navigate }) {
     likesCount: mappedPost.likes_count,
     isLiked: false,
     onLike: handleFedLike,
+    hideActions: true,
     onBack: () => navigate(-1),
     onDelete: () => addToast('error', 'No puedes eliminar posts del Fediverso'),
   };
