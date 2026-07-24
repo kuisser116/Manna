@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Heart, MessageCircle, Repeat2, Globe, Loader2 } from 'lucide-react';
 import FediversePostCard from '../../components/FediversePostCard/FediversePostCard';
-import styles from '../PostDetail.module.css';
+import styles from '../../styles/pages/PostDetail.module.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
