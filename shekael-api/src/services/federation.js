@@ -405,15 +405,18 @@ export async function getFediverseAccountProfile(accountHandle, { limit = 20 } =
     if (cached) return cached;
 
     try {
+        const headers = {};
+        if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+
         // Buscar account
         const searchUrl = `${instance.url}/api/v1/accounts/search?q=${username}&limit=1`;
-        const searchData = await fetchWithTimeout(searchUrl, {}, 5000);
+        const searchData = await fetchWithTimeout(searchUrl, { headers }, 5000);
         const account = Array.isArray(searchData) ? searchData[0] : null;
         if (!account) return null;
 
         // Obtener timeline
         const timelineUrl = `${instance.url}/api/v1/accounts/${account.id}/statuses?limit=${limit}`;
-        const postsData = await fetchWithTimeout(timelineUrl, {}, 8000);
+        const postsData = await fetchWithTimeout(timelineUrl, { headers }, 8000);
         const posts = (postsData || []).map(s => normalizePost(s, instance));
 
         // Normalizar account
