@@ -4,11 +4,21 @@
  * Cache en memoria con TTL. Sin dependencia de Supabase.
  */
 const INSTANCES = [
+    // Mastodon — general
+    { url: 'https://mastodon.social', name: 'Mastodon Social', type: 'mastodon', token: '' },
     { url: 'https://mastodon.world', name: 'Mastodon World', type: 'mastodon', token: 'xUTItO8rfaa6NegZE0G7FYYNNN3N7g5UGCR1lolGGxg' },
-    { url: 'https://mastodonapp.uk', name: 'Mastodon UK', type: 'mastodon', token: 'Cnrq4y7sfmWkb-Fbmt_P4Fy5Vh4T8tNaxSFLj3KOSIA' },
-    { url: 'https://mastodon.art', name: 'Mastodon Art', type: 'mastodon', token: 'gRl92tSRIRNCmQIdiZ36N73MLXJ-kBCth23ZftcDXac' },
+    { url: 'https://mastodon.online', name: 'Mastodon Online', type: 'mastodon', token: '0hGBdAhBJKfR5AzPGoy5QexuD1Egcauyuea1a5-39SQ' },
+    { url: 'https://mastodonapp.uk', name: 'Mastodon UK', type: 'mastodon', token: 'RRToUlAq-Sm1GxNmwg-Vi5O5lZ3c-MaQw7PTOJvDJII' },{
+    { url: 'https://mastodon.cloud', name: 'Mastodon Cloud', type: 'mastodon', token: 'm7SOM43H--o9pgwGA0Dldul4eIjNMiMZVdh6RkCVc5g' },
     { url: 'https://fosstodon.org', name: 'Fosstodon', type: 'mastodon', token: 'p6qYbgY0A-JKE7S8WOs9wRgRmGkA1f1TzCwKCAZHL8s' },
     { url: 'https://hachyderm.io', name: 'Hachyderm', type: 'mastodon', token: 'bghDmmFUyeSiBiG6a3TtgAobCDlJYm_PPAt1i16eXMo' },
+    { url: 'https://mastodon.art', name: 'Mastodon Art', type: 'mastodon', token: 'gRl92tSRIRNCmQIdiZ36N73MLXJ-kBCth23ZftcDXac' },
+    // Mastodon — regiones
+    { url: 'https://mstdn.jp', name: 'Mastodon Japan', type: 'mastodon', token: '1iCDtaPPnNOP9-_935DgWSU6LGpCkBkNsK9eanp_dcg' },
+    { url: 'https://social.tchncs.de', name: 'Social Tchncs', type: 'mastodon', token: 'mD7a5FIgG7MxPaVsuYSSAzrp5SmnN8pYk2tbRTLrL7U' },
+    // Pixelfed — imágenes
+    { url: 'https://pixelfed.social', name: 'Pixelfed Social', type: 'pixelfed', token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxOTY4NTQ2IiwianRpIjoiMmIyNDgxNTFiMTM0NDVkNDkyOTZkNDhhYWQwNTRmODQ1MjMyNDU0MWQxYWU1MWNiMjNhNjEwYTZlNGRiZjJhNTEzYTE1MTAyM2JjOTc5NDAiLCJpYXQiOjE3ODQ4ODE4OTQuNTY1OTg4LCJuYmYiOjE3ODQ4ODE4OTQuNTY1OTksImV4cCI6MTgxNjQxNzg5NC41NTk5ODgsInN1YiI6IjE5Njg1NDYiLCJzY29wZXMiOlsicmVhZCJdfQ.jas1GWcL_r6YD5jDG-L3OePRST_Tk83sM79kCnmVKbaifJPleWDDSkg4V2Zd1ekLL1mB2SLOzbIGfwVh0pIgbgtRwi8RyknMqc7F3t6Go3tXkMHvtyT2x9LR1UybbGSDWE1KxXVj_HrAyq1FO4zYxTvjaGOMqHKuHgBo6GaL9IWHlAvkXwdknS9dsfrus5tdVv_8R4Q6tAMUCaDjpRiYcqIZ_rkbPOl6itmQYCaXhh1QhewbHPi8zQPLFKx4v9zdT-dHbNzizpQ6CXf9VEXdkVdu8mMrCbJRnvB-wq5w-m_eeb13ZlsGhV3CoLcxbvsrZdKL0FfsSXHtcWGxayGaO-zK_p7upGjvDSTwSXB-RIT8oJNwgJphVl7gu_B4Kq1rctW0QxMA7D9kIStnFaikkR2VQ17puLds_1hz7SnbA1C69QCRANjoYJckFbiPWRN5qbESIPSIbvQ6cj93e_8nO8y6gY94Mgb7sgybZNyfD630YKcpFsMteX-yKccyV0YYkseG_Kj0Md_-sMq89oE5RIufHrTOm8Dt-9nKd6_PmZ_OBaiMI3QlZIpXlfX3Kec7NmsAUc3r-pCiVcAozXxGsQ__H2SscuQTse6LvV-gEobLDNIbRVwMc8dU99YAEQ2b296rTggO9i2c6sqs8VODBFKMW-PofIpuwMro2eU8jZI' },
+    { url: 'https://pixelfed.art', name: 'Pixelfed Art', type: 'pixelfed', token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIyNDc1OSIsImp0aSI6ImQzNTY4NDVmNDE5NjYxOTNmMjhjMzMyZDI5OThiZjRhYWExYmNlNzhiMmYyMjNhMjEyOTg1MmE0YzU5ZjY2ZTA3ZDIyYzhhYzA5M2Y3Y2ExIiwiaWF0IjoxNzg0ODgxODk1LjE1NDQ3NiwibmJmIjoxNzg0ODgxODk1LjE1NDQ3OCwiZXhwIjoxODE2NDE3ODk1LjE1MjAzOCwic3ViIjoiMjQ3NTkiLCJzY29wZXMiOlsicmVhZCJdfQ.FvUhyIwZp8a4jJoIrApf0ouJ_QWr9TWG5o_1t_hghHkQSX99EfjQC2uyrXi-CtZ0XLbNpNbtVvxH8xmvblA77V1mruPGgfptbSlMmtnPOzClOrj89J2utIwDXUHxJIg4REM34MpuCF1w1mJfPMDoQ1WmL6RldCPURiqG2OHuYskZCTAoOvNZ-iqqlLNOPtUVCqsdRwf_Hznm1D595X8LpjILMwu9UYvpzsFD56w714N_e5sdVrbBM68LYSC5isl7SPoNlxHPKmObrpt78cgF4Ly71mtuAPLo7VEBsHeHyQAMAt8QvzQ839QJxsSWm7o6ggfNARRRob9SigbbnqWfSwElWxR8tqs4wuCkSkax_2d1LoBRIzPM6APpyAKUfyBiK4SwXcGp8NxyB7Fpt6TM7uuo1yLh4dYE52UW4YZtGlQJOtXzeOCOuja5Gc0GzYOcdigs790RNLRQkb45S8kgbiyH0QSooKuMxm6BS9Ykos-IIM8Jg9iNKh-pHnq2WK6dajyryWOQ3nmHdduzn6B9S1st1-FKOdYQ9EImMJBsUuTRKZBWAsW2LfzD8TAmXSFpQ3vyBT0u7-YtvlvsM432XpZ2w-czVFyv04Ms1r5UzNEdhwvQiuPXrC2gFHi8TBeg18xcy4W9HHeb2w56O9wy6iUVLniWgoZzteoHXI6Tcak' },
 ];
 
 const CACHE_TTL = 15 * 60 * 1000; // 15 min
