@@ -4,10 +4,11 @@
  * Cache en memoria con TTL. Sin dependencia de Supabase.
  */
 const INSTANCES = [
-    { url: 'https://mastodon.social', name: 'Mastodon Social', type: 'mastodon' },
-    { url: 'https://mastodon.world', name: 'Mastodon World', type: 'mastodon' },
-    { url: 'https://pixelfed.social', name: 'Pixelfed Social', type: 'pixelfed' },
-    { url: 'https://mastodon.online', name: 'Mastodon Online', type: 'mastodon' },
+    { url: 'https://mastodon.world', name: 'Mastodon World', type: 'mastodon', token: 'xUTItO8rfaa6NegZE0G7FYYNNN3N7g5UGCR1lolGGxg' },
+    { url: 'https://mastodonapp.uk', name: 'Mastodon UK', type: 'mastodon', token: 'Cnrq4y7sfmWkb-Fbmt_P4Fy5Vh4T8tNaxSFLj3KOSIA' },
+    { url: 'https://mastodon.art', name: 'Mastodon Art', type: 'mastodon', token: 'gRl92tSRIRNCmQIdiZ36N73MLXJ-kBCth23ZftcDXac' },
+    { url: 'https://fosstodon.org', name: 'Fosstodon', type: 'mastodon', token: 'p6qYbgY0A-JKE7S8WOs9wRgRmGkA1f1TzCwKCAZHL8s' },
+    { url: 'https://hachyderm.io', name: 'Hachyderm', type: 'mastodon', token: 'bghDmmFUyeSiBiG6a3TtgAobCDlJYm_PPAt1i16eXMo' },
 ];
 
 const CACHE_TTL = 15 * 60 * 1000; // 15 min
@@ -127,7 +128,9 @@ async function fetchInstanceTimeline(instance, limit = 20) {
         : `${instance.url}/api/v1/timelines/public?local=true&limit=${limit}`;
 
     try {
-        const data = await fetchWithTimeout(endpoint, {}, 8000);
+        const headers = {};
+    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
         // Si pixelfed devuelve estructura diferente, entrarla
         const statuses = Array.isArray(data) ? data : [];
 
@@ -186,7 +189,9 @@ export async function getFederatedTrending({ limit = 20 } = {}) {
 
         try {
             const endpoint = `${inst.url}/api/v1/trends/statuses?limit=${limit}`;
-            const data = await fetchWithTimeout(endpoint, {}, 8000);
+            const headers = {};
+    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
             const posts = (data || []).map(s => normalizePost(s, inst));
             setCache(cacheKey, posts);
             results.push(...posts);
@@ -215,7 +220,9 @@ export async function searchFediverse(query, { limit = 20 } = {}) {
     for (const inst of INSTANCES.slice(0, 3)) {
         try {
             const endpoint = `${inst.url}/api/v2/search?q=${encodeURIComponent(query)}&type=statuses&limit=${Math.ceil(limit / 3)}`;
-            const data = await fetchWithTimeout(endpoint, {}, 8000);
+            const headers = {};
+    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
             const statuses = data?.statuses || [];
             const posts = statuses
                 .filter(s => !s.sensitive)
@@ -273,7 +280,9 @@ export async function searchFediverseAccounts(query, { limit = 10 } = {}) {
     for (const inst of INSTANCES.slice(0, 3)) {
         try {
             const endpoint = `${inst.url}/api/v1/accounts/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-            const data = await fetchWithTimeout(endpoint, {}, 8000);
+            const headers = {};
+    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
             const accounts = (data || []).slice(0, limit).map(acc => ({
                 id: acc.id,
                 handle: `@${acc.acct}@${inst.name.toLowerCase().replace(/\s/g, '')}`,

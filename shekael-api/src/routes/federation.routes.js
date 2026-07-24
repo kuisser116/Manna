@@ -27,7 +27,7 @@ router.use(fedLimiter);
  * Feed global del Fediverso (combinado de varias instancias)
  * Query: ?limit=20&instance=mastodon.social
  */
-router.get('/timeline', authMiddleware, async (req, res) => {
+router.get('/timeline', async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 20, 50);
         const instances = req.query.instance ? [req.query.instance] : null;
@@ -51,7 +51,7 @@ router.get('/timeline', authMiddleware, async (req, res) => {
  * GET /federation/trending
  * Tendencias actuales en el Fediverso
  */
-router.get('/trending', authMiddleware, async (req, res) => {
+router.get('/trending', async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 20, 50);
         const posts = await getFederatedTrending({ limit });
@@ -95,7 +95,7 @@ router.get('/search', authMiddleware, async (req, res) => {
  * GET /federation/instances
  * Lista de instancias disponibles
  */
-router.get('/instances', authMiddleware, async (req, res) => {
+router.get('/instances', async (req, res) => {
     res.json({
         instances: INSTANCES.map(i => ({
             url: i.url,
