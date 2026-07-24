@@ -37,24 +37,47 @@ function FediverseDetailSection({ rawId, navigate }) {
   const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
+  const [recommendedFed, setRecommendedFed] = useState([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     if (!instanceDomain || !postId) return;
     setLoading(true);
-    fetch(`${API_URL}/federation/status/${instanceDomain}/${postId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data?.success && data.post) {
-          setPost(data.post);
-          setReplies(data.replies || []);
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    Promise.all([
+      fetch(`${API_URL}/federation/status/${instanceDomain}/${postId}`, { headers }).then(r => r.json()),
+      fetch(`${API_URL}/federation/timeline?limit=8`, { headers }).then(r => r.json()),
+    ])
+      .then(([postData, timelineData]) => {
+        if (postData?.success && postData.post) {
+          setPost(postData.post);
+          setReplies(postData.replies || []);
+
+          // Mapear timeline como recomendados
+          const tl = (timelineData?.posts || []);
+          setRecommendedFed(
+            tl
+              .filter(p => String(p.id) !== String(postData.post.id))
+              .slice(0, 8)
+              .map(p => ({
+                id: `fed__${extractInstance(p.instanceUrl || p.instance || instanceDomain)}__${p.id}`,
+                display_name: p.author?.displayName || p.author?.username || 'Fediverso',
+                content: stripHtml(p.content || '').slice(0, 70) + '...',
+                avatar_url: p.author?.avatar || '',
+              }))
+          );
         } else setPost(null);
       })
       .catch(() => setPost(null))
       .finally(() => setLoading(false));
   }, [instanceDomain, postId, token]);
+
+  function extractInstance(url) {
+    if (!url) return instanceDomain;
+    try { return new URL(url).hostname; } catch { return url; }
+  }
 
   if (loading) {
     return (
@@ -137,7 +160,7 @@ function FediverseDetailSection({ rawId, navigate }) {
     onCommentChange: setCommentText,
     onSubmitComment: handleFedSubmitComment,
     isSubmitting: false,
-    recommendedPosts: [],
+    recommendedPosts: recommendedFed,
     likesCount: mappedPost.likes_count,
     isLiked: false,
     onLike: handleFedLike,

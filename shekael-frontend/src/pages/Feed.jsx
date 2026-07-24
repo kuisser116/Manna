@@ -39,10 +39,28 @@ export default function Feed() {
   const { posts, feedLoading, feedError, token, activeFilter } = useStore();
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
 
-  // ── Session-only seen tracking (no persiste al backend) ──
-  const sessionSeen = useRef(new Set());
-  const markSeen = useCallback((id) => sessionSeen.current.add(String(id)), []);
-  const isSeen = useCallback((id) => sessionSeen.current.has(String(id)), []);
+  // ── Seen tracking con localStorage (persiste entre recargas) ──
+  const [seenIds, setSeenIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('shekael_feed_seen');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const markSeen = useCallback((id) => {
+    setSeenIds(prev => {
+      const next = new Set(prev);
+      next.add(String(id));
+      try {
+        const arr = Array.from(next);
+        if (arr.length > 500) arr.splice(0, arr.length - 500);
+        localStorage.setItem('shekael_feed_seen', JSON.stringify(arr));
+      } catch { /* localStorage may be full */ }
+      return new Set(arr);
+    });
+  }, []);
+
+  const isSeen = useCallback((id) => seenIds.has(String(id)), [seenIds]);
 
   // ── Federated state ──
   const [fedPosts, setFedPosts] = useState([]);
@@ -61,11 +79,7 @@ export default function Feed() {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const id = entry.target.dataset.postId;
-              if (id) {
-                markSeen(id);
-                // Force re-render para filtrar el post visto
-                setTick(t => t + 1);
-              }
+              if (id) markSeen(id);
             }
           });
         },
@@ -75,9 +89,6 @@ export default function Feed() {
     node.dataset.postId = postId;
     observerRef.current.observe(node);
   }, [markSeen]);
-
-  // Tick para forzar re-render cuando se marca un visto
-  const [tick, setTick] = useState(0);
 
   // ── Fetch local feed ──
   useEffect(() => {
@@ -115,7 +126,11 @@ export default function Feed() {
           setFedLoading(true);
           fetchFedTimeline(fedOffset).then(fposts => {
             if (fposts.length > 0) {
-              setFedPosts(prev => [...prev, ...fposts]);
+              setFedPosts(prev => {
+                const existingIds = new Set(prev.map(p => p.id));
+                const newPosts = fposts.filter(p => !existingIds.has(p.id));
+                return [...prev, ...newPosts];
+              });
               setFedOffset(prev => prev + fposts.length);
               setFedHasMore(fposts.length >= 20);
             } else setFedHasMore(false);
@@ -131,10 +146,9 @@ export default function Feed() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // ── Filtrar locales según activeFilter + sesión ──
+  // ── Filtrar locales según activeFilter + vistos ──
   const filteredLocal = useMemo(() => {
     return posts.filter((item) => {
-      // Excluir vistos en esta sesión
       if (isSeen(item.id)) return false;
 
       if (activeFilter === 'all' || activeFilter === 'supported') return true;
@@ -146,8 +160,7 @@ export default function Feed() {
       const mapped = TYPE_MAP[activeFilter];
       return mapped ? item.type === mapped : true;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, activeFilter, tick]);
+  }, [posts, activeFilter, isSeen]);
 
   // ── Filtrar federados según activeFilter ──
   const filteredFed = useMemo(() => {
