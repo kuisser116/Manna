@@ -91,7 +91,7 @@ function normalizePost(status, instance) {
         },
         sensitive: status.sensitive || false,
         spoilerText: status.spoiler_text || '',
-        language: status.language || 'en',
+        language: status.language || '',
         tags: (status.tags || []).map(t => t.name),
     };
 }
@@ -173,13 +173,11 @@ export async function getFederatedTimeline({ limit = 20, instances = null, lang 
         }
     }
 
-    // División 80/20 por idioma:
-    // - 80% en el idioma del usuario
-    // - 20% en otros idiomas (descubrimiento cross-cultural)
+    // Ordenar por idioma: posts en el idioma del usuario primero,
+    // intercalados con descubrimiento de otros idiomas (~25%)
     if (lang) {
-        const userLang = lang.toLowerCase().split('-')[0]; // 'es-MX' → 'es'
+        const userLang = lang.toLowerCase().split('-')[0];
 
-        // Separar en dos pools
         const langPosts = [];
         const otherPosts = [];
 
@@ -192,11 +190,10 @@ export async function getFederatedTimeline({ limit = 20, instances = null, lang 
             }
         }
 
-        // Ordenar cada pool por fecha (reciente primero)
         langPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         otherPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-        // Mezclar: por cada 4 posts en idioma del usuario, 1 de otro idioma
+        // Mezclar: posts en idioma del usuario, cada 4 uno de otro idioma
         const mixed = [];
         let li = 0, oi = 0;
         while (li < langPosts.length || oi < otherPosts.length) {
@@ -211,7 +208,6 @@ export async function getFederatedTimeline({ limit = 20, instances = null, lang 
 
         posts = mixed;
     } else {
-        // Sin filtro de idioma: solo ordenar por fecha
         posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
@@ -389,6 +385,63 @@ export async function getAccountTimeline(accountHandle, { limit = 20 } = {}) {
     } catch (e) {
         console.error(`[Federation] Error fetching account timeline: ${e.message}`);
         return [];
+    }
+}
+
+/**
+ * Obtener perfil completo de un usuario del Fediverso (account info + posts)
+ */
+export async function getFediverseAccountProfile(accountHandle, { limit = 20 } = {}) {
+    const match = accountHandle.match(/^@?(\w+)@(.+)$/);
+    if (!match) return null;
+
+    const username = match[1];
+    const instanceDomain = match[2];
+    const instance = INSTANCES.find(i => i.url.includes(instanceDomain));
+    if (!instance) return null;
+
+    const cacheKey = `profile:${accountHandle}`;
+    const cached = getCache(cacheKey);
+    if (cached) return cached;
+
+    try {
+        // Buscar account
+        const searchUrl = `${instance.url}/api/v1/accounts/search?q=${username}&limit=1`;
+        const searchData = await fetchWithTimeout(searchUrl, {}, 5000);
+        const account = Array.isArray(searchData) ? searchData[0] : null;
+        if (!account) return null;
+
+        // Obtener timeline
+        const timelineUrl = `${instance.url}/api/v1/accounts/${account.id}/statuses?limit=${limit}`;
+        const postsData = await fetchWithTimeout(timelineUrl, {}, 8000);
+        const posts = (postsData || []).map(s => normalizePost(s, instance));
+
+        // Normalizar account
+        const normalized = {
+            id: account.id,
+            username: account.username,
+            acct: account.acct,
+            displayName: account.display_name,
+            avatar: account.avatar,
+            avatarStatic: account.avatar_static,
+            header: account.header,
+            headerStatic: account.header_static,
+            note: account.note,
+            url: account.url,
+            followersCount: account.followers_count,
+            followingCount: account.following_count,
+            statusesCount: account.statuses_count,
+            createdAt: account.created_at,
+            fields: account.fields || [],
+            source: 'fediverso',
+        };
+
+        const result = { account: normalized, posts };
+        setCache(cacheKey, result);
+        return result;
+    } catch (e) {
+        console.error(`[Federation] Error fetching profile ${accountHandle}: ${e.message}`);
+        return null;
     }
 }
 

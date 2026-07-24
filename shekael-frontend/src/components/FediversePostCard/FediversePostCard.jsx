@@ -70,6 +70,16 @@ export default function FediversePostCard({ post }) {
     window.open(post.url, '_blank', 'noopener,noreferrer');
   }, [post.url]);
 
+  const openFedProfile = useCallback((e) => {
+    e.stopPropagation();
+    const instanceDomain = extractInstanceDomain(post.instanceUrl);
+    if (instanceDomain && post.author?.username) {
+      navigate(`/profile/fed__${instanceDomain}__${post.author.username}`);
+    } else if (post.author?.url) {
+      window.open(post.author.url, '_blank', 'noopener,noreferrer');
+    }
+  }, [navigate, post]);
+
   const handleAction = useCallback((e) => {
     e.stopPropagation();
     window.open(post.url, '_blank', 'noopener,noreferrer');
@@ -100,23 +110,25 @@ export default function FediversePostCard({ post }) {
     <article className={styles.card} onClick={openDetail} style={{ cursor: 'pointer' }}>
       {/* ── Header ── */}
       <div className={styles.header}>
-        <img
-          src={post.author?.avatar}
-          alt=""
-          className={styles.avatar}
-          style={{ borderRadius: '50%', objectFit: 'cover', width: 42, height: 42 }}
-          onError={e => { e.target.style.display = 'none'; }}
-        />
-        <div className={styles.meta}>
-          <span className={styles.displayName}>
-            {post.author?.displayName || post.author?.username}
-            <span style={{ fontSize: 11, opacity: 0.5, marginLeft: 6 }}>
-              {langIcon} {post.instance}
+        <div onClick={openFedProfile} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <img
+            src={post.author?.avatar}
+            alt=""
+            className={styles.avatar}
+            style={{ borderRadius: '50%', objectFit: 'cover', width: 42, height: 42 }}
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+          <div className={styles.meta}>
+            <span className={styles.displayName}>
+              {post.author?.displayName || post.author?.username}
+              <span style={{ fontSize: 11, opacity: 0.5, marginLeft: 6 }}>
+                {langIcon} {post.instance}
+              </span>
             </span>
-          </span>
           <span className={styles.dateText}>
             {post.author?.handle} · {timeAgo(post.createdAt)}
           </span>
+        </div>
         </div>
         <span className={styles.typeBadge}>
           Fediverso

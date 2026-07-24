@@ -12,6 +12,7 @@ import useStore from '../store';
 import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../api/users.api';
 import { getUserPosts } from '../api/posts.api';
 import PostCard from '../components/PostCard/PostCard';
+import FediverseProfile from './FediverseProfile';
 import styles from '../styles/pages/Profile.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
@@ -33,6 +34,11 @@ const Icons = {
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
+
+  // Perfil del Fediverso
+  if (profileId && profileId.startsWith('fed__')) {
+    return <FediverseProfile />;
+  }
   const navigate = useNavigate();
   const { user: currentUser, privacy } = useStore();
 

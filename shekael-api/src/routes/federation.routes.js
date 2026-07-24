@@ -6,6 +6,7 @@ import {
     searchFediverse,
     searchFediverseAccounts,
     getAccountTimeline,
+    getFediverseAccountProfile,
     getStatusWithContext,
     getInstanceInfo,
     INSTANCES
@@ -130,6 +131,25 @@ router.get('/account/:handle', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('[Federation] Error fetching account:', error.message);
         res.status(500).json({ message: 'Error al obtener timeline del perfil' });
+    }
+});
+
+/**
+ * GET /federation/account-profile/:handle
+ * Perfil completo de un usuario del Fediverso (info + posts)
+ */
+router.get('/account-profile/:handle', authMiddleware, async (req, res) => {
+    try {
+        const handle = req.params.handle;
+        const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+        const result = await getFediverseAccountProfile(handle, { limit });
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Perfil no encontrado en el Fediverso' });
+        }
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('[Federation] Error fetching account profile:', error.message);
+        res.status(500).json({ success: false, message: 'Error al obtener perfil' });
     }
 });
 
