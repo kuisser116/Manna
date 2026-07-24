@@ -233,10 +233,8 @@ if (visibleTime >= 30000) trackSignal('dwell_30s');
 ...
 ```
 
-El usuario puede cambiar entre:
-- **"Para ti"** (default) — seguidos primero + descubrimiento después
-- **"Siguiendo"** — solo seguidos, ordenado por afinidad + fresco
-- **"Explorar"** — solo descubrimiento, para cuando quieres algo nuevo
+Un solo feed unificado — sin tabs ni modos.
+Los filtros existentes del TopBar (Todo, Imágenes, Videos, Texto, Más apoyados, Recientes, Siguiendo) son los únicos que importan para filtrar. El algoritmo solo controla el **orden** de los posts dentro del feed.
 
 ---
 
