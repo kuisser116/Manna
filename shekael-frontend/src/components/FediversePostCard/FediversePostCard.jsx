@@ -74,7 +74,7 @@ export default function FediversePostCard({ post }) {
     e.stopPropagation();
     // Usar el handle real: @usuario@instancia
     const handle = post.author?.handle || '';
-    const match = handle.match(/^@?(\w+)@(.+)$/);
+    const match = handle.match(/^@?([\w.-]+)@(.+)$/);
     if (match) {
       const [, user, domain] = match;
       navigate(`/fediverse-profile/${encodeURIComponent(domain)}/${encodeURIComponent(user)}`);

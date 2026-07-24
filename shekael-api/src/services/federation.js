@@ -79,7 +79,11 @@ function normalizePost(status, instance) {
         firstMedia,
         instanceDomain: instance.url.replace('https://', '').replace(/\/.*$/, ''),
         author: {
-            handle: `@${account.acct}@${instance.url.replace('https://', '').replace(/\/.*$/, '')}`,
+            // Si account.acct ya tiene @ (user@remoto), usar directo;
+            // si no, agregar instancia local
+            handle: account.acct.includes('@')
+                ? `@${account.acct}`
+                : `@${account.acct}@${instance.url.replace('https://', '').replace(/\/.*$/, '')}`,
             username: account.username,
             displayName: account.display_name || account.username,
             avatar: account.avatar_static || account.avatar,
@@ -441,7 +445,7 @@ export async function getAccountTimeline(accountHandle, { limit = 20 } = {}) {
  * Obtener perfil completo de un usuario del Fediverso (account info + posts)
  */
 export async function getFediverseAccountProfile(accountHandle, { limit = 20 } = {}) {
-    const match = accountHandle.match(/^@?(\w+)@(.+)$/);
+    const match = accountHandle.match(/^@?([\w.-]+)@(.+)$/);
     if (!match) return null;
 
     const username = match[1];

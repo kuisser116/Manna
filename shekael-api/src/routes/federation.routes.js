@@ -75,13 +75,13 @@ router.get('/search', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'Se requiere un término de búsqueda' });
         }
 
-        if (type === 'accounts') {
-            const accounts = await searchFediverseAccounts(query, { limit });
-            return res.json({ success: true, accounts, total: accounts.length, source: 'fediverso' });
-        }
-
-        const posts = await searchFediverse(query, { limit });
-        res.json({ success: true, posts, total: posts.length, source: 'fediverso' });
+        const accounts = type === 'accounts' || type === 'all'
+            ? await searchFediverseAccounts(query, { limit })
+            : [];
+        const posts = type === 'posts' || type === 'all'
+            ? await searchFediverse(query, { limit })
+            : [];
+        res.json({ success: true, accounts, posts, total: accounts.length + posts.length, source: 'fediverso' });
     } catch (error) {
         console.error('[Federation] Error in search:', error.message);
         res.status(500).json({ message: 'Error al buscar en el Fediverso' });
