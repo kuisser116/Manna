@@ -74,7 +74,7 @@ export default function FediversePostCard({ post }) {
     e.stopPropagation();
     const instanceDomain = extractInstanceDomain(post.instanceUrl);
     if (instanceDomain && post.author?.username) {
-      navigate(`/profile/fed__${instanceDomain}__${post.author.username}`);
+      navigate(`/fediverse-profile/${encodeURIComponent(instanceDomain)}/${encodeURIComponent(post.author.username)}`);
     } else if (post.author?.url) {
       window.open(post.author.url, '_blank', 'noopener,noreferrer');
     }

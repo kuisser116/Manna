@@ -12,7 +12,7 @@ import Landing from './pages/Landing';
 import Feed from './pages/Feed';
 import CreatePost from './pages/CreatePost';
 import FondoRegional from './pages/FondoRegional';
-import Profile from './pages/Profile';
+import Profile, { FediverseProfileView } from './pages/Profile';
 import Terms from './pages/Terms';
 import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
@@ -239,6 +239,11 @@ function App() {
         <Route path="/profile/:id?" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><Profile /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/fediverse-profile/:instance/:username" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <FediverseProfileView />
           </ProtectedRoute>
         } />
         <Route path="/post/:id" element={

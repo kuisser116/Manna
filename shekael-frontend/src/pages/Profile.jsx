@@ -44,12 +44,11 @@ function formatCount(n) {
 }
 
 function FediverseProfileView() {
-  const { id: rawId } = useParams();
+  const { instance, username: routeUsername } = useParams();
   const navigate = useNavigate();
 
-  const parts = rawId.replace('fed__', '').split('__');
-  const instanceDomain = parts[0] || '';
-  const username = parts.slice(1).join('__');
+  const instanceDomain = instance || '';
+  const username = routeUsername || '';
 
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -180,14 +179,11 @@ function FediverseProfileView() {
   );
 }
 
+export { FediverseProfileView };
+
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
-
-  // Perfil del Fediverso — renderizado directo aquí, sin archivo aparte
-  if (profileId && profileId.startsWith('fed__')) {
-    return <FediverseProfileView />;
-  }
   const navigate = useNavigate();
   const { user: currentUser, privacy } = useStore();
 
