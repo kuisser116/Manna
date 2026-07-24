@@ -30,18 +30,19 @@ router.use(fedLimiter);
 router.get('/timeline', async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
         const instances = req.query.instance ? [req.query.instance] : null;
-        const lang = req.query.lang || 'es'; // Priorizar español por defecto
+        const lang = req.query.lang || 'es';
 
-        const posts = await getFederatedTimeline({ limit, instances, lang });
+        const posts = await getFederatedTimeline({ limit, offset, instances, lang });
 
         res.json({
             success: true,
             posts,
             total: posts.length,
-            source: 'fediverso',
+            offset,
             lang,
-            cached: true
+            hasMore: posts.length >= limit,
         });
     } catch (error) {
         console.error('[Federation] Error in timeline:', error.message);

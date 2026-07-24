@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { recordAdImpression, getPoolStatus } from '../../api/ads.api';
-import { Sparkles, TrendingUp } from 'lucide-react';
 import styles from './AdSlot.module.css';
 
 const AD_INTERVAL = 7; // cada 7 posts
@@ -103,43 +102,34 @@ export default function AdSlot({ postIndex, source = 'feed' }) {
     return (
         <div className={styles.adSlot} ref={adRef}>
             <div className={styles.adBadge}>
-                <Sparkles size={12} />
-                <span>Patrocinado</span>
+                <span>📢 Anuncio</span>
             </div>
 
             <div className={styles.adContent}>
-                <div className={styles.adIcon}>
-                    <TrendingUp size={32} />
-                </div>
                 <div className={styles.adText}>
                     <h4 className={styles.adTitle}>¿Cansado de redes que no te pagan?</h4>
                     <p className={styles.adDesc}>
-                        Shekael valora tu atención. Sigue viendo contenido y gana MXN por cada anuncio que veas.
-                        Tu ganancia se calcula del pool mensual — entre más veas, más ganas.
+                        Shekael valora tu atención. Gana MXN por cada anuncio que veas.
                     </p>
                 </div>
             </div>
 
             <div className={styles.adFooter}>
                 {status === 'pending' && (
-                    <span className={styles.adStatus}>Desplázate para ver →</span>
+                    <span className={styles.adStatus}>Desplázate ↓</span>
                 )}
                 {status === 'inProgress' && (
                     <span className={styles.adStatusActive}>
-                        Viendo... {focusTime}s / 5s
+                        {focusTime}s / 5s
                     </span>
                 )}
                 {status === 'completed' && (
                     <span className={styles.adStatusDone}>
-                        ✅ {poolSettled ? '+' : '~+'}
-                        {rewardStr} estimado
-                        {poolSettled ? ' (pool cerrado)' : ''}
+                        {poolSettled ? '+' : '~+'} {rewardStr}
                     </span>
                 )}
                 {status === 'error' && (
-                    <span className={styles.adStatusError}>
-                        No se pudo registrar el anuncio
-                    </span>
+                    <span className={styles.adStatusError}>Error</span>
                 )}
             </div>
 

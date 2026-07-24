@@ -1,8 +1,8 @@
 import { useEffect, useCallback, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
+import FediversePostCard from '../components/FediversePostCard/FediversePostCard';
 import AdSlot, { shouldShowAd } from '../components/AdSlot/AdSlot';
-import FederatedCard from '../components/FederatedFeed/FederatedCard';
 import useStore from '../store';
 import useFeed from '../hooks/useFeed';
 import { markPostAsSeen } from '../api/posts.api';
@@ -18,55 +18,49 @@ const TYPE_MAP = {
   text: 'micro-text',
 };
 
-// ── Filtros del feed ──
-const FILTERS = [
-  { key: 'forYou', label: 'Para ti' },
-  { key: 'following', label: 'Siguiendo' },
-  { key: 'trending', label: 'Tendencias' },
-  { key: 'recent', label: 'Reciente' },
-];
+// ── Preferencia de idioma ──
+const USER_LANG = (() => {
+  const nav = navigator.language || '';
+  return nav.startsWith('es') ? 'es' : 'es';
+})();
 
-// ── Detectar idioma preferido del usuario ──
-function getUserLang() {
-  const stored = localStorage.getItem('preferred_lang');
-  if (stored) return stored;
-  // Detectar del navegador
-  const navLang = navigator.language || '';
-  if (navLang.startsWith('es')) return 'es';
-  return 'es'; // Default: español para Shekael
+const SEEN_FED_KEY = 'shekael_seen_fed';
+function getSeenFed() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_FED_KEY) || '[]'));
+  } catch { return new Set(); }
+}
+function markSeenFed(id) {
+  try {
+    const s = getSeenFed();
+    s.add(String(id));
+    localStorage.setItem(SEEN_FED_KEY, JSON.stringify(Array.from(s).slice(-500)));
+  } catch {}
 }
 
-// ── Stripear HTML (para federated posts) ──
+// ── Stripear HTML ──
 function stripHtml(html) {
   if (!html) return '';
   return html
     .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<p>/gi, '')
-    .replace(/<\/p>/gi, ' ')
-    .replace(/<a[^>]*>/gi, '')
-    .replace(/<\/a>/gi, '')
+    .replace(/<p>/gi, '').replace(/<\/p>/gi, ' ')
+    .replace(/<a[^>]*>/gi, '').replace(/<\/a>/gi, '')
     .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;/g, "'")
-    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'")
     .trim();
 }
 
-// ── Determinar prioridad de idioma ──
-function langPriority(lang, userLang) {
-  if (!lang) return 0;
-  if (lang === userLang) return 3;
-  if (lang === 'en') return 1;
-  return 0;
-}
-
-// ── Truncar texto para federated posts ──
-function truncate(text, max = 200) {
-  if (!text || text.length <= max) return text;
-  return text.substring(0, max) + '...';
+// ── Fetch federated ──
+async function fetchFedTimeline(offset = 0) {
+  const token = localStorage.getItem('Shekael_token');
+  const res = await fetch(
+    `${API_URL}/federation/timeline?limit=20&offset=${offset}&lang=${USER_LANG}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.posts || [];
 }
 
 export default function Feed() {
@@ -74,49 +68,33 @@ export default function Feed() {
   const { posts, feedLoading, feedError, token, activeFilter } = useStore();
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
 
-  // Estado del filtro principal
-  const [feedFilter, setFeedFilter] = useState('forYou');
-
-  // Estado para posts federados
+  // Federated state
   const [fedPosts, setFedPosts] = useState([]);
+  const [fedOffset, setFedOffset] = useState(0);
+  const [fedHasMore, setFedHasMore] = useState(true);
   const [fedLoading, setFedLoading] = useState(false);
+  const seenFed = useRef(getSeenFed());
 
-  // Idioma del usuario
-  const userLang = useMemo(() => getUserLang(), []);
-
-  // ── Fetch inicial ──
+  // ── Fetch local feed ──
   useEffect(() => {
     if (token) fetchFeed();
   }, [token, activeFilter]);
 
-  // ── Fetch federado cuando cambia el filtro ──
+  // ── Fetch federated on mount ──
   useEffect(() => {
     if (!token) return;
-    if (feedFilter === 'following') {
-      setFedPosts([]);
-      return; // No necesita federados
-    }
-
     setFedLoading(true);
-    const limit = feedFilter === 'trending' ? 30 : 20;
-    const endpoint = feedFilter === 'trending'
-      ? `${API_URL}/federation/trending?limit=${limit}&lang=${userLang}`
-      : `${API_URL}/federation/timeline?limit=${limit}&lang=${userLang}`;
-
-    fetch(endpoint, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(data => {
-        setFedPosts(data.posts || []);
+    fetchFedTimeline(0)
+      .then(fposts => {
+        setFedPosts(fposts);
+        setFedOffset(20);
+        setFedHasMore(fposts.length >= 20);
       })
-      .catch(() => {
-        setFedPosts([]);
-      })
+      .catch(() => {})
       .finally(() => setFedLoading(false));
-  }, [feedFilter, token, userLang]);
+  }, [token]);
 
-  // ── Scroll infinito ──
+  // ── Scroll infinito (local + fed) ──
   const scrollLockRef = useRef(false);
   const handleScroll = useCallback(() => {
     if (scrollLockRef.current) return;
@@ -128,32 +106,45 @@ export default function Feed() {
       const docHeight = document.documentElement.offsetHeight;
 
       if (scrollBottom >= docHeight - threshold) {
-        loadMore();
+        // Cargar más locales
+        if (hasMore) {
+          loadMore();
+        }
+        // Cargar más federados si no hay más locales
+        else if (fedHasMore && !fedLoading) {
+          setFedLoading(true);
+          fetchFedTimeline(fedOffset).then(fposts => {
+            if (fposts.length > 0) {
+              setFedPosts(prev => [...prev, ...fposts]);
+              setFedOffset(prev => prev + fposts.length);
+              setFedHasMore(fposts.length >= 20);
+            } else {
+              setFedHasMore(false);
+            }
+          }).catch(() => {}).finally(() => setFedLoading(false));
+        }
       }
       scrollLockRef.current = false;
     });
-  }, [loadMore]);
+  }, [loadMore, hasMore, fedHasMore, fedLoading, fedOffset]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // ── IntersectionObserver: marcar posts como vistos ──
+  // ── Seen tracking (local) ──
   const seenQueueRef = useRef(new Set());
   const seenTimerRef = useRef(null);
 
   const handlePostVisible = useCallback((postId) => {
     if (!postId || seenQueueRef.current.has(postId)) return;
     seenQueueRef.current.add(postId);
-
     if (seenTimerRef.current) clearTimeout(seenTimerRef.current);
     seenTimerRef.current = setTimeout(() => {
       const batch = Array.from(seenQueueRef.current);
       seenQueueRef.current.clear();
-      batch.forEach((id) => {
-        markPostAsSeen(id).catch(() => {});
-      });
+      batch.forEach((id) => markPostAsSeen(id).catch(() => {}));
     }, 2000);
   }, []);
 
@@ -177,178 +168,155 @@ export default function Feed() {
     observerRef.current.observe(node);
   }, [handlePostVisible]);
 
-  // ── Filtrar posts locales ──
-  const filteredLocalPosts = useMemo(() => {
+  // ── Filtrar posts locales según activeFilter ──
+  const filteredLocal = useMemo(() => {
     return posts.filter((item) => {
-      // Filtro local según pestaña activa del store
-      if (activeFilter === 'all') return true;
-      if (activeFilter === 'supported') return true;
+      if (activeFilter === 'all' || activeFilter === 'supported') return true;
       if (activeFilter === 'recent') {
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        return new Date(item.created_at) > yesterday;
+        const yesterday = Date.now() - 86400000;
+        return new Date(item.created_at).getTime() > yesterday;
       }
-      if (feedFilter === 'following') return item.isFollowing === true;
       if (activeFilter === 'following') return item.isFollowing === true;
       const mapped = TYPE_MAP[activeFilter];
       return mapped ? item.type === mapped : true;
     });
-  }, [posts, activeFilter, feedFilter]);
+  }, [posts, activeFilter]);
 
-  // ── Merge local + federated según filtro activo ──
-  const mergedFeed = useMemo(() => {
-    if (feedFilter === 'following') {
-      // Solo posts de seguidos — sin federados
-      return filteredLocalPosts.map(p => ({ type: 'local', post: p }));
+  // ── Filtrar federados según activeFilter ──
+  const filteredFed = useMemo(() => {
+    let fposts = fedPosts;
+
+    // Filtrar por tipo
+    if (activeFilter === 'image') fposts = fposts.filter(p => p.contentType === 'image');
+    else if (activeFilter === 'video') fposts = fposts.filter(p => p.contentType === 'video');
+    else if (activeFilter === 'text') fposts = fposts.filter(p => p.contentType === 'text' || !p.contentType);
+
+    // Excluir ya vistos
+    if (activeFilter !== 'supported') {
+      fposts = fposts.filter(p => !seenFed.current.has(String(p.id)));
     }
 
-    if (feedFilter === 'trending') {
-      // Tendencia: mezclar por engagement
-      const scored = [];
-
-      for (const p of filteredLocalPosts) {
-        const score = (p.likes_count || 0) + (p.video_view_count || 0);
-        scored.push({ type: 'local', post: p, score });
-      }
-
-      for (const p of fedPosts) {
-        const score = (p.stats?.likes || 0) + (p.stats?.shares || 0);
-        scored.push({ type: 'fed', post: p, score });
-      }
-
-      scored.sort((a, b) => b.score - a.score);
-      return scored;
-    }
-
-    if (feedFilter === 'recent') {
-      // Reciente: todos cronológico
-      const combined = [];
-
-      for (const p of filteredLocalPosts) {
-        combined.push({ type: 'local', post: p, date: new Date(p.created_at).getTime() });
-      }
-      for (const p of fedPosts) {
-        combined.push({ type: 'fed', post: p, date: new Date(p.createdAt).getTime() });
-      }
-
-      combined.sort((a, b) => b.date - a.date);
-      return combined;
-    }
-
-    // ── "Para ti" (default): feed inteligente ──
-    const result = [];
-
-    // 1. Posts locales (siempre primero)
-    for (const p of filteredLocalPosts) {
-      result.push({ type: 'local', post: p });
-    }
-
-    // 2. Intercalar federados con prioridad de idioma
-    const sortedFed = [...fedPosts].sort((a, b) => {
-      const aLang = langPriority(a.language, userLang);
-      const bLang = langPriority(b.language, userLang);
+    // Lenguaje: español primero
+    fposts = [...fposts].sort((a, b) => {
+      const aLang = a.language === USER_LANG ? 1 : 0;
+      const bLang = b.language === USER_LANG ? 1 : 0;
       if (bLang !== aLang) return bLang - aLang;
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-    // Interleaving: cada 4 posts locales, insertar 1 federado
+    return fposts;
+  }, [fedPosts, activeFilter]);
+
+  // ── Merge final ──
+  const mergedFeed = useMemo(() => {
+    if (activeFilter === 'following') {
+      // Solo seguidos locales
+      return filteredLocal.map(p => ({ type: 'local', post: p }));
+    }
+
+    if (activeFilter === 'supported') {
+      // Popular: mezclar por engagement
+      const scored = [];
+      for (const p of filteredLocal) {
+        scored.push({ type: 'local', post: p, score: (p.likes_count||0) + (p.video_view_count||0) });
+      }
+      for (const p of filteredFed) {
+        scored.push({ type: 'fed', post: p, score: (p.stats?.likes||0) + (p.stats?.shares||0) });
+      }
+      scored.sort((a, b) => b.score - a.score);
+      return scored;
+    }
+
+    if (activeFilter === 'recent') {
+      // Cronológico
+      const all = [];
+      for (const p of filteredLocal) all.push({ type: 'local', post: p, date: new Date(p.created_at).getTime() });
+      for (const p of filteredFed) all.push({ type: 'fed', post: p, date: new Date(p.createdAt).getTime() });
+      all.sort((a, b) => b.date - a.date);
+      return all;
+    }
+
+    // 'all', 'image', 'video', 'text' → mezcla con interleaving
+    const localItems = filteredLocal.map(p => ({ type: 'local', post: p }));
+    const fedItems = filteredFed.map(p => ({ type: 'fed', post: p }));
+
+    // Interleaving: cada 4 locales, 1 federado
     let fedIdx = 0;
-    const final = [];
-    for (let i = 0; i < result.length; i++) {
-      final.push(result[i]);
-      // Insertar federado cada 4 locales (si quedan)
-      if ((i + 1) % 4 === 0 && fedIdx < sortedFed.length) {
-        final.push({ type: 'fed', post: sortedFed[fedIdx++] });
+    const result = [];
+    for (let i = 0; i < localItems.length; i++) {
+      result.push(localItems[i]);
+      if ((i + 1) % 4 === 0 && fedIdx < fedItems.length) {
+        result.push(fedItems[fedIdx++]);
       }
     }
-    // Agregar federados restantes al final
-    while (fedIdx < sortedFed.length) {
-      final.push({ type: 'fed', post: sortedFed[fedIdx++] });
+    // Federados restantes al final
+    while (fedIdx < fedItems.length) result.push(fedItems[fedIdx++]);
+
+    return result;
+  }, [filteredLocal, filteredFed, activeFilter]);
+
+  // ── Dividir en no-leídos / leídos (solo locales) ──
+  const unseenLocal = filteredLocal.filter(p => !p.seen_at);
+  const hasUnseen = unseenLocal.length > 0;
+
+  // Marcar federados como vistos al renderizar
+  useEffect(() => {
+    for (const item of mergedFeed) {
+      if (item.type === 'fed') markSeenFed(item.post.id);
     }
+  }, [mergedFeed]);
 
-    return final;
-  }, [filteredLocalPosts, fedPosts, feedFilter, userLang]);
-
-  // ── Posts sin leer / leídos (solo para locales) ──
-  const unseenPosts = filteredLocalPosts.filter(p => !p.seen_at);
-  const seenPosts = filteredLocalPosts.filter(p => p.seen_at);
+  const showEnd = !hasMore && !fedHasMore && !loadingMore;
 
   return (
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <div className={styles.main}>
-        {/* ── Filter Pills ── */}
-        <div className={styles.filterTrack}>
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              className={`${styles.filterChip} ${feedFilter === f.key ? styles.filterChipActive : ''}`}
-              onClick={() => setFeedFilter(f.key)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Error ── */}
         {feedError && (
-          <div className={styles.errorBanner}>
-            {feedError}
-          </div>
+          <div className={styles.errorBanner}>{feedError}</div>
         )}
 
-        {/* ── Loading ── */}
-        {feedLoading ? (
+        {feedLoading && !fedLoading && mergedFeed.length === 0 ? (
           <div className={styles.loadingList}>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={styles.skeleton} />
-            ))}
+            {[1, 2, 3].map((i) => <div key={i} className={styles.skeleton} />)}
           </div>
-        ) : mergedFeed.length === 0 && !fedLoading ? (
+        ) : mergedFeed.length === 0 ? (
           <div className={styles.emptyState}>
-            <img src={logoImg} alt="Empty Feed" className={styles.emptyLogo} />
+            <img src={logoImg} alt="" className={styles.emptyLogo} />
             <p>{t('feed.noPostsYet', 'Todavía no hay publicaciones.')}</p>
-            <a href="/create" className={styles.createLink}>{t('feed.createPost', 'Crear publicación')}</a>
+            <a href="/create" className={styles.createLink}>
+              {t('feed.createPost', 'Crear publicación')}
+            </a>
           </div>
         ) : (
           <div className={styles.postList}>
-            {/* Sección "Nuevo" solo en modo Para ti con posts sin leer */}
-            {feedFilter === 'forYou' && unseenPosts.length > 0 && (
-              <div className={styles.sectionLabel}>· Nuevo</div>
-            )}
+            {hasUnseen && <div className={styles.sectionLabel}>· Nuevo</div>}
 
             {mergedFeed.map((item, index) => (
-              <div key={item.type === 'local' ? `local-${item.post.id}` : `fed-${item.post.id || index}`}>
-                {/* Para ti: mostrar label "Anterior" después de los no leídos */}
-                {feedFilter === 'forYou' && item.type === 'local' && item.post.seen_at && unseenPosts.length > 0 && (
-                  index === 0 || (mergedFeed[index - 1]?.type === 'local' && !mergedFeed[index - 1]?.post?.seen_at)
-                ) && (
-                  <div className={styles.sectionLabel}>· Anterior</div>
-                )}
+              <div key={item.type === 'local' ? `l-${item.post.id}` : `f-${item.post.id || index}`}>
+                {/* Label "Anterior" al pasar de no-leídos a leídos */}
+                {hasUnseen && item.type === 'local' && item.post.seen_at && (
+                  (index === 0 || (mergedFeed[index - 1]?.type === 'local' && !mergedFeed[index - 1]?.post?.seen_at))
+                ) && <div className={styles.sectionLabel}>· Anterior</div>}
 
-                {/* Anuncios intercalados */}
-                {shouldShowAd(index) && (
-                  <AdSlot postIndex={index} source="feed" />
-                )}
+                {shouldShowAd(index) && <AdSlot postIndex={index} source="feed" />}
 
-                {/* Post local */}
-                {item.type === 'local' && (
+                {item.type === 'local' ? (
                   <div ref={(node) => { if (!item.post.seen_at) postRefCallback(node, item.post.id); }}>
                     <PostCard post={item.post} />
                   </div>
-                )}
-
-                {/* Post federado */}
-                {item.type === 'fed' && (
-                  <FederatedCard post={item.post} />
+                ) : (
+                  <FediversePostCard post={item.post} />
                 )}
               </div>
             ))}
 
-            {loadingMore && (
+            {(loadingMore || fedLoading) && (
               <div className={styles.loadingMore}>
                 <div className={styles.skeleton} />
               </div>
             )}
-            {!hasMore && mergedFeed.length > 0 && (
+
+            {showEnd && !feedLoading && (
               <div className={styles.endMessage}>
                 <p>{t('feed.endOfFeed', 'Has llegado al final.')}</p>
               </div>

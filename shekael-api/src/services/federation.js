@@ -129,12 +129,12 @@ async function fetchInstanceTimeline(instance, limit = 20) {
 
     try {
         const headers = {};
-    if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
-    const data = await fetchWithTimeout(endpoint, { headers }, 8000);
+        if (instance.token) headers['Authorization'] = 'Bearer ' + instance.token;
+        const data = await fetchWithTimeout(endpoint, { headers }, 8000);
         const statuses = Array.isArray(data) ? data : [];
 
         const posts = statuses
-            .filter(s => !s.sensitive) // Saltar contenido sensible
+            .filter(s => !s.sensitive)
             .slice(0, limit)
             .map(s => normalizePost(s, instance));
 
@@ -148,14 +148,22 @@ async function fetchInstanceTimeline(instance, limit = 20) {
 
 /**
  * Obtener timeline combinada de varias instancias
+ * @param {Object} opts
+ * @param {number} opts.limit - Cuántos devolver
+ * @param {string[]} opts.instances - Instancias específicas
+ * @param {string} opts.lang - Idioma a priorizar (es, en, etc)
+ * @param {number} opts.offset - Saltar los primeros N posts (paginación)
  */
-export async function getFederatedTimeline({ limit = 20, instances = null, lang = null } = {}) {
+export async function getFederatedTimeline({ limit = 20, instances = null, lang = null, offset = 0 } = {}) {
     const targets = instances
         ? INSTANCES.filter(i => instances.includes(i.url))
         : INSTANCES;
 
+    // Fetch suficiente para cubrir offset + limit
+    const fetchPerInstance = Math.ceil((limit + offset) / targets.length) + 5;
+
     const results = await Promise.allSettled(
-        targets.map(inst => fetchInstanceTimeline(inst, Math.ceil(limit / targets.length)))
+        targets.map(inst => fetchInstanceTimeline(inst, fetchPerInstance))
     );
 
     let posts = [];
@@ -167,19 +175,17 @@ export async function getFederatedTimeline({ limit = 20, instances = null, lang 
 
     // Ordenar: primero por idioma preferido, luego por fecha
     posts.sort((a, b) => {
-        // Si lang param está presente, priorizar ese idioma
         if (lang) {
             const aLang = (a.language || '').toLowerCase();
             const bLang = (b.language || '').toLowerCase();
             if (aLang === lang && bLang !== lang) return -1;
             if (bLang === lang && aLang !== lang) return 1;
         }
-        // Luego por fecha (más reciente primero)
         return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-    // Limitar al total solicitado
-    return posts.slice(0, limit);
+    // Paginar: saltar offset, tomar limit
+    return posts.slice(offset, offset + limit);
 }
 
 /**
