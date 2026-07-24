@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, ExternalLink, FileText,
+  ArrowLeft, ExternalLink, FileText, Users,
   UserPlus, UserCheck, Camera, QrCode,
   LayoutGrid, Eye, MessageCircle, Share, Flag,
   Copy, Check, ImagePlus, CalendarDays, Settings, BarChart3
@@ -14,7 +14,6 @@ import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../api
 import { getUserPosts } from '../api/posts.api';
 import PostCard from '../components/PostCard/PostCard';
 import FediversePostCard from '../components/FediversePostCard/FediversePostCard';
-import layoutStyles from '../styles/pages/PostDetail.module.css';
 import styles from '../styles/pages/Profile.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
@@ -81,9 +80,11 @@ function FediverseProfileView() {
 
   if (loading) {
     return (
-      <div className={layoutStyles.layout}>
-        <main className={layoutStyles.main}>
-          <div className={layoutStyles.loadingSpinner} />
+      <div className={styles.layout}>
+        <main className={styles.main}>
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingSpinner} />
+          </div>
         </main>
       </div>
     );
@@ -91,17 +92,19 @@ function FediverseProfileView() {
 
   if (!profile) {
     return (
-      <div className={layoutStyles.layout}>
-        <main className={layoutStyles.main}>
-          <div className={layoutStyles.header}>
-            <button onClick={() => navigate(-1)} className={layoutStyles.backBtn}>
-              <ArrowLeft size={24} />
-            </button>
-            <h2>Perfil no encontrado</h2>
+      <div className={styles.layout}>
+        <main className={styles.main}>
+          <div className={styles.profileCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 24 }}>
+              <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)' }}>
+                <ArrowLeft size={24} />
+              </button>
+              <h2>Perfil no encontrado</h2>
+            </div>
+            <p style={{ padding: '0 24px 40px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+              {error || 'Este perfil no está disponible en el Fediverso'}
+            </p>
           </div>
-          <p style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            {error || 'Este perfil no está disponible en el Fediverso'}
-          </p>
         </main>
       </div>
     );
@@ -110,68 +113,74 @@ function FediverseProfileView() {
   const acct = profile;
 
   return (
-    <div className={layoutStyles.layout}>
-      <main className={layoutStyles.main}>
-        <div className={layoutStyles.header}>
-          <button onClick={() => navigate(-1)} className={layoutStyles.backBtn}>
-            <ArrowLeft size={24} />
-          </button>
-          <h2>Perfil</h2>
-          <a href={acct.url} target="_blank" rel="noopener noreferrer"
-            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-primary)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--color-primary)', borderRadius: 8 }}>
-            <ExternalLink size={14} /> Mastodon
-          </a>
-        </div>
+    <div className={styles.layout} style={{ '--pattern-url': 'none' }}>
+      <main className={styles.main}>
+        <section className={styles.profileCard}>
+          {/* ── Cover ── */}
+          <div className={styles.cover}>
+            {acct.header && <img src={acct.header} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+            {!acct.header && <div className={styles.coverGlow} />}
+          </div>
 
-        <div style={{ height: 200, background: 'var(--color-surface-2)', borderRadius: 12, overflow: 'hidden', margin: '0 24px' }}>
-          {acct.header && <img src={acct.header} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-        </div>
+          {/* ── Header: avatar + info ── */}
+          <div className={styles.header}>
+            <div className={styles.avatarArea}>
+              <div className={styles.avatarWrapper}>
+                <div className={styles.avatarFrame}>
+                  <div
+                    className={styles.avatar}
+                    style={{ backgroundImage: acct.avatar ? `url(${acct.avatar})` : 'none' }}
+                  />
+                </div>
+              </div>
+            </div>
 
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', marginTop: -40, marginBottom: 16 }}>
-            <img
-              src={acct.avatar}
-              alt=""
-              style={{ width: 80, height: 80, borderRadius: '50%', border: '3px solid var(--color-bg)', objectFit: 'cover' }}
-              onError={e => { e.target.style.display = 'none'; }}
-            />
-            <div style={{ marginLeft: 16, flex: 1 }}>
-              <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
-                {acct.displayName || acct.username}
-              </h1>
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
+            <div className={styles.info}>
+              <div className={styles.nameRow}>
+                <h1 className={styles.name}>{acct.displayName || acct.username || 'Usuario'}</h1>
+                <a
+                  href={acct.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.editBtn}
+                  title="Abrir en Mastodon"
+                >
+                  <ExternalLink size={16} />
+                </a>
+              </div>
+
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 8px' }}>
                 @{username}@{instanceDomain}
               </p>
+
+              {acct.note && (
+                <p className={styles.bio}>
+                  {acct.note.replace(/<[^>]+>/g, '')}
+                </p>
+              )}
+
+              <div className={styles.metaLine}>
+                <div className={styles.statsRow}>
+                  <span><strong>{formatCount(acct.statusesCount || acct.statuses_count)}</strong> Posts</span>
+                  <span><strong>{formatCount(acct.followersCount || acct.followers_count)}</strong> Seguidores</span>
+                  <span><strong>{formatCount(acct.followingCount || acct.following_count)}</strong> Siguiendo</span>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
 
-          {acct.note && (
-            <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.6, marginBottom: 16 }}>
-              {acct.note.replace(/<[^>]+>/g, '')}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: 24, marginBottom: 16, fontSize: 13 }}>
-            <span><strong>{formatCount(acct.statusesCount || acct.statuses_count)}</strong> <span style={{ color: 'var(--color-text-muted)' }}>posts</span></span>
-            <span><strong>{formatCount(acct.followersCount || acct.followers_count)}</strong> <span style={{ color: 'var(--color-text-muted)' }}>seguidores</span></span>
-            <span><strong>{formatCount(acct.followingCount || acct.following_count)}</strong> <span style={{ color: 'var(--color-text-muted)' }}>siguiendo</span></span>
-          </div>
-
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text)', marginBottom: 12, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
-            Últimas publicaciones ({posts.length})
-          </h3>
-
+        {/* ── Posts ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 24px 80px' }}>
           {posts.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: 40 }}>
               <FileText size={24} opacity={0.3} /><br />
               No hay publicaciones disponibles de este usuario
             </p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 80 }}>
-              {posts.map((post, i) => (
-                <FediversePostCard key={post.id || i} post={post} />
-              ))}
-            </div>
+            posts.map((post, i) => (
+              <FediversePostCard key={post.id || i} post={post} />
+            ))
           )}
         </div>
       </main>
