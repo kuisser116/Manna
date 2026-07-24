@@ -6,9 +6,9 @@ import AdSlot, { shouldShowAd } from '../components/AdSlot/AdSlot';
 import useStore from '../store';
 import useFeed from '../hooks/useFeed';
 import { markPostAsSeen } from '../api/posts.api';
+import { FilesIcon } from 'lucide-react';
 import styles from '../styles/pages/Feed.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
-import logoImg from '../assets/personaje_1.12.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -73,6 +73,7 @@ export default function Feed() {
   const [fedOffset, setFedOffset] = useState(0);
   const [fedHasMore, setFedHasMore] = useState(true);
   const [fedLoading, setFedLoading] = useState(false);
+  const [fedError, setFedError] = useState(null);
   const seenFed = useRef(getSeenFed());
 
   // ── Fetch local feed ──
@@ -84,13 +85,15 @@ export default function Feed() {
   useEffect(() => {
     if (!token) return;
     setFedLoading(true);
+    setFedError(null);
     fetchFedTimeline(0)
       .then(fposts => {
         setFedPosts(fposts);
         setFedOffset(20);
         setFedHasMore(fposts.length >= 20);
+        if (fposts.length === 0) setFedError('No hay contenido del Fediverso disponible ahora');
       })
-      .catch(() => {})
+      .catch(() => { setFedError('Error al conectar con el Fediverso'); })
       .finally(() => setFedLoading(false));
   }, [token]);
 
@@ -171,9 +174,6 @@ export default function Feed() {
   // ── Filtrar posts locales según activeFilter ──
   const filteredLocal = useMemo(() => {
     return posts.filter((item) => {
-      // Posts ya vistos no se repiten (excepto en 'supported' que es popular)
-      if (item.seen_at && activeFilter !== 'supported') return false;
-
       if (activeFilter === 'all' || activeFilter === 'supported') return true;
       if (activeFilter === 'recent') {
         const yesterday = Date.now() - 86400000;
@@ -258,7 +258,9 @@ export default function Feed() {
     return result;
   }, [filteredLocal, filteredFed, activeFilter]);
 
-  // Ya no dividimos en no-leídos/leídos — los vistos se filtran
+  // ── Dividir en no-leídos / leídos (para labels) ──
+  const unseenLocal = filteredLocal.filter(p => !p.seen_at);
+  const hasUnseen = unseenLocal.length > 0;
 
   // Marcar federados como vistos al renderizar
   useEffect(() => {
@@ -275,23 +277,36 @@ export default function Feed() {
         {feedError && (
           <div className={styles.errorBanner}>{feedError}</div>
         )}
+        {fedError && mergedFeed.length === 0 && (
+          <div className={styles.fedErrorBanner}>{fedError}</div>
+        )}
 
-        {feedLoading && !fedLoading && mergedFeed.length === 0 ? (
+        {mergedFeed.length === 0 && (feedLoading || fedLoading || loadingMore) ? (
           <div className={styles.loadingList}>
             {[1, 2, 3].map((i) => <div key={i} className={styles.skeleton} />)}
           </div>
         ) : mergedFeed.length === 0 ? (
           <div className={styles.emptyState}>
-            <img src={logoImg} alt="" className={styles.emptyLogo} />
-            <p>{t('feed.noPostsYet', 'Todavía no hay publicaciones.')}</p>
+            <FilesIcon size={32} className={styles.emptyIcon} />
+            <p>{t('feed.noPostsYet', 'Aún no hay publicaciones.')}</p>
+            <p className={styles.emptyHint}>
+              Prueba el filtro "Todo" o cambia a "Reciente"
+            </p>
             <a href="/create" className={styles.createLink}>
-              {t('feed.createPost', 'Crear publicación')}
+              + {t('feed.createPost', 'Crear publicación')}
             </a>
           </div>
         ) : (
           <div className={styles.postList}>
+            {hasUnseen && <div className={styles.sectionLabel}>· Nuevo</div>}
+
             {mergedFeed.map((item, index) => (
               <div key={item.type === 'local' ? `l-${item.post.id}` : `f-${item.post.id || index}`}>
+                {/* Label 'Anterior' al pasar de no-leídos a leídos */}
+                {hasUnseen && item.type === 'local' && item.post.seen_at && (
+                  (index === 0 || (mergedFeed[index - 1]?.type === 'local' && !mergedFeed[index - 1]?.post?.seen_at))
+                ) && <div className={styles.sectionLabel}>· Anterior</div>}
+
                 {shouldShowAd(index) && <AdSlot postIndex={index} source="feed" />}
 
                 {item.type === 'local' ? (

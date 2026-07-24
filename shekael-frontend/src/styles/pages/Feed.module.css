@@ -129,6 +129,16 @@
   border-radius: 12px;
 }
 
+.fedErrorBanner {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: var(--color-text-secondary);
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+  border-radius: 12px;
+}
+
 /* ── Section Labels ── */
 
 .sectionLabel {
@@ -211,6 +221,18 @@
   height: 64px;
   margin-bottom: 16px;
   opacity: 0.4;
+}
+
+.emptyIcon {
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.emptyHint {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: -4px 0 16px;
 }
 
 .emptyState p {
