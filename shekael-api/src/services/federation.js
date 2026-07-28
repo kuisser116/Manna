@@ -130,8 +130,16 @@ function normalizeAPPost(obj, instanceDomain, actor) {
     if (firstMedia?.type === 'image') contentType = 'image';
     else if (firstMedia?.type === 'video') contentType = 'video';
 
+    // Extraer ID local del ActivityPub URL (último segmento del path)
+    // Ej: "https://mastodon.social/users/user/123456" → "123456"
+    let localId = obj.id;
+    try {
+        const pathSegments = new URL(obj.id).pathname.split('/').filter(Boolean);
+        localId = pathSegments[pathSegments.length - 1] || obj.id;
+    } catch { /* fallback al full URL */ }
+
     return {
-        id: obj.id,
+        id: localId,
         uri: obj.id,
         url: obj.url || obj.id,
         instance: instanceDomain,

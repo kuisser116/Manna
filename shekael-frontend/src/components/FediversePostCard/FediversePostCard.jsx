@@ -77,7 +77,7 @@ export default function FediversePostCard({ post }) {
     const match = handle.match(/^@?([\w.-]+)@(.+)$/);
     if (match) {
       const [, user, domain] = match;
-      navigate(`/fediverse-profile/${encodeURIComponent(domain)}/${encodeURIComponent(user)}`);
+      navigate(`/profile/fed__${encodeURIComponent(domain)}__${encodeURIComponent(user)}`);
     } else if (post.author?.url) {
       window.open(post.author.url, '_blank', 'noopener,noreferrer');
     }

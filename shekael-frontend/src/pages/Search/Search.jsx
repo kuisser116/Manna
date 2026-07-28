@@ -52,7 +52,7 @@ export default function Search() {
     const openFedProfile = (acc) => {
         const match = acc.handle?.match(/^@?([\w.-]+)@(.+)$/);
         if (match) {
-            navigate(`/fediverse-profile/${encodeURIComponent(match[2])}/${encodeURIComponent(match[1])}`);
+            navigate(`/profile/fed__${encodeURIComponent(match[2])}__${encodeURIComponent(match[1])}`);
         }
     };
 

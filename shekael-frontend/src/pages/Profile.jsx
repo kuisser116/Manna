@@ -42,168 +42,45 @@ function formatCount(n) {
   return n;
 }
 
-function FediverseProfileView() {
-  const { instance, username: routeUsername } = useParams();
+export default function Profile() {
+  const { t } = useTranslation();
+  const { id: profileId } = useParams();
   const navigate = useNavigate();
 
-  const instanceDomain = instance || '';
-  const username = routeUsername || '';
-
-  const [profile, setProfile] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // ── Estado para perfiles Fediverso ──
+  const isFediverseProfile = profileId && profileId.startsWith('fed__');
+  let fedInstance = '', fedUsername = '';
+  if (isFediverseProfile) {
+    const parts = profileId.replace('fed__', '').split('__');
+    fedInstance = parts[0] || '';
+    fedUsername = parts.slice(1).join('__');
+  }
+  const [fedProfile, setFedProfile] = useState(null);
+  const [fedPosts, setFedPosts] = useState([]);
+  const [fedLoading, setFedLoading] = useState(false);
+  const [fedError, setFedError] = useState(null);
 
   useEffect(() => {
+    if (!isFediverseProfile || !fedInstance || !fedUsername) return;
     window.scrollTo(0, 0);
-    if (!instanceDomain || !username) return;
-    setLoading(true);
-
-    const handle = `@${username}@${instanceDomain}`;
+    setFedLoading(true);
+    const handle = `@${fedUsername}@${fedInstance}`;
     const token = localStorage.getItem('Shekael_token');
-
     fetch(`${API_URL}/federation/account-profile/${encodeURIComponent(handle)}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.json())
       .then(data => {
         if (data?.success) {
-          setProfile(data.account);
-          setPosts(data.posts || []);
+          setFedProfile(data.account);
+          setFedPosts(data.posts || []);
         } else {
-          setError('No se pudo cargar el perfil');
+          setFedError('No se pudo cargar el perfil');
         }
       })
-      .catch(() => setError('Error al conectar con el Fediverso'))
-      .finally(() => setLoading(false));
-  }, [instanceDomain, username]);
-
-  if (loading) {
-    return (
-      <div className={styles.layout}>
-        <main className={styles.main}>
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingSpinner} />
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className={styles.layout}>
-        <main className={styles.main}>
-          <div className={styles.profileCard}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 24 }}>
-              <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)' }}>
-                <ArrowLeft size={24} />
-              </button>
-              <h2>Perfil no encontrado</h2>
-            </div>
-            <p style={{ padding: '0 24px 40px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-              {error || 'Este perfil no está disponible en el Fediverso'}
-            </p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  const acct = profile;
-
-  return (
-    <div className={styles.layout} style={{ '--pattern-url': 'none' }}>
-      <main className={styles.main}>
-        <section className={styles.profileCard}>
-          {/* ── Cover ── */}
-          <div className={styles.cover}>
-            {acct.header && <img src={acct.header} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-            {!acct.header && <div className={styles.coverGlow} />}
-          </div>
-
-          {/* ── Header: avatar + info ── */}
-          <div className={styles.header}>
-            <div className={styles.avatarArea}>
-              <div className={styles.avatarWrapper}>
-                <div className={styles.avatarFrame}>
-                  <div
-                    className={styles.avatar}
-                    style={{ backgroundImage: acct.avatar ? `url(${acct.avatar})` : 'none' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.info}>
-              <div className={styles.nameRow}>
-                <h1 className={styles.name}>{acct.displayName || acct.username || 'Usuario'}</h1>
-                <a
-                  href={acct.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.editBtn}
-                  title="Abrir en Mastodon"
-                >
-                  <ExternalLink size={16} />
-                </a>
-              </div>
-
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 8px' }}>
-                @{username}@{instanceDomain}
-              </p>
-
-              {acct.note && (
-                <p className={styles.bio}>
-                  {acct.note.replace(/<[^>]+>/g, '')}
-                </p>
-              )}
-
-              <div className={styles.metaLine}>
-                <div className={styles.statsRow}>
-                  <span><strong>{formatCount(acct.statusesCount || acct.statuses_count)}</strong> Posts</span>
-                  <span><strong>{formatCount(acct.followersCount || acct.followers_count)}</strong> Seguidores</span>
-                  <span><strong>{formatCount(acct.followingCount || acct.following_count)}</strong> Siguiendo</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Posts ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 24px 80px' }}>
-          {posts.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: 40 }}>
-              <FileText size={24} opacity={0.3} /><br />
-              No hay publicaciones disponibles de este usuario
-            </p>
-          ) : (
-            posts.map((post, i) => (
-              <FediversePostCard key={post.id || i} post={post} />
-            ))
-          )}
-        </div>
-      </main>
-    </div>
-  );
-}
-
-export { FediverseProfileView };
-
-export default function Profile() {
-  const { t } = useTranslation();
-  const { id: profileId } = useParams();
-
-  // Redirigir perfiles fed__ a la ruta dedicada
-  if (profileId && profileId.startsWith('fed__')) {
-    const parts = profileId.replace('fed__', '').split('__');
-    const instanceDomain = parts[0] || '';
-    const username = parts.slice(1).join('__');
-    if (instanceDomain && username) {
-      return <Navigate to={`/fediverse-profile/${encodeURIComponent(instanceDomain)}/${encodeURIComponent(username)}`} replace />;
-    }
-  }
-  const navigate = useNavigate();
+      .catch(() => setFedError('Error al conectar con el Fediverso'))
+      .finally(() => setFedLoading(false));
+  }, [isFediverseProfile, fedInstance, fedUsername]);
   const { user: currentUser, privacy } = useStore();
 
   const [userPosts, setUserPosts] = useState([]);
@@ -274,6 +151,7 @@ export default function Profile() {
   }, [profileId]);
 
   useEffect(() => {
+    if (isFediverseProfile) return;
     const targetId = isOwnProfile ? currentUser?.id : profileId;
     if (!targetId) return;
 
@@ -336,6 +214,7 @@ export default function Profile() {
   }, [isOwnProfile, profileId, currentUser]);
 
   useEffect(() => {
+    if (isFediverseProfile) return;
     const targetId = isOwnProfile ? currentUser?.id : profileId;
     if (!targetId) return;
 
@@ -430,6 +309,95 @@ export default function Profile() {
     images: { icon: <Icons.Bookmark size={24} />, text: t('profile.noImages', 'No images have been shared yet.') },
     text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'This text section is still empty.') },
   };
+
+  // ── Render para perfiles Fediverso ──
+  if (isFediverseProfile) {
+    if (fedLoading) {
+      return (
+        <div className={styles.layout}>
+          <main className={styles.main}>
+            <div className={styles.loadingContainer}>
+              <div className={styles.loadingSpinner} />
+            </div>
+          </main>
+        </div>
+      );
+    }
+    if (!fedProfile) {
+      return (
+        <div className={styles.layout}>
+          <main className={styles.main}>
+            <div className={styles.profileCard}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 24 }}>
+                <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)' }}>
+                  <ArrowLeft size={24} />
+                </button>
+                <h2>Perfil no encontrado</h2>
+              </div>
+              <p style={{ padding: '0 24px 40px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                {fedError || 'Este perfil no est\u00e1 disponible en el Fediverso'}
+              </p>
+            </div>
+          </main>
+        </div>
+      );
+    }
+    const acct = fedProfile;
+    return (
+      <div className={styles.layout} style={{ '--pattern-url': 'none' }}>
+        <main className={styles.main}>
+          <section className={styles.profileCard}>
+            <div className={styles.cover}>
+              {acct.header && <img src={acct.header} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              {!acct.header && <div className={styles.coverGlow} />}
+            </div>
+            <div className={styles.header}>
+              <div className={styles.avatarArea}>
+                <div className={styles.avatarWrapper}>
+                  <div className={styles.avatarFrame}>
+                    <div className={styles.avatar} style={{ backgroundImage: acct.avatar ? `url(${acct.avatar})` : 'none' }} />
+                  </div>
+                </div>
+                <div className={styles.info}>
+                <div className={styles.nameRow}>
+                  <h1 className={styles.name}>{acct.displayName || acct.username || 'Usuario'}</h1>
+                  <a href={acct.url} target="_blank" rel="noopener noreferrer" className={styles.editBtn} title="Abrir en Mastodon">
+                    <ExternalLink size={16} />
+                  </a>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 8px' }}>
+                  @{fedUsername}@{fedInstance}
+                </p>
+                {acct.note && (
+                  <p className={styles.bio}>{acct.note.replace(/<[^>]+>/g, '')}</p>
+                )}
+                <div className={styles.metaLine}>
+                  <div className={styles.statsRow}>
+                    <span><strong>{formatCount(acct.statusesCount || acct.statuses_count)}</strong> Posts</span>
+                    <span><strong>{formatCount(acct.followersCount || acct.followers_count)}</strong> Seguidores</span>
+                    <span><strong>{formatCount(acct.followingCount || acct.following_count)}</strong> Siguiendo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </section>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 24px 80px' }}>
+            {fedPosts.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: 40 }}>
+                <FileText size={24} opacity={0.3} /><br />
+                No hay publicaciones disponibles de este usuario
+              </p>
+            ) : (
+              fedPosts.map((post, i) => (
+                <FediversePostCard key={post.id || i} post={post} />
+              ))
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const hue = 200;
 
