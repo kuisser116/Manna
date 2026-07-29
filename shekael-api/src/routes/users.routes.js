@@ -516,4 +516,30 @@ router.get('/me/verify-wallet', authMiddleware, async (req, res) => {
     }
 });
 
+// ─── Actualizar ubicación en tiempo real ───
+router.post('/location', authMiddleware, async (req, res) => {
+    try {
+        const { lat, lng } = req.body;
+        
+        if (lat === undefined || lng === undefined) {
+            return res.status(400).json({ message: 'lat y lng requeridos' });
+        }
+
+        const supabase = getDB();
+        await supabase
+            .from('users')
+            .update({
+                current_lat: parseFloat(lat),
+                current_lng: parseFloat(lng),
+                location_updated_at: new Date().toISOString(),
+            })
+            .eq('id', req.user.id);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating location:', err);
+        res.status(500).json({ message: 'Error al actualizar ubicación' });
+    }
+});
+
 export default router;

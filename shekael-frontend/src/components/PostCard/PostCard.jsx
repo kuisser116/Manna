@@ -3,6 +3,11 @@ import { MessageCircle, Share2, Bookmark, Heart, Eye, ChevronDown, ChevronUp, Al
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import useStore from '../../store';
+
+function stripHtml(html) {
+  if (!html) return '';
+  return html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+}
 import SupportButton from '../SupportButton/SupportButton';
 import SmartVideoPlayer from '../SmartVideoPlayer/SmartVideoPlayer';
 import StandardVideoPlayer from '../StandardVideoPlayer/StandardVideoPlayer';
@@ -354,7 +359,7 @@ export function PostCard({ post, isDetail = false }) {
 
         return (
             <p className={`${styles.textContent} ${isCapsule ? styles.capsuleText : ''}`}>
-                {content}
+                {stripHtml(content)}
             </p>
         );
     };

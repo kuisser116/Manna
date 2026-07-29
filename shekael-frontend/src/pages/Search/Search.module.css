@@ -7,71 +7,95 @@
 
 .main {
     flex: 1;
-    max-width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
     padding: 28px 24px;
-    border-right: 1px solid var(--color-border);
+    width: 100%;
     background: var(--color-bg);
 }
 
-.header {
+/* ── Secciones ── */
+.userSection {
     margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--color-border);
+    /* Rompe el padding del main para llegar a los bordes */
+    margin-left: -24px;
+    margin-right: -24px;
 }
 
-.header h2 {
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.header p {
-    color: var(--color-text-muted);
-    font-size: 14px;
-    margin-top: 4px;
-}
-
-.tabs {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.tab {
-    background: none;
-    border: none;
-    padding: 12px 16px;
-    color: var(--color-text-muted);
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all var(--transition);
-}
-
-.tab:hover {
-    color: var(--color-text);
-}
-
-.tabActive {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-}
-
-.postList {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    max-width: 70%;
-    margin: 0 auto;
-}
-
-.userGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+.postSection {
     margin-bottom: 32px;
 }
 
+/* ── Carrusel de usuarios (ancho completo) ── */
+.userCarousel {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 24px 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+    /* Scroll suave para auto-scroll */
+    scroll-behavior: smooth;
+    cursor: grab;
+    /* Ocultar scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.userCarousel::-webkit-scrollbar {
+    display: none;
+}
+
+.searchUserLink {
+    text-decoration: none;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    color: inherit;
+}
+
+.searchUserCard {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 10px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.3s ease,
+                border-color 0.2s ease;
+    cursor: pointer;
+    min-width: 160px;
+}
+
+.searchUserCard:hover {
+    transform: translateX(6px);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+    border-color: var(--color-primary);
+}
+
+.searchUserName {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+/* ── Lista de posts (como feed) ── */
+.postList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Estados ── */
 .loadingSpinner {
     width: 40px;
     height: 40px;
@@ -93,241 +117,17 @@
     text-align: center;
 }
 
-.sidebar {
-    width: 300px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 56px;
-    height: calc(100vh - 56px);
-    overflow-y: auto;
-    background: var(--color-surface);
-    border-left: 1px solid var(--color-border);
-    padding: 24px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-@media (max-width: 900px) {
-    .sidebar { display: none; }
-    .main { border-right: none; }
-}
-
 @media (max-width: 700px) {
     .main { padding: 16px; }
-    .postList { max-width: 100%; }
-    .userGrid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
+    .userSection {
+        margin-left: -16px;
+        margin-right: -16px;
     }
+    .userCarousel { padding: 0 16px 6px; }
+    .searchUserCard { min-width: 130px; }
 }
-.searchUserLink {
-  text-decoration: none;
-}
-.searchUserCard {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--color-surface);
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-  transition: background 0.15s ease;
-}
-.searchUserCard:hover {
-  background: var(--color-surface-2);
-}
-.searchUserName {
-  font-size: 15px;
-  color: var(--color-text);
-  margin: 0;
-}
-.searchUserRep {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin: 4px 0 0 0;
-}
-.adsAdminLink {
-  color: var(--color-primary);
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-top: 8px;
-  display: inline-block;
-}
-.pinHiddenInput {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  width: 1px;
-  height: 1px;
-}
-
-/* ── Fediverso Results ── */
-
-.fediverseResults {
-  margin-top: 16px;
-}
-
-.fedLoading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 40px;
-  justify-content: center;
-  color: var(--color-text-dim);
-  font-size: 14px;
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.fedSection {
-  margin-bottom: 24px;
-}
-
-.fedSectionTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin: 0 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.fedAccounts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.fedAccountCard {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  text-decoration: none;
-  color: inherit;
-  transition: box-shadow 0.2s;
-}
-
-.fedAccountCard:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.fedAvatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--color-surface);
-}
-
-.fedAccountInfo {
-  flex: 1;
-  min-width: 0;
-}
-
-.fedAccountName {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.fedAccountHandle {
-  display: block;
-  font-size: 12px;
-  color: var(--color-text-dim);
-}
-
-.fedAccountStats {
-  display: block;
-  font-size: 11px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
-}
-
-.fedExternalIcon {
-  color: var(--color-text-dim);
-  flex-shrink: 0;
-}
-
-.fedPosts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.fedPostCard {
-  display: block;
-  padding: 14px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  text-decoration: none;
-  color: inherit;
-  transition: box-shadow 0.2s;
-}
-
-.fedPostCard:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.fedPostAuthor {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.fedPostAvatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--color-surface);
-}
-
-.fedPostAuthorInfo {}
-
-.fedPostAuthorName {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.fedPostAuthorHandle {
-  display: block;
-  font-size: 11px;
-  color: var(--color-text-dim);
-}
-
-.fedPostText {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--color-text-secondary);
-  margin: 0 0 8px;
-}
-
-.fedPostMeta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 11px;
-  color: var(--color-text-dim);
-}
-

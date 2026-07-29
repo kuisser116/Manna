@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Component, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {
@@ -13,7 +13,6 @@ import useStore from '../store';
 import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../api/users.api';
 import { getUserPosts } from '../api/posts.api';
 import PostCard from '../components/PostCard/PostCard';
-import FediversePostCard from '../components/FediversePostCard/FediversePostCard';
 import styles from '../styles/pages/Profile.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
@@ -32,7 +31,6 @@ const Icons = {
   ),
 };
 
-// ── Perfil del Fediverso (dentro de Profile.jsx, sin archivo aparte) ──
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function formatCount(n) {
@@ -42,46 +40,37 @@ function formatCount(n) {
   return n;
 }
 
+class ProfileErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error('Profile Error:', error, info);
+    this.setState({ info });
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text)' }}>
+          <h2>Error en el perfil</h2>
+          <pre style={{ fontSize: 12, marginTop: 16, background: 'var(--color-surface)', padding: 16, borderRadius: 8, textAlign: 'left', maxWidth: 600, margin: '16px auto', overflow: 'auto' }}>
+            {this.state.error?.message}\n\n{this.state.error?.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
   const navigate = useNavigate();
-
-  // ── Estado para perfiles Fediverso ──
-  const isFediverseProfile = profileId && profileId.startsWith('fed__');
-  let fedInstance = '', fedUsername = '';
-  if (isFediverseProfile) {
-    const parts = profileId.replace('fed__', '').split('__');
-    fedInstance = parts[0] || '';
-    fedUsername = parts.slice(1).join('__');
-  }
-  const [fedProfile, setFedProfile] = useState(null);
-  const [fedPosts, setFedPosts] = useState([]);
-  const [fedLoading, setFedLoading] = useState(false);
-  const [fedError, setFedError] = useState(null);
-
-  useEffect(() => {
-    if (!isFediverseProfile || !fedInstance || !fedUsername) return;
-    window.scrollTo(0, 0);
-    setFedLoading(true);
-    const handle = `@${fedUsername}@${fedInstance}`;
-    const token = localStorage.getItem('Shekael_token');
-    fetch(`${API_URL}/federation/account-profile/${encodeURIComponent(handle)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data?.success) {
-          setFedProfile(data.account);
-          setFedPosts(data.posts || []);
-        } else {
-          setFedError('No se pudo cargar el perfil');
-        }
-      })
-      .catch(() => setFedError('Error al conectar con el Fediverso'))
-      .finally(() => setFedLoading(false));
-  }, [isFediverseProfile, fedInstance, fedUsername]);
-  const { user: currentUser, privacy } = useStore();
 
   const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -130,6 +119,8 @@ export default function Profile() {
     }
   };
 
+  const { user: currentUser, privacy } = useStore();
+
   const isOwnProfile = !profileId || currentUser?.id === profileId;
 
   const [profileData, setProfileData] = useState(isOwnProfile ? currentUser : null);
@@ -151,7 +142,6 @@ export default function Profile() {
   }, [profileId]);
 
   useEffect(() => {
-    if (isFediverseProfile) return;
     const targetId = isOwnProfile ? currentUser?.id : profileId;
     if (!targetId) return;
 
@@ -213,14 +203,13 @@ export default function Profile() {
       .finally(() => setProfileLoading(false));
   }, [isOwnProfile, profileId, currentUser]);
 
-  useEffect(() => {
-    if (isFediverseProfile) return;
-    const targetId = isOwnProfile ? currentUser?.id : profileId;
-    if (!targetId) return;
+  const targetIdProfile = isOwnProfile ? currentUser?.id : profileId;
 
+  useEffect(() => {
+    if (!targetIdProfile) return;
     setPostsLoading(true);
 
-    getUserPosts(targetId)
+    getUserPosts(targetIdProfile)
       .then(({ data }) => {
         const posts = data.posts || [];
         const normalizedPosts = posts.map((post) => {
@@ -310,95 +299,6 @@ export default function Profile() {
     text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'This text section is still empty.') },
   };
 
-  // ── Render para perfiles Fediverso ──
-  if (isFediverseProfile) {
-    if (fedLoading) {
-      return (
-        <div className={styles.layout}>
-          <main className={styles.main}>
-            <div className={styles.loadingContainer}>
-              <div className={styles.loadingSpinner} />
-            </div>
-          </main>
-        </div>
-      );
-    }
-    if (!fedProfile) {
-      return (
-        <div className={styles.layout}>
-          <main className={styles.main}>
-            <div className={styles.profileCard}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 24 }}>
-                <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)' }}>
-                  <ArrowLeft size={24} />
-                </button>
-                <h2>Perfil no encontrado</h2>
-              </div>
-              <p style={{ padding: '0 24px 40px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                {fedError || 'Este perfil no est\u00e1 disponible en el Fediverso'}
-              </p>
-            </div>
-          </main>
-        </div>
-      );
-    }
-    const acct = fedProfile;
-    return (
-      <div className={styles.layout} style={{ '--pattern-url': 'none' }}>
-        <main className={styles.main}>
-          <section className={styles.profileCard}>
-            <div className={styles.cover}>
-              {acct.header && <img src={acct.header} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-              {!acct.header && <div className={styles.coverGlow} />}
-            </div>
-            <div className={styles.header}>
-              <div className={styles.avatarArea}>
-                <div className={styles.avatarWrapper}>
-                  <div className={styles.avatarFrame}>
-                    <div className={styles.avatar} style={{ backgroundImage: acct.avatar ? `url(${acct.avatar})` : 'none' }} />
-                  </div>
-                </div>
-                <div className={styles.info}>
-                <div className={styles.nameRow}>
-                  <h1 className={styles.name}>{acct.displayName || acct.username || 'Usuario'}</h1>
-                  <a href={acct.url} target="_blank" rel="noopener noreferrer" className={styles.editBtn} title="Abrir en Mastodon">
-                    <ExternalLink size={16} />
-                  </a>
-                </div>
-                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 8px' }}>
-                  @{fedUsername}@{fedInstance}
-                </p>
-                {acct.note && (
-                  <p className={styles.bio}>{acct.note.replace(/<[^>]+>/g, '')}</p>
-                )}
-                <div className={styles.metaLine}>
-                  <div className={styles.statsRow}>
-                    <span><strong>{formatCount(acct.statusesCount || acct.statuses_count)}</strong> Posts</span>
-                    <span><strong>{formatCount(acct.followersCount || acct.followers_count)}</strong> Seguidores</span>
-                    <span><strong>{formatCount(acct.followingCount || acct.following_count)}</strong> Siguiendo</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </div>
-          </section>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 24px 80px' }}>
-            {fedPosts.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: 40 }}>
-                <FileText size={24} opacity={0.3} /><br />
-                No hay publicaciones disponibles de este usuario
-              </p>
-            ) : (
-              fedPosts.map((post, i) => (
-                <FediversePostCard key={post.id || i} post={post} />
-              ))
-            )}
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   const hue = 200;
 
   if (profileLoading) {
@@ -414,6 +314,7 @@ export default function Profile() {
   }
 
   return (
+    <ProfileErrorBoundary>
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <main className={styles.main}>
         <section className={styles.profileCard}>
@@ -610,6 +511,7 @@ export default function Profile() {
         )}
       </AnimatePresence>
     </div>
+    </ProfileErrorBoundary>
   );
 }
 

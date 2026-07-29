@@ -1,285 +1,91 @@
-import { useEffect, useCallback, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
-import FediversePostCard from '../components/FediversePostCard/FediversePostCard';
-import AdSlot, { shouldShowAd } from '../components/AdSlot/AdSlot';
 import useStore from '../store';
 import useFeed from '../hooks/useFeed';
-
 import { FilesIcon } from 'lucide-react';
 import styles from '../styles/pages/Feed.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
-const TYPE_MAP = {
-  image: 'image',
-  video: 'video',
-  text: 'micro-text',
-};
-
-const USER_LANG = (() => {
-  // Idioma real del usuario (navegador)
-  try {
-    return navigator.language?.split('-')[0] || 'es';
-  } catch {
-    return 'es';
-  }
-})();
-
-// ── Fetch federated timeline (80% idioma usuario, 20% otros) ──
-async function fetchFedTimeline(offset = 0) {
-  const token = localStorage.getItem('Shekael_token');
-  const res = await fetch(
-    `${API_URL}/federation/timeline?limit=20&offset=${offset}&lang=${USER_LANG}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.posts || [];
-}
-
 export default function Feed() {
   const { t } = useTranslation();
-  const { posts, feedLoading, feedError, token, activeFilter } = useStore();
+  const { posts, feedLoading, feedError } = useStore();
   const { fetchFeed, loadMore, hasMore, loadingMore } = useFeed();
+  const loaded = useRef(false);
+  const sentinelRef = useRef(null);
 
-  // ── Seen tracking con localStorage (persiste entre recargas) ──
-  const [seenIds, setSeenIds] = useState(function initSeen() {
-    try {
-      var saved = localStorage.getItem('shekael_feed_seen');
-      if (saved) {
-        var parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return new Set(parsed);
-      }
-    } catch (e) { /* ignore */ }
-    return new Set();
-  });
-
-  const markSeen = useCallback((id) => {
-    setSeenIds(prev => {
-      const next = new Set(prev);
-      next.add(String(id));
-      try {
-        const arr = Array.from(next);
-        if (arr.length > 500) arr.splice(0, arr.length - 500);
-        localStorage.setItem('shekael_feed_seen', JSON.stringify(arr));
-      } catch (e) { /* localStorage may be full */ }
-      return new Set(arr);
-    });
-  }, []);
-
-  const isSeen = useCallback((id) => seenIds.has(String(id)), [seenIds]);
-
-  // ── Federated state ──
-  const [fedPosts, setFedPosts] = useState([]);
-  const [fedOffset, setFedOffset] = useState(0);
-  const [fedHasMore, setFedHasMore] = useState(true);
-  const [fedLoading, setFedLoading] = useState(false);
-  const [fedError, setFedError] = useState(null);
-
-  // ── IntersectionObserver para marcar vistos localmente ──
-  const observerRef = useRef(null);
-  const postRefCallback = useCallback((node, postId) => {
-    if (!node) return;
-    if (!observerRef.current) {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const id = entry.target.dataset.postId;
-              if (id) markSeen(id);
-            }
-          });
-        },
-        { threshold: 0.3, rootMargin: '0px 0px -100px 0px' }
-      );
-    }
-    node.dataset.postId = postId;
-    observerRef.current.observe(node);
-  }, [markSeen]);
-
-  // ── Fetch local feed ──
+  // ── Carga inicial ──
   useEffect(() => {
-    if (token) fetchFeed();
-  }, [token, activeFilter]);
+    if (loaded.current) return;
+    loaded.current = true;
+    fetchFeed();
+  }, [fetchFeed]);
 
-  // ── Fetch federated on mount ──
+  // ── Sorted cronológico ──
+  const sortedPosts = useMemo(() => {
+    return [...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [posts]);
+
+  // ── IntersectionObserver — carga más ANTES de llegar al final ──
   useEffect(() => {
-    if (!token) return;
-    setFedLoading(true);
-    setFedError(null);
-    fetchFedTimeline(0)
-      .then(fposts => {
-        setFedPosts(fposts);
-        setFedOffset(20);
-        setFedHasMore(fposts.length >= 20);
-        if (fposts.length === 0) setFedError('No hay contenido del Fediverso disponible ahora');
-      })
-      .catch(() => { setFedError('Error al conectar con el Fediverso'); })
-      .finally(() => setFedLoading(false));
-  }, [token]);
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
 
-  // ── Scroll infinito ──
-  const scrollLockRef = useRef(false);
-  const handleScroll = useCallback(() => {
-    if (scrollLockRef.current) return;
-    scrollLockRef.current = true;
-    requestAnimationFrame(() => {
-      const threshold = 1000;
-      const scrollBottom = window.innerHeight + window.scrollY;
-      const docHeight = document.documentElement.offsetHeight;
-      if (scrollBottom >= docHeight - threshold) {
-        if (hasMore) loadMore();
-        else if (fedHasMore && !fedLoading) {
-          setFedLoading(true);
-          fetchFedTimeline(fedOffset).then(fposts => {
-            if (fposts.length > 0) {
-              setFedPosts(prev => {
-                const existingIds = new Set(prev.map(p => p.id));
-                const newPosts = fposts.filter(p => !existingIds.has(p.id));
-                return [...prev, ...newPosts];
-              });
-              setFedOffset(prev => prev + fposts.length);
-              setFedHasMore(fposts.length >= 20);
-            } else setFedHasMore(false);
-          }).catch(() => {}).finally(() => setFedLoading(false));
+    const obs = new IntersectionObserver(
+      entries => {
+        for (const e of entries) {
+          if (e.isIntersecting && hasMore && !loadingMore) {
+            loadMore();
+          }
         }
-      }
-      scrollLockRef.current = false;
-    });
-  }, [loadMore, hasMore, fedHasMore, fedLoading, fedOffset]);
+      },
+      { rootMargin: '0px 0px 1000px 0px' } // 1000px antes del final, como YouTube
+    );
 
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
-  // ── Filtrar locales según activeFilter + vistos ──
-  const filteredLocal = useMemo(() => {
-    return posts.filter((item) => {
-      if (isSeen(item.id)) return false;
+  // ── Loading ──
+  if (feedLoading && sortedPosts.length === 0) {
+    return (
+      <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
+        <div className={styles.main}>
+          <div className={styles.skeletonList}>
+            {[1, 2, 3].map(i => <div key={i} className={styles.skeleton} />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      if (activeFilter === 'all' || activeFilter === 'supported') return true;
-      if (activeFilter === 'recent') {
-        const yesterday = Date.now() - 86400000;
-        return new Date(item.created_at).getTime() > yesterday;
-      }
-      if (activeFilter === 'following') return item.isFollowing === true;
-      const mapped = TYPE_MAP[activeFilter];
-      return mapped ? item.type === mapped : true;
-    });
-  }, [posts, activeFilter, isSeen]);
-
-  // ── Filtrar federados según activeFilter ──
-  const filteredFed = useMemo(() => {
-    let f = fedPosts;
-
-    if (activeFilter === 'image') f = f.filter(p => p.contentType === 'image');
-    else if (activeFilter === 'video') f = f.filter(p => p.contentType === 'video');
-    else if (activeFilter === 'text') f = f.filter(p => p.contentType === 'text' || !p.contentType);
-
-    // Idioma del usuario primero
-    f = [...f].sort((a, b) => {
-      const aLang = (a.language || '').toLowerCase().split('-')[0];
-      const bLang = (b.language || '').toLowerCase().split('-')[0];
-      const target = USER_LANG.split('-')[0];
-      const aMatch = aLang === target ? 1 : 0;
-      const bMatch = bLang === target ? 1 : 0;
-      if (bMatch !== aMatch) return bMatch - aMatch;
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
-    return f;
-  }, [fedPosts, activeFilter]);
-
-  // ── Merge final según activeFilter ──
-  const mergedFeed = useMemo(() => {
-    if (activeFilter === 'following') {
-      return filteredLocal.map(p => ({ type: 'local', post: p }));
-    }
-
-    if (activeFilter === 'supported') {
-      const scored = [];
-      for (const p of filteredLocal) scored.push({ type: 'local', post: p, score: (p.likes_count||0) + (p.video_view_count||0) });
-      for (const p of filteredFed) scored.push({ type: 'fed', post: p, score: (p.stats?.likes||0) + (p.stats?.shares||0) });
-      scored.sort((a, b) => b.score - a.score);
-      return scored;
-    }
-
-    if (activeFilter === 'recent') {
-      const all = [];
-      for (const p of filteredLocal) all.push({ type: 'local', post: p, date: new Date(p.created_at).getTime() });
-      for (const p of filteredFed) all.push({ type: 'fed', post: p, date: new Date(p.createdAt).getTime() });
-      all.sort((a, b) => b.date - a.date);
-      return all;
-    }
-
-    // 'all', 'image', 'video', 'text' → interleaving con prioridad idioma
-    const localItems = filteredLocal.map(p => ({ type: 'local', post: p }));
-    const fedItems = filteredFed.map(p => ({ type: 'fed', post: p }));
-
-    let fedIdx = 0;
-    const result = [];
-    for (let i = 0; i < localItems.length; i++) {
-      result.push(localItems[i]);
-      if ((i + 1) % 4 === 0 && fedIdx < fedItems.length) result.push(fedItems[fedIdx++]);
-    }
-    while (fedIdx < fedItems.length) result.push(fedItems[fedIdx++]);
-
-    return result;
-  }, [filteredLocal, filteredFed, activeFilter]);
-
-  const showEnd = !hasMore && !fedHasMore && !loadingMore;
+  if (sortedPosts.length === 0) {
+    return (
+      <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
+        <div className={styles.main}>
+          <div className={styles.emptyState}>
+            <FilesIcon size={32} className={styles.emptyIcon} />
+            <p>{t('feed.noPostsYet', 'Aún no hay publicaciones.')}</p>
+            <a href="/create" className={styles.createLink}>+ {t('feed.createPost', 'Crear publicación')}</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <div className={styles.main}>
         {feedError && <div className={styles.errorBanner}>{feedError}</div>}
-        {fedError && mergedFeed.length === 0 && <div className={styles.fedErrorBanner}>{fedError}</div>}
-
-        {mergedFeed.length === 0 && (feedLoading || fedLoading || loadingMore) ? (
-          <div className={styles.loadingList}>
-            {[1, 2, 3].map(i => <div key={i} className={styles.skeleton} />)}
-          </div>
-        ) : mergedFeed.length === 0 ? (
-          <div className={styles.emptyState}>
-            <FilesIcon size={32} className={styles.emptyIcon} />
-            <p>{t('feed.noPostsYet', 'Aún no hay publicaciones.')}</p>
-            <p className={styles.emptyHint}>
-              Prueba el filtro &quot;Todo&quot; o cambia a &quot;Reciente&quot;
-            </p>
-            <a href="/create" className={styles.createLink}>
-              + {t('feed.createPost', 'Crear publicación')}
-            </a>
-          </div>
-        ) : (
-          <div className={styles.postList}>
-            {mergedFeed.map((item, index) => (
-              <div key={item.type === 'local' ? `l-${item.post.id}` : `f-${item.post.id || index}`}>
-                {shouldShowAd(index) && <AdSlot postIndex={index} source="feed" />}
-
-                {item.type === 'local' ? (
-                  <div ref={node => { if (node) postRefCallback(node, item.post.id); }}>
-                    <PostCard post={item.post} />
-                  </div>
-                ) : (
-                  <FediversePostCard post={item.post} />
-                )}
-              </div>
-            ))}
-
-            {(loadingMore || fedLoading) && (
-              <div className={styles.loadingMore}><div className={styles.skeleton} /></div>
-            )}
-
-            {showEnd && !feedLoading && (
-              <div className={styles.endMessage}>
-                <p>{t('feed.endOfFeed', 'Has llegado al final.')}</p>
-              </div>
-            )}
+        {sortedPosts.map(post => (
+          <PostCard key={post.id} post={post} />
+        ))}
+        {loadingMore && (
+          <div className={styles.skeletonList}>
+            {[1, 2].map(i => <div key={i} className={styles.skeleton} />)}
           </div>
         )}
+        <div ref={sentinelRef} style={{ height: 1 }} />
       </div>
     </div>
   );

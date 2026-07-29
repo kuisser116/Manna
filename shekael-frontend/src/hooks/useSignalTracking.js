@@ -4,7 +4,7 @@ import { trackSignal } from '../api/algorithm.api';
 /**
  * Hook para trackear señales de engagement en un post.
  * @param {string} postId - ID del post
- * @param {string} source - 'shekael' o 'fediverso'
+ * @param {string} source - 'shekael'
  * @param {object} options - { trackView, trackDwell, trackCompletion }
  */
 export function useSignalTracking(postId, source = 'shekael', options = {}) {

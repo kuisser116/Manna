@@ -1,56 +1,9 @@
-/* ── Feed — posts sin card contenedora ── */
+/* ── Feed — solo posts locales ── */
 
 .layout {
   position: relative;
   min-height: 100vh;
   width: 100%;
-  overflow: clip;
-}
-
-/* ── Filter Pills ── */
-
-.filterTrack {
-  display: flex;
-  gap: 8px;
-  padding: 0 16px;
-  margin-bottom: 12px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.filterTrack::-webkit-scrollbar {
-  display: none;
-}
-
-.filterChip {
-  flex-shrink: 0;
-  padding: 6px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.filterChip:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.filterChipActive {
-  background: var(--color-primary);
-  color: var(--color-white);
-  border-color: var(--color-primary);
-}
-
-.filterChipActive:hover {
-  color: var(--color-white);
-  opacity: 0.9;
 }
 
 .layout::before {
@@ -69,110 +22,30 @@
   pointer-events: none;
 }
 
-.layout,
-.layout * {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
 .main {
   position: relative;
   z-index: 1;
   max-width: 1000px;
   margin: 0 auto;
-  padding: 16px 0 0;
-}
-
-/* ── Feed Tabs ── */
-
-.feedTabs {
-  display: flex;
-  gap: 0;
-  margin: 0 16px 12px;
-  background: var(--color-surface);
-  border-radius: 10px;
-  padding: 3px;
-  border: 1px solid var(--color-border);
-}
-
-.feedTab {
-  flex: 1;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.feedTabActive {
-  background: var(--color-card);
-  color: var(--color-text);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.feedTab:hover:not(.feedTabActive) {
-  color: var(--color-text);
-}
-
-/* ── Error ── */
-
-.errorBanner {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--color-danger);
-  padding: 0.75rem 1rem;
-  font-size: 0.82rem;
-  margin-bottom: 16px;
-  border-radius: 12px;
-}
-
-.fedErrorBanner {
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  color: var(--color-text-secondary);
-  padding: 0.75rem 1rem;
-  font-size: 0.82rem;
-  margin-bottom: 16px;
-  border-radius: 12px;
-}
-
-/* ── Section Labels ── */
-
-.sectionLabel {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 4px 0;
-  margin-bottom: -10px;
-}
-
-/* ── Post List ── */
-
-.postList {
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 26px;
-  min-height: 100px;
+  overflow-anchor: none;
 }
 
-.postList > * {
-  animation: fadeUp 0.45s ease both;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ── Error Banner ── */
+.errorBanner {
+  background: rgba(255, 68, 68, 0.08);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
 }
 
 /* ── Loading Skeleton ── */
-
-.loadingList,
-.loadingMore {
+.skeletonList {
   display: flex;
   flex-direction: column;
   gap: 26px;
@@ -191,155 +64,30 @@
   50% { opacity: 1; }
 }
 
-/* ── End of feed ── */
-
-.endMessage {
-  text-align: center;
-  padding: 2rem 1rem;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-}
-
 /* ── Empty State ── */
-
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 80px 32px;
-  color: var(--color-text-muted);
+  place-content: center;
+  padding: 48px 24px;
   text-align: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.emptyLogo {
-  height: 64px;
-  margin-bottom: 16px;
-  opacity: 0.4;
+  height: 60vh;
 }
 
 .emptyIcon {
-  color: var(--color-text-muted);
-  margin-bottom: 8px;
-  opacity: 0.5;
-}
-
-.emptyHint {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin: -4px 0 16px;
-}
-
-.emptyState p {
-  font-size: 1rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-  margin: 0;
+  color: var(--color-text-dim);
+  margin-bottom: 16px;
 }
 
 .createLink {
-  color: var(--color-text);
-  font-weight: 600;
-  font-size: 0.75rem;
-  border: 1px solid var(--color-primary);
-  padding: 0.55rem 1.2rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  transition: all 0.25s ease;
-  border-radius: 12px;
-  background: transparent;
+  margin-top: 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 15px;
   text-decoration: none;
-}
-
-.createLink:hover {
-  background: var(--color-primary);
-  color: var(--color-white);
-}
-
-/* ── Responsive ── */
-
-@media (max-width: 960px) {
-  .layout {
-    padding: 0 12px 22px;
-  }
-
-  .layout::before {
-    -webkit-mask-size: 92px 92px;
-    mask-size: 92px 92px;
-  }
-
-  .main {
-    padding: 24px 0 0;
-  }
-
-  .filterTrack {
-    padding: 0 16px;
-    min-height: 44px;
-  }
-
-  .filterChip {
-    font-size: 0.82rem;
-    height: 40px;
-  }
-
-  .errorBanner {
-    margin-bottom: 14px;
-  }
-
-  .postList {
-    gap: 24px;
-  }
-
-  .loadingList {
-    gap: 24px;
-  }
-
-  .emptyState {
-    padding: 60px 20px;
-  }
-}
-
-@media (max-width: 620px) {
-  .main {
-    padding: 22px 0 0;
-  }
-
-  .filterTrack {
-    padding: 0 12px;
-    min-height: 40px;
-  }
-
-  .filterChip {
-    font-size: 0.78rem;
-    height: 36px;
-    padding: 0 12px;
-  }
-
-  .errorBanner {
-    margin-bottom: 12px;
-  }
-
-  .postList {
-    gap: 22px;
-  }
-
-  .loadingList {
-    gap: 22px;
-  }
-
-  .emptyState {
-    padding: 40px 16px;
-  }
-
-  .emptyLogo {
-    height: 48px;
-  }
+  transition: opacity 0.2s;
 }

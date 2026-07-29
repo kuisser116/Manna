@@ -4,10 +4,10 @@ import rateLimit from 'express-rate-limit';
 // Rate Limiters — Shekael API
 // ═══════════════════════════════════════════
 
-// Global: 120 requests por minuto por IP (protección base)
+// Global: 600 requests por minuto por IP (generoso en desarrollo)
 export const apiLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minuto
-    limit: 120,
+    limit: 600,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: {

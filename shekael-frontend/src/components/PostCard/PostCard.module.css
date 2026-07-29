@@ -178,6 +178,7 @@
 
 .postImage {
     width: 100%;
+    aspect-ratio: 16/9;
     border-radius: var(--border-radius-sm);
     object-fit: contain;
     background: var(--color-bg);
