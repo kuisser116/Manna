@@ -575,4 +575,46 @@ router.get('/me/bonus', authMiddleware, async (req, res) => {
     }
 });
 
+// POST /users/backup-key — Obtener clave privada con verificación PIN
+router.post('/backup-key', authMiddleware, async (req, res) => {
+    try {
+        const { pin } = req.body;
+        if (!pin || pin.length < 4) {
+            return res.status(400).json({ message: 'PIN requerido (mínimo 4 dígitos)' });
+        }
+
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('pin_hash, stellar_secret_key_encrypted, stellar_public_key, id')
+            .eq('id', req.user.id)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        if (!user.pin_hash) {
+            return res.status(400).json({ message: 'No tienes PIN configurado. Configúralo primero en Seguridad.' });
+        }
+
+        // Verificar PIN (simple hash comparación — el frontend envía hash SHA-256)
+        const crypto = await import('crypto');
+        const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
+
+        if (user.pin_hash !== pinHash) {
+            return res.status(403).json({ message: 'PIN incorrecto' });
+        }
+
+        // Descifrar la clave secreta
+        const { decryptWithFallback } = await import('../services/crypto.service.js');
+        const secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
+
+        res.json({ secretKey, publicKey: user.stellar_public_key });
+    } catch (err) {
+        console.error('[Backup Key] Error:', err.message);
+        res.status(500).json({ message: 'Error al obtener clave de respaldo' });
+    }
+});
+
 export default router;
