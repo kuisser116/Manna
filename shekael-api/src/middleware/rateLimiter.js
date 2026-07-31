@@ -7,7 +7,7 @@ import rateLimit from 'express-rate-limit';
 // Global: 600 requests por minuto por IP (generoso en desarrollo)
 export const apiLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minuto
-    limit: 600,
+    limit: 120, // Reducido de 600 a 120 para producción
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: {
@@ -57,5 +57,16 @@ export const signupLimiter = rateLimit({
     legacyHeaders: false,
     message: {
         message: 'Has alcanzado el límite de cuentas nuevas desde esta IP.'
+    }
+});
+
+// Ads/Impressions: máx 20 impresiones por minuto por IP (anti-bot farming)
+export const adsLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    limit: 20,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+        message: 'Demasiadas impresiones. Espera un minuto.'
     }
 });

@@ -11,15 +11,14 @@ export async function checkAndFundQuest(userId) {
 }
 
 /**
- * Función de Reparación — Crea/verifica wallet Stellar testnet
- * Si el usuario no tiene wallet, crea una nueva, la fondea con Friendbot
- * y establece la trustline de USDC.
+ * Función de Reparación — Verifica wallet del usuario
+ * Si el usuario no tiene wallet, la repara pero NO usa Friendbot.
+ * En mainnet, la wallet se activa manualmente o via fondeo de la maestra.
  */
 export async function repairWallet(userId) {
     try {
         const supabase = getDB();
 
-        // Verificar si el usuario ya tiene wallet
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('id, stellar_public_key, stellar_secret_key_encrypted')
@@ -28,7 +27,6 @@ export async function repairWallet(userId) {
 
         if (userError) throw userError;
 
-        // Si ya tiene wallet, solo verificar trustline
         if (user.stellar_public_key && user.stellar_secret_key_encrypted) {
             return {
                 success: true,
@@ -38,18 +36,10 @@ export async function repairWallet(userId) {
             };
         }
 
-        // Crear nuevo keypair Stellar
+        // Crear nuevo keypair Stellar (off-chain, no fondeo automático)
         const keypair = createWallet();
         const publicKey = keypair.publicKey();
         const secretKey = keypair.secret();
-
-        // Fondear con Friendbot (testnet)
-        await fundWithFriendbot(publicKey);
-
-        // Crear trustline USDC
-        await ensureTrustline(secretKey);
-
-        // Encriptar y guardar en la base de datos
         const encryptedSecret = encryptAll(userId, secretKey, publicKey);
 
         const { error: updateError } = await supabase
@@ -64,7 +54,7 @@ export async function repairWallet(userId) {
 
         return {
             success: true,
-            message: 'Wallet creada exitosamente',
+            message: 'Wallet registrada (activación manual en mainnet)',
             publicKey: publicKey,
             alreadyExists: false
         };
@@ -72,7 +62,7 @@ export async function repairWallet(userId) {
         console.error('repairWallet error:', err);
         return {
             success: false,
-            message: `Error al crear wallet: ${err.message}`
+            message: `Error al reparar wallet: ${err.message}`
         };
     }
 }

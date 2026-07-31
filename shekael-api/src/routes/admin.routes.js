@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import authMiddleware from '../middleware/authMiddleware.js';
 import adminMiddleware from '../middleware/adminMiddleware.js';
 import getDB from '../database/db.js';
@@ -52,7 +53,14 @@ router.get('/pending-posts', authMiddleware, adminMiddleware, async (req, res) =
 });
 
 // ─── POST /admin/approve-post/:postId — Aprobar un post ───
-router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req, res) => {
+// Rate limit: máximo 50 aprobaciones por minuto (anti-abuso)
+const adminApproveLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 50,
+    message: { message: 'Demasiadas aprobaciones. Reduce la velocidad.' }
+});
+
+router.post('/approve-post/:postId', authMiddleware, adminMiddleware, adminApproveLimiter, async (req, res) => {
     try {
         const { postId } = req.params;
         const adminId = req.user.id;
@@ -268,12 +276,8 @@ async function activateWallet(user) {
         throw new Error(`No se pudo descifrar la clave de ${user.display_name}: ${e.message}`);
     }
 
-    // 2. Intentar fondear con Friendbot (si la cuenta no existe en Stellar)
-    try {
-        await fundWithFriendbot(user.stellar_public_key);
-    } catch (e) {
-        console.warn(`[Admin] Friendbot skip: ${e.message}`);
-    }
+    // 2. Friendbot removido — en testnet se usa para pruebas, en mainnet NO existe
+    // La wallet debe activarse via fondeo de la wallet maestra (XLM real)
 
     // 3. Crear trustline USDC
     const trustlineOk = await ensureTrustline(secretKey);

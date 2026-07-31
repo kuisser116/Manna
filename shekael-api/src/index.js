@@ -25,7 +25,7 @@ import algorithmRoutes from './routes/algorithm.routes.js';
 import venuesRoutes from './routes/venues.routes.js';
 import consentRoutes from './routes/consent.routes.js';
 
-import { apiLimiter, uploadLimiter, chatLimiter } from './middleware/rateLimiter.js';
+import { apiLimiter, uploadLimiter, chatLimiter, adsLimiter } from './middleware/rateLimiter.js';
 import { initSocketIO } from './services/socket.js';
 
 import getDB from './database/db.js';
@@ -85,6 +85,9 @@ app.use(apiLimiter);
 
 // ── Uploads: rate limit más restrictivo ────────────
 app.use('/upload', uploadLimiter);
+
+// ── Ads: rate limit específico para impresiones ─────────
+app.use('/ads', adsLimiter);
 
 // ── Chats: rate limit específico ───────────────────
 // (aplica dentro de chatRoutes)
