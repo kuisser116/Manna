@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Clock, Users, Award, Eye, RefreshCw, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Users, Award, Eye, RefreshCw, Loader2, Heart, MessageSquare, Wallet } from 'lucide-react';
 import useStore from '../../store';
 import styles from './AdminPostApproval.module.css';
 
@@ -214,11 +214,11 @@ export default function AdminPostApproval() {
                                     <div className={styles.activityInfo}>
                                         {isNewWallet && (
                                             <span className={styles.activityBadge}>
-                                                🆕 Wallet nueva — se activará al aprobar
+                                                <Wallet size={12} /> Wallet nueva — se activará al aprobar
                                             </span>
                                         )}
-                                        <span>❤️ {post.like_count || 0} likes</span>
-                                        <span>💬 {post.comment_count || 0} comments</span>
+                                        <span><Heart size={12} /> {post.like_count || 0} likes</span>
+                                        <span><MessageSquare size={12} /> {post.comment_count || 0} comments</span>
                                     </div>
 
                                     <div className={styles.bonusInfo}>

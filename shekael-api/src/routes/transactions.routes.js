@@ -7,6 +7,7 @@ import * as StellarSdk from '@stellar/stellar-sdk';
 import { decryptWithFallback } from '../services/crypto.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { repairWallet } from '../services/quest.service.js';
+import { convertToUSDC } from '../services/price.service.js';
 
 const HORIZON_URL = process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org';
 const NETWORK_PASSPHRASE = StellarSdk.Networks.TESTNET;
@@ -14,6 +15,37 @@ const server = new StellarSdk.Horizon.Server(HORIZON_URL);
 
 
 const router = Router({ strict: false });
+
+// GET /wallet/balance — Obtener saldo de la wallet del usuario
+router.get('/balance', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('stellar_public_key, wallet_activated')
+            .eq('id', req.user.id)
+            .single();
+
+        if (!user || error) return res.status(404).json({ message: 'Usuario no encontrado' });
+        if (!user.stellar_public_key) return res.status(400).json({ message: 'Wallet no configurada' });
+
+        const balanceData = await getBalance(user.stellar_public_key);
+        res.json({
+            balance: balanceData.balance,
+            usdc: balanceData.usdc,
+            xlm: balanceData.xlm,
+            mxnBalance: balanceData.mxnBalance,
+            currency: balanceData.currency,
+            usdcActive: balanceData.usdcActive,
+            notFunded: balanceData.notFunded,
+            publicKey: user.stellar_public_key,
+            walletActivated: user.wallet_activated,
+        });
+    } catch (err) {
+        console.error('[Wallet/Balance] Error:', err.message);
+        res.status(500).json({ message: 'Error al obtener saldo', error: err.message });
+    }
+});
 
 // POST /transactions/support — Micropago: usuario apoya a creador
 router.post('/support', authMiddleware, async (req, res) => {
@@ -35,6 +67,10 @@ router.post('/support', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'No puedes apoyarte a ti mismo' });
         }
 
+        // Convertir monto de MXN a USDC (el frontend envía en pesos)
+        const amountInUSDC = await convertToUSDC(amount);
+        console.log(`[Support] ${amount} MXN ≈ ${amountInUSDC} USDC`);
+
         // Descifrar clave custodial
         if (!sender.stellar_secret_key_encrypted || sender.stellar_secret_key_encrypted === 'enc-placeholder') {
             return res.status(400).json({ message: 'Tu billetera Stellar no está activa. Completa las misiones en la app para activarla.' });
@@ -51,29 +87,28 @@ router.post('/support', authMiddleware, async (req, res) => {
             });
         }
 
-        // Enviar pago en Stellar Testnet
+        // Enviar pago en Stellar Testnet (montos en USDC)
         let txHash;
         try {
             txHash = await sendPayment({
                 fromSecretKey: secretKey,
                 toPublicKey: to,
-                amount,
+                amount: String(amountInUSDC),
                 assetCode: 'USDC',
                 memo: 'Shekael Support',
             });
         } catch (err) {
             if (err.code === 'WALLET_NOT_ACTIVE') {
                 // AUTO-REPAIR: Intentar arreglar la wallet del destinatario en background
-                // Buscamos si el 'to' (Public Key) es de un usuario nuestro
                 const { data: destUser } = await supabase.from('users').select('id, email').eq('stellar_public_key', to).single();
                 if (destUser) {
                     void(`[AutoRepair] Intentando activar wallet de destino: ${destUser.email}`);
                     repairWallet(destUser.id).catch(e => console.error(`[AutoRepair] Falló para ${destUser.email}:`, e.message));
                 }
 
-                return res.status(400).json({ 
-                    code: 'WALLET_NOT_ACTIVE', 
-                    message: 'El destinatario aún no tiene su billetera activa en Stellar. Shekael está intentando activarla automáticamente, intenta de nuevo en un momento.' 
+                return res.status(400).json({
+                    code: 'WALLET_NOT_ACTIVE',
+                    message: 'El destinatario aún no tiene su billetera activa en Stellar. Shekael está intentando activarla automáticamente, intenta de nuevo en un momento.'
                 });
             }
             console.error('Stellar tx failed:', err);
@@ -87,138 +122,109 @@ router.post('/support', authMiddleware, async (req, res) => {
             .insert({
                 id: txId,
                 stellar_hash: txHash,
-                from_user: sender.id, // Referencia al ID local
-                to_user: to,          // Public Key
-                amount: parseFloat(amount),
+                from_user: sender.id,
+                to_user: to,
+                amount: parseFloat(amountInUSDC),
                 type: 'support'
             });
 
         if (txError) console.error('Error inserting transaction:', txError);
 
         // Registrar aporte al Fondo Regional (10%)
-        // Aunque el pago on-chain sea directo, el sistema registra el "tax" para el Fondo Regional
         await supabase.from('transactions').insert({
             id: uuidv4(),
             stellar_hash: txHash + '-tax',
             from_user: sender.id,
             to_user: 'regional-fund',
-            amount: parseFloat(amount) * 0.10,
+            amount: parseFloat(amountInUSDC) * 0.10,
             type: 'regional_fund_deposit'
         });
 
         // Incrementar apoyos del post
         if (postId) {
-            await supabase.rpc('increment_supports', { post_uuid: postId });
+            const { data: currentPost } = await supabase
+                .from('posts')
+                .select('supports_count')
+                .eq('id', postId)
+                .single();
+            await supabase
+                .from('posts')
+                .update({ supports_count: (currentPost?.supports_count || 0) + 1 })
+                .eq('id', postId);
 
-            // Notificación (Support)
+            // Notificación
             const authorId = await getPostAuthorId(postId);
             if (authorId) {
                 await createNotification({ userId: authorId, actorId: req.user.id, type: 'support', postId });
             }
         }
 
-        // Obtener nuevo saldo completo
+        // Obtener nuevo saldo
         const balanceData = await getBalance(sender.stellar_public_key);
 
-        res.json({ hash: txHash, newBalance: balanceData.balance, ...balanceData, amount });
+        res.json({ hash: txHash, newBalance: balanceData.balance, ...balanceData, amount, amountMXN: parseFloat(amount) });
     } catch (err) {
         console.error('Support error:', err.message || err);
         res.status(500).json({ message: err.message || 'Error al procesar el apoyo (USDC)' });
     }
 });
 
-// GET /wallet/balance — Saldo real desde Horizon
-router.get('/balance', authMiddleware, async (req, res) => {
+// POST /transactions/withdraw — Retiro de USDC hacia cualquier cuenta Stellar
+router.post('/withdraw', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('stellar_public_key')
-            .eq('id', req.user.id)
-            .single();
-
-        if (!user || error) return res.status(404).json({ message: 'Usuario no encontrado' });
-
-        const balanceData = await getBalance(user.stellar_public_key);
-        res.json(balanceData);
-    } catch (err) {
-        console.error('Balance error:', err);
-        res.status(500).json({ message: 'Error al consultar saldo' });
-    }
-});
-
-/**
- * GET /wallet/deposit-info — Direccion Stellar para depositar
- */
-router.get('/deposit-info', authMiddleware, async (req, res) => {
-    try {
-        const supabase = getDB();
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('stellar_public_key')
-            .eq('id', req.user.id)
-            .single();
-
-        if (!user || error) return res.status(404).json({ message: 'Usuario no encontrado' });
-        if (!user.stellar_public_key) return res.status(400).json({ message: 'El usuario no tiene wallet Stellar' });
-
-        res.json({
-            address: user.stellar_public_key,
-            network: process.env.STELLAR_NETWORK || 'TESTNET',
-            memoRequired: false
-        });
-    } catch (err) {
-        console.error('Deposit info error:', err);
-        res.status(500).json({ message: 'Error al obtener información de depósito' });
-    }
-});
-
-/**
- * POST /wallet/withdraw-exchange — Enviar XLM a un exchange (Bitso, Binance, etc.)
- */
-router.post('/withdraw-exchange', authMiddleware, async (req, res) => {
-    try {
-        const supabase = getDB();
         const { to, amount } = req.body;
-
         if (!to || !amount || amount <= 0) {
-            return res.status(400).json({ message: 'Direccion destino y monto requeridos' });
+            return res.status(400).json({ message: 'Destinatario requerido y monto debe ser > 0' });
         }
 
+        const supabase = getDB();
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, stellar_public_key, stellar_secret_key_encrypted')
+            .select('*')
             .eq('id', req.user.id)
             .single();
 
         if (!user || error) return res.status(404).json({ message: 'Usuario no encontrado' });
-        if (!user.stellar_secret_key_encrypted) {
-            return res.status(400).json({ message: 'Wallet no configurada' });
+
+        if (user.stellar_secret_key_encrypted === 'enc-placeholder') {
+            return res.status(400).json({ message: 'Tu billetera Stellar no está activa. Completa las misiones en la app para activarla.' });
         }
 
-        // Descifrar secret key
-        const secretKey = decrypt(user.stellar_secret_key_encrypted);
-        if (!secretKey || secretKey === 'enc-placeholder') {
-            return res.status(400).json({ message: 'Wallet no disponible para retiros' });
+        let secretKey;
+        try {
+            secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
+        } catch (decryptErr) {
+            console.error('Todos los niveles de decrypt fallaron para', user.id, ':', decryptErr.message);
+            return res.status(500).json({
+                message: 'No se puede acceder a tu billetera. Contacta a soporte.',
+                code: 'DECRYPT_FAILED'
+            });
         }
 
-        // Enviar XLM directamente (los exchanges solo aceptan XLM, no tokens personalizados)
-        const { sendPayment } = await import('../services/stellar.service.js');
-        const hash = await sendPayment({
+        const txHash = await sendPayment({
             fromSecretKey: secretKey,
             toPublicKey: to,
             amount: String(parseFloat(amount)),
-            assetCode: 'USDC', // Por ahora usamos USDC si tienen, sino XLM
-            memo: 'Shekael withdraw',
+            assetCode: 'USDC',
+            memo: 'Shekael Withdraw',
         });
 
-        res.json({ hash, message: 'Transferencia enviada correctamente' });
+        const txId = uuidv4();
+        await supabase.from('transactions').insert({
+            id: txId,
+            stellar_hash: txHash,
+            from_user: user.id,
+            to_user: to,
+            amount: parseFloat(amount),
+            type: 'withdraw'
+        });
+
+        const balanceData = await getBalance(user.stellar_public_key);
+        res.json({ hash: txHash, newBalance: balanceData.balance, ...balanceData });
     } catch (err) {
-        console.error('Withdraw exchange error:', err);
-        if (err.code === 'WALLET_NOT_ACTIVE') {
-            return res.status(400).json({ message: 'El exchange destino no acepta este activo. Asegurate de usar una direccion que acepte USDC o XLM.' });
-        }
+        console.error('Withdraw error:', err);
         res.status(500).json({ message: err.message || 'Error al procesar el retiro' });
     }
 });
+
 export default router;

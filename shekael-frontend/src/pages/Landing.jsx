@@ -514,17 +514,23 @@ function LandingInner() {
               </div>
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span className={styles.featLabel}>Chat</span>
+                <span className={styles.featLabel}>Chat cifrado</span>
               </div>
-
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 <span className={styles.featLabel}>Fotos</span>
               </div>
-
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                 <span className={styles.featLabel}>Comunidad</span>
+              </div>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16.5 5.5 20l2-7L2 9h7z"/></svg>
+                <span className={styles.featLabel}>Apoyos USDC</span>
+              </div>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                <span className={styles.featLabel}>Wallet USDC</span>
               </div>
             </div>
           </div>
@@ -553,7 +559,7 @@ function LandingInner() {
             </div>
             <div className={styles.econStep}>
               <span className={styles.econNum}>02</span>
-              <span className={styles.econLabel}>Apoyas creadores</span>
+              <span className={styles.econLabel}>Ganas MXNe en anuncios</span>
             </div>
             <div className={styles.econArrow}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -562,7 +568,25 @@ function LandingInner() {
             </div>
             <div className={styles.econStep}>
               <span className={styles.econNum}>03</span>
+              <span className={styles.econLabel}>Apoyas creadores</span>
+            </div>
+            <div className={styles.econArrow}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M13 5l7 7-7 7"/>
+              </svg>
+            </div>
+            <div className={styles.econStep}>
+              <span className={styles.econNum}>04</span>
               <span className={styles.econLabel}>Pagas con QR</span>
+            </div>
+            <div className={styles.econArrow}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M13 5l7 7-7 7"/>
+              </svg>
+            </div>
+            <div className={styles.econStep}>
+              <span className={styles.econNum}>05</span>
+              <span className={styles.econLabel}>\$20 MXN de bono al registrarte</span>
             </div>
           </div>
         </div>

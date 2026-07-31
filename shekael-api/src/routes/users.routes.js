@@ -542,4 +542,37 @@ router.post('/location', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /users/me/bonus — Estado actual del bono promocional
+router.get('/me/bonus', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('bonus_total_mxn, bonus_released_mxn, wallet_activated, bonus_expired, tutorial_completed')
+            .eq('id', req.user.id)
+            .single();
+        
+        if (error) throw error;
+        
+        // Verificar expiración
+        let expired = user.bonus_expired;
+        if (user.bonus_expires_at && new Date() > new Date(user.bonus_expires_at)) {
+            expired = true;
+            await supabase.from('users').update({ bonus_expired: true }).eq('id', req.user.id);
+        }
+        
+        res.json({
+            total_mxn: user.bonus_total_mxn || 0,
+            released_mxn: user.bonus_released_mxn || 0,
+            locked_mxn: (user.bonus_total_mxn || 0) - (user.bonus_released_mxn || 0),
+            wallet_activated: !!user.wallet_activated,
+            expired,
+            tutorial_completed: !!user.tutorial_completed,
+        });
+    } catch (err) {
+        console.error('Bonus status error:', err);
+        res.status(500).json({ message: 'Error al obtener estado del bono' });
+    }
+});
+
 export default router;

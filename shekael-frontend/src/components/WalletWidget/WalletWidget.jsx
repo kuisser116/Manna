@@ -20,7 +20,7 @@ try {
 }
 
 export function WalletWidget({ variant = 'default' }) {
-    const { balance, currency, user, balanceLoading, walletNotFunded } = useStore();
+    const { balance, currency, user, token, balanceLoading, walletNotFunded } = useStore();
     const { fetchBalance } = useWallet();
     const { earnings: adEarnings, stats: adStats, pool, loading: adLoading, claimMonthly, canClaimMonthly, perViewRate, poolSettled, monthlyImpressions } = useAdEarnings();
     const [isExpanded, setIsExpanded] = useState(false);
@@ -28,11 +28,39 @@ export function WalletWidget({ variant = 'default' }) {
     const [isDepositOpen, setIsDepositOpen] = useState(false);
     const [shouldRender, setShouldRender] = useState(false);
     const [mxnRate, setMxnRate] = useState(18.50);
+    const [bonusData, setBonusData] = useState(null);
+    const [bonusLoading, setBonusLoading] = useState(false);
+
+    const API_URL = import.meta.env.VITE_API_URL || location.origin;
 
     // Obtener tipo de cambio USD/MXN
     useEffect(() => {
         getMxnRate().then(setMxnRate).catch(() => {});
     }, []);
+
+    // Fetch bonus status (fresco del API cada vez que se abre la wallet)
+    const fetchBonus = useCallback(async () => {
+        if (!token) return;
+        setBonusLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/users/me/bonus`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setBonusData(data);
+            }
+        } catch (err) {
+            console.error('Bonus fetch error:', err);
+        } finally {
+            setBonusLoading(false);
+        }
+    }, [token, API_URL]);
+
+    // Fetch bonus cuando se abre la wallet
+    useEffect(() => {
+        if (isExpanded) fetchBonus();
+    }, [isExpanded, fetchBonus]);
 
     const panelRef = useRef(null);
     const contentRef = useRef(null);
@@ -256,30 +284,34 @@ export function WalletWidget({ variant = 'default' }) {
                 </div>
             )}
 
-            {/* Bonus promocional */}
-            {user?.bonus_total_mxn > 0 && user?.tutorial_completed && (
+            {/* Bonus promocional — datos frescos del API */}
+            {bonusLoading ? (
+                <div className={styles.bonusSection}>
+                    <div className={styles.skeleton} style={{ height: 40 }} />
+                </div>
+            ) : bonusData && bonusData.total_mxn > 0 && bonusData.tutorial_completed && (
                 <div className={styles.bonusSection}>
                     <div className={styles.bonusHeader}>
                         <span className={styles.bonusLabel}>Ganado del bono</span>
+                        <button className={styles.refreshBtn} onClick={fetchBonus} title="Actualizar" style={{ marginLeft: 'auto' }}>
+                            <RefreshCw size={12} className={bonusLoading ? styles.spin : ''} />
+                        </button>
+                    </div>
+                    <div className={styles.bonusHeader}>
                         <span className={styles.bonusAmount}>
-                            ${parseFloat(user.bonus_released_mxn || 0).toFixed(2)} MXN
-                            <span className={styles.bonusTotal}> / ${user.bonus_total_mxn} MXN</span>
+                            ${parseFloat(bonusData.released_mxn || 0).toFixed(2)} MXN
+                            <span className={styles.bonusTotal}> / ${bonusData.total_mxn} MXN</span>
                         </span>
                     </div>
                     <div className={styles.bonusBar}>
                         <div
                             className={styles.bonusBarFill}
                             style={{
-                                width: `${Math.min(100, ((user.bonus_released_mxn || 0) / user.bonus_total_mxn) * 100)}%`
+                                width: `${Math.min(100, ((bonusData.released_mxn || 0) / bonusData.total_mxn) * 100)}%`
                             }}
                         />
                     </div>
-                    {user.bonus_expires_at && !user.bonus_expired && (
-                        <span className={styles.bonusExpiry}>
-                            Expira {(new Date(user.bonus_expires_at)).toLocaleDateString()}
-                        </span>
-                    )}
-                    {user.bonus_expired && (
+                    {bonusData.expired && (
                         <span className={styles.bonusExpired}>
                             Bono expirado
                         </span>

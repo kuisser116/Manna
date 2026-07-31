@@ -40,7 +40,7 @@ import useSessionLock from './hooks/useSessionLock';
 
 
 function ProtectedRoute({ children, authLoading }) {
-  const { token, user, setVideoMode } = useStore();
+  const { token, user, latestTermsVersion } = useStore();
   const location = useLocation();
   if (authLoading) {
     return (
@@ -56,6 +56,10 @@ function ProtectedRoute({ children, authLoading }) {
   // Auto-redirect al tutorial si no lo ha visto (excepto si ya estamos en /onboarding)
   if (user && user.tutorial_completed === false && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
+  }
+  // Forzar aceptación de términos si la versión del usuario no coincide con la última
+  if (user && latestTermsVersion && user.terms_version !== latestTermsVersion && location.pathname !== '/terminos') {
+    return <Navigate to="/terminos" replace />;
   }
   return children;
 }

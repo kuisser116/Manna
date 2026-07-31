@@ -20,24 +20,36 @@ const useStore = create((set, get) => ({
     const token = localStorage.getItem('Shekael_token');
     if (!token) return;
     set({ token });
-    // Restaurar objeto user desde backend (con stellarPublicKey completo)
+    // Restaurar objeto user desde backend + obtener Ãºltima versiÃ³n de tÃ©rminos
     try {
-      const res = await fetch(`${(import.meta.env.VITE_API_URL || location.origin)}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const apiUrl = import.meta.env.VITE_API_URL || location.origin;
+      const [userRes, termsRes] = await Promise.all([
+        fetch(`${apiUrl}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${apiUrl}/auth/terms/current`)
+      ]);
+      if (userRes.ok) {
+        const data = await userRes.json();
         set({ user: data.user });
       } else {
         // Token invÃ¡lido o expirado â€” limpiar sesiÃ³n
         localStorage.removeItem('Shekael_token');
         set({ token: null, user: null });
       }
+      if (termsRes.ok) {
+        const termsData = await termsRes.json();
+        set({ latestTermsVersion: termsData.version });
+      }
     } catch {
       // API no disponible â€” mantener token, user queda null
       console.warn('No se pudo restaurar sesiÃ³n desde /auth/me');
     }
   },
+
+  // Latest terms version from backend (for forced re-accept)
+  latestTermsVersion: null,
+  setLatestTermsVersion: (version) => set({ latestTermsVersion: version }),
 
   // acceptTerms — con version tracking
   acceptTerms: async (version = 'v1.0') => {

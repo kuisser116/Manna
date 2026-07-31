@@ -267,7 +267,8 @@ router.post('/create', authMiddleware, async (req, res) => {
                 author_id: req.user.id,
                 type,
                 content: finalContent,
-                trust_deposit_locked: true
+                trust_deposit_locked: true,
+                approval_status: 'pending'
             })
             .select(`
                 *,

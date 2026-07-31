@@ -16,7 +16,7 @@ router.get('/pending-posts', authMiddleware, adminMiddleware, async (req, res) =
         const { data: posts, error } = await supabase
             .from('posts')
             .select(`
-                id, content, type, created_at, image_url, video_url,
+                id, content, type, created_at,
                 author:users!posts_author_id_fkey (
                     id, display_name, avatar_url, email,
                     stellar_public_key, wallet_activated,
@@ -84,12 +84,7 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             return res.status(404).json({ message: 'Autor no encontrado' });
         }
 
-        // 2. Verificar que completó el tutorial
-        if (!author.tutorial_completed) {
-            return res.status(400).json({ message: 'El usuario debe completar el tutorial primero.' });
-        }
-
-        // 3. Verificar si el bonus ya expiró
+        // 2. (Opcional) Verificar si el bonus ya expiró
         if (author.bonus_expired) {
             return res.status(400).json({ message: 'El periodo de bonus de 70 días ha expirado para este usuario.' });
         }
@@ -99,7 +94,7 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             return res.status(400).json({ message: 'El periodo de bonus de 70 días ha expirado. Los fondos no reclamados regresan a tesorería.' });
         }
 
-        // 4. Verificar límite de 1 post aprobado por día por usuario
+        // 3. Verificar límite de 1 post aprobado por día por usuario
         if (author.last_post_approved_at) {
             const lastApproved = new Date(author.last_post_approved_at);
             const today = new Date();
@@ -110,13 +105,13 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             }
         }
 
-        // 5. Verificar si alcanzó el tope de $50
+        // 4. Verificar si alcanzó el tope de $20
         const currentReleased = parseFloat(author.bonus_released_mxn || 0);
-        if (currentReleased >= 50) {
-            return res.status(400).json({ message: 'Este usuario ya alcanzó el tope de $50 MXN del bono promocional.' });
+        if (currentReleased >= 20) {
+            return res.status(400).json({ message: 'Este usuario ya alcanzó el tope de $20 MXN del bono promocional.' });
         }
 
-        // 6. Activar wallet si no está activa
+        // 5. Activar wallet si no está activa
         if (!author.wallet_activated) {
             console.log(`[Admin] Activando wallet de ${author.display_name}...`);
             await activateWallet(author);
@@ -126,11 +121,11 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
                 .eq('id', author.id);
         }
 
-        // 7. Calcular cuánto liberar ($1 MXN ≈ 0.057 USDC)
+        // 6. Calcular cuánto liberar ($1 MXN ≈ 0.058 USDC)
         const releaseAmountUSDC = await convertToUSDC(1);
         console.log(`[Admin] Liberando ${releaseAmountUSDC} USDC (equivalente a $1 MXN)`);
 
-        // 4. Enviar USDC desde la cuenta maestra
+        // Enviar USDC desde la cuenta maestra (se descuenta $1 real por aprobación)
         const masterSecret = process.env.MANNA_DEV_WALLET_SECRET;
         if (!masterSecret) {
             return res.status(500).json({ message: 'Wallet maestra no configurada' });
@@ -143,7 +138,7 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             memo: `Shekael:bonus-post-${postId.slice(0, 8)}`
         });
 
-        // 8. Actualizar bonus del usuario
+        // 7. Actualizar bonus del usuario (contador $1/$20)
         const newReleased = (parseFloat(author.bonus_released_mxn || 0) + 1).toFixed(2);
         const updateData = {
             bonus_released_mxn: newReleased,
@@ -161,7 +156,7 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             .update(updateData)
             .eq('id', author.id);
 
-        // 6. Marcar post como aprobado
+        // 8. Marcar post como aprobado
         await supabase
             .from('posts')
             .update({
@@ -178,7 +173,7 @@ router.post('/approve-post/:postId', authMiddleware, adminMiddleware, async (req
             message: `Post aprobado. $1 MXN liberado a ${author.display_name}.`,
             txHash,
             bonus_released_mxn: newReleased,
-            bonus_total_mxn: author.bonus_total_mxn || 50,
+            bonus_total_mxn: author.bonus_total_mxn || 20,
             bonus_expires_at: updateData.bonus_expires_at || author.bonus_expires_at
         });
 
