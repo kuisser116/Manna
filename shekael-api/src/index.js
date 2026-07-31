@@ -24,6 +24,7 @@ import adsRoutes from './routes/ads.routes.js';
 import algorithmRoutes from './routes/algorithm.routes.js';
 import venuesRoutes from './routes/venues.routes.js';
 import consentRoutes from './routes/consent.routes.js';
+import federationRoutes from './routes/federation.routes.js';
 
 import { apiLimiter, uploadLimiter, chatLimiter, adsLimiter } from './middleware/rateLimiter.js';
 import { initSocketIO } from './services/socket.js';
@@ -114,6 +115,7 @@ app.use('/ads', adsRoutes);
 app.use('/algorithm', algorithmRoutes);
 app.use('/venues', venuesRoutes);
 app.use('/consent', consentRoutes);
+app.use('/federation', federationRoutes);
 
 // ── Tipo de cambio USD/MXN para el frontend ──
 import { getMxnRate } from './services/price.service.js';
