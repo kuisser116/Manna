@@ -127,12 +127,15 @@ export default function LockScreen({ onUnlock }) {
 
     setProcessing(true);
     try {
-      // 1. Verificar PIN contra server
-      const res = await apiVerifyPin(pinHash);
-      const encryptedPrivateKey = res.data?.encryptedPrivateKey;
-      const stellarSecretKeyEncrypted = res.data?.stellarSecretKeyEncrypted;
+      // Llamar al endpoint del backend que descifra todo con Stellar key
+      const { unlockChat } = await import('../../api/chat.api.js');
+      const res = await unlockChat(pinHash);
 
-      if (!encryptedPrivateKey) {
+      if (!res.success) {
+        throw new Error(res.message || 'PIN incorrecto');
+      }
+
+      if (res.needsSetup) {
         // No hay chat keypair → setup nuevo
         setPin('');
         setConfirmPin('');
@@ -141,17 +144,9 @@ export default function LockScreen({ onUnlock }) {
         return;
       }
 
-      // 2. Usar stellarSecretKey (inmutable) para descifrar chat keypair
-      // El backend ya descifró stellarSecretKey con userId y lo envía
-      // Ahora lo usamos para descifrar la chat keypair
-      const stellarSecretKey = res.data?.stellarSecretKey; // Backend lo envía si lo tenemos
-      if (stellarSecretKey) {
-        await crypto.unlockWithStellarKey(encryptedPrivateKey, stellarSecretKey);
-      } else {
-        // Fallback: migración desde cifrado con PIN viejo
-        // Esto fallará intencionalmente si no se ha migrado
-        await crypto.unlockWithStellarKey(encryptedPrivateKey, enteredPin);
-      }
+      // Guardar keypair en RAM
+      const { setKeyPair } = await import('../../crypto/keyStore');
+      setKeyPair({ privateKey: res.privateKey, publicKey: res.publicKey });
 
       setPin('');
       onUnlock();
@@ -164,7 +159,7 @@ export default function LockScreen({ onUnlock }) {
     }
   };
 
-  /** SETUP: Crear PIN → generar keypair → cifrar con Stellar key (inmutable) → subir */
+  /** SETUP: Crear PIN → generar keypair → subir al backend (él cifra con Stellar key) */
   const handleSetup = async (confirmedPin) => {
     if (pin !== confirmedPin) {
       setError('Los PIN no coinciden');
@@ -178,15 +173,25 @@ export default function LockScreen({ onUnlock }) {
 
     setProcessing(true);
     try {
-      // Obtener stellarSecretKey del backend (ya descifrado con userId)
-      // Necesitamos descifrar stellarSecretKeyEncrypted con userId en el frontend
-      // Para eso necesitamos la función decrypt del crypto.service
-      const user = useStore.getState().user;
-      const { decryptForUser } = await import('../../services/crypto.service.js');
-      const stellarSecretKey = decryptForUser(user.id, user.stellar_secret_key_encrypted);
-      
-      // Generar keypair, cifrar con Stellar key (inmutable), subir
-      await crypto.generateAndSetupWithStellarKey(stellarSecretKey, pinHash);
+      // Generar keypair localmente (sin cifrar)
+      const sodium = await crypto.ready;
+      const { default: sodiumLib } = await import('libsodium-wrappers');
+      await sodiumLib.ready;
+      const kp = sodiumLib.crypto_box_keypair();
+      const publicKey = sodiumLib.to_base64(kp.publicKey);
+      const privateKey = sodiumLib.to_base64(kp.privateKey);
+
+      // Subir al backend — él cifra privateKey con Stellar key y guarda
+      const { setupChat } = await import('../../api/chat.api.js');
+      const res = await setupChat(pinHash, publicKey, privateKey);
+
+      if (!res.success) {
+        throw new Error(res.message || 'Error al guardar llaves');
+      }
+
+      // Guardar en RAM
+      const { setKeyPair } = await import('../../crypto/keyStore');
+      setKeyPair({ privateKey, publicKey });
 
       setPin('');
       setConfirmPin('');

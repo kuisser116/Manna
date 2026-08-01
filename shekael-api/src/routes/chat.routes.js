@@ -6,14 +6,14 @@ import { decryptForUser, deriveChatKey, encryptWithChatKey, decryptWithChatKey }
 const router = Router({ strict: false });
 
 /**
- * POST /chat/unlock — Descifrar chat keypair usando stellarSecretKey (inmutable)
+ * POST /chat/unlock — Descifrar chat keypair usando Stellar key (inmutable)
  * 
  * Flujo:
  * 1. Verificar PIN
- * 2. Descifrar stellarSecretKey con userId
- * 3. Descifrar encrypted_private_key con stellarSecretKey
- * 4. Si estaba cifrado con PIN viejo, migrar a cifrado con stellarSecretKey
- * 5. Devolver privateKey al frontend para guardar en RAM
+ * 2. Descifrar stellarSecretKey con userId (backwards compatible)
+ * 3. Derivar chatKey desde stellarSecretKey (determinístico)
+ * 4. Descifrar encrypted_private_key con chatKey
+ * 5. Devolver privateKey al frontend (solo RAM, nunca en disco)
  */
 router.post('/unlock', authMiddleware, async (req, res) => {
     try {
@@ -51,23 +51,20 @@ router.post('/unlock', authMiddleware, async (req, res) => {
             return res.json({
                 success: true,
                 needsSetup: true,
-                stellarSecretKey, // El frontend la necesita para generar nuevo keypair
                 message: 'Configura tus llaves de chat'
             });
         }
 
-        // Intentar descifrar encrypted_private_key con stellarSecretKey (nuevo método)
-        let privateKey;
-        let migrated = false;
+        // Derivar chatKey desde stellarSecretKey (determinístico, inmutable)
+        const chatKey = deriveChatKey(stellarSecretKey);
 
+        // Descifrar encrypted_private_key con chatKey
+        let privateKey;
         try {
-            const key = deriveChatKey(stellarSecretKey);
-            privateKey = decryptWithChatKey(user.encrypted_private_key, key);
-        } catch (stellarErr) {
-            // Fallback: intentar con PIN viejo (migración)
-            // Esto solo funciona si el frontend envía el PIN, no solo el hash
-            // Como no tenemos el PIN, la migración automática no es posible aquí
-            console.warn('[Chat Unlock] No se pudo descifrar con stellarSecretKey:', stellarErr.message);
+            privateKey = decryptWithChatKey(user.encrypted_private_key, chatKey);
+        } catch (err) {
+            console.warn('[Chat Unlock] Error descifrando con chatKey:', err.message);
+            // Fallback: puede ser formato viejo (cifrado con PIN). No hay fallback automático.
             return res.status(500).json({ 
                 message: 'Error migrando llaves de chat. Contacta soporte.',
                 needsMigration: true
@@ -78,7 +75,6 @@ router.post('/unlock', authMiddleware, async (req, res) => {
             success: true,
             privateKey,
             publicKey: user.stellar_public_key,
-            migrated
         });
     } catch (err) {
         console.error('[Chat Unlock] Error:', err.message);
@@ -87,13 +83,16 @@ router.post('/unlock', authMiddleware, async (req, res) => {
 });
 
 /**
- * POST /chat/setup — Guardar chat keypair cifrado con stellarSecretKey
+ * POST /chat/setup — Guardar chat keypair cifrado con Stellar key (inmutable)
+ * 
+ * El frontend genera un nuevo keypair y envía la privateKey en texto plano
+ * (sobre HTTPS). El backend la cifra con la Stellar key y la guarda.
  */
 router.post('/setup', authMiddleware, async (req, res) => {
     try {
-        const { publicKey, encryptedPrivateKey, pinHash } = req.body;
-        if (!publicKey || !encryptedPrivateKey || !pinHash) {
-            return res.status(400).json({ message: 'publicKey, encryptedPrivateKey y pinHash requeridos' });
+        const { publicKey, privateKey, pinHash } = req.body;
+        if (!publicKey || !privateKey || !pinHash) {
+            return res.status(400).json({ message: 'publicKey, privateKey y pinHash requeridos' });
         }
 
         const supabase = getDB();
@@ -101,7 +100,7 @@ router.post('/setup', authMiddleware, async (req, res) => {
         // Verificar PIN
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('pin_hash')
+            .select('id, pin_hash, stellar_secret_key_encrypted')
             .eq('id', req.user.id)
             .maybeSingle();
 
@@ -110,12 +109,24 @@ router.post('/setup', authMiddleware, async (req, res) => {
             return res.status(401).json({ message: 'PIN incorrecto' });
         }
 
-        // Guardar
+        // Descifrar stellarSecretKey con userId
+        let stellarSecretKey;
+        try {
+            stellarSecretKey = decryptForUser(user.id, user.stellar_secret_key_encrypted);
+        } catch (err) {
+            console.error('[Chat Setup] Error descifrando stellarSecretKey:', err.message);
+            return res.status(500).json({ message: 'Error al acceder a las claves de chat' });
+        }
+
+        // Derivar chatKey y cifrar privateKey
+        const chatKey = deriveChatKey(stellarSecretKey);
+        const encryptedPrivateKey = encryptWithChatKey(privateKey, chatKey);
+
+        // Guardar en DB
         const { error } = await supabase
             .from('users')
             .update({
                 encrypted_private_key: encryptedPrivateKey,
-                public_key: publicKey // para compatibilidad
             })
             .eq('id', req.user.id);
 
