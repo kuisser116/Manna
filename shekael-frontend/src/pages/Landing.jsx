@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MorphSVGPlugin } from 'gsap/MorphSVGPlugin.js';
@@ -701,6 +701,12 @@ function LandingInner() {
         <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Politica de Privacidad</a>{' '}
         y{' '}
         <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">Terminos del Servicio</a>.
+      </p>
+
+      <p className={styles.recaptcha}>
+        <Link to="/privacidad">Politica de Privacidad de Shekael</Link>
+        {' · '}
+        <Link to="/terminos">Terminos de Shekael</Link>
       </p>
 
     </div>

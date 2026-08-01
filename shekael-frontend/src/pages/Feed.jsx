@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/PostCard/PostCard';
+import InFeedAd from '../components/InFeedAd/InFeedAd';
 import useStore from '../store';
 import useFeed from '../hooks/useFeed';
 import { FilesIcon } from 'lucide-react';
@@ -77,8 +78,12 @@ export default function Feed() {
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <div className={styles.main}>
         {feedError && <div className={styles.errorBanner}>{feedError}</div>}
-        {sortedPosts.map(post => (
-          <PostCard key={post.id} post={post} />
+        {sortedPosts.map((post, idx) => (
+          <>
+            <PostCard key={post.id} post={post} />
+            {/* Anuncio in-feed cada 5 posts (fórmula Instagram) */}
+            {(idx + 1) % 5 === 0 && <InFeedAd key={`ad-${post.id}`} />}
+          </>
         ))}
         {loadingMore && (
           <div className={styles.skeletonList}>

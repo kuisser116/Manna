@@ -1,0 +1,26 @@
+.adCard {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #eee);
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  margin: 12px 0;
+}
+
+.adLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted, #999);
+  margin-bottom: 10px;
+}
+
+.adSlot {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--color-bg-subtle, #f7f7f7);
+}

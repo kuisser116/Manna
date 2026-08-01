@@ -234,11 +234,24 @@ router.post('/impression', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
         const userId = req.user.id;
-        const { ad_type = 'feed', source = 'feed', creator_id = null, focus_duration = 0 } = req.body;
+        const { ad_type = 'feed', source = 'feed', creator_id = null, focus_duration = 0, engagement = {} } = req.body;
 
         if (!['feed', 'preroll', 'rewarded'].includes(ad_type)) {
             return res.status(400).json({ message: 'Tipo de anuncio inválido' });
         }
+
+        // Engagement bonus: la interacción real con el anuncio multiplica la recompensa.
+        // Esto hace que los anunciantes paguen por tráfico CON interacción (no solo vistas).
+        const engagementScore = Math.min(
+            (engagement.liked ? 1 : 0) +
+            (engagement.commented ? 2 : 0) +
+            (engagement.saved ? 1.5 : 0) +
+            (engagement.shares || 0) * 2 +
+            (engagement.visitedProfile ? 1 : 0),
+            5
+        );
+        // Multiplicador: 1x base + hasta +0.5x por engagement alto
+        const engagementMultiplier = 1 + (engagementScore / 5) * 0.5;
 
         // Rate limiting: 20 ads/hr
         const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
@@ -261,20 +274,30 @@ router.post('/impression', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'El anuncio debe verse al menos 5 segundos para contar', completed: false });
         }
 
-        // Registrar impresión SIN asignar monto aún — se calcula al cerrar el pool
+        // Registrar impresión SIN asignar monto aún — se calcula al cerrar el pool.
+        // Nota: engagement_score se persiste si la columna existe (ALTER manual en Supabase).
+        const impressionPayload = {
+            user_id: userId,
+            ad_type,
+            source,
+            amount: 0, // Pendiente — se actualiza cuando se cierra el pool
+            creator_id: creator_id || null,
+            verified: true,
+            focus_duration,
+            completed: true,
+            ip_hash: req.ip ? req.ip.split('.').slice(0, 2).join('.') : null
+        };
+        // engagement_score solo si la columna ya fue creada en Supabase
+        const colCheck = await supabase.from('ad_impressions').select('engagement_score').limit(1);
+        if (!colCheck.error) {
+            impressionPayload.engagement_score = engagementScore;
+        } else {
+            console.warn('[Ads] engagement_score column no existe — se omite (ALTER manual pendiente)');
+        }
+
         const { data: impression, error: impError } = await supabase
             .from('ad_impressions')
-            .insert({
-                user_id: userId,
-                ad_type,
-                source,
-                amount: 0, // Pendiente — se actualiza cuando se cierra el pool
-                creator_id: creator_id || null,
-                verified: true,
-                focus_duration,
-                completed: true,
-                ip_hash: req.ip ? req.ip.split('.').slice(0, 2).join('.') : null
-            })
+            .insert(impressionPayload)
             .select()
             .single();
 
@@ -282,15 +305,17 @@ router.post('/impression', authMiddleware, async (req, res) => {
 
         // Obtener pool config para mostrar estimación
         const pool = getPoolConfig();
-        const estimatedAmount = pool.perViewMxn || 0.05;
+        const baseRate = pool.perViewMxn || 0.05;
+        const estimatedAmount = baseRate * engagementMultiplier;
 
         res.json({
             success: true,
             rewarded: Math.round(estimatedAmount * 100) / 100,
+            engagement_multiplier: engagementMultiplier,
             isEstimated: !pool.isSettled,
             impression_id: impression.id,
             note: pool.isSettled
-                ? `Ganaste $${estimatedAmount.toFixed(4)} MXN (pool cerrado)`
+                ? `Ganaste $${estimatedAmount.toFixed(4)} MXN (pool cerrado${engagementMultiplier > 1 ? ' +' + Math.round((engagementMultiplier - 1) * 100) + '% por interacción' : ''})`
                 : `Estimado ~$${estimatedAmount.toFixed(4)} MXN (pool en cálculo — se ajusta al cerrar el mes)`
         });
 

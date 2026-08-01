@@ -14,6 +14,7 @@ import CreatePost from './pages/CreatePost';
 import FondoRegional from './pages/FondoRegional';
 import Profile from './pages/Profile';
 import Terms from './pages/Terms';
+import Privacy from './pages/Privacy/Privacy';
 import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import AdminPostApproval from './pages/AdminPostApproval/AdminPostApproval';
@@ -238,6 +239,7 @@ function App() {
         {/* Landing sin layout de app */}
         <Route path="/" element={<Landing />} />
         <Route path="/terminos" element={<Terms />} />
+        <Route path="/privacidad" element={<Privacy />} />
 
         {/* Rutas protegidas con TopBar + Sidebar */}
         <Route path="/feed" element={
