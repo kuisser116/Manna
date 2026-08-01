@@ -8,7 +8,8 @@ import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
 import { getUserProfile } from '../../api/users.api';
 import { verifyPin } from '../../api/auth.api';
-import PinKeypad, { pinHash } from '../../components/PinKeypad/PinKeypad';
+import { pinHash } from '../../crypto/pinHash';
+import LockScreen from '../../components/LockScreen/LockScreen';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import { getKeyPair } from '../../crypto/keyStore';
 import {
@@ -2257,16 +2258,13 @@ export default function Chat() {
         />
       )}
 
-      {/* PIN confirmation modal (reusable PinKeypad) */}
+      {/* PIN confirmation — usa el LockScreen unificado */}
       {showPinConfirm && (
-        <PinKeypad
+        <LockScreen
           mode="enter"
-          title="Confirmar PIN"
           subtitle="Ingresa tu PIN para borrar el historial"
           onComplete={handlePinComplete}
           onCancel={() => { setShowPinConfirm(false); setPinError(''); }}
-          error={pinError}
-          loading={false}
         />
       )}
 

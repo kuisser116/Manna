@@ -15,7 +15,7 @@ import ShekaelLogo from '../ShekaelLogo/ShekaelLogo';
  * - Unlock: apiVerifyPin(pinHash) → server devuelve encryptedPrivateKey →
  *     crypto.unlockWithPin(encryptedPrivateKey, pin) → descifra en RAM.
  */
-export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
+export default function LockScreen({ onUnlock, onVerify, onComplete, onCancel, mode = 'unlock', title, subtitle }) {
   const chatCrypto = useChatCrypto();
   const user = useStore(s => s.user);
   const token = useStore(s => s.token);
@@ -33,7 +33,12 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
   }, [step]);
 
   // Al montar, verificar si el usuario ya tiene PIN en BD
+  // (solo en modo unlock; los modos enter/create/verify van directo a enter)
   useEffect(() => {
+    if (mode !== 'unlock') {
+      setStep('enter');
+      return;
+    }
     let cancelled = false;
     async function check() {
       try {
@@ -47,7 +52,7 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
     }
     check();
     return () => { cancelled = true; };
-  }, []);
+  }, [mode]);
 
   // Keyboard support
   useEffect(() => {
@@ -128,6 +133,14 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
 
     setProcessing(true);
     try {
+      // Modos genéricos: el padre decide qué hacer con el PIN (SupportButton, Chat, Recovery)
+      if (mode === 'enter' || mode === 'create') {
+        await onComplete?.(enteredPin);
+        setPin('');
+        setProcessing(false);
+        return;
+      }
+
       // Si es modo verify, solo verificamos PIN contra auth.api
       if (mode === 'verify') {
         // Verificar PIN y obtener la clave de recuperación en un solo call
@@ -250,29 +263,21 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
           </>
         )}
 
-        {step === 'enter' && mode !== 'verify' && (
+        {step === 'enter' && mode === 'unlock' && (
           <>
-            <p className={styles.subtitle}>Ingresa tu PIN de 6 dígitos</p>
+            <p className={styles.subtitle}>{subtitle || 'Ingresa tu PIN de 6 dígitos'}</p>
           </>
         )}
 
-        {step === 'create' && (
+        {step === 'enter' && mode === 'verify' && (
           <>
-            <h2 className={styles.title}>Crear PIN de seguridad</h2>
-            <p className={styles.subtitle}>Elige un PIN de 6 dígitos</p>
+            <p className={styles.subtitle}>{subtitle || 'Ingresa tu PIN para mostrar tu clave de recuperación'}</p>
           </>
         )}
 
-        {step === 'confirm' && (
+        {step === 'enter' && (mode === 'enter' || mode === 'create') && (
           <>
-            <h2 className={styles.title}>Confirmar PIN</h2>
-            <p className={styles.subtitle}>Ingresa el mismo PIN nuevamente</p>
-          </>
-        )}
-
-        {mode === 'verify' && step === 'enter' && (
-          <>
-            <p className={styles.subtitle}>Ingresa tu PIN para mostrar tu clave de recuperación</p>
+            <p className={styles.subtitle}>{subtitle || (mode === 'create' ? 'Elige un PIN de 6 dígitos' : 'Ingresa tu PIN')}</p>
           </>
         )}
 
@@ -329,8 +334,11 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
           </>
         )}
 
-        {step === 'enter' && mode === 'verify' && (
-          <span className={styles.cancelLink} onClick={() => window.history.back()}>
+        {step === 'enter' && mode !== 'unlock' && (
+          <span className={styles.cancelLink} onClick={() => {
+            if (onCancel) onCancel();
+            else window.history.back();
+          }}>
             Cancelar
           </span>
         )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Key, Shield, AlertTriangle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import PinKeypad from '../../components/PinKeypad/PinKeypad';
+import LockScreen from '../../components/LockScreen/LockScreen';
 import styles from './Recovery.module.css';
 
 export default function Recovery() {
@@ -153,14 +153,11 @@ export default function Recovery() {
                         Ingresa un PIN de 6 dígitos. Este reemplazará tu PIN anterior.
                     </p>
                     {error && <div className={styles.error}>{error}</div>}
-                    <PinKeypad
+                    <LockScreen
                         mode="create"
+                        subtitle="6 dígitos numéricos"
                         onComplete={resetPin}
                         onCancel={() => setStep(1)}
-                        error={error}
-                        loading={loading}
-                        title="Nuevo PIN"
-                        subtitle="6 dígitos numéricos"
                     />
                 </div>
             </div>

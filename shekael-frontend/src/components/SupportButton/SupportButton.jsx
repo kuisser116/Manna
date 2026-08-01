@@ -6,7 +6,8 @@ import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
 import { mxnToUsdc } from '../../api/price.api';
 
-import PinKeypad, { pinHash } from '../PinKeypad/PinKeypad';
+import { pinHash } from '../../crypto/pinHash';
+import LockScreen from '../LockScreen/LockScreen';
 import { verifyPin as apiVerifyPin } from '../../api/auth.api';
 import styles from './SupportButton.module.css';
 
@@ -274,20 +275,12 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             )}
 
             {pinModalOpen && createPortal(
-                <div
-                    className={styles.pinOverlay}
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) setPinModalOpen(false);
-                    }}
-                >
-                    <PinKeypad
-                        mode="enter"
-                        onComplete={handlePinVerified}
-                        onCancel={() => setPinModalOpen(false)}
-                        title="Confirmar transacción"
-                        subtitle={`Estás por enviar ~$${customAmount} MXN (${customUsdc} USDC). Ingresa tu PIN de seguridad.`}
-                    />
-                </div>,
+                <LockScreen
+                    mode="enter"
+                    subtitle={`Estás por enviar ~$${customAmount} MXN (${customUsdc} USDC). Ingresa tu PIN de seguridad.`}
+                    onComplete={handlePinVerified}
+                    onCancel={() => setPinModalOpen(false)}
+                />,
                 document.body
             )}
         </div>
