@@ -377,7 +377,7 @@ router.post('/verify-pin', authMiddleware, async (req, res) => {
         const supabase = getDB();
         const { data: user, error } = await supabase
             .from('users')
-            .select('pin_hash, encrypted_private_key')
+            .select('pin_hash, encrypted_private_key, stellar_secret_key_encrypted, stellar_public_key')
             .eq('id', req.user.id)
             .maybeSingle();
 
@@ -393,7 +393,9 @@ router.post('/verify-pin', authMiddleware, async (req, res) => {
 
         res.json({
             success: true,
-            encryptedPrivateKey: user.encrypted_private_key || null
+            encryptedPrivateKey: user.encrypted_private_key || null,
+            stellarSecretKeyEncrypted: user.stellar_secret_key_encrypted || null,
+            stellarPublicKey: user.stellar_public_key || null,
         });
     } catch (err) {
         console.error('[PIN] Error verifying PIN:', err.message);

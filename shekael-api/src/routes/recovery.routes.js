@@ -95,7 +95,7 @@ router.post('/reset-pin', async (req, res) => {
 
         const pinHash = computePinHash(pin);
 
-        // Actualizar PIN
+        // Actualizar PIN (NO tocar encrypted_private_key — se migrará a cifrado con Stellar key)
         const supabase = getDB();
         const { error } = await supabase
             .from('users')

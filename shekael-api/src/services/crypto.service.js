@@ -165,3 +165,44 @@ export function encryptAll(userId, secretKey, stellarPublicKey) {
     const emergency = stellarPublicKey ? encrypt(secretKey, getEmergencySeed(stellarPublicKey)) : '';
     return [perUser, recovery, emergency].filter(Boolean).join('||');
 }
+
+// ── Chat E2EE con Stellar key (inmutable, nunca cambia) ──
+
+/**
+ * Deriva una clave de cifrado para chat desde stellarSecretKey.
+ * Determinística: la misma stellarSecretKey siempre produce la misma chat key.
+ * @param {string} stellarSecretKey - Clave secreta Stellar (S...)
+ * @returns {Buffer} - 32 bytes para AES-256
+ */
+export function deriveChatKey(stellarSecretKey) {
+    return crypto.createHash('sha256').update('chat-v1:' + stellarSecretKey).digest();
+}
+
+/**
+ * Cifrar texto con chat key (derivada de stellarSecretKey).
+ * @param {string} text - Texto a cifrar (ej: privateKeyB64 del chat)
+ * @param {Buffer} chatKey - Clave derivada de deriveChatKey()
+ * @returns {string} - iv:encrypted en hex
+ */
+export function encryptWithChatKey(text, chatKey) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(ALGORITHM, chatKey, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return `${iv.toString('hex')}:${encrypted}`;
+}
+
+/**
+ * Descifrar texto con chat key.
+ * @param {string} encryptedText - iv:encrypted en hex
+ * @param {Buffer} chatKey - Clave derivada
+ * @returns {string} - Texto original
+ */
+export function decryptWithChatKey(encryptedText, chatKey) {
+    const [ivHex, encrypted] = encryptedText.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = crypto.createDecipheriv(ALGORITHM, chatKey, iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
