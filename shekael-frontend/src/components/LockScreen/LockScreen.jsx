@@ -15,9 +15,10 @@ import logoImg from '../../assets/personaje_1.12.png';
  * - Unlock: apiVerifyPin(pinHash) → server devuelve encryptedPrivateKey →
  *     crypto.unlockWithPin(encryptedPrivateKey, pin) → descifra en RAM.
  */
-export default function LockScreen({ onUnlock, mode = 'unlock' }) {
+export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
   const chatCrypto = useChatCrypto();
   const user = useStore(s => s.user);
+  const token = useStore(s => s.token);
   const logout = useStore(s => s.logout);
   const userId = user?.id;
   const [pin, setPin] = useState('');
@@ -129,15 +130,18 @@ export default function LockScreen({ onUnlock, mode = 'unlock' }) {
     try {
       // Si es modo verify, solo verificamos PIN contra auth.api
       if (mode === 'verify') {
-        const res = await apiVerifyPin(pinHash);
-        if (!res.data?.success) {
-          throw new Error(res.data?.message || 'PIN incorrecto');
-        }
-        // Verificación exitosa — guardar flag y navegar
-        const store = useStore.getState();
-        store.setPinVerifiedForRecovery && store.setPinVerifiedForRecovery(true);
+        // Verificar PIN y obtener la clave de recuperación en un solo call
+        const API_URL = import.meta.env.VITE_API_URL || location.origin;
+        const res = await fetch(`${API_URL}/users/backup-key`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ pin: enteredPin })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'PIN incorrecto');
         setPin('');
-        onUnlock();
+        setProcessing(false);
+        onVerify?.(data.secretKey, data.publicKey);
         return;
       }
 
@@ -305,7 +309,7 @@ export default function LockScreen({ onUnlock, mode = 'unlock' }) {
           </button>
         </div>
 
-        {step === 'enter' && (
+        {step === 'enter' && mode === 'unlock' && (
           <>
             <span
               className={styles.switchAccount}
@@ -325,6 +329,12 @@ export default function LockScreen({ onUnlock, mode = 'unlock' }) {
               Olvidé mi PIN
             </span>
           </>
+        )}
+
+        {step === 'enter' && mode === 'verify' && (
+          <span className={styles.cancelLink} onClick={() => window.history.back()}>
+            Cancelar
+          </span>
         )}
       </div>
     </div>

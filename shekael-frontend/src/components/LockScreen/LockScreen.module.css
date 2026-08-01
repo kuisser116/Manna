@@ -160,6 +160,21 @@
   animation: pulse 1.5s ease infinite;
 }
 
+.cancelLink {
+  margin-top: 24px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #888);
+  cursor: pointer;
+  transition: color 0.15s;
+  user-select: none;
+  text-decoration: none;
+}
+
+.cancelLink:hover {
+  color: var(--color-primary, #e11d48);
+  text-decoration: underline;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
