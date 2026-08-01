@@ -598,9 +598,17 @@ router.post('/backup-key', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'No tienes PIN configurado. Configúralo primero en Seguridad.' });
         }
 
-        // Verificar PIN (simple hash comparación — el frontend envía hash SHA-256)
-        const crypto = await import('crypto');
-        const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
+        // Verificar PIN — usa el MISMO hash que el frontend (PinKeypad.jsx)
+        // computePinHash: hash = ((hash << 5) - hash) + charCode; hash |= 0; return 'pin_' + hash
+        function computePinHash(p) {
+            let hash = 0;
+            for (let i = 0; i < p.length; i++) {
+                hash = ((hash << 5) - hash) + p.charCodeAt(i);
+                hash |= 0;
+            }
+            return 'pin_' + hash;
+        }
+        const pinHash = computePinHash(pin);
 
         if (user.pin_hash !== pinHash) {
             return res.status(403).json({ message: 'PIN incorrecto' });

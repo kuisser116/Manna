@@ -1,24 +1,26 @@
-import React, { useState, useRef } from 'react';
-import { Key, Eye, EyeOff, Download, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
+import React, { useState } from 'react';
+import { Key, Download, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
 import useStore from '../../store';
+import PinKeypad, { pinHash } from '../../components/PinKeypad/PinKeypad';
 import styles from './Security.module.css';
 
 export default function Security() {
     const { token, user } = useStore();
     const [step, setStep] = useState(0); // 0=info, 1=pin, 2=showing
-    const [pin, setPin] = useState('');
     const [secretKey, setSecretKey] = useState('');
+    const [publicKey, setPublicKey] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
-    const qrRef = useRef();
 
     const API_URL = import.meta.env.VITE_API_URL || location.origin;
 
-    const verifyAndShow = async () => {
-        if (pin.length < 4) { setError('PIN de 4 dígitos requerido'); return; }
-        setLoading(true); setError('');
+    const verifyPin = async (pin) => {
+        setLoading(true);
+        setError('');
         try {
+            // El backend espera el PIN en texto plano, el hash lo compara del lado del servidor
+            // PERO el backend ahora usa el mismo algoritmo que el frontend
             const res = await fetch(`${API_URL}/users/backup-key`, {
                 method: 'POST',
                 headers: {
@@ -30,13 +32,18 @@ export default function Security() {
             const data = await res.json();
             if (res.ok) {
                 setSecretKey(data.secretKey);
+                setPublicKey(data.publicKey);
                 setStep(2);
             } else {
                 setError(data.message || 'PIN incorrecto');
+                throw new Error(data.message);
             }
         } catch (err) {
-            setError('Error de conexión');
-        } finally { setLoading(false); }
+            setError(err.message || 'Error de conexión');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
     };
 
     const copyToClipboard = () => {
@@ -52,7 +59,7 @@ Usuario: ${user?.display_name || ''}
 Email: ${user?.email || ''}
 
 DIRECCIÓN PÚBLICA (para recibir):
-${user?.stellarPublicKey || ''}
+${publicKey}
 
 CLAVE PRIVADA (para enviar / recuperar):
 ${secretKey}
@@ -97,24 +104,17 @@ Shekael NO puede ayudarte a recuperarla.
                 <div className={styles.card}>
                     <Shield size={28} className={styles.icon} />
                     <h2>Verificación de identidad</h2>
-                    <p>Para mostrar tu clave privada, confirma tu PIN de seguridad.</p>
-                    <input
-                        type="password"
-                        inputMode="numeric"
-                        maxLength={6}
-                        placeholder="PIN (4-6 dígitos)"
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className={styles.pinInput}
-                        autoFocus
-                    />
+                    <p>Ingresa tu PIN de seguridad para mostrar tu clave privada.</p>
                     {error && <div className={styles.error}>{error}</div>}
-                    <div className={styles.actions}>
-                        <button className={styles.secondaryBtn} onClick={() => setStep(0)}>Cancelar</button>
-                        <button className={styles.primaryBtn} onClick={verifyAndShow} disabled={loading || pin.length < 4}>
-                            {loading ? 'Verificando...' : 'Continuar'}
-                        </button>
-                    </div>
+                    <PinKeypad
+                        mode="enter"
+                        onComplete={verifyPin}
+                        onCancel={() => setStep(0)}
+                        error={error}
+                        loading={loading}
+                        title="Ingresa tu PIN"
+                        subtitle="Para mostrar tu clave de respaldo"
+                    />
                 </div>
             </div>
         );
@@ -132,7 +132,7 @@ Shekael NO puede ayudarte a recuperarla.
                 <div className={styles.secretBox}>
                     <code className={styles.secretKey}>{secretKey}</code>
                     <button className={styles.iconBtn} onClick={copyToClipboard} title="Copiar">
-                        {copied ? <CheckCircle size={18} /> : <Eye size={18} />}
+                        {copied ? <CheckCircle size={18} /> : <Key size={18} />}
                     </button>
                 </div>
 
@@ -142,13 +142,13 @@ Shekael NO puede ayudarte a recuperarla.
                     <button className={styles.downloadBtn} onClick={generatePDF}>
                         <Download size={14} /> Descargar respaldo
                     </button>
-                    <button className={styles.secondaryBtn} onClick={() => { setStep(0); setPin(''); setSecretKey(''); }}>
+                    <button className={styles.secondaryBtn} onClick={() => { setStep(0); setSecretKey(''); setPublicKey(''); }}>
                         Cerrar
                     </button>
                 </div>
 
                 <div className={styles.footerNote}>
-                    Dirección pública para recibir: <code>{user?.stellarPublicKey}</code>
+                    Dirección pública para recibir: <code>{publicKey}</code>
                 </div>
             </div>
         </div>
