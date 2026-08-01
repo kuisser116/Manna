@@ -117,6 +117,7 @@ app.use('/algorithm', algorithmRoutes);
 app.use('/venues', venuesRoutes);
 app.use('/consent', consentRoutes);
 app.use('/federation', federationRoutes);
+app.use('/recovery', recoveryRoutes);
 
 // ── Tipo de cambio USD/MXN para el frontend ──
 import { getMxnRate } from './services/price.service.js';
