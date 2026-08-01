@@ -54,7 +54,7 @@ const TERMS_CONTENT_HASH = crypto.createHash('sha256').update(`Términos y Condi
 
 7. WALLET STELLAR. Shekael genera y custodia claves Stellar cifradas por usuario con PIN. Shekael NO puede recuperar claves perdidas. La pérdida de acceso a tu cuenta de Google o PIN resulta en pérdida permanente de acceso a tus USDC. Shekael no garantiza la seguridad absoluta del sistema de encriptación.
 
-8. RECOMPENSAS POR ANUNCIOS. Shekael puede mostrar anuncios recompensados. Al verlos completos ganas MXNe. Shekael puede modificar las tasas, requisitos y disponibilidad en cualquier momento sin responsabilidad.
+8. RECOMPENSAS POR ANUNCIOS. Shekael puede mostrar anuncios recompensados. Al verlos completos ganas USDC. Shekael puede modificar las tasas, requisitos y disponibilidad en cualquier momento sin responsabilidad.
 
 9. SERVICIOS DE TERCEROS. Depósitos, retiros y swaps ocurren en exchanges, anchors (MoneyGram) o el DEX de Stellar — todos externos. Shekael no opera, controla ni es responsable por ellos. El usuario asume todo riesgo.
 

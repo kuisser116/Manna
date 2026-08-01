@@ -224,7 +224,7 @@ export default function Settings() {
                             <DollarSign size={16} />
                             <div>
                                 <strong>Más ganancias</strong>
-                                <p>Los anuncios personalizados pagan más CPM, lo que significa más MXNe para ti.</p>
+                                <p>Los anuncios personalizados pagan más CPM, lo que significa más USDC para ti.</p>
                             </div>
                         </div>
                         <div className={styles.infoCard}>

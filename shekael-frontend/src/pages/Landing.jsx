@@ -463,10 +463,20 @@ function LandingInner() {
             { opacity: 0, y: 20 },
             {
               opacity: 1, y: 0, duration: 0.5, ease: 'power2.out',
-              scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' }
+              scrollTrigger: { trigger: el, start: 'top 92%', toggleActions: 'play none none none' }
             }
           );
         });
+
+        // Fallback de seguridad: si el ScrollTrigger no dispara en móvil
+        // (scroll suave, resize del address bar), forzar visibilidad a los 2s.
+        // Evita que el contenido quede en opacity:0 (invisible) para siempre.
+        const safety = setTimeout(() => {
+          bands.forEach(ref => {
+            if (ref.current) gsap.set(ref.current, { opacity: 1, y: 0, clearProps: 'opacity' });
+          });
+        }, 2500);
+        return () => clearTimeout(safety);
       });
 
     }, mainRef);
@@ -586,7 +596,7 @@ function LandingInner() {
             </div>
             <div className={styles.econStep}>
               <span className={styles.econNum}>02</span>
-              <span className={styles.econLabel}>Ganas MXNe en anuncios</span>
+              <span className={styles.econLabel}>Ganas USDC en anuncios</span>
             </div>
             <div className={styles.econArrow}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

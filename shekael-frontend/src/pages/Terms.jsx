@@ -181,7 +181,7 @@ export default function Terms() {
               <li><strong>Chat privado cifrado</strong> entre usuarios.</li>
               <li><strong>Apoyos (Supports)</strong> — transferencias económicas entre usuarios por contenido.</li>
               <li><strong>Bono Promocional</strong> de $20 MXN para nuevos usuarios.</li>
-              <li><strong>Recompensas por Anuncios</strong> — ganas MXNe viendo anuncios completos.</li>
+              <li><strong>Recompensas por Anuncios</strong> — ganas USDC viendo anuncios completos.</li>
               <li><strong>Pagos QR</strong> en comercios afiliados dentro de la Plataforma.</li>
               <li><strong>Fondo Regional</strong> — comisión del 10% en apoyos para beneficios comunitarios.</li>
             </ul>
@@ -253,7 +253,7 @@ export default function Terms() {
           <section className={styles.section}>
             <h2>8. Recompensas por Anuncios</h2>
             <p>
-              Shekael puede mostrar anuncios recompensados. Al ver un anuncio completo, recibes MXNe
+              Shekael puede mostrar anuncios recompensados. Al ver un anuncio completo, recibes USDC
               (token de recompensa). Shekael puede modificar las tasas y requisitos de las recompensas
               en cualquier momento sin responsabilidad hacia los usuarios.
             </p>
