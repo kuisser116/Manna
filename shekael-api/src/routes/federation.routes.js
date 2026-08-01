@@ -27,10 +27,13 @@ router.get('/', async (req, res) => {
         const supabase = getDB();
 
         // Buscar en federation table
+        // El nombre puede venir como "user" o "user*WALLET" (wallet case-sensitive).
+        // Buscar por coincidencia parcial del prefijo (antes del '*').
+        const baseName = q.trim().split('*')[0].toLowerCase();
         const { data: fed, error } = await supabase
             .from('federation')
             .select('stellar_address, name')
-            .eq('name', q.toLowerCase().trim())
+            .ilike('name', baseName + '*%')
             .maybeSingle();
 
         if (error) throw error;
@@ -65,7 +68,7 @@ router.get('/lookup/:name', async (req, res) => {
         const { data: fed, error } = await supabase
             .from('federation')
             .select('stellar_address, name, user_id')
-            .eq('name', name)
+            .ilike('name', name + '*%')
             .maybeSingle();
 
         if (error) throw error;
