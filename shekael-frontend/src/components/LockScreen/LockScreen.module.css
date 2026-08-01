@@ -136,6 +136,22 @@
   text-decoration: underline;
 }
 
+.forgotPin {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+  cursor: pointer;
+  transition: color 0.15s;
+  user-select: none;
+  text-decoration: none;
+  display: block;
+}
+
+.forgotPin:hover {
+  color: var(--color-warning, #f59e0b);
+  text-decoration: underline;
+}
+
 .processing {
   font-size: 0.8rem;
   color: var(--color-text-muted, #888);

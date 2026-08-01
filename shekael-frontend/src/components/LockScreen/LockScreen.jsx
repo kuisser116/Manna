@@ -250,15 +250,25 @@ export default function LockScreen({ onUnlock }) {
         </div>
 
         {step === 'enter' && (
-          <span
-            className={styles.switchAccount}
-            onClick={() => {
-              logout();
-              window.location.reload();
-            }}
-          >
-            Cambiar de cuenta
-          </span>
+          <>
+            <span
+              className={styles.switchAccount}
+              onClick={() => {
+                logout();
+                window.location.reload();
+              }}
+            >
+              Cambiar de cuenta
+            </span>
+            <span
+              className={styles.forgotPin}
+              onClick={() => {
+                window.location.href = '/recovery';
+              }}
+            >
+              Olvidé mi PIN
+            </span>
+          </>
         )}
       </div>
     </div>
