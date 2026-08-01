@@ -16,7 +16,7 @@ import logoImg from '../../assets/personaje_1.12.png';
  *     crypto.unlockWithPin(encryptedPrivateKey, pin) → descifra en RAM.
  */
 export default function LockScreen({ onUnlock }) {
-  const crypto = useChatCrypto();
+  const chatCrypto = useChatCrypto();
   const user = useStore(s => s.user);
   const logout = useStore(s => s.logout);
   const userId = user?.id;
@@ -132,6 +132,28 @@ export default function LockScreen({ onUnlock }) {
       const res = await unlockChat(pinHash);
 
       if (!res.success) {
+        // Necesita migración automática de cifrado-PIN a cifrado-StellarKey
+        if (res.needsMigration) {
+          try {
+            // 1. Descifrar con PIN viejo (libsodium, solo frontend tiene)
+            const privateKey = await chatCrypto.unlockWithPin(res.encryptedPrivateKey, enteredPin);
+            
+            // 2. Enviar privateKey descifrada al backend para recifrar con Stellar key
+            const { migrateChat } = await import('../../api/chat.api.js');
+            const migrateRes = await migrateChat(pinHash, privateKey);
+            if (migrateRes.success) {
+              // Migración exitosa → guardar keypair y continuar
+              const { setKeyPair } = await import('../../crypto/keyStore');
+              setKeyPair({ privateKey: migrateRes.privateKey, publicKey: res.publicKey || '' });
+              setPin('');
+              onUnlock();
+              return;
+            }
+            throw new Error(migrateRes.message || 'Error en migración');
+          } catch (migrateErr) {
+            throw new Error(migrateErr.message || 'Error migrando llaves de chat');
+          }
+        }
         throw new Error(res.message || 'PIN incorrecto');
       }
 

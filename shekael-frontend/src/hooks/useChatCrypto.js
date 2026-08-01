@@ -134,8 +134,22 @@ export function useChatCrypto() {
   const hasKeys = useCallback(async () => !!getKeyPair(), []);
   const clearKeyCache = useCallback(() => { clearKeyPair(); }, []);
 
+  // Unlock (migración): descifrar private_key con PIN viejo (libsodium, formato anterior)
+  const unlockWithPin = useCallback(async (encryptedPrivateKeyB64, pin) => {
+    const sodium = await ensureSodium();
+    const key = sodium.crypto_generichash(
+      sodium.crypto_secretbox_KEYBYTES,
+      sodium.from_string(pin)
+    );
+    const data = sodium.from_base64(encryptedPrivateKeyB64);
+    const nonce = data.slice(0, sodium.crypto_secretbox_NONCEBYTES);
+    const ct = data.slice(sodium.crypto_secretbox_NONCEBYTES);
+    const plaintext = sodium.crypto_secretbox_open_easy(ct, nonce, key);
+    return sodium.to_string(plaintext); // Devuelve privateKey en base64
+  }, [ensureSodium]);
+
   return {
-    generateAndSetupWithStellarKey, unlockWithStellarKey,
+    generateAndSetupWithStellarKey, unlockWithStellarKey, unlockWithPin,
     encrypt, decrypt, hasKeys, clearKeyCache, deriveSharedSecret,
     ready: !!sodiumRef.current
   };

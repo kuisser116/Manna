@@ -21,6 +21,26 @@ export async function unlockChat(pinHash) {
 }
 
 /**
+ * POST /chat/migrate — Migrar chat keypair de cifrado-PIN a cifrado-StellarKey
+ * El backend descifra con PIN viejo, recifra con Stellar key, guarda.
+ */
+/**
+ * POST /chat/migrate — Migrar chat keypair de cifrado-PIN a cifrado-StellarKey
+ * El frontend ya descifró con PIN (libsodium), envía privateKey para recifrar con Stellar key.
+ */
+export async function migrateChat(pinHash, privateKey) {
+    const res = await fetch(`${API_URL}/chat/migrate`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ pinHash, privateKey })
+    });
+    return res.json();
+}
+
+/**
  * POST /chat/setup — Guardar chat keypair cifrado con Stellar key
  */
 export async function setupChat(pinHash, publicKey, privateKey) {
