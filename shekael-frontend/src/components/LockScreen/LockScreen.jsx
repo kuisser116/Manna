@@ -252,7 +252,6 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
 
         {step === 'enter' && (
           <>
-            <h2 className={styles.title}>Desbloquear Shekael</h2>
             <p className={styles.subtitle}>Ingresa tu PIN de 6 dígitos</p>
           </>
         )}
@@ -273,7 +272,6 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
 
         {mode === 'verify' && step === 'enter' && (
           <>
-            <h2 className={styles.title}>Verificar identidad</h2>
             <p className={styles.subtitle}>Ingresa tu PIN para mostrar tu clave de recuperación</p>
           </>
         )}
