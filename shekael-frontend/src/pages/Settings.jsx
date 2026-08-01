@@ -195,15 +195,15 @@ export default function Settings() {
                     </div>
                 </section>
 
-                {/* ─── Seguridad: Clave de respaldo ─── */}
+                {/* ─── Recuperación de Cuenta ─── */}
                 <section className={styles.section} style={{ cursor: 'pointer' }} onClick={() => navigate('/settings/security')}>
                     <div className={styles.sectionHeader}>
                         <Key size={18} />
-                        <h2>Clave de Respaldo</h2>
+                        <h2>Recuperación de Cuenta</h2>
                         <ChevronRight size={18} style={{ marginLeft: 'auto', color: 'var(--color-text-muted)' }} />
                     </div>
                     <p className={styles.sectionDesc}>
-                        Guarda tu clave privada en papel. Si pierdes tu teléfono, es la única forma de recuperar tu dinero.
+                        Configura cómo recuperar tu cuenta si olvidas tu PIN o pierdes tu teléfono.
                     </p>
                 </section>
 

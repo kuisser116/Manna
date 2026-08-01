@@ -83,7 +83,7 @@ Shekael NO puede ayudarte a recuperarla.
             <div className={styles.container}>
                 <div className={styles.card}>
                     <Key size={32} className={styles.icon} />
-                    <h2>Clave de Respaldo</h2>
+                    <h2>Recuperación de Cuenta</h2>
                     <p>Esta es la clave que controla tu dinero. Si pierdes tu teléfono o olvidas tu PIN, esta clave es la única forma de recuperar tu wallet.</p>
                     <div className={styles.warnings}>
                         <div className={styles.warn}><AlertTriangle size={16} /> Guárdala en papel, no en fotos</div>
@@ -91,7 +91,7 @@ Shekael NO puede ayudarte a recuperarla.
                         <div className={styles.warn}><AlertTriangle size={16} /> Shekael NO puede recuperarla</div>
                     </div>
                     <button className={styles.primaryBtn} onClick={() => setStep(1)}>
-                        <Shield size={16} /> Ver mi clave de respaldo
+                        <Shield size={16} /> Ver mi clave de recuperación
                     </button>
                 </div>
             </div>
