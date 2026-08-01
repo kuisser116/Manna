@@ -27,6 +27,7 @@ import BusinessProfile from './components/Business/BusinessProfile';
 import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistration';
 import Settings from './pages/Settings';
 import Security from './pages/Settings/Security';
+import Recovery from './pages/Recovery/Recovery';
 
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -309,6 +310,7 @@ function App() {
             <AppLayout><Security /></AppLayout>
           </ProtectedRoute>
         } />
+        <Route path="/recovery" element={<Recovery />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
