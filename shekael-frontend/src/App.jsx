@@ -29,6 +29,7 @@ import Settings from './pages/Settings';
 import Security from './pages/Settings/Security';
 import SecurityTutorial from './pages/SecurityTutorial/SecurityTutorial';
 import SecurityVerify from './pages/SecurityVerify/SecurityVerify';
+import SecurityShowKey from './pages/SecurityShowKey/SecurityShowKey';
 import Recovery from './pages/Recovery/Recovery';
 
 import TopBar from './components/TopBar/TopBar';
@@ -315,6 +316,11 @@ function App() {
         <Route path="/security-tutorial" element={
           <ProtectedRoute authLoading={authLoading}>
             <SecurityTutorial />
+          </ProtectedRoute>
+        } />
+        <Route path="/security-show-key" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <SecurityShowKey />
           </ProtectedRoute>
         } />
         <Route path="/security-verify" element={

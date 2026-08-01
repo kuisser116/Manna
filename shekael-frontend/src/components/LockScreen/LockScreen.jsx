@@ -15,7 +15,7 @@ import logoImg from '../../assets/personaje_1.12.png';
  * - Unlock: apiVerifyPin(pinHash) → server devuelve encryptedPrivateKey →
  *     crypto.unlockWithPin(encryptedPrivateKey, pin) → descifra en RAM.
  */
-export default function LockScreen({ onUnlock }) {
+export default function LockScreen({ onUnlock, mode = 'unlock' }) {
   const chatCrypto = useChatCrypto();
   const user = useStore(s => s.user);
   const logout = useStore(s => s.logout);
@@ -121,28 +121,37 @@ export default function LockScreen({ onUnlock }) {
     else if (step === 'confirm') setConfirmPin(p => p.slice(0, -1));
   };
 
-  /** UNLOCK: Verificar PIN → server devuelve chat keypair (cifrado con Stellar key inmutable) */
+  /** Verificar PIN — usado tanto para desbloquear como para verificar identidad */
   const handleUnlock = async (enteredPin) => {
     const pinHash = await computePinHash(enteredPin);
 
     setProcessing(true);
     try {
-      // Llamar al endpoint del backend que descifra todo con Stellar key
+      // Si es modo verify, solo verificamos PIN contra auth.api
+      if (mode === 'verify') {
+        const res = await apiVerifyPin(pinHash);
+        if (!res.data?.success) {
+          throw new Error(res.data?.message || 'PIN incorrecto');
+        }
+        // Verificación exitosa — guardar flag y navegar
+        const store = useStore.getState();
+        store.setPinVerifiedForRecovery && store.setPinVerifiedForRecovery(true);
+        setPin('');
+        onUnlock();
+        return;
+      }
+
+      // Modo normal: desbloquear chat
       const { unlockChat } = await import('../../api/chat.api.js');
       const res = await unlockChat(pinHash);
 
       if (!res.success) {
-        // Necesita migración automática de cifrado-PIN a cifrado-StellarKey
         if (res.needsMigration) {
           try {
-            // 1. Descifrar con PIN viejo (libsodium, solo frontend tiene)
             const privateKey = await chatCrypto.unlockWithPin(res.encryptedPrivateKey, enteredPin);
-            
-            // 2. Enviar privateKey descifrada al backend para recifrar con Stellar key
             const { migrateChat } = await import('../../api/chat.api.js');
             const migrateRes = await migrateChat(pinHash, privateKey);
             if (migrateRes.success) {
-              // Migración exitosa → guardar keypair y continuar
               const { setKeyPair } = await import('../../crypto/keyStore');
               setKeyPair({ privateKey: migrateRes.privateKey, publicKey: res.publicKey || '' });
               setPin('');
@@ -158,7 +167,6 @@ export default function LockScreen({ onUnlock }) {
       }
 
       if (res.needsSetup) {
-        // No hay chat keypair → setup nuevo
         setPin('');
         setConfirmPin('');
         setStep('create');
@@ -166,7 +174,6 @@ export default function LockScreen({ onUnlock }) {
         return;
       }
 
-      // Guardar keypair en RAM
       const { setKeyPair } = await import('../../crypto/keyStore');
       setKeyPair({ privateKey: res.privateKey, publicKey: res.publicKey });
 
@@ -257,6 +264,13 @@ export default function LockScreen({ onUnlock }) {
           <>
             <h2 className={styles.title}>Confirmar PIN</h2>
             <p className={styles.subtitle}>Ingresa el mismo PIN nuevamente</p>
+          </>
+        )}
+
+        {mode === 'verify' && step === 'enter' && (
+          <>
+            <h2 className={styles.title}>Verificar identidad</h2>
+            <p className={styles.subtitle}>Ingresa tu PIN para mostrar tu clave de recuperación</p>
           </>
         )}
 
