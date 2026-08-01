@@ -250,7 +250,7 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
           </>
         )}
 
-        {step === 'enter' && (
+        {step === 'enter' && mode !== 'verify' && (
           <>
             <p className={styles.subtitle}>Ingresa tu PIN de 6 dígitos</p>
           </>
