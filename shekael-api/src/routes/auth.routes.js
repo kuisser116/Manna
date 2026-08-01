@@ -23,6 +23,7 @@ async function verifyRecaptcha(token) {
             body: params
         });
         const data = await res.json();
+        if (!data.success) console.warn('[Recaptcha] Rechazado:', JSON.stringify(data['error-codes'] || data.error_codes), 'score', data.score, 'action', data.action, 'hostname', data.hostname);
         return {
             success: data.success && data.score >= RECAPTCHA_SCORE_THRESHOLD,
             score: data.score || 0,
