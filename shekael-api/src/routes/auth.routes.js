@@ -23,6 +23,7 @@ async function verifyRecaptcha(token) {
             body: params
         });
         const data = await res.json();
+        if (!data.success) console.warn('[Recaptcha] Rechazado:', JSON.stringify(data['error-codes'] || data.error_codes), 'score', data.score, 'action', data.action, 'hostname', data.hostname);
         return {
             success: data.success && data.score >= RECAPTCHA_SCORE_THRESHOLD,
             score: data.score || 0,
@@ -35,56 +36,45 @@ async function verifyRecaptcha(token) {
 }
 
 // ── Configuración de Términos y Condiciones ──
-const TERMS_VERSION = 'v1.3';
-const TERMS_CONTENT_HASH = crypto.createHash('sha256').update(`
-Términos y Condiciones de Shekael v1.3
-Última actualización: 12 de Julio de 2026
+const TERMS_VERSION = 'v1.4';
+const TERMS_CONTENT_HASH = crypto.createHash('sha256').update(`Términos y Condiciones de Shekael v1.4
+Última actualización: 30 de Julio de 2026
 
-1. NATURALEZA DE LA PLATAFORMA
-Shekael es una red social descentralizada que opera sobre la red Stellar (testnet).
-MXNe es un token digital (asset) emitido en la blockchain de Stellar. MXNe no es
-una moneda fiduciaria, no está respaldado por ningún gobierno ni entidad financiera,
-y no cuenta con seguro de depósitos ni garantía de convertibilidad a moneda fiduciaria.
+1. ACEPTACIÓN. Al registrarte y usar Shekael aceptas estos Términos. Si no aceptas, no uses la app. Shekael puede modificarlos; los cambios se notifican en la app y requieren aceptación explícita.
 
-2. RIESGOS
-El valor de MXNe depende de la oferta y demanda dentro del ecosistema Shekael y,
-en el futuro, de la integración con anchors de Stellar. El uso de tecnología blockchain
-implica riesgos técnicos: pérdida de llaves privadas, errores de smart contract,
-y volatilidad de red. Shekael no se responsabiliza por pérdidas derivadas de estos
-riesgos. El usuario es el único custodio de su llave privada.
+2. ELEGIBILIDAD. Debes tener 13+ años (13-18 requieren autorización parental). No debes estar en listas OFAC/sanciones. Si fuiste suspendido previamente por violar términos, no puedes registrarte de nuevo sin autorización.
 
-3. PROHIBICIONES
-- No está permitido el lavado de dinero, evasión fiscal, fraude, o cualquier
-  actividad ilícita usando MXNe.
-- No está permitido presentar MXNe como una inversión, acción, bono, o cualquier
-  valor financiero regulado.
-- No está permitido operar MXNe en mercados secundarios no autorizados.
-- No está permitido el uso de la plataforma por menores de 13 años.
+3. SERVICIO. Shekael es una red social con ecosistema digital propio basado en la red Stellar (actualmente testnet, migrable a mainnet). Incluye: publicaciones, chat privado cifrado, apoyos entre usuarios, bono promocional de $20 MXN, recompensas por anuncios, pagos QR en comercios afiliados, y Fondo Regional (10% de comisión en apoyos).
 
-4. NATURALEZA DIGITAL, NO SERVICIO FINANCIERO
-Shekael es una plataforma de contenido social. No es una institución de dinero
-electrónico, casa de cambio, banco, ni proveedor de servicios financieros.
-La transferencia de MXNe entre usuarios es una transferencia directa en la
-blockchain de Stellar, no un servicio de pagos regulado.
+4. USDC — TOKEN DIGITAL, NO MONEDA. USDC es un token digital emitido en Stellar. NO es moneda de curso legal, NO está respaldado por ningún gobierno, NO está asegurado por FDIC/IPAB/nadie, NO está registrado como valor (security). No tiene valor garantizado. Su valor percibido depende de oferta/demanda dentro del ecosistema. No genera intereses ni rendimientos. No puede ser canjeado por efectivo a través de Shekael. Cualquier equivalencia en MXN es aspiracional y no vinculante.
 
-5. PRIVACIDAD Y DATOS
-Shekael almacena la información mínima necesaria para el funcionamiento del servicio
-(email, nombre, avatar). Las llaves privadas de Stellar se cifran con el PIN
-del usuario y se almacenan localmente (IndexedDB) y en servidor de forma cifrada.
-Shekael no comparte datos personales con terceros sin consentimiento explícito.
+5. BONO PROMOCIONAL $20 MXN. Usuarios nuevos reciben un bono virtual de $20 MXN. Se libera $1 MXN (en USDC equivalente) por cada post aprobado por Shekael, máximo 1 por día, hasta 20 liberaciones. El bono expira 70 días después del primer post aprobado; los fondos no reclamados vuelven al Fondo Regional. Shekael puede modificar, suspender o cancelar este programa en cualquier momento.
 
-6. MODIFICACIONES
-Shekael se reserva el derecho de modificar estos términos. Los cambios serán
-notificados en la app y requieren aceptación explícita para continuar usando
-el servicio.
+6. APOYOS (SUPPORTS). Los usuarios pueden enviar apoyos económicos a creadores. Cada apoyo genera una comisión del 10% que se deposita en el Fondo Regional. Las transacciones son irrevocables en la red Stellar. Shekael no garantiza la recepción del apoyo por parte del destinatario.
 
-7. LEY APLICABLE
-Estos términos se rigen por las leyes de México. Cualquier disputa será
-resuelta en los tribunales de la Ciudad de México.
+7. WALLET STELLAR. Shekael genera y custodia claves Stellar cifradas por usuario con PIN. Shekael NO puede recuperar claves perdidas. La pérdida de acceso a tu cuenta de Google o PIN resulta en pérdida permanente de acceso a tus USDC. Shekael no garantiza la seguridad absoluta del sistema de encriptación.
 
-Al usar Shekael aceptas estos términos.
+8. RECOMPENSAS POR ANUNCIOS. Shekael puede mostrar anuncios recompensados. Al verlos completos ganas USDC. Shekael puede modificar las tasas, requisitos y disponibilidad en cualquier momento sin responsabilidad.
+
+9. SERVICIOS DE TERCEROS. Depósitos, retiros y swaps ocurren en exchanges, anchors (MoneyGram) o el DEX de Stellar — todos externos. Shekael no opera, controla ni es responsable por ellos. El usuario asume todo riesgo.
+
+10. CONTENIDO. Shekael defiende la libertad de expresión. No censura temas controversiales. Está prohibido: contenido ilegal, spam, estafas, incitación a violencia, discriminación. Shekael usa filtro automatizado + detección NSFW local. Violaciones pueden resultar en suspensión. En suspensión definitiva, los USDC acumulados pasan al Fondo Regional sin compensación.
+
+11. PROPIEDAD INTELECTUAL. El usuario conserva derechos de su contenido, otorgando a Shekael licencia para operar la plataforma. La marca Shekael, logo y código son propiedad exclusiva de Shekael.
+
+12. PRIVACIDAD. Shekael recopila: email, nombre, avatar, contenido publicado, datos de uso, ubicación aproximada (solo para comercios cercanos), IP, user-agent. No comparte datos con terceros sin consentimiento. Cumple con LFPDPPP mexicana. Puedes solicitar eliminación de tus datos contactando a soporte.
+
+13. RIESGOS. USDC puede volverse cero. Transacciones en Stellar son irreversibles. La red Stellar puede sufrir forks, ataques o fallas. El marco regulatorio de tokens está en evolución. No hay seguro ni protección al consumidor. Al usar Shekael ACEPTAS TODOS ESTOS RIESGOS EXPRESAMENTE.
+
+14. LIMITACIÓN DE RESPONSABILIDAD. Shekael NO es responsable por: daños directos/indirectos por uso de la plataforma, pérdida de USDC por errores técnicos o de red, contenido de usuarios, pérdida de acceso a cuenta, interrupciones del servicio. El software se proporciona "tal cual", sin garantía. Responsabilidad máxima acumulada limitada al USDC que el usuario haya recibido en los últimos 12 meses.
+
+15. EVIDENCIA. Cada aceptación de términos registra: versión, hash SHA-256 del texto exacto, timestamp, IP, user-agent, user_id. Este registro tiene valor probatorio y se conserva indefinidamente. Shekael almacena el texto íntegro de cada versión para su verificación.
+
+16. LEY Y JURISDICCIÓN. Ley aplicable: México (Ciudad de México). Renuncia expresa a acción colectiva (class action). Cualquier disputa se resolverá en tribunales de la CDMX.
+
+Al usar Shekael aceptas estos términos v1.4.
 `).digest('hex');
-const TERMS_LAST_UPDATED = '2026-07-12T00:00:00.000Z';
+const TERMS_LAST_UPDATED = '2026-07-30T00:00:00.000Z';
 
 const router = Router({ strict: false });
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -142,11 +132,10 @@ router.post('/google', strictLimiter, async (req, res) => {
 
         // 3. Si no existe, lo registramos auto-mágicamente
         if (!user) {
+            const userId = uuidv4();
             const keypair = createWallet();
             const secretKey = keypair.secret();
-             const encSecret = encryptAll(userId, secretKey, keypair.publicKey());
-
-            const userId = uuidv4();
+            const encSecret = encryptAll(userId, secretKey, keypair.publicKey());
 
             // 1. El usuario se registra solo en Supabase.
             // La billetera Stellar se queda "off-chain" hasta que complete las misiones
@@ -166,7 +155,12 @@ router.post('/google', strictLimiter, async (req, res) => {
                     stellar_secret_key_encrypted: encSecret,
                     target_watch_seconds: targetWatchSeconds,
                     target_likes: targetLikes,
-                    target_follows: targetFollows
+                    target_follows: targetFollows,
+                    bonus_total_mxn: 20,
+                    bonus_released_mxn: 0,
+                    wallet_activated: false,
+                    tutorial_completed: false,
+                    bonus_expired: false
                 })
                 .select()
                 .single();
@@ -188,6 +182,11 @@ router.post('/google', strictLimiter, async (req, res) => {
                     avatarUrl: finalUser.avatar_url || null,
                     terms_accepted_at: null,
                     terms_version: null,
+                    bonus_total_mxn: finalUser.bonus_total_mxn || 20,
+                    bonus_released_mxn: finalUser.bonus_released_mxn || 0,
+                    wallet_activated: !!finalUser.wallet_activated,
+                    bonus_expired: !!finalUser.bonus_expired,
+                    tutorial_completed: !!finalUser.tutorial_completed,
                 },
             });
         }
@@ -212,6 +211,11 @@ router.post('/google', strictLimiter, async (req, res) => {
                 avatarUrl: user.avatar_url || null,
                 terms_accepted_at: user.terms_accepted_at || null,
                 terms_version: user.terms_version || null,
+                bonus_total_mxn: user.bonus_total_mxn || 0,
+                bonus_released_mxn: user.bonus_released_mxn || 0,
+                wallet_activated: !!user.wallet_activated,
+                bonus_expired: !!user.bonus_expired,
+                tutorial_completed: !!user.tutorial_completed,
             },
         });
     } catch (err) {
@@ -275,7 +279,7 @@ router.get('/terms/current', (req, res) => {
         version: TERMS_VERSION,
         last_updated: TERMS_LAST_UPDATED,
         hash: TERMS_CONTENT_HASH,
-        summary: 'Al usar Shekael aceptas estos términos. MXNe es un token digital en Stellar, no una moneda fiduciaria ni un servicio financiero regulado.'
+        summary: 'Al usar Shekael aceptas estos términos. USDC es un token digital en Stellar, no una moneda fiduciaria ni un servicio financiero regulado.'
     });
 });
 
@@ -374,7 +378,7 @@ router.post('/verify-pin', authMiddleware, async (req, res) => {
         const supabase = getDB();
         const { data: user, error } = await supabase
             .from('users')
-            .select('pin_hash, encrypted_private_key')
+            .select('pin_hash, encrypted_private_key, stellar_secret_key_encrypted, stellar_public_key')
             .eq('id', req.user.id)
             .maybeSingle();
 
@@ -390,7 +394,9 @@ router.post('/verify-pin', authMiddleware, async (req, res) => {
 
         res.json({
             success: true,
-            encryptedPrivateKey: user.encrypted_private_key || null
+            encryptedPrivateKey: user.encrypted_private_key || null,
+            stellarSecretKeyEncrypted: user.stellar_secret_key_encrypted || null,
+            stellarPublicKey: user.stellar_public_key || null,
         });
     } catch (err) {
         console.error('[PIN] Error verifying PIN:', err.message);
@@ -447,6 +453,11 @@ router.get('/me', authMiddleware, async (req, res) => {
                 createdAt: user.created_at,
                 terms_accepted_at: user.terms_accepted_at || null,
                 terms_version: user.terms_version || null,
+                bonus_total_mxn: user.bonus_total_mxn || 0,
+                bonus_released_mxn: user.bonus_released_mxn || 0,
+                wallet_activated: !!user.wallet_activated,
+                bonus_expired: !!user.bonus_expired,
+                tutorial_completed: !!user.tutorial_completed,
             },
         });
     } catch (err) {

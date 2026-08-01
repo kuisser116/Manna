@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Component, useEffect, useRef, useState } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {
+  ArrowLeft, ExternalLink, FileText, Users,
   UserPlus, UserCheck, Camera, QrCode,
   LayoutGrid, Eye, MessageCircle, Share, Flag,
-  Copy, Check, ImagePlus, CalendarDays, Settings, BarChart3
+  Copy, Check, ImagePlus, CalendarDays, Settings, BarChart3, Key
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../components/ProfileEditModal/ProfileEditModal';
@@ -30,11 +31,46 @@ const Icons = {
   ),
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+function formatCount(n) {
+  if (!n) return 0;
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n;
+}
+
+class ProfileErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error('Profile Error:', error, info);
+    this.setState({ info });
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text)' }}>
+          <h2>Error en el perfil</h2>
+          <pre style={{ fontSize: 12, marginTop: 16, background: 'var(--color-surface)', padding: 16, borderRadius: 8, textAlign: 'left', maxWidth: 600, margin: '16px auto', overflow: 'auto' }}>
+            {this.state.error?.message}\n\n{this.state.error?.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Profile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
   const navigate = useNavigate();
-  const { user: currentUser, privacy } = useStore();
 
   const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -63,6 +99,27 @@ export default function Profile() {
       setCoverUploading(false);
     }
   };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setProfileData(prev => ({ ...prev, avatarUrl: preview }));
+    setAvatarUploading(true);
+    try {
+      const { data } = await updateAvatar(file);
+      if (data?.avatarUrl) {
+        URL.revokeObjectURL(preview);
+        setProfileData(prev => ({ ...prev, avatarUrl: data.avatarUrl }));
+      }
+    } catch {
+      // Keep optimistic local preview
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const { user: currentUser, privacy } = useStore();
 
   const isOwnProfile = !profileId || currentUser?.id === profileId;
 
@@ -146,13 +203,13 @@ export default function Profile() {
       .finally(() => setProfileLoading(false));
   }, [isOwnProfile, profileId, currentUser]);
 
-  useEffect(() => {
-    const targetId = isOwnProfile ? currentUser?.id : profileId;
-    if (!targetId) return;
+  const targetIdProfile = isOwnProfile ? currentUser?.id : profileId;
 
+  useEffect(() => {
+    if (!targetIdProfile) return;
     setPostsLoading(true);
 
-    getUserPosts(targetId)
+    getUserPosts(targetIdProfile)
       .then(({ data }) => {
         const posts = data.posts || [];
         const normalizedPosts = posts.map((post) => {
@@ -257,6 +314,7 @@ export default function Profile() {
   }
 
   return (
+    <ProfileErrorBoundary>
     <div className={styles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
       <main className={styles.main}>
         <section className={styles.profileCard}>
@@ -324,20 +382,10 @@ export default function Profile() {
                       </button>
                       <button
                         className={styles.editBtn}
-                        onClick={() => setIsProfileModalOpen(true)}
-                        title="Editar perfil"
+                        onClick={() => navigate('/settings')}
+                        title="Configuración"
                       >
                         <Settings size={18} />
-                      </button>
-                      <button
-                        className={styles.editBtn}
-                        onClick={() => setIsPrivacyModalOpen(true)}
-                        title="Privacidad"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
                       </button>
                     </>
                   ) : (
@@ -379,12 +427,6 @@ export default function Profile() {
                   </div>
                 )}
                 <div className={styles.chips}>
-                  {isOwnProfile && privacy.showMXNe !== false && (
-                    <div className={styles.chip}>
-                      <Icons.Heart />
-                      0.00 MXNe
-                    </div>
-                  )}
                   {profileData?.stellarPublicKey && (isOwnProfile ? privacy.showStellarKey !== false : true) && (
                     <div
                       className={`${styles.chip} ${styles.chipClickable} ${styles.chipAddress} ${copied ? styles.chipCopied : ''}`}
@@ -459,6 +501,7 @@ export default function Profile() {
         )}
       </AnimatePresence>
     </div>
+    </ProfileErrorBoundary>
   );
 }
 
@@ -484,10 +527,10 @@ function PrivacyModal({ isOpen, onClose }) {
           <button className={styles.modalClose} onClick={onClose}>✕</button>
         </div>
         <div className={styles.modalBody}>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '0.5rem' }}>
+          <p className={styles.profileAboutText}>
             Controla qué información se muestra en tu perfil público.
           </p>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', lineHeight: 1.4, marginBottom: '1.25rem' }}>
+          <p className={styles.profileAboutMuted}>
             Los mensajes directos siempre están cifrados E2EE y nadie puede leerlos, ni Shekael.
           </p>
 
@@ -500,7 +543,6 @@ function PrivacyModal({ isOpen, onClose }) {
             />
             <PrivacyToggle
               label="Mostrar llave Stellar"
-              desc="Necesaria para recibir pagos MXNe de otros usuarios"
               enabled={privacy.showStellarKey !== false}
               onToggle={() => toggle('showStellarKey')}
             />
@@ -511,13 +553,6 @@ function PrivacyModal({ isOpen, onClose }) {
               onToggle={() => toggle('showStats')}
             />
             <PrivacyToggle
-              label="Mostrar MXNe"
-              desc="Muestra tu saldo de puntos de lealtad"
-              enabled={privacy.showMXNe !== false}
-              onToggle={() => toggle('showMXNe')}
-            />
-            <PrivacyToggle
-              label="Mostrar biografía"
               desc="Tu bio se muestra en tu perfil público"
               enabled={privacy.showBio !== false}
               onToggle={() => toggle('showBio')}

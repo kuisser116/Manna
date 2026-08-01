@@ -1,0 +1,94 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--color-text-dim, #555);
+  gap: 12px;
+}
+
+.empty p { font-size: 14px; margin: 0; }
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reviewCard {
+  background: var(--color-surface-2, #2a2a3e);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.reviewer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatarPlaceholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-primary, #e11d48);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.reviewerName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #fff);
+  display: block;
+}
+
+.reviewDate {
+  font-size: 11px;
+  color: var(--color-text-dim, #666);
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.reviewText {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary, #bbb);
+  margin: 0 0 10px;
+}
+
+.reviewActions {
+  display: flex;
+  gap: 12px;
+}
+
+.reviewAction {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-dim, #666);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.reviewAction:hover { background: var(--color-surface-3, #3a3a4e); color: var(--color-text, #fff); }

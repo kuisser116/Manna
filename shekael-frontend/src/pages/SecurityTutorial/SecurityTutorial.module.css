@@ -1,0 +1,103 @@
+.overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--color-bg); overflow: hidden;
+    font-family: var(--font-family);
+}
+
+/* ── Partículas de fondo ── */
+.particle {
+    position: absolute;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ── Progress dots ── */
+.progress {
+    position: absolute; top: 24px; left: 50%;
+    transform: translateX(-50%); display: flex; gap: 8px; z-index: 10;
+}
+.pdot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--color-border); transition: all .6s cubic-bezier(.34,1.56,.64,1);
+}
+.pdotActive { background: var(--color-text); width: 28px; border-radius: 4px; }
+.pdotDone { background: var(--color-text-muted); opacity: .4; }
+
+/* ── Slides ── */
+.wrap {
+    position: relative; width: 100%; max-width: 480px;
+    height: 100vh; max-height: 800px; padding: 32px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 48px 32px; text-align: center;
+}
+
+/* ── Slide content ── */
+.slideIcon {
+    color: var(--color-primary);
+    margin-bottom: 20px;
+}
+.titleMed {
+    font-family: var(--font-theodore); font-size: 1.6rem;
+    color: var(--color-text); margin: 0 0 12px; letter-spacing: .02em;
+}
+.desc { 
+    font-size: .95rem; 
+    color: var(--color-text-secondary); 
+    line-height: 1.6; 
+    margin: 0 auto 16px; 
+    max-width: 360px; 
+}
+
+/* ── Highlight box ── */
+.highlightBox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: left;
+    max-width: 340px;
+    margin-top: 8px;
+}
+.highlightBox svg {
+    color: #ef4444;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.highlightBox span {
+    font-size: 0.85rem;
+    color: var(--color-text, #e8e8f0);
+    line-height: 1.5;
+}
+
+/* ── Button ── */
+.btn {
+    position: absolute; bottom: 56px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 32px; border-radius: 14px;
+    border: none; background: var(--color-primary); color: #fff;
+    font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: filter .15s, transform .1s;
+    z-index: 5;
+}
+.btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btnFinish { background: var(--color-success, #22c55e); }
+
+.skipBtn {
+    position: absolute; bottom: 20px;
+    background: none; border: none;
+    color: var(--color-text-muted, #888);
+    font-size: 0.85rem; cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    z-index: 5;
+    transition: color 0.2s ease;
+}
+.skipBtn:hover { color: var(--color-text, #ccc); }

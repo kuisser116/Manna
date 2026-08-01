@@ -1,12 +1,15 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
+import ChatContextMenu from './ChatContextMenu.jsx';
 import { useNavigate, useLocation } from 'react-router-dom';
+import ChatHeader from './ChatHeader.jsx';
 import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase.js';
 import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 import useStore from '../../store';
 import { getUserProfile } from '../../api/users.api';
 import { verifyPin } from '../../api/auth.api';
-import PinKeypad, { pinHash } from '../../components/PinKeypad/PinKeypad';
+import { pinHash } from '../../crypto/pinHash';
+import LockScreen from '../../components/LockScreen/LockScreen';
 import _sodium, { ready as sodiumReady } from 'libsodium-wrappers';
 import { getKeyPair } from '../../crypto/keyStore';
 import {
@@ -19,12 +22,12 @@ import {
   togglePinMessage, getPinnedMessage, markAsRead
 } from '../../api/chats.api';
 import styles from './Chat.module.css';
-import StickerPicker from '../../components/StickerPicker';
-import AudioRecorder from '../../components/AudioRecorder';
-import PollCreator from '../../components/PollCreator';
-import PollResults from '../../components/PollResults';
-import GroupCreateModal from '../../components/GroupCreateModal';
-import AudioPlayer from '../../components/AudioPlayer';
+import StickerPicker from '../../components/StickerPicker/StickerPicker';
+import AudioRecorder from '../../components/AudioRecorder/AudioRecorder';
+import PollCreator from '../../components/PollCreator/PollCreator';
+import PollResults from '../../components/PollResults/PollResults';
+import GroupCreateModal from '../../components/GroupCreateModal/GroupCreateModal';
+import AudioPlayer from '../../components/AudioPlayer/AudioPlayer';
 import { generateInvite, joinGroup, leaveGroup, toggleSaveMessage } from '../../api/chats.api';
 import {
   connectSocket, disconnectSocket, joinConversation, leaveConversation, emitTyping,
@@ -363,7 +366,6 @@ export default function Chat() {
 
     // Listeners para eventos en tiempo real
     onMessageSent(async (msg) => {
-      console.log('[WS RECV] message:sent id:', msg?.id?.substring(0,8));
       const conv = activeConvRef.current;
       if (!conv?.id || msg.conversation_id !== conv.id) return;
       if (msg.sender_id === user?.id) return;
@@ -381,7 +383,7 @@ export default function Chat() {
             try {
               decryptedText = await legacyDecrypt(msg.encrypted_content, msg.nonce, fresh.public_key);
             } catch {}
-            if (decryptedText) console.log('[WS KEY] descifrado OK');
+            // decrypted
           }
         } catch {}
       }
@@ -662,7 +664,6 @@ export default function Chat() {
       // Cachear siempre (sea desde conv.otherUser o desde fresh)
       if (otherUser?.public_key) {
         otherUserCache.current[conv.id] = otherUser;
-        console.log('[CACHE KEY] conv:', conv.id?.substring(0,8), 'key:', otherUser.public_key?.substring(0,20));
       }
 
       const decrypted = [];
@@ -1586,98 +1587,21 @@ export default function Chat() {
           <>
             <div className={styles.messagesList} ref={msgListRef}>
               <div className={styles.stickyGroup}>
-              <div className={styles.chatHeader}>
-              <div className={styles.chatHeaderUser}>
-                {isMobile && (
-                  <button
-                    className={styles.mobileBackBtn}
-                    onClick={() => { setActiveConv(null); setChatConversationMode(false); }}
-                    title="Volver a chats"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
-                    </svg>
-                  </button>
-                )}
-                <div className={styles.avatarSmall}>
-                  {activeConv.otherUser?.avatar_url ? (
-                    <img src={activeConv.otherUser.avatar_url} alt="" />
-                  ) : (
-                    <div className={styles.avatarPlaceholder}>
-                      {activeConv.otherUser?.display_name?.[0] || '?'}
-                    </div>
-                  )}
-                </div>
-                <div className={styles.chatHeaderInfo}>
-                  <span
-                    className={styles.chatHeaderName}
-                    onClick={() => {
-                      setNicknameInput(activeConv.myNickname || '');
-                      setShowNicknameEdit(true);
-                    }}
-                    title="Cambiar apodo"
-                  >
-                    {activeConv.myNickname || activeConv.otherUser?.display_name || 'Usuario'}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.editIcon}>
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                  </span>
-                  {typingUsers[activeConv.otherUser?.id] && (
-                    <div className={styles.typingIndicator}>
-                      <span className={styles.typingDots}>
-                        <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
-                      </span>
-                      Escribiendo...
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles.chatHeaderActions}>
-                <button
-                  className={styles.chatActionBtn}
-                  onClick={() => setShowChatSearch(!showChatSearch)}
-                  title="Buscar en el chat"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                  </svg>
-                </button>
-                <div className={styles.menuWrapper} ref={menuRef}>
-                  <button
-                    className={styles.chatActionBtn}
-                    onClick={() => setShowChatMenu(!showChatMenu)}
-                    title="Más opciones"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-                    </svg>
-                  </button>
-                  {showChatMenu && (
-                    <div className={styles.chatMenu}>
-                      <button className={styles.chatMenuItem} onClick={handleOpenPinConfirm}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                        Eliminar historial
-                      </button>
-                      <button className={styles.chatMenuItem} onClick={handleGoToProfile}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        Ir a perfil
-                      </button>
-                      <button className={styles.chatMenuItem} onClick={handleOpenBgPicker}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-                        </svg>
-                        Cambiar fondo
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+              <ChatHeader
+                isMobile={isMobile}
+                activeConv={activeConv}
+                typingUsers={typingUsers}
+                onBack={() => { setActiveConv(null); setChatConversationMode(false); }}
+                onNicknameEdit={() => { setNicknameInput(activeConv.myNickname || ''); setShowNicknameEdit(true); }}
+                showChatSearch={showChatSearch}
+                onToggleChatSearch={() => setShowChatSearch(!showChatSearch)}
+                showChatMenu={showChatMenu}
+                onToggleChatMenu={() => setShowChatMenu(!showChatMenu)}
+                menuRef={menuRef}
+                onClearHistory={handleOpenPinConfirm}
+                onGoToProfile={handleGoToProfile}
+                onOpenBgPicker={handleOpenBgPicker}
+              />
 
             {/* Pinned message banner */}
             {pinnedMessage && (
@@ -2186,51 +2110,16 @@ export default function Chat() {
       </div>
 
       {/* Context menu */}
-      {contextMenu && (
-        <div
-          className={styles.contextMenu}
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-        >
-          <button className={styles.contextMenuItem} onClick={() => { startReply(contextMenu.message); setContextMenu(null); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            Responder
-          </button>
-          <button className={styles.contextMenuItem} onClick={() => startForward(contextMenu.message)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-              <polyline points="16 6 12 2 8 6"/>
-              <line x1="12" y1="2" x2="12" y2="15"/>
-            </svg>
-            Reenviar
-          </button>
-          {contextMenu.message.sender_id === user?.id && (
-            <>
-              <button className={styles.contextMenuItem} onClick={() => handleStartEdit(contextMenu.message)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-                Editar
-              </button>
-              <button className={styles.contextMenuItem} onClick={() => handlePinMsg(contextMenu.message.id)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
-                </svg>
-                Fijar mensaje
-              </button>
-              <button className={`${styles.contextMenuItem} ${styles.dangerItem}`} onClick={() => handleDeleteMessage(contextMenu.message.id)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-                Eliminar
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      <ChatContextMenu
+          contextMenu={contextMenu}
+          user={user}
+          onReply={startReply}
+          onForward={startForward}
+          onEdit={handleStartEdit}
+          onPin={handlePinMsg}
+          onDelete={handleDeleteMessage}
+          onClose={() => setContextMenu(null)}
+        />
 
       {/* Nickname edit modal */}
       {showNicknameEdit && (
@@ -2369,16 +2258,13 @@ export default function Chat() {
         />
       )}
 
-      {/* PIN confirmation modal (reusable PinKeypad) */}
+      {/* PIN confirmation — usa el LockScreen unificado */}
       {showPinConfirm && (
-        <PinKeypad
+        <LockScreen
           mode="enter"
-          title="Confirmar PIN"
           subtitle="Ingresa tu PIN para borrar el historial"
           onComplete={handlePinComplete}
           onCancel={() => { setShowPinConfirm(false); setPinError(''); }}
-          error={pinError}
-          loading={false}
         />
       )}
 

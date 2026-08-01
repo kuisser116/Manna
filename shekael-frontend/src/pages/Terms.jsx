@@ -144,8 +144,8 @@ export default function Terms() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <div className={styles.summary}>
-            <strong>Resumen:</strong> Shekael es una red social con un ecosistema digital propio (MXNe). 
-            MXNe es un token digital emitido en la red Stellar (testnet). No está garantizado, asegurado 
+            <strong>Resumen:</strong> Shekael es una red social con un ecosistema digital propio (USDC). 
+            USDC es un token digital emitido en la red Stellar (testnet). No está garantizado, asegurado 
             ni regulado por ninguna autoridad financiera. Su valor depende del mercado y de la comunidad. 
             Al usar Shekael aceptas estos términos.
           </div>
@@ -171,172 +171,109 @@ export default function Terms() {
           </section>
 
           <section className={styles.section}>
-            <h2>3. Naturaleza de MXNe (Token Digital)</h2>
+            <h2>3. Descripción del Servicio</h2>
             <p>
-              MXNe es un <strong>token digital</strong> emitido en la red Stellar (actualmente en testnet), 
-              con código de activo <strong>MXNe</strong>. A diferencia de sistemas de puntos de lealtad 
-              tradicionales, MXNe opera sobre una blockchain pública y puede ser transferido entre 
-              usuarios dentro de la Plataforma.
+              Shekael es una red social con ecosistema digital propio basado en la red Stellar
+              (actualmente en testnet, migrable a mainnet en el futuro). Incluye las siguientes funcionalidades:
+            </p>
+            <ul>
+              <li><strong>Publicaciones</strong> de texto, imágenes, video y micro-contenido.</li>
+              <li><strong>Chat privado cifrado</strong> entre usuarios.</li>
+              <li><strong>Apoyos (Supports)</strong> — transferencias económicas entre usuarios por contenido.</li>
+              <li><strong>Bono Promocional</strong> de $20 MXN para nuevos usuarios.</li>
+              <li><strong>Recompensas por Anuncios</strong> — ganas USDC viendo anuncios completos.</li>
+              <li><strong>Pagos QR</strong> en comercios afiliados dentro de la Plataforma.</li>
+              <li><strong>Fondo Regional</strong> — comisión del 10% en apoyos para beneficios comunitarios.</li>
+            </ul>
+          </section>
+
+          <section className={styles.section}>
+            <h2>4. USDC — Token Digital, No Moneda</h2>
+            <p>
+              USDC es un <strong>token digital</strong> emitido en la red Stellar (código de activo <strong>USDC</strong>).
+              Opera sobre una blockchain pública y puede transferirse entre usuarios dentro de la Plataforma.
             </p>
             <p className={styles.highlight}>
-              <strong>MXNe NO es una moneda de curso legal, no está respaldado por ningún gobierno, 
-              no está asegurado por ninguna institución financiera (incluyendo FDIC o IPAB), 
-              y no está registrado como valor (security) ante ninguna autoridad regulatoria.</strong>
+              <strong>USDC NO es moneda de curso legal, no está respaldado por ningún gobierno,
+              no está asegurado por FDIC, IPAB ni ninguna institución, y no está registrado
+              como valor (security) ante ninguna autoridad regulatoria.</strong>
             </p>
-            <p>Al aceptar estos términos, reconoces y aceptas expresamente que:</p>
+            <p>Al usar Shekael, reconoces y aceptas expresamente que:</p>
             <ul>
-              <li>MXNe <strong>no tiene un valor garantizado</strong>. Su valor percibido depende exclusivamente 
-              de la oferta y demanda dentro del ecosistema Shekael y del mercado secundario voluntario.</li>
-              <li>MXNe <strong>no está pegado 1:1 a ninguna moneda fiduciaria</strong>. Cualquier referencia a 
-              un valor equivalente en MXN es aspiracional y no constituye una obligación contractual.</li>
-              <li>La red Stellar es una red pública descentralizada. Shekael no controla, no garantiza 
-              y no se hace responsable por fallas, congestiones, ataques o pérdidas ocurridas en dicha red.</li>
-              <li>Eres el <strong>único responsable de tus claves privadas</strong> y de la seguridad de tu 
-              cuenta en la red Stellar. Shekael no tiene acceso a tus claves ni puede recuperarlas.</li>
-              <li>Los tokens MXNe están sujetos a <strong>volatilidad de mercado</strong>. Su valor puede 
-              incrementarse o reducirse drásticamente, incluso hasta cero.</li>
-              <li>Shekael <strong>no es una institución financiera</strong>, banco, casa de bolsa, casa de cambio, 
-              fondo de inversión, ni proveedor de servicios de activos virtuales regulado.</li>
-              <li>Shekael <strong>no otorga créditos, préstamos, rendimientos, intereses ni garantías financieras</strong> 
-              de ningún tipo.</li>
-              <li>Los saldos de MXNe <strong>no generan intereses ni rendimientos</strong> de ninguna naturaleza.</li>
-              <li>MXNe <strong>no puede ser canjeado por efectivo</strong> directamente a través de Shekael. 
-              Cualquier intercambio MXNe/MXN deberá ocurrir a través de servicios externos no afiliados 
-              y bajo tu propio riesgo.</li>
-              <li>En caso de suspensión definitiva de tu cuenta por violación de estos Términos, 
-              los MXNe acumulados serán redirigidos al Fondo Regional de Shekael sin compensación.</li>
+              <li>USDC <strong>no tiene valor garantizado</strong>. Su valor percibido depende de oferta y demanda dentro del ecosistema.</li>
+              <li>Cualquier equivalencia en MXN es <strong>aspiracional y no vinculante</strong>.</li>
+              <li>USDC <strong>no genera intereses ni rendimientos</strong> de ninguna naturaleza.</li>
+              <li>No puede ser <strong>canjeado por efectivo</strong> a través de Shekael.</li>
+              <li>Shekael <strong>no es institución financiera</strong>, banco, casa de cambio ni FinTech regulada.</li>
             </ul>
           </section>
 
           <section className={styles.section}>
-            <h2>4. Descuento Promocional en Comercios</h2>
+            <h2>5. Bono Promocional $20 MXN</h2>
             <p>
-              Shekael puede ofrecer un beneficio promocional de descuento (actualmente <strong>5%</strong> con tope de 
-              <strong>50 MXNe por transacción</strong>) en compras realizadas en comercios afiliados mediante pago con 
-              QR dentro de la Plataforma. Este descuento:
+              Los usuarios nuevos reciben un bono virtual de <strong>$20 MXN</strong>. Este bono se libera
+              a razón de <strong>$1 MXN</strong> (en USDC) por cada post aprobado por la administración de Shekael,
+              con un máximo de un post aprobado por día. El bono expira <strong>70 días</strong> después del
+              primer post aprobado; los fondos no reclamados regresan al Fondo Regional.
             </p>
-            <ul>
-              <li>Es un beneficio promocional, no un derecho adquirido ni un rendimiento financiero.</li>
-              <li>Puede ser modificado, suspendido o cancelado en cualquier momento sin responsabilidad para Shekael.</li>
-              <li>Está sujeto a disponibilidad de fondos en el Fondo Regional correspondiente.</li>
-              <li>No aplica en combinación con otras promociones u ofertas.</li>
-            </ul>
-          </section>
-
-          <section className={styles.section}>
-            <h2>5. Obtención de MXNe</h2>
-            <p>Los usuarios pueden obtener MXNe únicamente a través de:</p>
-            <ul>
-              <li>Participar en actividades promocionales designadas por Shekael (ej. visualización de anuncios).</li>
-              <li>Recibir transferencias de MXNe de otros usuarios dentro de la Plataforma.</li>
-              <li>Bonos o promociones especiales que Shekael determine unilateralmente.</li>
-            </ul>
             <p>
-              Shekael se reserva el derecho de ajustar las tasas de obtención de MXNe, los requisitos de participación 
-              y las condiciones de las promociones en cualquier momento.
+              Shekael puede modificar, suspender o cancelar este programa promocional en cualquier momento
+              sin responsabilidad hacia los usuarios. Este bono no constituye un derecho adquirido,
+              un salario, un rendimiento financiero ni una obligación contractual.
             </p>
           </section>
 
           <section className={styles.section}>
-            <h2>6. Seguridad de tu Billetera Stellar</h2>
+            <h2>6. Apoyos (Supports) y Fondo Regional</h2>
             <p>
-              Shekael utiliza un sistema de <strong>encriptación por-usuario</strong> para proteger
-              las claves privadas de tu billetera Stellar. Cada wallet se encripta con un identificador
-              único asociado a tu cuenta, no con una llave maestra compartida.
+              Los usuarios pueden enviar apoyos económicos a creadores dentro de la Plataforma usando USDC.
+              Cada apoyo genera una comisión del <strong>10%</strong> que se deposita en el Fondo Regional
+              para beneficios comunitarios determinados unilateralmente por Shekael.
             </p>
             <p>
-              Adicionalmente, se genera un <strong>backup de recuperación</strong> encriptado con una
-              llave maestra interna. Este backup solo se utiliza en casos de emergencia o migración
-              de base de datos, y nunca está disponible para terceros.
+              Las transacciones en la red Stellar son <strong>irreversibles</strong>. No existe chargeback,
+              reembolso forzoso ni reversión de transacciones confirmadas. Shekael no garantiza la recepción
+              del apoyo por parte del destinatario ni se hace responsable por errores en las transacciones.
             </p>
+          </section>
+
+          <section className={styles.section}>
+            <h2>7. Wallet Stellar y Seguridad</h2>
             <p>
-              <strong>Importante:</strong> Aunque Shekael toma medidas para proteger tus claves,
-              <strong>no podemos garantizar la recuperación de wallets</strong> si ocurre un error
-              grave en el sistema de encriptación. Eres responsable de mantener tu cuenta segura
-              y de no compartir tu información de inicio de sesión.
+              Shekael genera y custodia claves Stellar cifradas por usuario mediante PIN. Cada wallet se encripta
+              con un identificador único asociado a tu cuenta, no con una llave maestra compartida.
             </p>
             <p className={styles.highlight}>
-              En caso de pérdida de acceso a tu billetera por causas imputables a Shekael,
-              haremos todo lo posible por restaurarla, pero <strong>no nos hacemos responsables
-              por fondos perdidos debido a errores del sistema</strong>, cambios en las claves de
-              encriptación o fallos técnicos fuera de nuestro control.
-            </p>
-            <p>
-              La billetera Stellar opera actualmente en <strong>testnet</strong>. Los MXNe obtenidos
-              no tienen valor real y son exclusivamente para fines de prueba y desarrollo.
-              Al migrar a mainnet, se implementarán medidas adicionales de seguridad.
+              <strong>Shekael no puede recuperar claves perdidas.</strong> La pérdida de acceso a tu cuenta de Google
+              o a tu PIN resultará en la pérdida permanente del acceso a tus USDC. Eres el único responsable
+              de mantener tu cuenta segura.
             </p>
           </section>
 
           <section className={styles.section}>
-            <h2>7. Depósitos, Retiros y Servicios de Terceros</h2>
+            <h2>8. Recompensas por Anuncios</h2>
             <p>
-              Shekael facilita la experiencia de usuario dentro de su Plataforma, pero <strong>no opera,
-              no controla y no se hace responsable</strong> por servicios externos que permitan
-              la entrada o salida de fondos del ecosistema MXNe.
+              Shekael puede mostrar anuncios recompensados. Al ver un anuncio completo, recibes USDC
+              (token de recompensa). Shekael puede modificar las tasas y requisitos de las recompensas
+              en cualquier momento sin responsabilidad hacia los usuarios.
             </p>
-            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Depósitos desde Exchanges</h3>
+          </section>
+
+          <section className={styles.section}>
+            <h2>9. Depósitos, Retiros y Servicios de Terceros</h2>
             <p>
-              Los usuarios pueden adquirir MXNe a través de exchanges externos (Bitso, Binance,
-              KuCoin, etc.) y depositarlos en su billetera Stellar dentro de Shekael. Shekael:
+              Depósitos, retiros y swaps ocurren en exchanges, anchors (MoneyGram) o el DEX de Stellar.
+              Shekael <strong>no opera, controla ni es responsable</strong> por estos servicios de terceros.
+              El usuario asume todo riesgo asociado.
             </p>
-            <ul>
-              <li><strong>No opera ningún exchange</strong> ni casa de cambio.</li>
-              <li><strong>No recibe, custodia ni procesa</strong> depósitos en moneda fiduciaria (MXN, USD).</li>
-              <li><strong>No garantiza la disponibilidad, precio o liquidez</strong> de MXNe en exchanges externos.</li>
-              <li>La conversión de MXN a MXNe ocurre <strong>fuera de Shekael</strong>, en plataformas de terceros.</li>
-            </ul>
-            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Retiros a Oxxo / MoneyGram</h3>
-            <p>
-              Shekael puede integrar anchors de la red Stellar (como MoneyGram) para permitir
-              la conversión de MXNe a moneda fiduciaria y su retiro en efectivo. Al usar este servicio:
-            </p>
-            <ul>
-              <li>Shekael <strong>solo actúa como interfaz técnica</strong> entre el usuario y el anchor.</li>
-              <li>El anchor es un <strong>tercero independiente</strong> con sus propios términos y condiciones.</li>
-              <li>Shekael <strong>no garantiza</strong> que el anchor procese la transacción, ni se hace
-              responsable por retrasos, rechazos o pérdidas ocurridas en el anchor.</li>
-              <li>Cualquier comisión, límite o restricción del anchor es responsabilidad exclusiva del anchor.</li>
-              <li>El usuario acepta que Shekael <strong>no maneja, custodia ni transfiere dinero fiduciario</strong>
-              en ningún momento del proceso.</li>
-            </ul>
-            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Swap XLM ↔ MXNe</h3>
-            <p>
-              El intercambio (swap) entre XLM y MXNe ocurre en el <strong>DEX descentralizado de la red
-              Stellar</strong> (Stellar Decentralized Exchange). Shekael:
-            </p>
-            <ul>
-              <li><strong>No opera ni controla</strong> el DEX de Stellar.</li>
-              <li><strong>No garantiza</strong> la ejecución exitosa del swap, el tipo de cambio,
-              ni la existencia de liquidez en el DEX.</li>
-              <li>El swap es una transacción <strong>directa entre el usuario y la red Stellar</strong>,
-              sin intervención de Shekael.</li>
-              <li>Shekael no cobra comisiones adicionales por el swap; las únicas comisiones son las
-de la red Stellar y el spread del DEX.</li>
-            </ul>
-            <h3 style={{fontSize: '0.95rem', marginTop: '1rem', color: 'var(--color-text)'}}>Fondo Regional (Comisión del 10%)</h3>
-            <p>
-              Cada transacción de apoyo (support) dentro de la Plataforma genera una comisión
-              automática del <strong>10% del monto</strong>, que se deposita en el Fondo Regional.
-              Al realizar una transacción en Shekael, aceptas esta comisión. El Fondo Regional:
-            </p>
-            <ul>
-              <li>Se utiliza para <strong>beneficios comunitarios</strong> determinados unilateralmente por Shekael.</li>
-              <li><strong>No es un fondo de inversión, seguro ni garantía financiera.</strong></li>
-              <li>Shekael puede modificar el porcentaje de comisión en cualquier momento,
-              notificando a los usuarios con anticipación.</li>
-            </ul>
             <p className={styles.highlight}>
-              Al usar las funciones de depósito, retiro, swap o apoyo dentro de Shekael,
-              reconoces que todas las transacciones con valor económico real ocurren en la
-              <strong>red Stellar o en plataformas de terceros</strong>, y que Shekael
-              <strong>no es responsable por pérdidas, retrasos o fallas</strong> en dichas
-              redes o servicios externos.
+              Shekael no recibe, custodia ni procesa depósitos en moneda fiduciaria. Todo intercambio
+              USDC/MXN debe ocurrir a través de servicios externos bajo tu propio riesgo.
             </p>
           </section>
 
           <section className={styles.section}>
-            <h2>8. Libertad de Expresión y Moderación</h2>
+            <h2>10. Contenido y Moderación</h2>
             <p>
               Shekael cree en la <strong>libertad de expresión como principio fundamental</strong>. 
               No censuramos temas sensibles, controversiales o incómodos. Creemos que la conciencia 
@@ -370,13 +307,13 @@ de la red Stellar y el spread del DEX.</li>
             </p>
             <p className={styles.highlight}>
               Shekael se reserva el derecho de suspender cuentas que infrinjan estas normas
-              mínimas. En caso de suspensión definitiva, los MXNe acumulados serán redirigidos
+              mínimas. En caso de suspensión definitiva, los USDC acumulados serán redirigidos
               al Fondo Regional de Shekael.
             </p>
           </section>
 
           <section className={styles.section}>
-            <h2>9. Propiedad Intelectual</h2>
+            <h2>11. Propiedad Intelectual</h2>
             <p>
               El usuario conserva todos los derechos de propiedad intelectual sobre el contenido que publique 
               en Shekael. Al publicar contenido, otorgas a Shekael una licencia mundial, no exclusiva, 
@@ -390,7 +327,7 @@ de la red Stellar y el spread del DEX.</li>
           </section>
 
           <section className={styles.section}>
-            <h2>10. Privacidad y Datos</h2>
+            <h2>12. Privacidad y Datos (LFPDPPP)</h2>
             <p>
               Shekael recopila y procesa tu información de acuerdo con nuestra Política de Privacidad. 
               Al usar la Plataforma, consientes la recopilación y uso de tu información según lo descrito 
@@ -405,72 +342,87 @@ de la red Stellar y el spread del DEX.</li>
           </section>
 
           <section className={styles.section}>
-            <h2>11. Riesgos Asociados a Tokens Digitales</h2>
+            <h2>13. Riesgos (Blockchain y Volatilidad)</h2>
             <p className={styles.highlight}>
-              Al usar MXNe, reconoces que los tokens digitales y las redes blockchain conllevan 
+              Al usar USDC, reconoces que los tokens digitales y las redes blockchain conllevan 
               riesgos inherentes. Shekael <strong>no garantiza</strong> la estabilidad, disponibilidad 
-              o valor futuro de MXNe. Aceptas expresamente que:
+              o valor futuro de USDC. Aceptas expresamente que:
             </p>
             <ul>
-              <li>El valor de MXNe puede <strong>volverse cero</strong> en cualquier momento debido a 
+              <li>El valor de USDC puede <strong>volverse cero</strong> en cualquier momento debido a 
               condiciones de mercado, cambios regulatorios, fallas técnicas o decisiones de la comunidad.</li>
               <li>Las transacciones en la red Stellar son <strong>irreversibles</strong>. No existe 
               chargeback, reembolso forzoso ni reversión de transacciones confirmadas.</li>
               <li>La red Stellar puede experimentar <strong>congestión, bifurcaciones (forks), 
               ataques de seguridad o fallas</strong> que afecten la disponibilidad o integridad de los tokens.</li>
               <li>El marco regulatorio mexicano e internacional sobre tokens digitales y activos 
-              virtuales está en evolución. Cambios regulatorios podrían afectar la operación de MXNe 
+              virtuales está en evolución. Cambios regulatorios podrían afectar la operación de USDC 
               o su clasificación legal.</li>
               <li>No existe <strong>ningún seguro, fondo de garantía ni protección al consumidor</strong> 
-              que cubra pérdidas relacionadas con MXNe.</li>
+              que cubra pérdidas relacionadas con USDC.</li>
               <li>La pérdida de acceso a tu cuenta de Google o a tus claves Stellar resultará en la 
-              <strong>pérdida permanente</strong> del acceso a tus tokens MXNe.</li>
+              <strong>pérdida permanente</strong> del acceso a tus tokens USDC.</li>
             </ul>
           </section>
 
           <section className={styles.section}>
-            <h2>12. Limitación de Responsabilidad</h2>
+            <h2>14. Limitación de Responsabilidad</h2>
             <p className={styles.highlight}>
               Shekael NO será responsable por:
             </p>
             <ul>
               <li>Daños directos, indirectos, incidentales o consecuentes derivados del uso o la imposibilidad de uso de la Plataforma.</li>
-              <li>Pérdida de MXNe debido a errores técnicos, fallas de la red Stellar, o acciones de terceros.</li>
+              <li>Pérdida de USDC debido a errores técnicos, fallas de la red Stellar, o acciones de terceros.</li>
               <li>Contenido publicado por usuarios que viole derechos de terceros o leyes aplicables.</li>
               <li>Pérdida de acceso a tu cuenta de Google u otros métodos de autenticación externos.</li>
               <li>Interrupciones del servicio, caídas del servidor, o mantenimiento no programado.</li>
             </ul>
             <p>
-              El MXNe se proporciona "tal cual" y "según disponibilidad", sin garantía de ningún tipo. 
+              El USDC se proporciona "tal cual" y "según disponibilidad", sin garantía de ningún tipo. 
               El valor máximo de la responsabilidad acumulada de Shekael hacia cualquier usuario no excederá 
-              el equivalente en MXNe que el usuario haya obtenido en los últimos 12 meses.
+              el equivalente en USDC que el usuario haya obtenido en los últimos 12 meses.
             </p>
           </section>
 
           <section className={styles.section}>
-            <h2>13. Terminación</h2>
+            <h2>15. Terminación y Suspensión</h2>
             <p>
               Puedes dejar de usar Shekael en cualquier momento. Shekael puede suspender o terminar tu acceso 
               si violas estos Términos. Al terminar tu relación con Shekael:
             </p>
             <ul>
               <li>Tu acceso a la Plataforma será revocado.</li>
-              <li>Los MXNe en tu cuenta serán redirigidos al Fondo Regional.</li>
-              <li>Shekael no tiene obligación de mantener, devolver ni compensar los MXNe acumulados.</li>
+              <li>Los USDC en tu cuenta serán redirigidos al Fondo Regional.</li>
+              <li>Shekael no tiene obligación de mantener, devolver ni compensar los USDC acumulados.</li>
             </ul>
           </section>
 
           <section className={styles.section}>
-            <h2>14. Ley Aplicable y Jurisdicción</h2>
+            <h2>16. Evidencia, Ley y Jurisdicción</h2>
             <p>
-              Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia 
- relacionada con estos Términos será sometida a la jurisdicción de los tribunales competentes de la 
-              Ciudad de México, renunciando a cualquier otro fuero que pudiera corresponder.
+              <strong>Registro de Evidencia.</strong> Cada aceptación de estos Términos registra en la base de datos:
+              versión exacta aceptada, hash SHA-256 del texto íntegro, timestamp de aceptación,
+              dirección IP del usuario, user-agent del navegador/dispositivo, y el identificador único del usuario.
+              Este registro tiene valor probatorio y se conserva indefinidamente.
+            </p>
+            <p>
+              Shekael almacena el texto íntegro de cada versión de los Términos para permitir su verificación
+              contra el hash registrado. Cualquier discrepancia entre el texto almacenado y el hash registrado
+              será considerada evidencia de manipulación.
+            </p>
+            <p>
+              <strong>Ley Aplicable.</strong> Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos.
+              Cualquier controversia será sometida a los tribunales competentes de la Ciudad de México,
+              renunciando a cualquier otro fuero.
+            </p>
+            <p className={styles.highlight}>
+              <strong>Renuncia a Acción Colectiva.</strong> AL ACEPTAR ESTOS TÉRMINOS, RENUNCIAS EXPRESAMENTE
+              A PARTICIPAR EN CUALQUIER ACCIÓN COLECTIVA (CLASS ACTION) CONTRA SHEKAEL. Cualquier disputa
+              será resuelta de manera individual.
             </p>
           </section>
-
           <section className={styles.section}>
-            <h2>15. Contacto</h2>
+            <h2>17. Contacto</h2>
             <p>
               Para preguntas, aclaraciones o notificaciones relacionadas con estos Términos, puedes 
               contactarnos a través de los medios dispuestos en la Plataforma.

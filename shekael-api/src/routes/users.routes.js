@@ -478,6 +478,27 @@ router.put('/me/avatar', authMiddleware, upload.single('avatar'), handleMulterEr
     }
 });
 
+// POST /users/tutorial-complete — Marca el tutorial como completado
+router.post('/tutorial-complete', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { error } = await supabase
+            .from('users')
+            .update({ tutorial_completed: true })
+            .eq('id', req.user.id);
+
+        if (error) {
+            console.error('Error saving tutorial:', error);
+            return res.status(500).json({ message: 'Error al guardar progreso' });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Tutorial error:', err);
+        res.status(500).json({ message: 'Error interno' });
+    }
+});
+
 // GET /users/me/verify-wallet — Fuerza la activación de trustlines y fondeo si hubo errores
 router.get('/me/verify-wallet', authMiddleware, async (req, res) => {
     try {
@@ -492,6 +513,115 @@ router.get('/me/verify-wallet', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Verify wallet error:', err);
         res.status(500).json({ message: 'Error al verificar la billetera' });
+    }
+});
+
+// ─── Actualizar ubicación en tiempo real ───
+router.post('/location', authMiddleware, async (req, res) => {
+    try {
+        const { lat, lng } = req.body;
+        
+        if (lat === undefined || lng === undefined) {
+            return res.status(400).json({ message: 'lat y lng requeridos' });
+        }
+
+        const supabase = getDB();
+        await supabase
+            .from('users')
+            .update({
+                current_lat: parseFloat(lat),
+                current_lng: parseFloat(lng),
+                location_updated_at: new Date().toISOString(),
+            })
+            .eq('id', req.user.id);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error updating location:', err);
+        res.status(500).json({ message: 'Error al actualizar ubicación' });
+    }
+});
+
+// GET /users/me/bonus — Estado actual del bono promocional
+router.get('/me/bonus', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('bonus_total_mxn, bonus_released_mxn, wallet_activated, bonus_expired, tutorial_completed')
+            .eq('id', req.user.id)
+            .single();
+        
+        if (error) throw error;
+        
+        // Verificar expiración
+        let expired = user.bonus_expired;
+        if (user.bonus_expires_at && new Date() > new Date(user.bonus_expires_at)) {
+            expired = true;
+            await supabase.from('users').update({ bonus_expired: true }).eq('id', req.user.id);
+        }
+        
+        res.json({
+            total_mxn: user.bonus_total_mxn || 0,
+            released_mxn: user.bonus_released_mxn || 0,
+            locked_mxn: (user.bonus_total_mxn || 0) - (user.bonus_released_mxn || 0),
+            wallet_activated: !!user.wallet_activated,
+            expired,
+            tutorial_completed: !!user.tutorial_completed,
+        });
+    } catch (err) {
+        console.error('Bonus status error:', err);
+        res.status(500).json({ message: 'Error al obtener estado del bono' });
+    }
+});
+
+// POST /users/backup-key — Obtener clave privada con verificación PIN
+router.post('/backup-key', authMiddleware, async (req, res) => {
+    try {
+        const { pin } = req.body;
+        if (!pin || pin.length < 4) {
+            return res.status(400).json({ message: 'PIN requerido (mínimo 4 dígitos)' });
+        }
+
+        const supabase = getDB();
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('pin_hash, stellar_secret_key_encrypted, stellar_public_key, id')
+            .eq('id', req.user.id)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        if (!user.pin_hash) {
+            return res.status(400).json({ message: 'No tienes PIN configurado. Configúralo primero en Seguridad.' });
+        }
+
+        // Verificar PIN — usa el MISMO hash que el frontend (PinKeypad.jsx)
+        // computePinHash: hash = ((hash << 5) - hash) + charCode; hash |= 0; return 'pin_' + hash
+        function computePinHash(p) {
+            let hash = 0;
+            for (let i = 0; i < p.length; i++) {
+                hash = ((hash << 5) - hash) + p.charCodeAt(i);
+                hash |= 0;
+            }
+            return 'pin_' + hash;
+        }
+        const pinHash = computePinHash(pin);
+
+        if (user.pin_hash !== pinHash) {
+            return res.status(403).json({ message: 'PIN incorrecto' });
+        }
+
+        // Descifrar la clave secreta
+        const { decryptWithFallback } = await import('../services/crypto.service.js');
+        const secretKey = decryptWithFallback(user.id, user.stellar_public_key, user.stellar_secret_key_encrypted);
+
+        res.json({ secretKey, publicKey: user.stellar_public_key });
+    } catch (err) {
+        console.error('[Backup Key] Error:', err.message);
+        res.status(500).json({ message: 'Error al obtener clave de respaldo' });
     }
 });
 

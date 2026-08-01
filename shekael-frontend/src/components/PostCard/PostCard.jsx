@@ -3,6 +3,11 @@ import { MessageCircle, Share2, Bookmark, Heart, Eye, ChevronDown, ChevronUp, Al
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import useStore from '../../store';
+
+function stripHtml(html) {
+  if (!html) return '';
+  return html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+}
 import SupportButton from '../SupportButton/SupportButton';
 import SmartVideoPlayer from '../SmartVideoPlayer/SmartVideoPlayer';
 import StandardVideoPlayer from '../StandardVideoPlayer/StandardVideoPlayer';
@@ -354,7 +359,7 @@ export function PostCard({ post, isDetail = false }) {
 
         return (
             <p className={`${styles.textContent} ${isCapsule ? styles.capsuleText : ''}`}>
-                {content}
+                {stripHtml(content)}
             </p>
         );
     };
@@ -371,7 +376,6 @@ export function PostCard({ post, isDetail = false }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             onClick={handleCardClick}
-            style={{ cursor: 'pointer' }}
         >
             {isCapsule && (
                 <div className={styles.capsuleLabel}>
@@ -477,7 +481,7 @@ export function PostCard({ post, isDetail = false }) {
                     <Share2 size={16} />
                 </button>
                 {isVideo && (
-                <div className={styles.actionBtn} style={{ cursor: 'default' }} title="Vistas">
+                <div className={`${styles.actionBtn} ${styles.cursorDefault}`} title="Vistas">
                     <Eye size={16} />
                     <span>{formatViews(video_view_count || 0)}</span>
                 </div>

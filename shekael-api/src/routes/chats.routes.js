@@ -4,6 +4,7 @@ import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { uploadToR2 } from '../services/ipfs.service.js';
+import * as chatService from '../services/chat.service.js';
 import { emitToConversation, emitToUser } from '../services/socket.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -15,231 +16,50 @@ const router = Router({ strict: false });
 // POST /chats/request — Enviar solicitud de mensaje a un usuario
 router.post('/request', authMiddleware, async (req, res) => {
     try {
-        const { toUserId } = req.body;
-        const fromUserId = req.user.id;
-        const supabase = getDB();
-
-        if (!toUserId) return res.status(400).json({ message: 'Destinatario requerido' });
-
-        if (toUserId === fromUserId) {
-            return res.status(400).json({ message: 'No puedes enviarte solicitud a ti mismo' });
-        }
-
-        // Primero: revisar si YA comparten conversación (sin importar message_request)
-        const { data: fromParts } = await supabase
-            .from('conversation_participants')
-            .select('conversation_id')
-            .eq('user_id', fromUserId);
-        const fromConvIds = fromParts?.map(c => c.conversation_id) || [];
-        if (fromConvIds.length > 0) {
-            const { data: shared } = await supabase
-                .from('conversation_participants')
-                .select('conversation_id')
-                .in('conversation_id', fromConvIds)
-                .eq('user_id', toUserId);
-            if (shared?.length > 0) {
-                // Si hay conversaciones duplicadas, limpiar (quedarse con la primera, borrar las demas)
-                const keepId = shared[0].conversation_id;
-                if (shared.length > 1) {
-                    const dupIds = shared.slice(1).map(c => c.conversation_id);
-                    // Mover participantes y mensajes a la conversacion que se conserva
-                    for (const dupId of dupIds) {
-                        await supabase.from('conversation_participants').delete().eq('conversation_id', dupId);
-                        await supabase.from('messages').update({ conversation_id: keepId }).eq('conversation_id', dupId);
-                        await supabase.from('conversations').delete().eq('id', dupId);
-                    }
-                }
-                return res.json({ alreadyConnected: true, conversationId: keepId });
-            }
-        }
-
-        // No comparten conversación → verificar/crear message_request
-        const { data: existing } = await supabase
-            .from('message_requests')
-            .select('id, status')
-            .eq('from_user_id', fromUserId)
-            .eq('to_user_id', toUserId)
-            .maybeSingle();
-
-        if (existing) {
-            if (existing.status === 'blocked') {
-                return res.status(403).json({ message: 'No puedes enviar solicitud a este usuario' });
-            }
-            if (existing.status === 'pending') {
-                return res.json({ requested: true, message: 'Solicitud ya enviada' });
-            }
-            if (existing.status === 'rejected') {
-                return res.status(403).json({ message: 'No puedes enviar otra solicitud' });
-            }
-            // Accepted sin conversación compartida (inconsistencia) → crear request de nuevo
-        }
-
-        // Crear solicitud
-        const { error } = await supabase
-            .from('message_requests')
-            .insert({ from_user_id: fromUserId, to_user_id: toUserId, status: 'pending' });
-
-        if (error) throw error;
-
-        res.json({ requested: true, message: 'Solicitud enviada' });
+        const result = await chatService.sendMessageRequest(req.user.id, req.body.toUserId);
+        res.json(result);
     } catch (err) {
-        console.error('Error sending request:', err);
-        if (err.code === '23505') {
-            return res.json({ requested: true, message: 'Solicitud ya enviada' });
-        }
-        res.status(500).json({ message: 'Error al enviar solicitud' });
+        res.status(err.status || 500).json({ message: err.message || 'Error al enviar solicitud' });
     }
 });
 
 // GET /chats/requests — Solicitudes pendientes para el usuario actual
 router.get('/requests', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-
-        const { data: requests, error } = await supabase
-            .from('message_requests')
-            .select(`
-                id, from_user_id, status, created_at,
-                from_user:users!message_requests_from_user_id_fkey (id, display_name, avatar_url, public_key)
-            `)
-            .eq('to_user_id', userId)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        res.json({ requests: requests || [] });
+        const data = await chatService.getMessageRequests(req.user.id);
+        res.json(data);
     } catch (err) {
-        console.error('Error fetching requests:', err);
-        res.status(500).json({ message: 'Error al cargar solicitudes' });
+        res.status(500).json({ message: err.message });
     }
 });
 
 // POST /chats/requests/:id/accept — Aceptar solicitud y crear conversación
 router.post('/requests/:id/accept', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-        const requestId = req.params.id;
-
-        // Obtener solicitud
-        const { data: request, error: reqError } = await supabase
-            .from('message_requests')
-            .select('*')
-            .eq('id', requestId)
-            .eq('to_user_id', userId)
-            .single();
-
-        if (reqError || !request) {
-            return res.status(404).json({ message: 'Solicitud no encontrada' });
-        }
-
-        if (request.status !== 'pending') {
-            return res.status(400).json({ message: 'Esta solicitud ya fue procesada' });
-        }
-
-        // Crear conversación
-        const conversationId = uuidv4();
-
-        const { error: convError } = await supabase
-            .from('conversations')
-            .insert({ id: conversationId });
-
-        if (convError) throw convError;
-
-        // Agregar ambos participantes como aceptados
-        const { error: partError } = await supabase
-            .from('conversation_participants')
-            .insert([
-                { conversation_id: conversationId, user_id: request.from_user_id, accepted: true },
-                { conversation_id: conversationId, user_id: userId, accepted: true }
-            ]);
-
-        if (partError) throw partError;
-
-        // Actualizar solicitud
-        await supabase
-            .from('message_requests')
-            .update({ status: 'accepted', updated_at: new Date().toISOString() })
-            .eq('id', requestId);
-
-        // Obtener datos del otro usuario (para el chat)
-        const { data: otherUser } = await supabase
-            .from('users')
-            .select('id, display_name, avatar_url, public_key')
-            .eq('id', request.from_user_id)
-            .single();
-
-        res.json({
-            accepted: true,
-            conversationId,
-            otherUser: otherUser || { id: request.from_user_id }
-        });
+        const result = await chatService.acceptMessageRequest(req.params.id, req.user.id);
+        res.json(result);
     } catch (err) {
-        console.error('Error accepting request:', err);
-        res.status(500).json({ message: 'Error al aceptar solicitud' });
+        res.status(err.status || 500).json({ message: err.message || 'Error al aceptar' });
     }
 });
 
 // POST /chats/requests/:id/reject — Rechazar solicitud
 router.post('/requests/:id/reject', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-
-        const { data: request, error: reqError } = await supabase
-            .from('message_requests')
-            .select('*')
-            .eq('id', req.params.id)
-            .eq('to_user_id', userId)
-            .single();
-
-        if (reqError || !request) {
-            return res.status(404).json({ message: 'Solicitud no encontrada' });
-        }
-
-        await supabase
-            .from('message_requests')
-            .update({ status: 'rejected', updated_at: new Date().toISOString() })
-            .eq('id', req.params.id);
-
-        res.json({ rejected: true });
+        const result = await chatService.rejectMessageRequest(req.params.id, req.user.id);
+        res.json(result);
     } catch (err) {
-        console.error('Error rejecting request:', err);
-        res.status(500).json({ message: 'Error al rechazar solicitud' });
+        res.status(err.status || 500).json({ message: err.message });
     }
 });
 
 // POST /chats/requests/:id/block — Bloquear usuario
 router.post('/requests/:id/block', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-
-        const { data: request } = await supabase
-            .from('message_requests')
-            .select('from_user_id, to_user_id')
-            .eq('id', req.params.id)
-            .eq('to_user_id', userId)
-            .single();
-
-        if (!request) {
-            return res.status(404).json({ message: 'Solicitud no encontrada' });
-        }
-
-        // Bloquear en ambas direcciones (no puede enviarte ni tú a él)
-        await supabase
-            .from('message_requests')
-            .upsert([
-                { from_user_id: request.from_user_id, to_user_id: userId, status: 'blocked', updated_at: new Date().toISOString() },
-                { from_user_id: userId, to_user_id: request.from_user_id, status: 'blocked', updated_at: new Date().toISOString() }
-            ], { onConflict: 'from_user_id,to_user_id' });
-
-        res.json({ blocked: true });
+        const result = await chatService.blockMessageRequest(req.params.id, req.user.id);
+        res.json(result);
     } catch (err) {
-        console.error('Error blocking user:', err);
-        res.status(500).json({ message: 'Error al bloquear usuario' });
+        res.status(err.status || 500).json({ message: err.message });
     }
 });
 
@@ -1015,26 +835,10 @@ router.post('/messages/:id/forward', authMiddleware, async (req, res) => {
 // POST /chats/:id/read — Marcar mensajes como leídos
 router.post('/:id/read', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-        const conversationId = req.params.id;
-        const { messageIds } = req.body;
-
-        if (!messageIds?.length) {
-            return res.status(400).json({ message: 'Se requieren messageIds' });
-        }
-
-        // Solo marcar leídos los mensajes que NO son del usuario actual
-        await supabase
-            .from('chat_messages')
-            .update({ read_at: new Date().toISOString() })
-            .in('id', messageIds)
-            .neq('sender_id', userId);
-
-        res.json({ ok: true });
+        const result = await chatService.markAsRead(req.params.id, req.user.id);
+        res.json(result);
     } catch (err) {
-        console.error('Error marking read:', err);
-        res.status(500).json({ message: 'Error al marcar leídos' });
+        res.status(500).json({ message: err.message });
     }
 });
 
@@ -1209,21 +1013,9 @@ router.get('/:id/pinned-message', authMiddleware, async (req, res) => {
 // GET /chats/stickers — Obtener stickers del usuario + defaults
 router.get('/stickers', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-
-        // Defaults + usuario
-        const { data: stickers, error } = await supabase
-            .from('chat_stickers')
-            .select('*')
-            .or(`is_default.eq.true,user_id.eq.${userId}`)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        res.json({ stickers: stickers || [] });
+        const data = await chatService.getStickers(req.user.id);
+        res.json(data);
     } catch (err) {
-        console.error('[Stickers Error]:', err);
         res.status(500).json({ message: err.message });
     }
 });
@@ -1300,129 +1092,29 @@ router.patch('/stickers/:id/fav', authMiddleware, async (req, res) => {
 // POST /chats/polls — Crear encuesta en una conversación
 router.post('/polls', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-        const { conversationId, question, options } = req.body;
-
-        if (!conversationId || !question || !options?.length > 1) {
-            return res.status(400).json({ message: 'Faltan datos: conversationId, question, options (min 2)' });
-        }
-
-        // Verificar participación
-        const { data: membership } = await supabase
-            .from('conversation_participants')
-            .select('id')
-            .eq('conversation_id', conversationId)
-            .eq('user_id', userId)
-            .eq('accepted', true)
-            .single();
-
-        if (!membership) return res.status(403).json({ message: 'No eres participante' });
-
-        // Crear encuesta
-        const { data: poll, error: pollErr } = await supabase
-            .from('chat_polls')
-            .insert({
-                conversation_id: conversationId,
-                question,
-                created_by: userId
-            })
-            .select()
-            .single();
-
-        if (pollErr) throw pollErr;
-
-        // Crear opciones
-        const pollOptions = options.map((text, i) => ({
-            poll_id: poll.id,
-            text,
-            position: i
-        }));
-        const { error: optErr } = await supabase
-            .from('chat_poll_options')
-            .insert(pollOptions);
-
-        if (optErr) throw optErr;
-
-        res.json({ poll });
+        const result = await chatService.createPoll(req.params.id, req.body, req.user.id);
+        res.json(result);
     } catch (err) {
-        console.error('[Polls Create Error]:', err);
-        res.status(500).json({ message: err.message });
+        res.status(err.status || 500).json({ message: err.message });
     }
 });
 
 // POST /chats/polls/:id/vote — Votar
 router.post('/polls/:id/vote', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const userId = req.user.id;
-        const pollId = req.params.id;
-        const { optionId } = req.body;
-
-        if (!optionId) return res.status(400).json({ message: 'Opción requerida' });
-
-        // Verificar que la opción pertenece a la encuesta
-        const { data: option } = await supabase
-            .from('chat_poll_options')
-            .select('id')
-            .eq('id', optionId)
-            .eq('poll_id', pollId)
-            .single();
-
-        if (!option) return res.status(404).json({ message: 'Opción no encontrada' });
-
-        // Verificar que no haya votado ya (upsert con unique constraint)
-        const { error } = await supabase
-            .from('chat_poll_votes')
-            .upsert({
-                poll_id: pollId,
-                user_id: userId,
-                option_id: optionId
-            }, { onConflict: 'poll_id,user_id' });
-
-        if (error) throw error;
-
-        res.json({ voted: true });
+        const result = await chatService.votePoll(req.params.id, req.body.optionIndex, req.user.id);
+        res.json(result);
     } catch (err) {
-        console.error('[Polls Vote Error]:', err);
-        res.status(500).json({ message: err.message });
+        res.status(err.status || 500).json({ message: err.message });
     }
 });
 
 // GET /chats/polls/:id — Resultados
 router.get('/polls/:id', authMiddleware, async (req, res) => {
     try {
-        const supabase = getDB();
-        const pollId = req.params.id;
-
-        const { data: poll } = await supabase
-            .from('chat_polls')
-            .select('*')
-            .eq('id', pollId)
-            .single();
-
-        if (!poll) return res.status(404).json({ message: 'Encuesta no encontrada' });
-
-        const { data: options } = await supabase
-            .from('chat_poll_options')
-            .select('*, votes:chat_poll_votes(count)')
-            .eq('poll_id', pollId)
-            .order('position');
-
-        const { data: myVote } = await supabase
-            .from('chat_poll_votes')
-            .select('option_id')
-            .eq('poll_id', pollId)
-            .eq('user_id', req.user.id)
-            .maybeSingle();
-
-        res.json({
-            poll,
-            options: options || [],
-            myVote: myVote?.option_id || null
-        });
+        const data = await chatService.getPoll(req.params.id);
+        res.json(data);
     } catch (err) {
-        console.error('[Polls Get Error]:', err);
         res.status(500).json({ message: err.message });
     }
 });

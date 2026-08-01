@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QrCode, X, Check, ArrowRight, ShieldCheck, Zap, Camera, RefreshCw } from 'lucide-react';
 import { payQR } from '../../api/transactions.api.js';
+import { mxnToUsdc } from '../../api/price.api.js';
 import { Html5Qrcode } from 'html5-qrcode';
 import useStore from '../../store';
 import styles from './QRScanner.module.css';
@@ -18,6 +19,28 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
     const [isScannerReady, setIsScannerReady] = useState(false);
 
     const { addToast } = useStore();
+
+    // Buscar info del comercio desde un QR escaneado
+    const fetchBusinessInfo = async (bizId, pubKey, qrAmount, setSD, setAmt, scanner, setSt) => {
+        try {
+            const resp = await fetch(`/api/businesses/${bizId}`);
+            const biz = await resp.json();
+            setSD({
+                publicKey: pubKey,
+                businessName: biz.name || 'Comercio',
+                isVerified: biz.is_active || false,
+                businessId: bizId,
+            });
+            if (qrAmount) setAmt(qrAmount);
+            await scanner.stop().catch(() => {});
+            setSt('confirm');
+        } catch {
+            setSD({ publicKey: pubKey, businessName: 'Comercio Shekael', isVerified: false, businessId: bizId });
+            if (qrAmount) setAmt(qrAmount);
+            await scanner.stop().catch(() => {});
+            setSt('confirm');
+        }
+    };
 
     // Iniciar el escáner con control total
     useEffect(() => {
@@ -49,7 +72,16 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                                 aspectRatio: 1.0
                             },
                             (decodedText) => {
-                                if (decodedText.startsWith('G') && decodedText.length === 56) {
+                                // Formato: shekael://pay/{bizId}?dest={pubkey}&amount=X
+                                if (decodedText.startsWith('shekael://')) {
+                                    try {
+                                        const url = new URL(decodedText);
+                                        const bizId = url.pathname.split('/').pop();
+                                        const pubKey = url.searchParams.get('dest');
+                                        const qrAmount = url.searchParams.get('amount');
+                                        fetchBusinessInfo(bizId, pubKey, qrAmount, setScanData, setAmount, html5QrCode, setStep);
+                                    } catch {}
+                                } else if (decodedText.startsWith('G') && decodedText.length === 56) {
                                     setScanData({
                                         publicKey: decodedText,
                                         businessName: 'Usuario Escaneado',
@@ -105,7 +137,15 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     aspectRatio: 1.0
                 },
                 (decodedText) => {
-                    if (decodedText.startsWith('G') && decodedText.length === 56) {
+                    if (decodedText.startsWith('shekael://')) {
+                        try {
+                            const url = new URL(decodedText);
+                            const bizId = url.pathname.split('/').pop();
+                            const pubKey = url.searchParams.get('dest');
+                            const qrAmount = url.searchParams.get('amount');
+                            fetchBusinessInfo(bizId, pubKey, qrAmount, setScanData, setAmount, scannerInstance, setStep);
+                        } catch {}
+                    } else if (decodedText.startsWith('G') && decodedText.length === 56) {
                         setScanData({
                             publicKey: decodedText,
                             businessName: 'Usuario Escaneado',
@@ -171,7 +211,8 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
         // ------------------------------------
 
         try {
-            const { data } = await payQR(scanData.publicKey, amount, 'MXNe');
+            const usdcAmount = await mxnToUsdc(amount);
+            const { data } = await payQR(scanData.publicKey, String(usdcAmount), 'USDC');
             
             if (data.success) {
                 setStep('success');
@@ -272,7 +313,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                                     onChange={(e) => setAmount(e.target.value)}
                                     autoFocus
                                 />
-                                <span className={styles.currencyCode}>MXNe</span>
+                                <span className={styles.currencyCode}>MXN</span>
                             </div>
 
                             {scanData.isVerified && (
@@ -284,7 +325,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                                     <div className={styles.benefitIcon}>🎁</div>
                                     <div className={styles.benefitText}>
                                         <strong>-5% de Descuento Regional</strong>
-                                        <p>Pagado por el fondo de tu estado</p>
+                                        <p>Cortesía de Shekael</p>
                                     </div>
                                     <div className={styles.benefitAmount}>
                                         -${(parseFloat(amount || 0) * 0.05).toFixed(4)}
@@ -295,7 +336,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                             <div className={styles.summary}>
                                 <div className={styles.summaryRow}>
                                     <span>Total a pagar</span>
-                                    <span>${(parseFloat(amount || 0) * (scanData.isVerified ? 0.95 : 1.0)).toFixed(2)} MXNe</span>
+                                    <span>${(parseFloat(amount || 0) * (scanData.isVerified ? 0.95 : 1.0)).toFixed(2)} MXN</span>
                                 </div>
                             </div>
 
@@ -322,11 +363,11 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                             <div className={styles.receipt}>
                                 <div className={styles.receiptRow}>
                                     <span>Pagado</span>
-                                    <span>${(parseFloat(amount || 0) * 0.95).toFixed(2)} MXNe</span>
+                                    <span>${(parseFloat(amount || 0) * 0.95).toFixed(2)} MXN</span>
                                 </div>
                                 <div className={styles.receiptRow}>
                                     <span>Subsidio Regional</span>
-                                    <span>${(parseFloat(amount || 0) * 0.05).toFixed(2)} MXNe</span>
+                                    <span>${(parseFloat(amount || 0) * 0.05).toFixed(2)} MXN</span>
                                 </div>
                             </div>
 

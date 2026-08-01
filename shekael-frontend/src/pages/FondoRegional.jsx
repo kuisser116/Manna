@@ -68,7 +68,7 @@ export default function FondoRegional() {
                             <TrendingUp size={16} />
                             Fondo disponible para descuentos
                         </div>
-                        <div className={styles.fundAmount}>${regionalTotal} MXNe</div>
+                        <div className={styles.fundAmount}>${regionalTotal} USDC</div>
                         <div className={styles.fundSub}>Transparencia total en la red Stellar</div>
                     </motion.div>
                 </div>
@@ -87,7 +87,7 @@ export default function FondoRegional() {
                         <div className={styles.discountContent}>
                             <h4>5% de descuento automático</h4>
                             <p>Cuando pagues en comercios de {userState || 'tu estado'}, recibirás un 5% de descuento automáticamente.</p>
-                            <p className={styles.discountNote}>Tope máximo: $50 MXNe por transacción</p>
+                            <p className={styles.discountNote}>Tope máximo: $50 USDC por transacción</p>
                         </div>
                     </div>
 

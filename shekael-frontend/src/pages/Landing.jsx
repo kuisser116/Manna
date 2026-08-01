@@ -1,6 +1,5 @@
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MorphSVGPlugin } from 'gsap/MorphSVGPlugin.js';
@@ -10,6 +9,7 @@ import { CustomEase } from 'gsap/CustomEase.js';
 import { Palette } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useStore from '../store';
+import ShekaelLogo from '../components/ShekaelLogo/ShekaelLogo';
 import styles from '../styles/pages/Landing.module.css';
 import bgPatternUrl from '../assets/patterns/profile-bg-pattern.svg';
 
@@ -40,6 +40,58 @@ function LandingInner() {
   const { loginWithGoogle } = useAuth();
   const { addToast, themeName, cycleTheme, user } = useStore();
   const [termsVersion, setTermsVersion] = useState(null);
+  const googleBtnRef = useRef(null);
+  const googleRenderedRef = useRef(false);
+  const loginWithGoogleRef = useRef(loginWithGoogle);
+  const addToastRef = useRef(addToast);
+  loginWithGoogleRef.current = loginWithGoogle;
+  addToastRef.current = addToast;
+
+  // ── Botón Google con GSI nativo (montado UNA sola vez, evita re-renders infinitos del wrapper) ──
+  useEffect(() => {
+    if (googleRenderedRef.current || !googleBtnRef.current) return;
+    const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!GOOGLE_CLIENT_ID) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!window.google?.accounts?.id || googleRenderedRef.current) return;
+      googleRenderedRef.current = true;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          try {
+            let recaptchaToken = '';
+            if (typeof grecaptcha !== 'undefined') {
+              try {
+                recaptchaToken = await grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'login' });
+              } catch { /* reCAPTCHA opcional */ }
+            }
+            await loginWithGoogleRef.current(response.credential, recaptchaToken);
+          } catch (err) {
+            addToastRef.current('error', 'Error de Google', err.message || 'No se pudo conectar con Google');
+          }
+        },
+      });
+      try {
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          width: 320,
+        });
+      } catch (e) {
+        console.error('renderButton falló:', e);
+      }
+    };
+    document.head.appendChild(script);
+    return () => { googleRenderedRef.current = false; };
+  }, []);
 
   // Obtener versión actual de términos del backend
   useEffect(() => {
@@ -52,6 +104,7 @@ function LandingInner() {
   const recaptchaLoaded = useRef(false);
 
   const heroRef = useRef(null);
+  const splashRef = useRef(null);
   const band1Ref = useRef(null);
   const band2Ref = useRef(null);
   const band3Ref = useRef(null);
@@ -130,21 +183,6 @@ function LandingInner() {
     navigate('/terminos');
   }, [navigate, user, termsVersion]);
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    addToast('loading', 'Iniciando sesión...');
-    try {
-      let recaptchaToken = '';
-      if (typeof grecaptcha !== 'undefined') {
-        recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'login' });
-      }
-      await loginWithGoogle(credentialResponse.credential, recaptchaToken);
-      // Sin success toast — la redirección al feed + posible LockScreen
-      // hacen más claro el estado real que un toast prematuro
-    } catch (err) {
-      addToast('error', 'Error de Google', err.message);
-    }
-  };
-
   // ─── GSAP: The crazy stuff ───
   useEffect(() => {
     CustomEase.create('shekael-bounce', 'M0,0 C0.3,0.9 0.4,1.2 0.5,1 C0.6,0.8 0.7,1.1 1,1');
@@ -182,46 +220,88 @@ function LandingInner() {
           });
         }
 
-        // ── 2. HERO: 3D word stagger including period ──
-        const heroWords = heroRef.current?.querySelectorAll(`.${styles.heroWord}, .${styles.headlinePeriod}`);
-        if (heroWords?.length) {
-          gsap.fromTo(heroWords,
-            { opacity: 0, y: 60, rotateX: -40, scale: 0.8, filter: 'blur(8px)' },
-            {
-              opacity: 1, y: 0, rotateX: 0, scale: 1, filter: 'blur(0px)',
-              stagger: 0.1, duration: 0.8, ease: 'shekael-bounce', delay: 0.4
+        // ── 2. SHEKAEL SE ENCOGE + VA A ESQUINA + CONTENIDO APARECE ──
+        const splashInner = splashRef.current?.querySelector(`.${styles.splashInner}`);
+        const splashWordmark = splashRef.current?.querySelector(`.${styles.splashWordmark}`);
+        const heroContent = heroRef.current?.querySelector(`.${styles.heroContent}`);
+        
+        if (splashInner && splashWordmark && heroContent) {
+          const viewH = window.innerHeight;
+
+          // Centrar splashInner vía GSAP (sin CSS conflictivo)
+          gsap.set(splashInner, {
+            top: '50%',
+            left: '50%',
+            xPercent: -50,
+            yPercent: -50
+          });
+
+          gsap.set(heroContent, { opacity: 0, y: viewH * 0.6 });
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: heroRef.current,
+              start: 'top top',
+              end: `+=${viewH * 2}`,
+              pin: true,
+              pinSpacing: true,
+              scrub: 0.5
             }
-          );
-        }
+          });
 
-        const heroSub = heroRef.current?.querySelector(`.${styles.heroSub}`);
-        if (heroSub) {
-          gsap.fromTo(heroSub,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.6, delay: 1.1, ease: 'power2.out' }
-          );
-        }
-
-        const heroCta = heroRef.current?.querySelector(`.${styles.heroCta}`);
-        if (heroCta) {
-          gsap.fromTo(heroCta,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.6, delay: 1.4, ease: 'power2.out' }
-          );
+          tl
+            // Fase 1: Shekael se encoge centrado
+            .to(splashWordmark, {
+              fontSize: '200px',
+              duration: 1,
+              ease: 'none'
+            }, 0)
+            // Fase 2: splashInner va a esquina, wordmark se achica
+            .to(splashInner, {
+              left: '40px',
+              top: '28px',
+              xPercent: 0,
+              yPercent: 0,
+              duration: 1,
+              ease: 'power3.out'
+            })
+            .to(splashWordmark, {
+              fontSize: '50px',
+              duration: 1,
+              ease: 'power3.out'
+            }, '-=1')
+            // Fase 3: contenido aparece
+            .to(heroContent, {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: 'power3.out'
+            }, '-=0.5');
         }
 
         // ── 3. SCRAMBLE TEXT on section headlines ──
-        const bandTitles = mainRef.current?.querySelectorAll(`.${styles.bandTitle}, .${styles.bandTitleWhite}`);
-        if (bandTitles?.length) {
-          bandTitles.forEach(title => {
-            const originalText = title.textContent || '';
-            if (title.closest(`.${styles.bandAccent}`)) return; // Skip accent band (it has white title that looks weird scrambling)
+        // Target only .scrambleTarget spans, preserving child elements like ShekaelLogo
+        const scrambleTargets = mainRef.current?.querySelectorAll(`.${styles.scrambleTarget}`);
+        const bandLogos = mainRef.current?.querySelectorAll(`.${styles.bandLogoAnim}`);
+
+        // Hide logos initially — they'll appear with elastic bounce like the tutorial
+        if (bandLogos?.length) {
+          gsap.set(bandLogos, { autoAlpha: 0, scale: 0.4, rotate: -8 });
+        }
+
+        if (scrambleTargets?.length) {
+          scrambleTargets.forEach(el => {
+            const originalText = el.textContent || '';
+            const band = el.closest(`.${styles.band}`);
+            const logo = band?.querySelector(`.${styles.bandLogoAnim}`);
 
             ScrollTrigger.create({
-              trigger: title.closest(`.${styles.band}`) || title.parentElement,
+              trigger: band || el.parentElement,
               start: 'top 75%',
               onEnter: () => {
-                gsap.to(title, {
+                const tl = gsap.timeline();
+                // Scramble the text
+                tl.to(el, {
                   duration: 1.2,
                   scrambleText: {
                     text: originalText,
@@ -232,6 +312,16 @@ function LandingInner() {
                   },
                   ease: 'none'
                 });
+                // Logo aparece con elastic bounce como en el tutorial
+                if (logo) {
+                  tl.to(logo, {
+                    autoAlpha: 1,
+                    scale: 1,
+                    rotate: 0,
+                    duration: 0.8,
+                    ease: 'elastic.out(1, 0.5)'
+                  }, '-=0.5');
+                }
               },
               once: true
             });
@@ -363,20 +453,233 @@ function LandingInner() {
 
       }); // end matchMedia desktop
 
-      // Mobile: simpler animations
+      // Mobile: mismas animaciones GSAP, optimizadas (stagger rápido, offsets cortos)
       mm.add('(max-width: 700px)', () => {
-        const bands = [band1Ref, band2Ref, band3Ref, band4Ref, closingRef];
-        bands.forEach(ref => {
-          const el = ref.current;
-          if (!el) return;
-          gsap.fromTo(el,
-            { opacity: 0, y: 20 },
+
+        // 0. HERO: IDÉNTICO a desktop — logo gigante se encoge, va a esquina,
+        //    contenido aparece con scroll (pin + scrub). Pantalla completa.
+        const splashInner = splashRef.current?.querySelector(`.${styles.splashInner}`);
+        const splashWordmark = splashRef.current?.querySelector(`.${styles.splashWordmark}`);
+        const heroContent = heroRef.current?.querySelector(`.${styles.heroContent}`);
+
+        if (splashInner && splashWordmark && heroContent) {
+          const viewH = window.innerHeight;
+          const isSmall = window.innerWidth < 400;
+
+          // Centrar splashInner vía GSAP (igual que desktop)
+          gsap.set(splashInner, {
+            top: '50%',
+            left: '50%',
+            xPercent: -50,
+            yPercent: -50
+          });
+
+          gsap.set(heroContent, { opacity: 0, y: viewH * 0.6 });
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: heroRef.current,
+              start: 'top top',
+              end: `+=${viewH * 2}`,
+              pin: true,
+              pinSpacing: true,
+              scrub: 0.5
+            }
+          });
+
+          tl
+            // Fase 1: Shekael se encoge centrado (tamaño móvil)
+            .to(splashWordmark, {
+              fontSize: isSmall ? '70px' : '84px',
+              duration: 1,
+              ease: 'none'
+            }, 0)
+            // Fase 2: splashInner va a esquina, wordmark se achica
+            .to(splashInner, {
+              left: '20px',
+              top: '18px',
+              xPercent: 0,
+              yPercent: 0,
+              duration: 1,
+              ease: 'power3.out'
+            })
+            .to(splashWordmark, {
+              fontSize: '36px',
+              duration: 1,
+              ease: 'power3.out'
+            }, '-=1')
+            // Fase 3: contenido aparece
+            .to(heroContent, {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: 'power3.out'
+            }, '-=0.5');
+        }
+
+        // 1. SCRAMBLE TEXT en títulos de sección
+        const scrambleTargets = mainRef.current?.querySelectorAll(`.${styles.scrambleTarget}`);
+        const bandLogos = mainRef.current?.querySelectorAll(`.${styles.bandLogoAnim}`);
+        if (bandLogos?.length) {
+          gsap.set(bandLogos, { autoAlpha: 0, scale: 0.4, rotate: -8 });
+        }
+        if (scrambleTargets?.length) {
+          scrambleTargets.forEach(el => {
+            const originalText = el.textContent || '';
+            const band = el.closest(`.${styles.band}`);
+            const logo = band?.querySelector(`.${styles.bandLogoAnim}`);
+            ScrollTrigger.create({
+              trigger: band || el.parentElement,
+              start: 'top 80%',
+              onEnter: () => {
+                const tl = gsap.timeline();
+                tl.to(el, {
+                  duration: 1.5,
+                  scrambleText: {
+                    text: originalText,
+                    chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                    revealDelay: 0.3,
+                    tweenLength: true,
+                    speed: 0.5
+                  },
+                  ease: 'none'
+                });
+                if (logo) {
+                  tl.to(logo, {
+                    autoAlpha: 1, scale: 1, rotate: 0,
+                    duration: 1.1, ease: 'elastic.out(1, 0.5)'
+                  }, '-=0.7');
+                }
+              },
+              once: true
+            });
+          });
+        }
+
+        // 2. DRAW LINE en economía
+        const econLine = band2Ref.current?.querySelector(`.${styles.econLine}`);
+        if (econLine?.tagName === 'path' || econLine?.tagName === 'svg') {
+          gsap.fromTo(econLine,
+            { drawSVG: '0%' },
             {
-              opacity: 1, y: 0, duration: 0.5, ease: 'power2.out',
-              scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' }
+              drawSVG: '100%', duration: 1.4, ease: 'power3.inOut',
+              scrollTrigger: {
+                trigger: band2Ref.current,
+                start: 'top 75%',
+                toggleActions: 'play none none none'
+              }
             }
           );
-        });
+        }
+
+        // 3. FEATURES: scatter → assemble (distancia corta para móvil)
+        const featGrid = tagsRef.current;
+        const featItems = featGrid?.querySelectorAll(`.${styles.featItem}`);
+        if (featItems?.length) {
+          requestAnimationFrame(() => {
+            featItems.forEach((el) => {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = 40 + Math.random() * 60;
+              gsap.set(el, {
+                opacity: 0,
+                x: Math.cos(angle) * dist,
+                y: Math.sin(angle) * dist,
+                scale: 0.5,
+                rotation: gsap.utils.random(-20, 20)
+              });
+            });
+          });
+
+          ScrollTrigger.create({
+            trigger: featGrid,
+            start: 'top 85%',
+            onEnter: () => {
+              featItems.forEach((el, i) => {
+                gsap.to(el, {
+                  x: 0, y: 0, opacity: 1, scale: 1, rotation: 0,
+                  duration: 0.9,
+                  delay: i * 0.12,
+                  ease: 'back.out(2.5)',
+                  overwrite: 'auto'
+                });
+              });
+            },
+            once: true
+          });
+        }
+
+        // 4. ECONOMY STEPS (igual que desktop)
+        const econSteps = econStepsRef.current?.querySelectorAll(`.${styles.econStep}, .${styles.econArrow}`);
+        if (econSteps?.length) {
+          gsap.fromTo(econSteps,
+            { opacity: 0, x: -40, rotate: -10 },
+            {
+              opacity: 1, x: 0, rotate: 0,
+              stagger: 0.22, duration: 0.75, ease: 'shekael-bounce',
+              scrollTrigger: {
+                trigger: econStepsRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // 5. FUTURE ITEMS (igual que desktop)
+        const futureItems = futureListRef.current?.querySelectorAll(`.${styles.futureItem}`);
+        if (futureItems?.length) {
+          gsap.fromTo(futureItems,
+            { opacity: 0, x: 60, rotate: 2 },
+            {
+              opacity: 1, x: 0, rotate: 0,
+              stagger: 0.22, duration: 0.85, ease: 'power3.out',
+              scrollTrigger: {
+                trigger: futureListRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // 6. PRINCIPLES (igual que desktop)
+        const principles = principleListRef.current?.querySelectorAll(`.${styles.principleItem}`);
+        if (principles?.length) {
+          gsap.fromTo(principles,
+            { opacity: 0, y: 40, rotateY: -15, transformOrigin: 'left center' },
+            {
+              opacity: 1, y: 0, rotateY: 0,
+              stagger: 0.18, duration: 0.75, ease: 'power3.out',
+              scrollTrigger: {
+                trigger: principleListRef.current,
+                start: 'top 82%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // 7. CLOSING (igual que desktop)
+        const closingInner = closingRef.current?.querySelector(`.${styles.bandInner}`);
+        if (closingInner) {
+          gsap.fromTo(closingInner.children,
+            { opacity: 0, y: 50 },
+            {
+              opacity: 1, y: 0,
+              stagger: 0.22, duration: 0.8, ease: 'back.out(1.7)',
+              scrollTrigger: {
+                trigger: closingRef.current,
+                start: 'top 82%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // Nota: sin fallback de visibilidad. Los ScrollTriggers disparan
+        // correctamente con el hero pineado (2 viewports de scroll), y un
+        // fallback agresivo haría que los elementos aparezcan prematuramente
+        // ("ya están ahí y solo se acomodan") en lugar de animarse desde cero.
       });
 
     }, mainRef);
@@ -400,82 +703,74 @@ function LandingInner() {
         <Palette size={18} />
       </button>
 
-      {/* ═══ HERO ═══ */}
+      {/* ═══ HERO — Solo Shekael centrado ═══ */}
       <section className={styles.hero} ref={heroRef}>
         <div className={styles.patternOverlay} />
 
-        <div className={styles.heroInner}>
-          <div className={styles.heroContent}>
-            <div className={styles.logoArea}>
-              <span className={styles.logoWordmark}>Shekael</span>
-              <span className={styles.logoTag}>Porque la luz no deberia estar escondida</span>
-            </div>
-
-            <h1 className={styles.headline}>
-              {headlineWords.map((word, i) => (
-                <span key={i} className={styles.heroWord}>
-                  {word}{i < headlineWords.length - 1 ? '\u00A0' : ''}
-                </span>
-              ))}
-              <span className={styles.headlinePeriod}>.</span>
-            </h1>
-
-            <p className={styles.heroSub}>
-              Una red social con proposito donde el contenido vuelve a sentirse humano.
-              Menos ruido, mas valor, mas libertad. Todo potenciado por una economia digital
-              que empieza aqui.
-            </p>
-
-            <div className={styles.heroCta}>
-              <div className={styles.googleWrap}>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
-                  shape="pill"
-                  theme="outline"
-                  text="continue_with"
-                  width={320}
-                />
-              </div>
-            </div>
+        <div className={styles.heroSplash} ref={splashRef}>
+          <div className={styles.splashInner}>
+            <ShekaelLogo size="splash" className={styles.splashWordmark} />
           </div>
         </div>
 
-        <div className={styles.scrollHint}>
-          <span>Desplazate para conocer mas</span>
+        <div className={styles.heroContent}>
+          <div className={styles.mxMotif} aria-hidden="true">
+            <span className={styles.mxMotifLine} />
+            <span className={styles.mxMotifDot} />
+            <span className={styles.mxMotifDiamond} />
+            <span className={styles.mxMotifDot} />
+            <span className={styles.mxMotifLine} />
+          </div>
+
+          <h1 className={styles.headline}>
+            {headlineWords.map((word, i) => (
+              <span key={i} className={styles.heroWord}>
+                {word}{i < headlineWords.length - 1 ? '\u00A0' : ''}
+              </span>
+            ))}
+            <span className={styles.headlinePeriod}>.</span>
+          </h1>
+
+          <p className={styles.heroSub}>
+            Porque la luz no deberia estar escondida.
+          </p>
+
+          <div className={styles.heroCta}>
+            <div className={styles.googleWrap} ref={googleBtnRef} />
+          </div>
         </div>
       </section>
 
       {/* ═══ BAND 1: FEATURES ═══ */}
       <section className={`${styles.band} ${styles.bandLight}`} ref={band1Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Tu red, tu espacio</span>
-          <h2 className={styles.bandTitle}>Lo que ya puedes hacer</h2>
+          <span className={styles.bandEyebrow}>Tu red, tu terreno</span>
+          <h2 className={styles.bandTitle}><span className={styles.scrambleTarget}>Lo que ya puedes hacer</span></h2>
           <div className={styles.featGrid} ref={tagsRef}>
             <div className={styles.featInner}>
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M8 10h8M8 14h5"/></svg>
-                <span className={styles.featLabel}>Feed</span>
+                <span className={styles.featLabel}>Publicaciones</span>
               </div>
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span className={styles.featLabel}>Chat</span>
-              </div>
-              <div className={styles.featItem}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
-                <span className={styles.featLabel}>Perfil</span>
+                <span className={styles.featLabel}>Chat cifrado</span>
               </div>
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 <span className={styles.featLabel}>Fotos</span>
               </div>
               <div className={styles.featItem}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                <span className={styles.featLabel}>Audio</span>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                <span className={styles.featLabel}>Comunidad</span>
+              </div>
+              <div className={styles.featItem}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16.5 5.5 20l2-7L2 9h7z"/></svg>
+                <span className={styles.featLabel}>Apoyos USDC</span>
               </div>
               <div className={styles.featItem}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                <span className={styles.featLabel}>Gente</span>
+                <span className={styles.featLabel}>Wallet USDC</span>
               </div>
             </div>
           </div>
@@ -485,8 +780,8 @@ function LandingInner() {
       {/* ═══ BAND 2: ECONOMY ═══ */}
       <section className={`${styles.band} ${styles.bandDark}`} ref={band2Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Economia MXNe</span>
-          <h2 className={styles.bandTitle}>Gana mientras formas parte</h2>
+          <span className={styles.bandEyebrow}>Economia USDC — Hecha en Mexico</span>
+          <h2 className={styles.bandTitle}><span className={styles.scrambleTarget}>Gana mientras formas parte</span></h2>
           <div className={styles.econLine}>
             <svg width="60" height="3" viewBox="0 0 60 3">
               <path d="M0 1.5h60" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" />
@@ -495,7 +790,7 @@ function LandingInner() {
           <div className={styles.econSteps} ref={econStepsRef}>
             <div className={styles.econStep}>
               <span className={styles.econNum}>01</span>
-              <span className={styles.econLabel}>Ganas MXNe</span>
+              <span className={styles.econLabel}>Ingresa USDC</span>
             </div>
             <div className={styles.econArrow}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -504,7 +799,7 @@ function LandingInner() {
             </div>
             <div className={styles.econStep}>
               <span className={styles.econNum}>02</span>
-              <span className={styles.econLabel}>Apoyas creadores</span>
+              <span className={styles.econLabel}>Ganas USDC en anuncios</span>
             </div>
             <div className={styles.econArrow}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -513,7 +808,25 @@ function LandingInner() {
             </div>
             <div className={styles.econStep}>
               <span className={styles.econNum}>03</span>
+              <span className={styles.econLabel}>Apoyas creadores</span>
+            </div>
+            <div className={styles.econArrow}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M13 5l7 7-7 7"/>
+              </svg>
+            </div>
+            <div className={styles.econStep}>
+              <span className={styles.econNum}>04</span>
               <span className={styles.econLabel}>Pagas con QR</span>
+            </div>
+            <div className={styles.econArrow}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M13 5l7 7-7 7"/>
+              </svg>
+            </div>
+            <div className={styles.econStep}>
+              <span className={styles.econNum}>05</span>
+              <span className={styles.econLabel}>\$20 MXN de bono al registrarte</span>
             </div>
           </div>
         </div>
@@ -569,8 +882,8 @@ function LandingInner() {
       {/* ═══ BAND 4: PRINCIPLES ═══ */}
       <section className={`${styles.band} ${styles.bandLight}`} ref={band4Ref}>
         <div className={styles.bandInner}>
-          <span className={styles.bandEyebrow}>Nuestros principios</span>
-          <h2 className={styles.bandTitle}>Como construimos Shekael</h2>
+          <span className={styles.bandEyebrow}>Nuestra manera</span>
+          <h2 className={styles.bandTitle}><span className={styles.scrambleTarget}>Como lo construimos</span></h2>
           <div className={styles.principlesList} ref={principleListRef}>
             {PRINCIPLES.map((item, i) => (
               <article key={i} className={styles.principleItem}>
@@ -585,18 +898,13 @@ function LandingInner() {
       {/* ═══ CLOSING ═══ */}
       <section className={`${styles.band} ${styles.bandDark} ${styles.bandClosing}`} ref={closingRef}>
         <div className={styles.bandInner}>
-          <p className={styles.closingMission}>Una aplicacion. Un ecosistema.</p>
-          <h2 className={styles.bandTitle}>Shekael te espera</h2>
-          <p className={styles.closingVision}>La super app de Mexico</p>
+          <p className={styles.closingMission}>Hecho en Mexico. Para todos.</p>
+          <h2 className={`${styles.bandTitle} ${styles.bandTitleStacked}`}><span className={styles.bandLogoAnim}><ShekaelLogo size="lg" /></span><span className={styles.scrambleTarget}>te espera</span></h2>
+          <p className={styles.closingVision}>La super app de Mexico, hecha para el mundo</p>
           <div className={styles.closingCta}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
-              shape="pill"
-              theme="outline"
-              text="continue_with"
-              width={320}
-            />
+            <a href="#" onClick={(e) => { e.preventDefault(); document.querySelector('.heroSplash, section')?.scrollIntoView({ behavior: 'smooth' }); }}>
+              Empieza ahora
+            </a>
           </div>
         </div>
       </section>
@@ -608,14 +916,16 @@ function LandingInner() {
         <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">Terminos del Servicio</a>.
       </p>
 
+      <p className={styles.recaptcha}>
+        <Link to="/privacidad">Politica de Privacidad de Shekael</Link>
+        {' · '}
+        <Link to="/terminos">Terminos de Shekael</Link>
+      </p>
+
     </div>
   );
 }
 
 export default function Landing() {
-  return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <LandingInner />
-    </GoogleOAuthProvider>
-  );
+  return <LandingInner />;
 }

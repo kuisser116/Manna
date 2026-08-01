@@ -1,6 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, XCircle, RotateCcw, Search, Eye } from 'lucide-react';
 import useStore from '../../store';
+import ShekaelLogo from '../../components/ShekaelLogo/ShekaelLogo';
+import BounceReveal from '../../components/BounceReveal/BounceReveal';
 import styles from './ControlCenter.module.css';
 
 export default function ControlCenter() {
@@ -85,9 +87,9 @@ export default function ControlCenter() {
                 <div className={styles.titleBox}>
                     <Shield className={styles.icon} size={32} />
                     <div>
-                        <h1>Shekael Control Center</h1>
+                        <h1><BounceReveal><ShekaelLogo size="md" /></BounceReveal> Control Center</h1>
                         <p>GestiÃ³n global de seguridad, moderaciÃ³n y apelaciones.</p>
-                        <a href="/admin/ads" className={styles.adsAdminLink} style={{ color: 'var(--color-primary)', fontSize: '0.85rem', fontWeight: 600, marginTop: '8px', display: 'inline-block' }}>
+                        <a href="/admin/ads" className={styles.adsAdminLink}>
                             Ir a GestiÃ³n de Anuncios
                         </a>
                     </div>

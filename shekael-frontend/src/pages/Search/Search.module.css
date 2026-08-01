@@ -7,71 +7,95 @@
 
 .main {
     flex: 1;
-    max-width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
     padding: 28px 24px;
-    border-right: 1px solid var(--color-border);
+    width: 100%;
     background: var(--color-bg);
 }
 
-.header {
+/* ── Secciones ── */
+.userSection {
     margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--color-border);
+    /* Rompe el padding del main para llegar a los bordes */
+    margin-left: -24px;
+    margin-right: -24px;
 }
 
-.header h2 {
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.header p {
-    color: var(--color-text-muted);
-    font-size: 14px;
-    margin-top: 4px;
-}
-
-.tabs {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.tab {
-    background: none;
-    border: none;
-    padding: 12px 16px;
-    color: var(--color-text-muted);
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all var(--transition);
-}
-
-.tab:hover {
-    color: var(--color-text);
-}
-
-.tabActive {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-}
-
-.postList {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    max-width: 70%;
-    margin: 0 auto;
-}
-
-.userGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+.postSection {
     margin-bottom: 32px;
 }
 
+/* ── Carrusel de usuarios (ancho completo) ── */
+.userCarousel {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 24px 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+    /* Scroll suave para auto-scroll */
+    scroll-behavior: smooth;
+    cursor: grab;
+    /* Ocultar scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.userCarousel::-webkit-scrollbar {
+    display: none;
+}
+
+.searchUserLink {
+    text-decoration: none;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    color: inherit;
+}
+
+.searchUserCard {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 10px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.3s ease,
+                border-color 0.2s ease;
+    cursor: pointer;
+    min-width: 160px;
+}
+
+.searchUserCard:hover {
+    transform: translateX(6px);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+    border-color: var(--color-primary);
+}
+
+.searchUserName {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+/* ── Lista de posts (como feed) ── */
+.postList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Estados ── */
 .loadingSpinner {
     width: 40px;
     height: 40px;
@@ -93,36 +117,17 @@
     text-align: center;
 }
 
-.sidebar {
-    width: 300px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 56px;
-    height: calc(100vh - 56px);
-    overflow-y: auto;
-    background: var(--color-surface);
-    border-left: 1px solid var(--color-border);
-    padding: 24px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-@media (max-width: 900px) {
-    .sidebar { display: none; }
-    .main { border-right: none; }
-}
-
 @media (max-width: 700px) {
     .main { padding: 16px; }
-    .postList { max-width: 100%; }
-    .userGrid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
+    .userSection {
+        margin-left: -16px;
+        margin-right: -16px;
     }
+    .userCarousel { padding: 0 16px 6px; }
+    .searchUserCard { min-width: 130px; }
 }

@@ -9,6 +9,8 @@ import {
 import useStore from '../store';
 import Avatar from '../components/Avatar/Avatar';
 import { deletePost, updatePost, getMyComments, getMyStats, getMyOverview } from '../api/posts.api';
+import ShekaelLogo from '../components/ShekaelLogo/ShekaelLogo';
+import BounceReveal from '../components/BounceReveal/BounceReveal';
 import styles from '../styles/pages/Studio.module.css';
 
 const TABS = [
@@ -181,7 +183,7 @@ export default function Studio() {
             <ArrowLeft size={20} />
           </button>
           <div className={styles.brand}>
-            <span className={styles.brandName}>Shekael Studio</span>
+            <span className={styles.brandName}><BounceReveal><ShekaelLogo size="xs" /></BounceReveal> Studio</span>
           </div>
         </div>
         <div className={styles.headerRight}>
@@ -218,7 +220,7 @@ export default function Studio() {
               <StatCard icon={Eye} label="Vistas totales" value={overview?.totalViews} />
               <StatCard icon={Heart} label="Me gusta" value={overview?.totalLikes} />
               <StatCard icon={MessageSquare} label="Comentarios" value={overview?.totalComments} />
-              <StatCard icon={Coins} label="Apoyos (MXNe)" value={overview?.totalSupports} format="decimal" />
+              <StatCard icon={Coins} label="Apoyos (USDC)" value={overview?.totalSupports} format="decimal" />
             </div>
 
             <div className={styles.statsGrid}>
@@ -413,7 +415,7 @@ export default function Studio() {
                 <strong>{(overview?.totalComments || 0).toLocaleString()}</strong>
               </div>
               <div className={styles.summaryItem}>
-                <span>Total apoyos MXNe</span>
+                <span>Total apoyos USDC</span>
                 <strong>{(overview?.totalSupports || 0).toFixed(2)}</strong>
               </div>
               <div className={styles.summaryItem}>
@@ -482,14 +484,14 @@ export default function Studio() {
                   <div className={styles.featureIcon}>📢</div>
                   <div>
                     <strong>Anuncios</strong>
-                    <p>Gana MXNe cuando otros usuarios vean anuncios en tu contenido</p>
+                    <p>Gana USDC cuando otros usuarios vean anuncios en tu contenido</p>
                   </div>
                 </div>
                 <div className={styles.monetizeFeature}>
                   <div className={styles.featureIcon}>💛</div>
                   <div>
                     <strong>Apoyos directos</strong>
-                    <p>Recibe donaciones en MXNe de tu comunidad</p>
+                    <p>Recibe donaciones en USDC de tu comunidad</p>
                   </div>
                 </div>
                 <div className={styles.monetizeFeature}>

@@ -4,12 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, X, ChevronDown, Sparkles } from 'lucide-react';
 import useStore from '../../store';
 import useWallet from '../../hooks/useWallet';
+import { mxnToUsdc } from '../../api/price.api';
 
-import PinKeypad, { pinHash } from '../PinKeypad/PinKeypad';
+import { pinHash } from '../../crypto/pinHash';
+import LockScreen from '../LockScreen/LockScreen';
 import { verifyPin as apiVerifyPin } from '../../api/auth.api';
 import styles from './SupportButton.module.css';
 
-const PRESETS = [5, 10, 25, 50, 100];
+const PRESETS_MXN = [5, 10, 25, 50, 100]; // montos en pesos MXN
 
 function Particles({ show, originX, originY }) {
     const particles = Array.from({ length: 8 }, (_, i) => i);
@@ -36,7 +38,7 @@ function Particles({ show, originX, originY }) {
 }
 
 export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
-    const { user, mxneBalance, addToast } = useStore();
+    const { user, balance, addToast } = useStore();
     const { sendSupport } = useWallet();
     const [supported, setSupported] = useState(false);
     const [count, setCount] = useState(supportsCount);
@@ -45,8 +47,21 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
     const [modalOpen, setModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [customAmount, setCustomAmount] = useState('10');
+    const [customUsdc, setCustomUsdc] = useState('0.58');
     const [showCustom, setShowCustom] = useState(false);
     const [pinModalOpen, setPinModalOpen] = useState(false);
+
+    // Convertir MXN a USDC para mostrar equivalencia
+    useEffect(() => {
+        const val = parseFloat(customAmount || '0');
+        if (val > 0) {
+            mxnToUsdc(val).then(usdc => {
+                setCustomUsdc(usdc.toFixed(2));
+            }).catch(() => setCustomUsdc('0.00'));
+        } else {
+            setCustomUsdc('0.00');
+        }
+    }, [customAmount]);
 
     // Bloquear scroll del body cuando el modal está abierto
     useEffect(() => {
@@ -58,7 +73,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
         return () => { document.body.style.overflow = ''; };
     }, [modalOpen]);
 
-    const currentBalance = parseFloat(mxneBalance || '0');
+    const currentBalance = parseFloat(balance || "0");
 
     const handleClick = (e) => {
         if (supported || !user || loading) return;
@@ -73,16 +88,18 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
     };
 
     const handleConfirm = async () => {
-        const amountToDonate = parseFloat(customAmount || '0');
+        const amountMXN = parseFloat(customAmount || '0');
 
-        if (isNaN(amountToDonate) || amountToDonate <= 0) {
+        if (isNaN(amountMXN) || amountMXN <= 0) {
             addToast('error', 'Monto inválido', 'Ingresa un monto mayor a 0');
             setModalOpen(false);
             return;
         }
 
-        if (currentBalance < amountToDonate) {
-            addToast('error', 'Fondos insuficientes', `Tu saldo es ${currentBalance.toFixed(2)} MXne y quieres enviar ${amountToDonate} MXne.`);
+        // Convertir MXN a USDC para verificar saldo
+        const usdcNeeded = await mxnToUsdc(amountMXN);
+        if (currentBalance < usdcNeeded) {
+            addToast('error', 'Fondos insuficientes', `Tu saldo es ${currentBalance.toFixed(2)} USDC (≈ $${(currentBalance * 17.2).toFixed(0)} MXN) y necesitas ~$${amountMXN} MXN (${usdcNeeded.toFixed(2)} USDC).`);
             setModalOpen(false);
             return;
         }
@@ -99,7 +116,10 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             const hash = pinHash(enteredPin);
             await apiVerifyPin(hash);
 
-            const result = await sendSupport(recipientKey, postId, customAmount.toString());
+            const amountMexicanPesos = parseFloat(customAmount || '0');
+            // El backend recibe MXN y él mismo convierte a USDC
+            const result = await sendSupport(recipientKey, postId, amountMexicanPesos.toString());
+
             setSupported(true);
             setCount((c) => c + 1);
             setShowParticles(true);
@@ -109,8 +129,8 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
 
             const hashResult = result?.hash;
             const explorerMsg = hashResult && !hashResult.startsWith('demo-')
-                ? `TX confirmada · Ver en Stellar Explorer`
-                : `${customAmount} MXne enviado al creador`;
+                ? 'TX confirmada · Ver en Stellar Explorer'
+                : `~$${amountMexicanPesos} MXN (${customUsdc} USDC) enviado al creador`;
 
             addToast('success', '¡Apoyo enviado!', explorerMsg);
         } catch (err) {
@@ -121,7 +141,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             } else {
                 const msg = err.response?.data?.message || err.message || 'Inténtalo de nuevo';
                 addToast('error', 'Error', msg);
-                throw err; // <-- importante: relanzar para que PinKeypad muestre error
+                throw err;
             }
         }
     };
@@ -168,23 +188,23 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
 
                             <h3 className={styles.modalTitle}>Apoyar contenido</h3>
                             <p className={styles.modalDesc}>
-                                Elige cuánto MXne enviar a este creador como reconocimiento.
+                                Elige cuánto en MXN enviar a este creador. Se convertirá automáticamente a USDC.
                             </p>
 
                             <div className={styles.balance}>
                                 <span className={styles.balanceLabel}>Disponible</span>
-                                <span className={styles.balanceValue}>{currentBalance.toFixed(2)} MXne</span>
+                                <span className={styles.balanceValue}>{currentBalance.toFixed(2)} USDC (≈ ${(currentBalance * 17.2).toFixed(0)} MXN)</span>
                             </div>
 
                             <div className={styles.presets}>
-                                {PRESETS.map((val) => (
+                                {PRESETS_MXN.map((val) => (
                                     <button
                                         key={val}
                                         type="button"
                                         className={`${styles.presetBtn} ${customAmount === String(val) && !showCustom ? styles.presetActive : ''}`}
                                         onClick={() => selectPreset(val)}
                                     >
-                                        {val} MXne
+                                        ${val} MXN
                                     </button>
                                 ))}
                                 <button
@@ -215,7 +235,7 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                                             className={styles.amountInput}
                                             autoFocus
                                         />
-                                        <span className={styles.inputSuffix}>MXne</span>
+                                        <span className={styles.inputSuffix}>MXN</span>
                                     </div>
                                 </motion.div>
                             )}
@@ -238,14 +258,14 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
                                     ) : (
                                         <>
                                             <Heart size={15} />
-                                            Apoyar con {customAmount || '0'} MXne
+                                            Apoyar ~${customAmount} MXN
                                         </>
                                     )}
                                 </button>
                             </div>
 
                             <p className={styles.stellarNote}>
-                                Transacción en Stellar Testnet · irreversible
+                                ~{customUsdc} USDC se enviarán · Transacción en Stellar · irreversible
                             </p>
                         </motion.div>
                     </motion.div>
@@ -255,21 +275,12 @@ export function SupportButton({ recipientKey, postId, supportsCount = 0 }) {
             )}
 
             {pinModalOpen && createPortal(
-                <div
-                    className={styles.pinOverlay}
-                    onClick={(e) => {
-                        // Solo cerrar si clickeó directamente el overlay, no el modal interno
-                        if (e.target === e.currentTarget) setPinModalOpen(false);
-                    }}
-                >
-                    <PinKeypad
-                        mode="enter"
-                        onComplete={handlePinVerified}
-                        onCancel={() => setPinModalOpen(false)}
-                        title="Confirmar transacción"
-                        subtitle={`Estás por enviar ${customAmount} MXne. Ingresa tu PIN de seguridad.`}
-                    />
-                </div>,
+                <LockScreen
+                    mode="enter"
+                    subtitle={`Estás por enviar ~$${customAmount} MXN (${customUsdc} USDC). Ingresa tu PIN de seguridad.`}
+                    onComplete={handlePinVerified}
+                    onCancel={() => setPinModalOpen(false)}
+                />,
                 document.body
             )}
         </div>

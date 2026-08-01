@@ -46,20 +46,32 @@ const SPAM_WINDOW_MS = 15 * 1000; // 15 segundos entre posts
 const lastPostCache = new Map();
 
 /**
+ * Helper: cede el event loop cada N iteraciones para no bloquear
+ */
+function yieldLoop(iterated, every = 5) {
+    if (iterated % every === 0) {
+        return new Promise(resolve => setImmediate(resolve));
+    }
+    return;
+}
+
+/**
  * Analiza contenido con reglas mínimas.
  * @param {string} content - Contenido a analizar
  * @param {string} type - Tipo de contenido (micro-text, image, video)
  * @param {string|null} textContent - Texto alternativo (para imágenes/videos con caption)
  * @param {string|null} userId - ID del usuario (para spam check)
  * @param {{ nsfwResult?: string, nsfwConfidence?: number }} [imageCheck] - Resultado de NSFWJS del frontend
- * @returns {{ verdict: string, confidence: number, reason: string }}
+ * @returns {Promise<{ verdict: string, confidence: number, reason: string }>}
  */
-export function analyzeContentWithAI(content, type, textContent = null, userId = null, imageCheck = null) {
+export async function analyzeContentWithAI(content, type, textContent = null, userId = null, imageCheck = null) {
     const textToCheck = textContent || content || '';
     const lower = String(textToCheck).toLowerCase();
 
-    // 1. Bloquear contenido ilegal por texto
-    for (const pattern of ILLEGAL_PATTERNS) {
+    // 1. Bloquear contenido ilegal por texto (cede event loop cada 5 patrones)
+    for (let i = 0; i < ILLEGAL_PATTERNS.length; i++) {
+        const pattern = ILLEGAL_PATTERNS[i];
+        await yieldLoop(i);
         if (pattern.test(lower)) {
             return { 
                 verdict: 'rejected', 
@@ -109,4 +121,12 @@ export function analyzeContentWithAI(content, type, textContent = null, userId =
     };
 }
 
-export default { analyzeContentWithAI };
+/**
+ * Alias para uso en chat.service.js — mismo análisis asíncrono
+ */
+export async function moderate(content = '') {
+    const result = await analyzeContentWithAI(content, 'text', null, null, null);
+    return { isBlocked: result.verdict === 'rejected', reason: result.reason };
+}
+
+export default { analyzeContentWithAI, moderate };

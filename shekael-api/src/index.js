@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config({ override: true });
 import http from 'http';
 import express from 'express';
+import helmet from 'helmet';
 
 import authRoutes from './routes/auth.routes.js';
 import postsRoutes from './routes/posts.routes.js';
@@ -15,7 +16,19 @@ import searchRoutes from './routes/search.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import anchorRoutes from './routes/anchor.routes.js';
 import chatRoutes from './routes/chats.routes.js';
+import businessesRoutes from './routes/businesses.routes.js';
+import paymentsRoutes from './routes/payments.routes.js';
+import musicRoutes from './routes/music.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import adsRoutes from './routes/ads.routes.js';
+import algorithmRoutes from './routes/algorithm.routes.js';
+import venuesRoutes from './routes/venues.routes.js';
+import consentRoutes from './routes/consent.routes.js';
+import federationRoutes from './routes/federation.routes.js';
+import recoveryRoutes from './routes/recovery.routes.js';
+import e2eeChatRoutes from './routes/chat.routes.js';
 
+import { apiLimiter, uploadLimiter, chatLimiter, adsLimiter } from './middleware/rateLimiter.js';
 import { initSocketIO } from './services/socket.js';
 
 import getDB from './database/db.js';
@@ -25,6 +38,13 @@ const PORT = process.env.PORT || 3000;
 
 // Configuración para que express-rate-limit funcione correctamente tras el proxy de Render
 app.set('trust proxy', 1);
+
+// ── Seguridad: Helmet ────────────────────────────
+app.use(helmet({
+    contentSecurityPolicy: false, // Desactivado porque el frontend maneja su propio CSP
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false, // Necesario para Google Sign-In (postMessage)
+}));
 
 // ── CORS Bulletproof ──────────────────────────────
 const ALLOWED_ORIGINS = [
@@ -63,6 +83,19 @@ const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads', express.static(uploadsDir));
 
+// ── Rate Limiting Global ──────────────────────────
+// Aplica a TODAS las rutas API
+app.use(apiLimiter);
+
+// ── Uploads: rate limit más restrictivo ────────────
+app.use('/upload', uploadLimiter);
+
+// ── Ads: rate limit específico para impresiones ─────────
+app.use('/ads', adsLimiter);
+
+// ── Chats: rate limit específico ───────────────────
+// (aplica dentro de chatRoutes)
+
 // ── Rutas ────────────────────────────────────────
 app.use('/auth', authRoutes);
 app.use('/users', usersRoutes);
@@ -70,7 +103,7 @@ app.use('/posts', postsRoutes);
 app.use('/transactions', transactionsRoutes);
 app.use('/wallet', transactionsRoutes);
 app.use('/regional-fund', regionalFundRoutes);
-app.use('/admin', regionalFundRoutes);
+app.use('/admin', adminRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/quests', questsRoutes);
 app.use('/moderation', moderationRoutes);
@@ -78,7 +111,27 @@ app.use('/search', searchRoutes);
 app.use('/notifications', notificationsRoutes);
 app.use('/anchor', anchorRoutes);
 app.use('/chats', chatRoutes);
+app.use('/businesses', businessesRoutes);
+app.use('/payments', paymentsRoutes);
+app.use('/music', musicRoutes);
+app.use('/ads', adsRoutes);
+app.use('/algorithm', algorithmRoutes);
+app.use('/venues', venuesRoutes);
+app.use('/consent', consentRoutes);
+app.use('/federation', federationRoutes);
+app.use('/recovery', recoveryRoutes);
+app.use('/chat', e2eeChatRoutes);
 
+// ── Tipo de cambio USD/MXN para el frontend ──
+import { getMxnRate } from './services/price.service.js';
+app.get('/price/usd-mxn', async (_req, res) => {
+  try {
+    const rate = await getMxnRate();
+    res.json({ rate, currency: 'MXN', updatedAt: new Date().toISOString() });
+  } catch {
+    res.json({ rate: 18.50, currency: 'MXN', fallback: true });
+  }
+});
 
 // ── Health check ─────────────────────────────────
 app.get('/health', (req, res) => {

@@ -23,7 +23,7 @@ export function useFeed() {
     setFeedError(null);
 
     const activeFilter = useStore.getState().activeFilter;
-    const sortParam = activeFilter === 'supported' ? 'supported' : undefined;
+    const sortParam = activeFilter === 'supported' ? 'supported' : 'ranked';
 
     try {
       const { data } = await getFeed(page, sortParam);

@@ -6,6 +6,8 @@ import { checkAndFundQuest } from '../services/quest.service.js';
 import { analyzeContentWithAI } from '../services/moderation.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { deleteFromR2 } from '../services/ipfs.service.js';
+import { getTopPurchaseIntents } from '../services/purchase-intent.service.js';
+import { getCache, setCache, cacheKey } from '../services/redis.service.js';
 
 const router = Router({ strict: false });
 
@@ -24,15 +26,46 @@ function weaveCapsulesIntoFeed(regularPosts, capsulePosts) {
     return result;
 }
 
+// ─── Helper: mapea un tag a categoría de compra ───
+function tagToCategory(tag) {
+    if (!tag) return null;
+    const t = tag.toLowerCase().trim();
+    const map = {
+        tech: 'tech', technology: 'tech', programming: 'tech', ai: 'tech',
+        food: 'food', comida: 'food', cocina: 'food', cooking: 'food', recipe: 'food', restaurant: 'food', tacos: 'food',
+        fashion: 'fashion', moda: 'fashion', style: 'fashion',
+        gaming: 'gaming', game: 'gaming', games: 'gaming', videojuegos: 'gaming',
+        sports: 'sports', sport: 'sports', futbol: 'sports', fitness: 'sports',
+        music: 'music', musica: 'music',
+        travel: 'travel', viaje: 'travel', viajes: 'travel',
+        art: 'art', arte: 'art', design: 'art', photography: 'art',
+        education: 'education', educacion: 'education', learning: 'education',
+    };
+    return map[t] || null;
+}
+
 // GET /posts/feed — Feed con algoritmo: unseen primero, después vistos
 router.get('/feed', authMiddleware, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 0;
-        const limit = 15;
+        const limit = 500;
         const offset = page * limit;
         const currentUserId = req.user.id;
         const supabase = getDB();
-        const sortBy = req.query.sort || 'recent';
+        const sortBy = req.query.sort || 'ranked';
+
+        // ── Cache Redis (TTL corto 5s): absorbe picos de carga, el feed
+        // se actualiza solo al cambiar de página o a los 5s. Si Redis
+        // no está, se calcula normal. ──
+        const cacheKeyFeed = cacheKey('feed', currentUserId, page, sortBy);
+        const cached = await getCache(cacheKeyFeed, 5000);
+        if (cached && cached.posts) {
+            return res.json(cached);
+        }
+
+        // ── Usar ranking algorítmico SIEMPRE ──
+        // (para usuarios nuevos sin señales, el algoritmo cae a cronológico)
+        const useRanking = true;
 
         // 1. Obtener posts regulares (No cápsulas) con seen_at
         let regularQuery = supabase
@@ -54,7 +87,9 @@ router.get('/feed', authMiddleware, async (req, res) => {
             regularQuery = regularQuery.order('created_at', { ascending: false });
         }
 
-        const { data: regularPosts, error: regError } = await regularQuery.range(offset, offset + limit - 1);
+        // En modo ranking traemos más posts para tener un pool más grande para ordenar
+        const fetchLimit = useRanking ? limit * 3 : limit;
+        const { data: regularPosts, error: regError } = await regularQuery.range(offset, offset + fetchLimit - 1);
 
         if (regError) throw regError;
 
@@ -114,6 +149,85 @@ router.get('/feed', authMiddleware, async (req, res) => {
             seen_at: getSeenAt(p)
         }));
 
+        // ── Si ranking activo: scorear y reordenar por algoritmo ──
+        let rankedPosts = formattedPosts;
+        if (useRanking && formattedPosts.length > 0) {
+            // Afinidad usuario→autor
+            const { data: affinities } = await supabase
+                .from('affinity_scores')
+                .select('author_id, affinity_score')
+                .eq('user_id', currentUserId);
+            const affinityMap = {};
+            (affinities || []).forEach(a => { affinityMap[a.author_id] = parseFloat(a.affinity_score) || 0; });
+
+            // Scores de valor de posts
+            const postIds = formattedPosts.map(p => p.id);
+            const { data: pvsList } = await supabase
+                .from('post_value_scores')
+                .select('*')
+                .in('post_id', postIds);
+            const pvsMap = {};
+            (pvsList || []).forEach(p => { pvsMap[p.post_id] = p; });
+
+            // Intención de compra del usuario
+            const purchaseIntents = await getTopPurchaseIntents(currentUserId);
+            const purchaseMap = {};
+            purchaseIntents.forEach(p => { purchaseMap[p.category] = p.score; });
+
+            const DECAY_POWER = 0.3;
+            const scored = formattedPosts.map(post => {
+                const pvs = pvsMap[post.id];
+                const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600000;
+
+                let valueScore = 5 / Math.max(1, Math.pow(ageHours, DECAY_POWER));
+                let trendingScore = 0;
+
+                if (pvs) {
+                    const raw = (
+                        (pvs.save_count || 0) * 10 +
+                        (pvs.share_dm_count || 0) * 8 +
+                        (pvs.share_feed_count || 0) * 6 +
+                        (pvs.comment_count || 0) * 4 +
+                        (pvs.completion_count || 0) * 3 +
+                        (pvs.dwell_total_seconds || 0) * (2/30) +
+                        (pvs.like_count || 0) * 1 +
+                        (pvs.view_count || 0) * 0.1
+                    );
+                    valueScore = ageHours > 1 ? raw / Math.pow(ageHours, DECAY_POWER) : raw;
+                    trendingScore = parseFloat(pvs.trending_score) || 0;
+                }
+
+                const affinity = affinityMap[post.author_id] || 0;
+                const isFollowing = followingSet.has(post.author_id);
+
+                let purchaseBoost = 0;
+                if (post.video_tags) {
+                    try {
+                        const tags = typeof post.video_tags === 'string' ? JSON.parse(post.video_tags) : post.video_tags;
+                        if (Array.isArray(tags)) {
+                            tags.forEach(tag => {
+                                const cat = tagToCategory(tag);
+                                if (cat && purchaseMap[cat]) purchaseBoost = Math.max(purchaseBoost, purchaseMap[cat]);
+                            });
+                        }
+                    } catch { /* tags mal formados */ }
+                }
+
+                let rankingScore;
+                if (post.isFollowing) {
+                    rankingScore = (1 / Math.max(1, ageHours)) * 0.35 + affinity * 0.25 + (valueScore / 100) * 0.25 + purchaseBoost * 0.15;
+                } else {
+                    rankingScore = (valueScore / 100) * 0.4 + (trendingScore / 50) * 0.2 + (1 / Math.max(1, ageHours)) * 0.15 + purchaseBoost * 0.15 + (Math.random() * 0.1);
+                }
+
+                return { ...post, _rankingScore: rankingScore };
+            });
+
+            const followingPosts = scored.filter(p => p.isFollowing).sort((a, b) => b._rankingScore - a._rankingScore);
+            const discoveryPosts = scored.filter(p => !p.isFollowing).sort((a, b) => b._rankingScore - a._rankingScore);
+            rankedPosts = [...followingPosts, ...discoveryPosts];
+        }
+
         // Ordenar: no vistos primero (por created_at DESC), después vistos
         const sortBySeen = (posts) => {
             const unseen = posts.filter(p => !p.seen_at);
@@ -121,14 +235,16 @@ router.get('/feed', authMiddleware, async (req, res) => {
             return [...unseen, ...seen];
         };
 
-        const sortedRegular = sortBySeen(formattedPosts);
+        const sortedRegular = sortBySeen(rankedPosts);
         const sortedCapsules = sortBySeen(formattedCapsules);
         const feed = weaveCapsulesIntoFeed(sortedRegular, sortedCapsules);
 
         // Contar cuántos no vistos hay (para el front)
         const unseenCount = formattedPosts.filter(p => !p.seen_at).length;
 
-        res.json({ posts: feed, page, hasMore: regularPosts.length === limit, unseenCount });
+        res.json({ posts: feed, page, hasMore: regularPosts.length === fetchLimit, unseenCount });
+        // Guardar en cache (best-effort, no bloquea la respuesta)
+        setCache(cacheKeyFeed, { posts: feed, page, hasMore: regularPosts.length === fetchLimit, unseenCount }, 5000).catch(() => {});
     } catch (err) {
         console.error('Feed error:', err);
         res.status(500).json({ message: 'Error al cargar el feed' });
@@ -148,7 +264,7 @@ router.post('/create', authMiddleware, async (req, res) => {
         const finalContent = contentCID || content;
 
         // --- Moderación local (sin IA) ---
-        const modCheck = analyzeContentWithAI(finalContent, type, null, req.user.id);
+        const modCheck = await analyzeContentWithAI(finalContent, type, null, req.user.id);
         if (modCheck.verdict === 'rejected') {
             return res.status(400).json({ 
                 message: 'Contenido rechazado por nuestras normas de comunidad',
@@ -163,7 +279,8 @@ router.post('/create', authMiddleware, async (req, res) => {
                 author_id: req.user.id,
                 type,
                 content: finalContent,
-                trust_deposit_locked: true
+                trust_deposit_locked: true,
+                approval_status: 'pending'
             })
             .select(`
                 *,

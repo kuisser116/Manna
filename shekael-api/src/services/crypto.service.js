@@ -88,10 +88,12 @@ export function decryptRecovery(encryptedText) {
     return decrypt(encryptedText, masterKey);
 }
 
-// Semilla de emergencia — derivada de la clave pública Stellar del usuario.
-// La clave pública es inmutable y única por usuario, sin depender de .env ni variables externas.
+// Semilla de emergencia — derivada de la clave pública + ENCRYPTION_KEY.
+// Ya no depende solo de la clave pública (que es visible).
 function getEmergencySeed(stellarPublicKey) {
-    return 'shekael-v1-' + stellarPublicKey;
+    const masterKey = process.env.ENCRYPTION_KEY;
+    if (!masterKey) throw new Error('ENCRYPTION_KEY no configurada para emergencia');
+    return masterKey + stellarPublicKey;
 }
 
 /**
@@ -129,7 +131,6 @@ export function decryptWithFallback(userId, stellarPublicKey, encryptedText) {
             const masterKey = process.env.ENCRYPTION_KEY;
             if (masterKey) {
                 const secret = decrypt(recoveryEnc, masterKey);
-                console.log('Nivel 2 (recovery) exitoso');
                 return secret;
             }
         } catch (e2) {
@@ -141,7 +142,6 @@ export function decryptWithFallback(userId, stellarPublicKey, encryptedText) {
     if (emergencyEnc && stellarPublicKey) {
         try {
             const secret = decrypt(emergencyEnc, getEmergencySeed(stellarPublicKey));
-            console.log('Nivel 3 (emergencia) exitoso');
             return secret;
         } catch (e3) {
             console.warn('Nivel 3 (emergencia) falló:', e3.message);
@@ -164,4 +164,45 @@ export function encryptAll(userId, secretKey, stellarPublicKey) {
     const recovery = masterKey ? encrypt(secretKey, masterKey) : '';
     const emergency = stellarPublicKey ? encrypt(secretKey, getEmergencySeed(stellarPublicKey)) : '';
     return [perUser, recovery, emergency].filter(Boolean).join('||');
+}
+
+// ── Chat E2EE con Stellar key (inmutable, nunca cambia) ──
+
+/**
+ * Deriva una clave de cifrado para chat desde stellarSecretKey.
+ * Determinística: la misma stellarSecretKey siempre produce la misma chat key.
+ * @param {string} stellarSecretKey - Clave secreta Stellar (S...)
+ * @returns {Buffer} - 32 bytes para AES-256
+ */
+export function deriveChatKey(stellarSecretKey) {
+    return crypto.createHash('sha256').update('chat-v1:' + stellarSecretKey).digest();
+}
+
+/**
+ * Cifrar texto con chat key (derivada de stellarSecretKey).
+ * @param {string} text - Texto a cifrar (ej: privateKeyB64 del chat)
+ * @param {Buffer} chatKey - Clave derivada de deriveChatKey()
+ * @returns {string} - iv:encrypted en hex
+ */
+export function encryptWithChatKey(text, chatKey) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(ALGORITHM, chatKey, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return `${iv.toString('hex')}:${encrypted}`;
+}
+
+/**
+ * Descifrar texto con chat key.
+ * @param {string} encryptedText - iv:encrypted en hex
+ * @param {Buffer} chatKey - Clave derivada
+ * @returns {string} - Texto original
+ */
+export function decryptWithChatKey(encryptedText, chatKey) {
+    const [ivHex, encrypted] = encryptedText.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = crypto.createDecipheriv(ALGORITHM, chatKey, iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
 }

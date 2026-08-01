@@ -1,52 +1,60 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import gsap from 'gsap';
-import { X, ArrowUpFromLine, Loader2, ArrowDownToLine, Wallet, QrCode, ExternalLink, Banknote, Clock, CheckCircle2 } from 'lucide-react';
+import { X, ArrowUpFromLine, Loader2, ExternalLink, ChevronRight, CheckCircle2, AlertCircle, Info, ArrowLeft } from 'lucide-react';
 import useStore from '../../store';
+import { getMxnRate } from '../../api/price.api';
 import styles from './WithdrawModal.module.css';
 
+const STELLAR_EXPLORER = 'https://stellar.expert/explorer/testnet/tx';
+
 export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
-    const { mxneBalance } = useStore();
+    const { balance, user } = useStore();
     const overlayRef = useRef(null);
     const panelRef = useRef(null);
     const contentRef = useRef(null);
-    const [activeTab, setActiveTab] = useState('exchange');
+    const pinInputRef = useRef(null);
+
+    const [step, setStep] = useState(1); // 1=address, 2=amount, 3=pin, 4=confirm, 5=done
     const [address, setAddress] = useState('');
-    const [amount, setAmount] = useState('');
+    const [addressError, setAddressError] = useState(null);
+    const [amountMXN, setAmountMXN] = useState('');
+    const [amountError, setAmountError] = useState(null);
+    const [pin, setPin] = useState('');
+    const [pinError, setPinError] = useState(null);
     const [sending, setSending] = useState(false);
-    const [sent, setSent] = useState(false);
+    const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const [shouldRender, setShouldRender] = useState(false);
+    const [mxnRate, setMxnRate] = useState(18.50);
+    const [showInstructions, setShowInstructions] = useState(false);
+    const [pinVerified, setPinVerified] = useState(false);
 
-    const mxneAmount = parseFloat(mxneBalance || 0);
+    const usdcAmount = parseFloat(balance || "0");
+    const mxnAmount = usdcAmount * mxnRate;
+    const enteredUSDC = parseFloat(amountMXN || '0') / mxnRate;
+
+    useEffect(() => {
+        getMxnRate().then(setMxnRate).catch(() => {});
+    }, []);
 
     const animateIn = useCallback(() => {
         setShouldRender(true);
         requestAnimationFrame(() => {
             if (!panelRef.current) return;
-
-            // Overlay fade-in
             gsap.fromTo(overlayRef.current,
                 { opacity: 0 },
                 { opacity: 1, duration: 0.25, ease: 'power2.out' }
             );
-
-            // Panel: slide+fade+scale similar to wallet float
             gsap.fromTo(panelRef.current,
-                { opacity: 0, y: 40, scale: 0.92, rotate: -2, filter: 'blur(6px)' },
-                {
-                    opacity: 1, y: 0, scale: 1, rotate: 0, filter: 'blur(0px)',
-                    duration: 0.55, ease: 'power3.out', clearProps: 'filter'
-                }
+                { opacity: 0, y: 40, scale: 0.92 },
+                { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: 'power3.out' }
             );
-
-            // Content stagger
             const children = contentRef.current?.children;
             if (children) {
                 gsap.set(children, { opacity: 0, y: 12 });
                 gsap.to(children, {
-                    opacity: 1, y: 0,
-                    duration: 0.4, stagger: 0.04, delay: 0.15,
+                    opacity: 1, y: 0, duration: 0.4, stagger: 0.04, delay: 0.15,
                     ease: 'power2.out'
                 });
             }
@@ -55,259 +63,392 @@ export default function WithdrawModal({ isOpen, onClose, onRefreshBalance }) {
 
     const animateOut = useCallback((callback) => {
         if (!panelRef.current) { callback?.(); return; }
-
         const tl = gsap.timeline({
-            onComplete: () => {
-                setShouldRender(false);
-                callback?.();
-            }
+            onComplete: () => { setShouldRender(false); callback?.(); }
         });
-
-        tl.to(panelRef.current, {
-            opacity: 0, y: 24, scale: 0.95,
-            duration: 0.22, ease: 'power2.in'
-        });
-        tl.to(overlayRef.current, {
-            opacity: 0, duration: 0.15, ease: 'power2.out'
-        }, '-=0.1');
+        tl.to(panelRef.current, { opacity: 0, y: 24, scale: 0.95, duration: 0.22, ease: 'power2.in' });
+        tl.to(overlayRef.current, { opacity: 0, duration: 0.15, ease: 'power2.out' }, '-=0.1');
     }, []);
 
     const handleClose = useCallback(() => {
         animateOut(onClose);
     }, [animateOut, onClose]);
 
-    // Animate in on open
     useEffect(() => {
         if (isOpen) {
             animateIn();
-            // reset state
-            setActiveTab('exchange');
+            setStep(1);
             setAddress('');
-            setAmount('');
-            setSent(false);
+            setAddressError(null);
+            setAmountMXN('');
+            setAmountError(null);
+            setPin('');
+            setPinError(null);
+            setSending(false);
+            setResult(null);
             setError(null);
+            setShowInstructions(false);
+            setPinVerified(false);
         } else {
-            // When isOpen becomes false from parent, clean up
             setShouldRender(false);
         }
     }, [isOpen, animateIn]);
 
-    const handleSend = async (e) => {
-        e.preventDefault();
-        setError(null);
-        if (!address || !amount) return;
+    // Auto-focus PIN input
+    useEffect(() => {
+        if (step === 3 && pinInputRef.current) {
+            pinInputRef.current.focus();
+        }
+    }, [step]);
 
+    // ── Validate address (Stellar public key format) ──
+    const validateAddress = () => {
+        if (!address || address.length < 20) {
+            setAddressError('Pega la dirección USDC de tu Bitso');
+            return false;
+        }
+        if (!address.startsWith('G') || address.length !== 56) {
+            setAddressError('La dirección debe empezar con G y tener 56 caracteres');
+            return false;
+        }
+        setAddressError(null);
+        return true;
+    };
+
+    // ── Validate amount ──
+    const validateAmount = () => {
+        const amt = parseFloat(amountMXN);
+        if (!amountMXN || isNaN(amt) || amt <= 0) {
+            setAmountError('Ingresa un monto válido');
+            return false;
+        }
+        if (amt > 10000) {
+            setAmountError('Máximo $10,000 MXN por transacción');
+            return false;
+        }
+        if (amt > mxnAmount) {
+            setAmountError(`Saldo insuficiente. Tienes $${mxnAmount.toFixed(2)} MXN`);
+            return false;
+        }
+        setAmountError(null);
+        return true;
+    };
+
+    // ── Handle PIN verification ──
+    const handlePinSubmit = async () => {
+        if (!pin || pin.length < 4) {
+            setPinError('Ingresa tu PIN');
+            return;
+        }
+        setPinError(null);
         setSending(true);
+        setError(null);
+
         try {
-            const api = (await import('../../api/users.api')).default;
-            const { data } = await api.post('/wallet/withdraw-exchange', {
-                to: address.trim(),
-                amount: parseFloat(amount),
+            const API = import.meta.env.VITE_API_URL || location.origin;
+            const token = useStore.getState().token;
+
+            // Step 1: Verify PIN
+            const pinRes = await fetch(`${API}/auth/verify-pin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ pinHash: pin })
             });
-            if (data?.hash) {
-                setSent(true);
-                if (onRefreshBalance) onRefreshBalance();
+            const pinData = await pinRes.json();
+            if (!pinRes.ok || !pinData.valid) {
+                setPinError('PIN incorrecto');
+                setSending(false);
+                return;
             }
+
+            // Step 2: Send withdrawal
+            const wdRes = await fetch(`${API}/wallet/withdraw`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    destinationAddress: address,
+                    amountMXN: parseFloat(amountMXN),
+                    pinHash: pin
+                })
+            });
+            const wdData = await wdRes.json();
+
+            if (!wdRes.ok) {
+                setError(wdData.message || 'Error al enviar');
+                setSending(false);
+                return;
+            }
+
+            setResult(wdData);
+            setStep(5); // done
+            setSending(false);
+            onRefreshBalance?.();
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Error al enviar');
-        } finally {
+            setError('Error de conexión. Intenta de nuevo.');
             setSending(false);
         }
     };
 
-    if (!shouldRender && !isOpen) return null;
+    const handleNextStep = () => {
+        if (step === 1) {
+            if (!validateAddress()) return;
+            setStep(2);
+        } else if (step === 2) {
+            if (!validateAmount()) return;
+            setStep(3);
+        }
+    };
 
-    return createPortal(
-        <div className={styles.overlay} ref={overlayRef} onClick={handleClose}
-            style={{ opacity: 0 }}>
-            <div className={styles.modal} ref={panelRef}
-                onClick={e => e.stopPropagation()}
-                style={{ opacity: 0 }}>
+    const handleBack = () => {
+        if (step > 1 && step < 5) {
+            setStep(step - 1);
+            setError(null);
+        }
+    };
+
+    if (!shouldRender) return null;
+
+    const modal = (
+        <div ref={overlayRef} className={styles.overlay} onClick={handleClose}>
+            <div ref={panelRef} className={styles.panel} onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className={styles.header}>
-                    <div className={styles.titleGroup}>
-                        <h3 className={styles.title}>Retirar fondos</h3>
-                        <p className={styles.balanceLabel}>
-                            <Wallet size={12} />
-                            {mxneAmount.toFixed(2)} MXNe disponibles
-                        </p>
+                    <div className={styles.headerLeft}>
+                        {step < 5 && step > 1 && (
+                            <button className={styles.backBtn} onClick={handleBack}>
+                                <ArrowLeft size={16} />
+                            </button>
+                        )}
+                        <ArrowUpFromLine size={16} className={styles.headerIcon} />
+                        <span className={styles.headerTitle}>Retirar a Bitso</span>
                     </div>
                     <button className={styles.closeBtn} onClick={handleClose}>
                         <X size={18} />
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className={styles.tabs}>
-                    <button
-                        className={`${styles.tab} ${activeTab === 'exchange' ? styles.activeTab : ''}`}
-                        onClick={() => { setActiveTab('exchange'); setError(null); setSent(false); }}
-                    >
-                        <ArrowUpFromLine size={14} />
-                        <span>A exchange</span>
-                    </button>
-                    <button
-                        className={`${styles.tab} ${activeTab === 'moneygram' ? styles.activeTab : ''}`}
-                        onClick={() => { setActiveTab('moneygram'); setError(null); setSent(false); }}
-                    >
-                        <Banknote size={14} />
-                        <span>Efectivo</span>
-                    </button>
-                </div>
+                {/* Progress dots */}
+                {step < 5 && (
+                    <div className={styles.progress}>
+                        {[1,2,3].map(i => (
+                            <div key={i} className={`${styles.progressDot} ${step >= i ? styles.progressActive : ''} ${step > i ? styles.progressDone : ''}`} />
+                        ))}
+                    </div>
+                )}
 
-                {/* Content */}
-                <div className={styles.content} ref={contentRef}>
-                    {activeTab === 'exchange' ? (
-                        sent ? (
-                            <div className={styles.successBox}>
-                                <div className={styles.successIcon}>
-                                    <CheckCircle2 size={36} />
+                <div ref={contentRef} className={styles.content}>
+                    {/* ── STEP 1: Address ── */}
+                    {step === 1 && (
+                        <>
+                            <div className={styles.stepBody}>
+                                <h3 className={styles.stepTitle}>¿A dónde quieres retirar?</h3>
+                                <p className={styles.stepDesc}>Pega la dirección USDC de tu Bitso (red Stellar).</p>
+
+                                <div className={styles.inputWrap}>
+                                    <label className={styles.inputLabel}>Dirección Stellar de tu Bitso</label>
+                                    <input
+                                        className={`${styles.input} ${addressError ? styles.inputError : ''}`}
+                                        type="text"
+                                        placeholder="G..."
+                                        value={address}
+                                        onChange={e => { setAddress(e.target.value); setAddressError(null); }}
+                                        onPaste={() => setTimeout(validateAddress, 100)}
+                                    />
+                                    {addressError && <span className={styles.fieldError}>{addressError}</span>}
                                 </div>
-                                <h4 className={styles.successTitle}>Transferencia enviada</h4>
-                                <p className={styles.successDesc}>Tus fondos están en camino a la dirección destino.</p>
-                                <p className={styles.successHint}>Llegan en ~3-5 segundos a la red Stellar.</p>
-                                <button className={styles.submitBtn} onClick={handleClose}>
-                                    Finalizar
+
+                                <button className={styles.helpLink} onClick={() => setShowInstructions(!showInstructions)}>
+                                    <Info size={13} />
+                                    ¿Cómo obtener mi dirección USDC en Bitso?
                                 </button>
-                            </div>
-                        ) : (
-                            <form className={styles.form} onSubmit={handleSend}>
-                                <div className={styles.fieldGroup}>
-                                    <label className={styles.fieldLabel}>
-                                        Dirección destino
-                                        <span className={styles.fieldHint}>de Bitso, Binance o cualquier exchange</span>
-                                    </label>
-                                    <div className={styles.addressInputWrapper}>
-                                        <input
-                                            type="text"
-                                            className={styles.addressInput}
-                                            placeholder="G... o M..."
-                                            value={address}
-                                            onChange={e => setAddress(e.target.value)}
-                                            required
-                                            disabled={sending}
-                                        />
-                                        <div className={styles.addressIcon}>
-                                            <QrCode size={16} />
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div className={styles.fieldGroup}>
-                                    <label className={styles.fieldLabel}>
-                                        Monto a retirar
-                                        <span className={styles.fieldHint}>
-                                            Máximo {mxneAmount.toFixed(2)} MXNe
-                                        </span>
-                                    </label>
-                                    <div className={styles.amountInputWrapper}>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0.01"
-                                            max={mxneAmount}
-                                            placeholder="0.00"
-                                            value={amount}
-                                            onChange={e => setAmount(e.target.value)}
-                                            required
-                                            disabled={sending}
-                                            className={styles.amountInput}
-                                        />
-                                        <span className={styles.currencyBadge}>MXNe</span>
-                                    </div>
-                                    <div className={styles.amountQuickRow}>
-                                        {[50, 100, 200, 500].map(n => (
-                                            <button
-                                                key={n}
-                                                type="button"
-                                                className={styles.quickAmountBtn}
-                                                onClick={() => setAmount(Math.min(n, mxneAmount))}
-                                                disabled={sending || mxneAmount < n}
-                                            >
-                                                ${n}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {amount > 0 && !error && (
-                                    <div className={styles.conversionNote}>
-                                        <ArrowDownToLine size={14} />
-                                        <span>
-                                            MXNe &rarr; XLM vía Stellar DEX &middot; Comisión ≈ $0.003 MXN
-                                        </span>
+                                {showInstructions && (
+                                    <div className={styles.instructions}>
+                                        <p>1. Abre Bitso</p>
+                                        <p>2. Ve a <strong>Recibir</strong></p>
+                                        <p>3. Selecciona <strong>USDC</strong></p>
+                                        <p>4. Elige red <strong>Stellar</strong></p>
+                                        <p>5. Copia la dirección (empieza con G)</p>
                                     </div>
                                 )}
+                            </div>
+
+                            <div className={styles.footer}>
+                                <button className={styles.primaryBtn} onClick={handleNextStep} disabled={!address}>
+                                    Continuar <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    {/* ── STEP 2: Amount ── */}
+                    {step === 2 && (
+                        <>
+                            <div className={styles.stepBody}>
+                                <h3 className={styles.stepTitle}>¿Cuánto quieres retirar?</h3>
+                                <p className={styles.stepDesc}>Saldo disponible: <strong>${mxnAmount.toFixed(2)} MXN</strong></p>
+
+                                <div className={styles.inputWrap}>
+                                    <label className={styles.inputLabel}>Monto en MXN</label>
+                                    <div className={`${styles.amountInputWrap} ${amountError ? styles.inputError : ''}`}>
+                                        <span className={styles.amountPrefix}>$</span>
+                                        <input
+                                            className={styles.amountInput}
+                                            type="number"
+                                            min="1"
+                                            max={mxnAmount}
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            value={amountMXN}
+                                            onChange={e => { setAmountMXN(e.target.value); setAmountError(null); }}
+                                        />
+                                    </div>
+                                    {amountError && <span className={styles.fieldError}>{amountError}</span>}
+                                    {amountMXN && !amountError && (
+                                        <span className={styles.usdcHint}>
+                                            ≈ {enteredUSDC.toFixed(4)} USDC
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Quick amounts */}
+                                <div className={styles.quickRow}>
+                                    {[50, 100, 200, 500].map(v => (
+                                        <button
+                                            key={v}
+                                            className={styles.quickBtn}
+                                            onClick={() => {
+                                                if (v <= mxnAmount) {
+                                                    setAmountMXN(String(v));
+                                                    setAmountError(null);
+                                                }
+                                            }}
+                                            disabled={v > mxnAmount}
+                                        >
+                                            ${v}
+                                        </button>
+                                    ))}
+                                    <button
+                                        className={styles.quickBtn}
+                                        onClick={() => {
+                                            const max = Math.floor(mxnAmount * 100) / 100;
+                                            setAmountMXN(String(max));
+                                            setAmountError(null);
+                                        }}
+                                    >
+                                        Máx.
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className={styles.footer}>
+                                <button className={styles.primaryBtn} onClick={handleNextStep} disabled={!amountMXN || parseFloat(amountMXN) <= 0}>
+                                    Continuar <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    {/* ── STEP 3: PIN ── */}
+                    {step === 3 && (
+                        <>
+                            <div className={styles.stepBody}>
+                                <h3 className={styles.stepTitle}>Confirma con tu PIN</h3>
+                                <p className={styles.stepDesc}>Ingresa tu PIN de seguridad para autorizar el retiro.</p>
+
+                                <div className={styles.inputWrap}>
+                                    <label className={styles.inputLabel}>Tu PIN</label>
+                                    <input
+                                        ref={pinInputRef}
+                                        className={`${styles.input} ${styles.pinInput} ${pinError ? styles.inputError : ''}`}
+                                        type="password"
+                                        inputMode="numeric"
+                                        maxLength={20}
+                                        placeholder="••••"
+                                        value={pin}
+                                        onChange={e => { setPin(e.target.value); setPinError(null); }}
+                                        onKeyDown={e => { if (e.key === 'Enter') handlePinSubmit(); }}
+                                    />
+                                    {pinError && <span className={styles.fieldError}>{pinError}</span>}
+                                </div>
 
                                 {error && (
                                     <div className={styles.errorBox}>
+                                        <AlertCircle size={14} />
                                         {error}
                                     </div>
                                 )}
 
+                                {/* Summary */}
+                                <div className={styles.summary}>
+                                    <div className={styles.summaryRow}>
+                                        <span>Dirección</span>
+                                        <span className={styles.summaryValue}>{address.slice(0, 8)}...{address.slice(-4)}</span>
+                                    </div>
+                                    <div className={styles.summaryRow}>
+                                        <span>Monto</span>
+                                        <span className={styles.summaryValue}>${parseFloat(amountMXN).toFixed(2)} MXN</span>
+                                    </div>
+                                    <div className={styles.summaryRow}>
+                                        <span>Equivalente</span>
+                                        <span className={styles.summaryValue}>{enteredUSDC.toFixed(4)} USDC</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={styles.footer}>
                                 <button
-                                    type="submit"
-                                    className={styles.submitBtn}
-                                    disabled={sending || !address || !amount}
+                                    className={styles.primaryBtn}
+                                    onClick={handlePinSubmit}
+                                    disabled={sending || !pin}
                                 >
                                     {sending ? (
-                                        <><Loader2 className={styles.spin} size={18} /> Enviando...</>
+                                        <><Loader2 className={styles.spin} size={16} /> Enviando...</>
                                     ) : (
-                                        <><ArrowUpFromLine size={18} /> Transferir a exchange</>
+                                        <>Retirar ahora <ArrowUpFromLine size={14} /></>
                                     )}
                                 </button>
-                            </form>
-                        )
-                    ) : (
-                        /* MoneyGram tab — inline, no second modal */
-                        <div className={styles.moneygramContent}>
-                            <div className={styles.mgHero}>
-                                <Banknote size={28} />
-                                <h4>Retira en efectivo</h4>
-                                <p>En más de 21,000 puntos Oxxo en todo México</p>
                             </div>
+                        </>
+                    )}
 
-                            <div className={styles.mgSteps}>
-                                <div className={styles.mgStep}>
-                                    <div className={styles.stepNumber}>1</div>
-                                    <div className={styles.stepInfo}>
-                                        <strong>Ingresa el monto</strong>
-                                        <p>Elige cuánto retirar de tu saldo MXNe</p>
-                                    </div>
+                    {/* ── STEP 5: Done ── */}
+                    {step === 5 && result && (
+                        <>
+                            <div className={styles.stepBody}>
+                                <div className={styles.successIcon}>
+                                    <CheckCircle2 size={40} />
                                 </div>
-                                <div className={styles.mgStep}>
-                                    <div className={styles.stepNumber}>2</div>
-                                    <div className={styles.stepInfo}>
-                                        <strong>Recibe tu código</strong>
-                                        <p>Generamos un código de retiro válido por 24h</p>
-                                    </div>
-                                </div>
-                                <div className={styles.mgStep}>
-                                    <div className={styles.stepNumber}>3</div>
-                                    <div className={styles.stepInfo}>
-                                        <strong>Cobra en Oxxo</strong>
-                                        <p>Presenta tu código en cualquier Oxxo y recibe efectivo</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={styles.mgComingSoon}>
-                                <Clock size={16} />
-                                <span>Próximamente &mdash; Activando convenio con MoneyGram</span>
-                            </div>
-
-                            <div className={styles.mgDisclaimer}>
-                                <p>
-                                    Shekael utilizará <strong>MoneyGram Ramps API</strong> (SEP-24) para
-                                    habilitar retiros en efectivo. Cada transacción tiene un límite
-                                    de $8,000 MXN y requiere identificación oficial.
+                                <h3 className={styles.stepTitle}>¡Enviado!</h3>
+                                <p className={styles.stepDesc}>
+                                    ${result.amountMXN} MXN ({result.amountUSDC} USDC) enviado a tu Bitso.
+                                    Llega en ~5 segundos.
                                 </p>
+
+                                {result.txHash && (
+                                    <a
+                                        href={`${STELLAR_EXPLORER}/${result.txHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.txLink}
+                                    >
+                                        <ExternalLink size={13} />
+                                        Ver en Stellar Explorer
+                                    </a>
+                                )}
                             </div>
-                        </div>
+
+                            <div className={styles.footer}>
+                                <button className={styles.primaryBtn} onClick={handleClose}>
+                                    Listo
+                                </button>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
-        </div>,
-        document.body
+        </div>
     );
+
+    return createPortal(modal, document.body);
 }

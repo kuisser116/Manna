@@ -3,7 +3,7 @@ import { getPinStatus, verifyPin as apiVerifyPin, clearPin } from '../../api/aut
 import useChatCrypto from '../../hooks/useChatCrypto';
 import useStore from '../../store';
 import styles from './LockScreen.module.css';
-import logoImg from '../../assets/personaje_1.12.png';
+import ShekaelLogo from '../ShekaelLogo/ShekaelLogo';
 
 /**
  * LockScreen — PIN de seguridad para Shekael.
@@ -15,9 +15,10 @@ import logoImg from '../../assets/personaje_1.12.png';
  * - Unlock: apiVerifyPin(pinHash) → server devuelve encryptedPrivateKey →
  *     crypto.unlockWithPin(encryptedPrivateKey, pin) → descifra en RAM.
  */
-export default function LockScreen({ onUnlock }) {
-  const crypto = useChatCrypto();
+export default function LockScreen({ onUnlock, onVerify, onComplete, onCancel, mode = 'unlock', title, subtitle }) {
+  const chatCrypto = useChatCrypto();
   const user = useStore(s => s.user);
+  const token = useStore(s => s.token);
   const logout = useStore(s => s.logout);
   const userId = user?.id;
   const [pin, setPin] = useState('');
@@ -32,7 +33,12 @@ export default function LockScreen({ onUnlock }) {
   }, [step]);
 
   // Al montar, verificar si el usuario ya tiene PIN en BD
+  // (solo en modo unlock; los modos enter/create/verify van directo a enter)
   useEffect(() => {
+    if (mode !== 'unlock') {
+      setStep('enter');
+      return;
+    }
     let cancelled = false;
     async function check() {
       try {
@@ -46,7 +52,7 @@ export default function LockScreen({ onUnlock }) {
     }
     check();
     return () => { cancelled = true; };
-  }, []);
+  }, [mode]);
 
   // Keyboard support
   useEffect(() => {
@@ -121,20 +127,63 @@ export default function LockScreen({ onUnlock }) {
     else if (step === 'confirm') setConfirmPin(p => p.slice(0, -1));
   };
 
-  /** UNLOCK: Verificar PIN → server devuelve encryptedPrivateKey → descifrar en RAM */
+  /** Verificar PIN — usado tanto para desbloquear como para verificar identidad */
   const handleUnlock = async (enteredPin) => {
     const pinHash = await computePinHash(enteredPin);
 
     setProcessing(true);
     try {
-      // Verificar PIN contra server → recibe encryptedPrivateKey
-      const res = await apiVerifyPin(pinHash);
-      const encryptedPrivateKey = res.data?.encryptedPrivateKey;
+      // Modos genéricos: el padre decide qué hacer con el PIN (SupportButton, Chat, Recovery)
+      if (mode === 'enter' || mode === 'create') {
+        await onComplete?.(enteredPin);
+        setPin('');
+        setProcessing(false);
+        return;
+      }
 
-      if (!encryptedPrivateKey) {
-        // PIN existe en BD pero encrypted_private_key no (migración).
-        // Limpiar el PIN viejo y generar nuevas llaves.
-        try { await clearPin(); } catch {}
+      // Si es modo verify, solo verificamos PIN contra auth.api
+      if (mode === 'verify') {
+        // Verificar PIN y obtener la clave de recuperación en un solo call
+        const API_URL = import.meta.env.VITE_API_URL || location.origin;
+        const res = await fetch(`${API_URL}/users/backup-key`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ pin: enteredPin })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'PIN incorrecto');
+        setPin('');
+        setProcessing(false);
+        onVerify?.(data.secretKey, data.publicKey);
+        return;
+      }
+
+      // Modo normal: desbloquear chat
+      const { unlockChat } = await import('../../api/chat.api.js');
+      const res = await unlockChat(pinHash);
+
+      if (!res.success) {
+        if (res.needsMigration) {
+          try {
+            const privateKey = await chatCrypto.unlockWithPin(res.encryptedPrivateKey, enteredPin);
+            const { migrateChat } = await import('../../api/chat.api.js');
+            const migrateRes = await migrateChat(pinHash, privateKey);
+            if (migrateRes.success) {
+              const { setKeyPair } = await import('../../crypto/keyStore');
+              setKeyPair({ privateKey: migrateRes.privateKey, publicKey: res.publicKey || '' });
+              setPin('');
+              onUnlock();
+              return;
+            }
+            throw new Error(migrateRes.message || 'Error en migración');
+          } catch (migrateErr) {
+            throw new Error(migrateErr.message || 'Error migrando llaves de chat');
+          }
+        }
+        throw new Error(res.message || 'PIN incorrecto');
+      }
+
+      if (res.needsSetup) {
         setPin('');
         setConfirmPin('');
         setStep('create');
@@ -142,8 +191,8 @@ export default function LockScreen({ onUnlock }) {
         return;
       }
 
-      // Descifrar private_key con PIN y guardar en RAM
-      await crypto.unlockWithPin(encryptedPrivateKey, enteredPin);
+      const { setKeyPair } = await import('../../crypto/keyStore');
+      setKeyPair({ privateKey: res.privateKey, publicKey: res.publicKey });
 
       setPin('');
       onUnlock();
@@ -156,7 +205,7 @@ export default function LockScreen({ onUnlock }) {
     }
   };
 
-  /** SETUP: Crear PIN → generar keypair → cifrar private_key → subir todo */
+  /** SETUP: Crear PIN → generar keypair → subir al backend (él cifra con Stellar key) */
   const handleSetup = async (confirmedPin) => {
     if (pin !== confirmedPin) {
       setError('Los PIN no coinciden');
@@ -170,8 +219,25 @@ export default function LockScreen({ onUnlock }) {
 
     setProcessing(true);
     try {
-      // Generar keypair, cifrar private_key con PIN, subir todo al server
-      await crypto.generateAndSetupKeypair(pin, pinHash);
+      // Generar keypair localmente (sin cifrar)
+      const sodium = await crypto.ready;
+      const { default: sodiumLib } = await import('libsodium-wrappers');
+      await sodiumLib.ready;
+      const kp = sodiumLib.crypto_box_keypair();
+      const publicKey = sodiumLib.to_base64(kp.publicKey);
+      const privateKey = sodiumLib.to_base64(kp.privateKey);
+
+      // Subir al backend — él cifra privateKey con Stellar key y guarda
+      const { setupChat } = await import('../../api/chat.api.js');
+      const res = await setupChat(pinHash, publicKey, privateKey);
+
+      if (!res.success) {
+        throw new Error(res.message || 'Error al guardar llaves');
+      }
+
+      // Guardar en RAM
+      const { setKeyPair } = await import('../../crypto/keyStore');
+      setKeyPair({ privateKey, publicKey });
 
       setPin('');
       setConfirmPin('');
@@ -188,7 +254,7 @@ export default function LockScreen({ onUnlock }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <img src={logoImg} alt="Shekael" className={styles.logo} />
+        <ShekaelLogo size="lg" className={styles.logo} />
 
         {step === 'loading' && (
           <>
@@ -197,24 +263,21 @@ export default function LockScreen({ onUnlock }) {
           </>
         )}
 
-        {step === 'enter' && (
+        {step === 'enter' && mode === 'unlock' && (
           <>
-            <h2 className={styles.title}>Desbloquear Shekael</h2>
-            <p className={styles.subtitle}>Ingresa tu PIN de 6 dígitos</p>
+            <p className={styles.subtitle}>{subtitle || 'Ingresa tu PIN de 6 dígitos'}</p>
           </>
         )}
 
-        {step === 'create' && (
+        {step === 'enter' && mode === 'verify' && (
           <>
-            <h2 className={styles.title}>Crear PIN de seguridad</h2>
-            <p className={styles.subtitle}>Elige un PIN de 6 dígitos</p>
+            <p className={styles.subtitle}>{subtitle || 'Ingresa tu PIN para mostrar tu clave de recuperación'}</p>
           </>
         )}
 
-        {step === 'confirm' && (
+        {step === 'enter' && (mode === 'enter' || mode === 'create') && (
           <>
-            <h2 className={styles.title}>Confirmar PIN</h2>
-            <p className={styles.subtitle}>Ingresa el mismo PIN nuevamente</p>
+            <p className={styles.subtitle}>{subtitle || (mode === 'create' ? 'Elige un PIN de 6 dígitos' : 'Ingresa tu PIN')}</p>
           </>
         )}
 
@@ -249,15 +312,34 @@ export default function LockScreen({ onUnlock }) {
           </button>
         </div>
 
-        {step === 'enter' && (
-          <span
-            className={styles.switchAccount}
-            onClick={() => {
-              logout();
-              window.location.reload();
-            }}
-          >
-            Cambiar de cuenta
+        {step === 'enter' && mode === 'unlock' && (
+          <>
+            <span
+              className={styles.switchAccount}
+              onClick={() => {
+                logout();
+                window.location.reload();
+              }}
+            >
+              Cambiar de cuenta
+            </span>
+            <span
+              className={styles.forgotPin}
+              onClick={() => {
+                window.location.href = '/recovery';
+              }}
+            >
+              Olvidé mi PIN
+            </span>
+          </>
+        )}
+
+        {step === 'enter' && mode !== 'unlock' && (
+          <span className={styles.cancelLink} onClick={() => {
+            if (onCancel) onCancel();
+            else window.history.back();
+          }}>
+            Cancelar
           </span>
         )}
       </div>

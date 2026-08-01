@@ -213,7 +213,7 @@ function StepDetalles({ form, set, thumbInputRef, onThumbSelect, onRemoveThumb }
             <div className={styles.charHint}>{form.description.length}/500</div>
 
             <label className={styles.fieldLabel}>
-                <Tag size={14} style={{ marginRight: 4 }} />
+                <Tag size={14} className={styles.iconMargin} />
                 Etiquetas
             </label>
             <input

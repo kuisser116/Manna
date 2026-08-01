@@ -303,3 +303,20 @@
 .modal {
     scrollbar-width: none;
 }
+
+.activationNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+    margin: 8px 0;
+    background: var(--color-warning-bg, rgba(234, 179, 8, 0.1));
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+}
+
+.activationNotice strong {
+    color: var(--color-text);
+}

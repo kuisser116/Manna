@@ -14,10 +14,17 @@ router.post('/image', authMiddleware, upload.single('image'), async (req, res) =
     try {
         if (!req.file) return res.status(400).json({ message: 'No file' });
 
-        const filename = `img-${uuidv4()}-${req.file.originalname}`;
+        // ── Comprimir imagen con Sharp ──
+        const sharp = (await import('sharp')).default;
+        const compressed = await sharp(req.file.buffer)
+            .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 85, progressive: true })
+            .toBuffer();
+
+        const filename = `img-${uuidv4()}.jpg`;
         let fileUrl;
         try {
-            fileUrl = await uploadToR2(req.file.buffer, filename, req.file.mimetype);
+            fileUrl = await uploadToR2(compressed, filename, 'image/jpeg');
         } catch {
             const { writeFileSync, mkdirSync, existsSync } = await import('fs');
             const { join, dirname } = await import('path');
@@ -26,7 +33,7 @@ router.post('/image', authMiddleware, upload.single('image'), async (req, res) =
             const upDir = join(__dir, '..', 'uploads');
             if (!existsSync(upDir)) mkdirSync(upDir, { recursive: true });
             const localName = `img-${uuidv4()}.jpg`;
-            writeFileSync(join(upDir, localName), req.file.buffer);
+            writeFileSync(join(upDir, localName), compressed);
             fileUrl = `http://localhost:3001/uploads/${localName}`;
         }
 
@@ -34,7 +41,7 @@ router.post('/image', authMiddleware, upload.single('image'), async (req, res) =
         const content = `${fileUrl}|||${caption}`;
 
         // Moderación local (sin IA)
-        const modCheck = analyzeContentWithAI(content, 'image', caption, req.user.id);
+        const modCheck = await analyzeContentWithAI(content, 'image', caption, req.user.id);
         if (modCheck.verdict === 'rejected') {
             return res.status(400).json({ message: modCheck.reason });
         }
@@ -77,7 +84,7 @@ router.post('/video', authMiddleware, upload.fields([{ name: 'video', maxCount: 
 
         // Moderación local sobre título/descripción
         const textContent = `${req.body.title || ''} ${req.body.description || ''}`.trim();
-        const modCheck = analyzeContentWithAI(textContent, 'video', textContent, req.user.id);
+        const modCheck = await analyzeContentWithAI(textContent, 'video', textContent, req.user.id);
         if (modCheck.verdict === 'rejected') {
             return res.status(400).json({ message: modCheck.reason });
         }

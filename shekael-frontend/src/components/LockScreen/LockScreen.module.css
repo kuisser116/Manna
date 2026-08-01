@@ -20,11 +20,10 @@
 }
 
 .logo {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
+  color: var(--color-text);
   margin-bottom: 8px;
-  border-radius: 20px;
+  text-align: center;
+  line-height: 1;
 }
 
 .title {
@@ -136,12 +135,43 @@
   text-decoration: underline;
 }
 
+.forgotPin {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+  cursor: pointer;
+  transition: color 0.15s;
+  user-select: none;
+  text-decoration: none;
+  display: block;
+}
+
+.forgotPin:hover {
+  color: var(--color-warning, #f59e0b);
+  text-decoration: underline;
+}
+
 .processing {
   font-size: 0.8rem;
   color: var(--color-text-muted, #888);
   margin: 0;
   min-height: 1.2em;
   animation: pulse 1.5s ease infinite;
+}
+
+.cancelLink {
+  margin-top: 24px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #888);
+  cursor: pointer;
+  transition: color 0.15s;
+  user-select: none;
+  text-decoration: none;
+}
+
+.cancelLink:hover {
+  color: var(--color-primary, #e11d48);
+  text-decoration: underline;
 }
 
 @keyframes pulse {

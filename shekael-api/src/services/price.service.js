@@ -1,28 +1,66 @@
 /**
  * Servicio de Precios (Shekael)
- * Proporciona tasas de cambio para visualización local.
+ * Obtiene tasa USD/MXN en tiempo real, con caché de 5 min.
+ * Fallback a tasa hardcodeada si la API no responde.
  */
 
-const RATES = {
-    USDC_MXN: 18.25, // 1 USDC ≈ $18.25 MXN
-    XLM_MXN: 2.38,   // 1 XLM ≈ $2.38 MXN
-};
+let cachedRate = null;
+let lastFetch = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const FALLBACK_RATE = 18.50;
 
 /**
- * Convierte un monto de cripto a MXN
- * @param {string|number} amount 
- * @param {string} currency - 'USDC' | 'XLM' 
- * @returns {string} 
+ * Obtiene la tasa USD → MXN desde ExchangeRate-API (gratis, sin key)
  */
-export function convertToMXN(amount, currency) {
-    const val = parseFloat(amount || 0);
-    const rate = currency === 'USDC' ? RATES.USDC_MXN : RATES.XLM_MXN;
-    const mxn = val * rate;
-    
-    // Formatear a 2 decimales
-    return mxn.toFixed(2);
+async function fetchRate() {
+    const now = Date.now();
+    if (cachedRate && (now - lastFetch) < CACHE_TTL) {
+        return cachedRate;
+    }
+
+    try {
+        // ExchangeRate-API — gratuita, sin autenticación, tasas mundiales
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+            signal: AbortSignal.timeout(5000)
+        });
+        const data = await res.json();
+        // rates.MXN tiene la tasa USD → MXN
+        const rate = parseFloat(data.rates?.MXN) || FALLBACK_RATE;
+        cachedRate = rate;
+        lastFetch = now;
+        return rate;
+    } catch {
+        // Fallback si la API no responde
+        cachedRate = FALLBACK_RATE;
+        lastFetch = now;
+        return FALLBACK_RATE;
+    }
 }
 
-export function getRates() {
-    return RATES;
+/**
+ * Convierte USDC → MXN
+ */
+export async function convertToMXN(usdcAmount) {
+    const val = parseFloat(usdcAmount || 0);
+    const rate = await fetchRate();
+    return (val * rate).toFixed(2);
 }
+
+/**
+ * Convierte MXN → USDC
+ */
+export async function convertToUSDC(mxnAmount) {
+    const val = parseFloat(mxnAmount || 0);
+    const rate = await fetchRate();
+    if (rate === 0) return '0.00';
+    return (val / rate).toFixed(7);
+}
+
+/**
+ * Obtiene la tasa actual USD/MXN
+ */
+export async function getMxnRate() {
+    return await fetchRate();
+}
+
+export default { convertToMXN, convertToUSDC, getMxnRate };

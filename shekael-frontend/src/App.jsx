@@ -14,13 +14,22 @@ import CreatePost from './pages/CreatePost';
 import FondoRegional from './pages/FondoRegional';
 import Profile from './pages/Profile';
 import Terms from './pages/Terms';
+import Privacy from './pages/Privacy/Privacy';
 import PostDetail from './pages/PostDetail';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
+import AdminPostApproval from './pages/AdminPostApproval/AdminPostApproval';
+import TutorialOnboarding from './pages/TutorialOnboarding/TutorialOnboarding';
 import Studio from './pages/Studio';
+
 import Search from './pages/Search/Search';
+import Explorar from './pages/Explorar/Explorar';
 import Chat from './pages/Chat/Chat';
-
-
+import BusinessProfile from './components/Business/BusinessProfile';
+import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistration';
+import Settings from './pages/Settings';
+import Security from './pages/Settings/Security';
+import SecurityTutorial from './pages/SecurityTutorial/SecurityTutorial';
+import Recovery from './pages/Recovery/Recovery';
 
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -29,12 +38,14 @@ import ToastContainer from './components/Toast/Toast';
 import QRScanner from './components/QRScanner/QRScanner';
 import MyQRModal from './components/MyQRModal/MyQRModal';
 import WalletWidget from './components/WalletWidget/WalletWidget';
+
 import LockScreen from './components/LockScreen/LockScreen';
 import useSessionLock from './hooks/useSessionLock';
 
 
 function ProtectedRoute({ children, authLoading }) {
-  const { token, setVideoMode } = useStore();
+  const { token, user, latestTermsVersion } = useStore();
+  const location = useLocation();
   if (authLoading) {
     return (
       <div className={styles.loadingWrapper}>
@@ -45,7 +56,16 @@ function ProtectedRoute({ children, authLoading }) {
       </div>
     );
   }
-  return token ? children : <Navigate to="/" replace />;
+  if (!token) return <Navigate to="/" replace />;
+  // Auto-redirect al tutorial si no lo ha visto (excepto si ya estamos en /onboarding)
+  if (user && user.tutorial_completed === false && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+  // Forzar aceptación de términos si la versión del usuario no coincide con la última
+  if (user && latestTermsVersion && user.terms_version !== latestTermsVersion && location.pathname !== '/terminos') {
+    return <Navigate to="/terminos" replace />;
+  }
+  return children;
 }
 
 // Layout con TopBar + Sidebar para rutas protegidas
@@ -61,6 +81,9 @@ function AppLayout({ children }) {
   const isTheaterMode = videoMode === 'theater';
   const isProfileRoute = location.pathname.startsWith('/profile');
   const isChatRoute = location.pathname.startsWith('/chat');
+  const isBusinessRoute = location.pathname.startsWith('/business');
+  const isExplorarRoute = location.pathname.startsWith('/explorar');
+  const isSecurityRoute = location.pathname === '/settings/security';
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -112,9 +135,14 @@ function AppLayout({ children }) {
     <>
       {sessionLock.locked && (
         <LockScreen
+          mode={isSecurityRoute ? 'verify' : 'unlock'}
           onUnlock={() => {
             sessionLock.unlock();
             useStore.getState().addToast('success', 'Sesión reanudada', 'Bienvenido de vuelta.');
+          }}
+          onVerify={(secretKey, publicKey) => {
+            useStore.getState().setRecoveryKey({ secretKey, publicKey });
+            sessionLock.unlock();
           }}
         />
       )}
@@ -137,7 +165,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isProfileRoute && !isChatRoute && <WalletWidget variant="floating" />}
+        {!isChatRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
@@ -211,6 +239,7 @@ function App() {
         {/* Landing sin layout de app */}
         <Route path="/" element={<Landing />} />
         <Route path="/terminos" element={<Terms />} />
+        <Route path="/privacidad" element={<Privacy />} />
 
         {/* Rutas protegidas con TopBar + Sidebar */}
         <Route path="/feed" element={
@@ -228,6 +257,7 @@ function App() {
             <AppLayout><Profile /></AppLayout>
           </ProtectedRoute>
         } />
+
         <Route path="/post/:id" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><PostDetail /></AppLayout>
@@ -243,6 +273,32 @@ function App() {
             <AppLayout><ControlCenter /></AppLayout>
           </ProtectedRoute>
         } />
+        <Route path="/onboarding" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <TutorialOnboarding />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/posts" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><AdminPostApproval /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/business/register" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><BusinessRegistration /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/business/:id" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><BusinessProfile /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/explorar" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><Explorar /></AppLayout>
+          </ProtectedRoute>
+        } />
+
         <Route path="/search" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><Search /></AppLayout>
@@ -253,6 +309,22 @@ function App() {
             <AppLayout><Chat /></AppLayout>
           </ProtectedRoute>
         } />
+        <Route path="/settings" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><Settings /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/settings/security" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><Security /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/security-tutorial" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <SecurityTutorial />
+          </ProtectedRoute>
+        } />
+        <Route path="/recovery" element={<Recovery />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

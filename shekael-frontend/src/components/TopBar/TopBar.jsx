@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Bell, Menu, ArrowLeft, QrCode, Palette } from "lucide-react";
+import { Search, Bell, Menu, ArrowLeft, QrCode, Palette, Store, BookOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
 import { searchGlobal } from "../../api/search.api";
 import Avatar from "../Avatar/Avatar";
 import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdown";
+import ShekaelLogo from "../ShekaelLogo/ShekaelLogo";
+import BounceReveal from "../BounceReveal/BounceReveal";
 
 import styles from "./TopBar.module.css";
 import logoImg from "../../assets/personaje_1.12.png";
@@ -27,6 +29,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const inputRef = useRef(null);
@@ -35,7 +38,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) {
+    if (!query.trim() || isMusicRoute) {
       setSuggestions(null);
       setShowSuggestions(false);
       return;
@@ -62,6 +65,8 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const isMusicRoute = location.pathname === '/music';
+
   const showBackBtn =
     location.pathname !== "/feed" && location.pathname !== "/";
 
@@ -69,7 +74,11 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
     e.preventDefault();
     if (query.trim()) {
       setShowSuggestions(false);
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      if (isMusicRoute) {
+        navigate(`/music?q=${encodeURIComponent(query.trim())}`);
+      } else {
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
     }
   };
 
@@ -81,6 +90,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   };
 
   return (
+    <>
     <header className={styles.topbar}>
       <div className={styles.topbarMain}>
         <div className={styles.left}>
@@ -93,7 +103,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
           </button>
           <Link to="/feed" className={styles.logo}>
             <img src={logoImg} alt="Shekael" className={styles.logoImg} />
-            Shekael
+            <BounceReveal><ShekaelLogo size="sm" /></BounceReveal>
           </Link>
           {showBackBtn && (
             <button
@@ -113,7 +123,7 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                 ref={inputRef}
                 type="text"
                 className={styles.searchInput}
-                placeholder={t('topbar.search')}
+                placeholder={isMusicRoute ? 'Buscar canción…' : t('topbar.search')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => {
@@ -222,6 +232,15 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                 >
                   Mi perfil
                 </Link>
+                <button
+                  className={styles.userMenuItem}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/business/register');
+                  }}
+                >
+                  <Store size={16} /> Registrar comercio
+                </button>
                 {user?.is_admin && (
                   <Link
                     to="/admin/control-center"
@@ -231,6 +250,15 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                     Control Center
                   </Link>
                 )}
+                <button
+                  className={styles.userMenuItem}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/onboarding');
+                  }}
+                >
+                  <BookOpen size={16} /> Tutorial
+                </button>
                 <button
                   className={`${styles.userMenuItem} ${styles.userMenuLogout}`}
                   onClick={() => {
@@ -262,6 +290,8 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
         </div>
       )}
     </header>
+
+    </>
   );
 }
 

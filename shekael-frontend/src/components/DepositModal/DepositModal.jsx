@@ -10,6 +10,7 @@ import styles from './DepositModal.module.css';
 const STELLAR_EXPLORER = 'https://stellar.expert/explorer/testnet/account/';
 
 export default function DepositModal({ isOpen, onClose }) {
+    const { walletNotFunded } = useStore();
     const { user } = useStore();
     const [address, setAddress] = useState('');
     const [qrDataUrl, setQrDataUrl] = useState('');
@@ -96,7 +97,7 @@ export default function DepositModal({ isOpen, onClose }) {
             >
                 <div className={styles.header}>
                     <div className={styles.titleGroup}>
-                        <h3>Depositar MXNe</h3>
+                        <h3>Depositar fondos</h3>
                         <p className={styles.subtitle}>Recibe XLM desde cualquier exchange</p>
                     </div>
                     <button className={styles.closeBtn} onClick={onClose}>
@@ -135,6 +136,17 @@ export default function DepositModal({ isOpen, onClose }) {
                                 </p>
                             </div>
 
+                            {/* XLM Activation Notice — solo si no está activa */}
+                            {walletNotFunded && (
+                                <div className={styles.activationNotice}>
+                                    <span style={{ fontSize: 14, flexShrink: 0 }}>ⓘ</span>
+                                    <span>
+                                        Para activar tu cuenta, envía primero <strong>~2 XLM</strong> desde Bitso a tu dirección.
+                                        Una vez activada, puedes depositar USDC sin límite.
+                                    </span>
+                                </div>
+                            )}
+
                             {/* Address */}
                             <div className={styles.addressSection}>
                                 <label className={styles.addressLabel}>Tu dirección Stellar</label>
@@ -168,7 +180,7 @@ export default function DepositModal({ isOpen, onClose }) {
                                         Confirma el retiro. Los fondos llegan en <strong>~3 segundos</strong>
                                     </li>
                                     <li>
-                                        Al recibirlos, se convertirán automáticamente a <strong>MXNe</strong> (1 MXNe = $1 MXN)
+                                        Envía USDC a esta dirección. Se convertirá automáticamente a MXN en tu wallet
                                     </li>
                                 </ol>
                             </div>

@@ -36,6 +36,7 @@ export function TextDetailLayout({
     isLiked = false,
     onLike,
     onDelete,
+    hideActions = false,
 }) {
     const { user } = useStore();
     const isOwner = user?.id === post.author_id;
@@ -92,7 +93,7 @@ export function TextDetailLayout({
                         </motion.div>
 
                         {/* Acciones e interacciones */}
-                        <div className={styles.interactionsRow}>
+                        {!hideActions && <div className={styles.interactionsRow}>
                             <div className={styles.actions}>
                                 <button
                                     className={`${styles.actionBtn} ${isLiked ? styles.likedBtn : ''}`}
@@ -129,7 +130,7 @@ export function TextDetailLayout({
                                     </button>
                                 )}
                             </div>
-                        </div>
+                        </div>}
                     </div>
 
                     <div className={styles.divider} />

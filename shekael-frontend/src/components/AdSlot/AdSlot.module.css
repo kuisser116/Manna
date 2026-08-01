@@ -1,0 +1,92 @@
+.adSlot {
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    position: relative;
+    transition: border-color 0.2s;
+}
+
+.adSlot:hover {
+    border-color: var(--color-text-dim);
+}
+
+.adBadge {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    opacity: 0.6;
+}
+
+.adContent {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.adText {
+    flex: 1;
+}
+
+.adTitle {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.adDesc {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin: 4px 0 0;
+    line-height: 1.4;
+}
+
+.adFooter {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.adStatus {
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+.adStatusActive {
+    font-size: 11px;
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.adStatusDone {
+    font-size: 11px;
+    color: var(--color-success);
+}
+
+.adStatusError {
+    font-size: 11px;
+    color: var(--color-danger);
+}
+
+.progressBar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-border);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: var(--color-primary);
+    transition: width 0.3s ease;
+}
