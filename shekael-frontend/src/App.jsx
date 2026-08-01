@@ -28,6 +28,7 @@ import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistrat
 import Settings from './pages/Settings';
 import Security from './pages/Settings/Security';
 import SecurityTutorial from './pages/SecurityTutorial/SecurityTutorial';
+import SecurityVerify from './pages/SecurityVerify/SecurityVerify';
 import Recovery from './pages/Recovery/Recovery';
 
 import TopBar from './components/TopBar/TopBar';
@@ -314,6 +315,11 @@ function App() {
         <Route path="/security-tutorial" element={
           <ProtectedRoute authLoading={authLoading}>
             <SecurityTutorial />
+          </ProtectedRoute>
+        } />
+        <Route path="/security-verify" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <SecurityVerify />
           </ProtectedRoute>
         } />
         <Route path="/recovery" element={<Recovery />} />

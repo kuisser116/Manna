@@ -124,7 +124,7 @@ export default function SecurityTutorial() {
                 onComplete: () => {
                     const next = slide + 1;
                     if (next >= TOTAL) {
-                        navigate('/settings/security');
+                        navigate('/security-verify');
                         return;
                     }
                     setSlide(next);
