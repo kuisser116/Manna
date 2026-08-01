@@ -27,6 +27,7 @@ import BusinessProfile from './components/Business/BusinessProfile';
 import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistration';
 import Settings from './pages/Settings';
 import Security from './pages/Settings/Security';
+import SecurityTutorial from './pages/SecurityTutorial/SecurityTutorial';
 import Recovery from './pages/Recovery/Recovery';
 
 import TopBar from './components/TopBar/TopBar';
@@ -308,6 +309,11 @@ function App() {
         <Route path="/settings/security" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><Security /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/security-tutorial" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <SecurityTutorial />
           </ProtectedRoute>
         } />
         <Route path="/recovery" element={<Recovery />} />

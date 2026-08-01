@@ -1,40 +1,12 @@
 import React, { useState } from 'react';
-import { Shield, Key, AlertTriangle, CheckCircle, ChevronRight, ChevronLeft, Eye, Download, Smartphone, FileText } from 'lucide-react';
+import { Key, Download, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
 import useStore from '../../store';
 import PinKeypad from '../../components/PinKeypad/PinKeypad';
 import styles from './Security.module.css';
 
-const TUTORIAL_STEPS = [
-    {
-        icon: Shield,
-        title: 'Recuperación de Cuenta',
-        description: 'Antes de mostrar tu clave, entiende cómo funciona la recuperación. Son 3 pasos simples.',
-        highlight: null,
-    },
-    {
-        icon: Key,
-        title: 'Paso 1: Tu Clave Secreta',
-        description: 'Tu cuenta tiene una clave secreta única (empieza con S...). Esta clave ES tu wallet. Sin ella, nadie puede recuperar tu dinero.',
-        highlight: 'Ni siquiera Shekael puede recuperar tu cuenta si pierdes esta clave.',
-    },
-    {
-        icon: Smartphone,
-        title: 'Paso 2: Tu PIN de Seguridad',
-        description: 'Tu PIN de 6 dígitos solo desbloquea la app. Si lo olvidas, necesitas tu clave secreta para crear uno nuevo.',
-        highlight: 'El PIN protege la app. La clave secreta recupera la cuenta.',
-    },
-    {
-        icon: FileText,
-        title: 'Paso 3: Respaldo en Papel',
-        description: 'Escribe tu clave secreta en papel físico. Guárdala en un lugar seguro. NO en fotos. NO en la nube.',
-        highlight: 'Papel físico = único respaldo válido. Todo lo demás puede hackearse.',
-    },
-];
-
 export default function Security() {
     const { token, user } = useStore();
-    const [step, setStep] = useState('tutorial'); // tutorial | pin | showing
-    const [tutorialStep, setTutorialStep] = useState(0);
+    const [step, setStep] = useState(0); // 0=pin, 1=showing
     const [secretKey, setSecretKey] = useState('');
     const [publicKey, setPublicKey] = useState('');
     const [loading, setLoading] = useState(false);
@@ -59,7 +31,7 @@ export default function Security() {
             if (res.ok) {
                 setSecretKey(data.secretKey);
                 setPublicKey(data.publicKey);
-                setStep('showing');
+                setStep(1);
             } else {
                 setError(data.message || 'PIN incorrecto');
                 throw new Error(data.message);
@@ -90,7 +62,7 @@ ${publicKey}
 CLAVE SECRETA (para enviar / recuperar cuenta):
 ${secretKey}
 
-⚠️  INSTRUCCIONES DE RECUPERACIÓN:
+⚠️  INSTRUCCIONES:
 1. Si olvidas tu PIN: usa esta clave en shekael.app/recovery
 2. Si pierdes tu teléfono: instala Shekael e ingresa esta clave
 3. NO compartas esta clave con NADIE
@@ -108,57 +80,7 @@ Guarda este papel en un lugar seguro.
         URL.revokeObjectURL(url);
     };
 
-    // ─── TUTORIAL ───
-    if (step === 'tutorial') {
-        const tStep = TUTORIAL_STEPS[tutorialStep];
-        const Icon = tStep.icon;
-        const isLast = tutorialStep === TUTORIAL_STEPS.length - 1;
-
-        return (
-            <div className={styles.tutorialOverlay}>
-                <div className={styles.tutorialModal}>
-                    {/* Progress */}
-                    <div className={styles.tutorialProgress}>
-                        {TUTORIAL_STEPS.map((_, i) => (
-                            <div key={i} className={`${styles.tutorialDot} ${i <= tutorialStep ? styles.tutorialDotActive : ''}`} />
-                        ))}
-                    </div>
-
-                    <div className={styles.tutorialContent}>
-                        <Icon size={48} className={styles.tutorialIcon} />
-                        <h2>{tStep.title}</h2>
-                        <p>{tStep.description}</p>
-                        {tStep.highlight && (
-                            <div className={styles.tutorialHighlight}>
-                                <AlertTriangle size={16} />
-                                <span>{tStep.highlight}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className={styles.tutorialActions}>
-                        {tutorialStep > 0 && (
-                            <button className={styles.tutorialSecondary} onClick={() => setTutorialStep(c => c - 1)}>
-                                <ChevronLeft size={16} /> Anterior
-                            </button>
-                        )}
-                        <button 
-                            className={styles.tutorialPrimary} 
-                            onClick={() => {
-                                if (isLast) setStep('pin');
-                                else setTutorialStep(c => c + 1);
-                            }}
-                        >
-                            {isLast ? 'Ver mi clave' : 'Siguiente'} <ChevronRight size={16} />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ─── PIN VERIFICATION ───
-    if (step === 'pin') {
+    if (step === 0) {
         return (
             <div className={styles.container}>
                 <div className={styles.card}>
@@ -169,7 +91,7 @@ Guarda este papel en un lugar seguro.
                     <PinKeypad
                         mode="enter"
                         onComplete={verifyPin}
-                        onCancel={() => setStep('tutorial')}
+                        onCancel={() => window.history.back()}
                         error={error}
                         loading={loading}
                         title="Ingresa tu PIN"
@@ -180,7 +102,6 @@ Guarda este papel en un lugar seguro.
         );
     }
 
-    // ─── SHOWING SECRET KEY ───
     return (
         <div className={styles.container}>
             <div className={styles.card}>
@@ -203,18 +124,13 @@ Guarda este papel en un lugar seguro.
                     <button className={styles.downloadBtn} onClick={downloadBackup}>
                         <Download size={14} /> Descargar respaldo
                     </button>
-                    <button className={styles.secondaryBtn} onClick={() => { setStep('tutorial'); setSecretKey(''); setPublicKey(''); }}>
+                    <button className={styles.secondaryBtn} onClick={() => { setStep(0); setSecretKey(''); setPublicKey(''); }}>
                         Cerrar
                     </button>
                 </div>
 
                 <div className={styles.footerNote}>
                     Dirección pública para recibir: <code>{publicKey}</code>
-                </div>
-
-                <div className={styles.warningBox}>
-                    <AlertTriangle size={14} />
-                    <span>NO compartas esta clave. Cualquiera con acceso puede mover tu dinero.</span>
                 </div>
             </div>
         </div>
