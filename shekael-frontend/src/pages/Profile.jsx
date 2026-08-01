@@ -382,7 +382,7 @@ export default function Profile() {
                       </button>
                       <button
                         className={styles.editBtn}
-                        onClick={() => setIsProfileModalOpen(true)}
+                        onClick={() => navigate('/settings')}
                         title="Configuración"
                       >
                         <Settings size={18} />
