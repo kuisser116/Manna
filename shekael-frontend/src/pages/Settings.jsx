@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Shield, Brain, MapPin, Eye, DollarSign, Key, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Shield, Brain, MapPin, Eye, DollarSign, Key, ChevronRight, Laptop, Church, Dumbbell, Palette, Music, UtensilsCrossed, Plane, Shirt, Gamepad2, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Settings.module.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const INTEREST_CATEGORIES = [
-    { value: 'tech', label: 'Tecnología', emoji: '💻' },
-    { value: 'faith', label: 'Fe / Espiritualidad', emoji: '🙏' },
-    { value: 'sports', label: 'Deportes', emoji: '⚽' },
-    { value: 'art', label: 'Arte', emoji: '🎨' },
-    { value: 'music', label: 'Música', emoji: '🎵' },
-    { value: 'food', label: 'Comida', emoji: '🍔' },
-    { value: 'travel', label: 'Viajes', emoji: '✈️' },
-    { value: 'fashion', label: 'Moda', emoji: '👗' },
-    { value: 'gaming', label: 'Gaming', emoji: '🎮' },
-    { value: 'education', label: 'Educación', emoji: '📚' },
+    { value: 'tech', label: 'Tecnología', Icon: Laptop },
+    { value: 'faith', label: 'Fe / Espiritualidad', Icon: Church },
+    { value: 'sports', label: 'Deportes', Icon: Dumbbell },
+    { value: 'art', label: 'Arte', Icon: Palette },
+    { value: 'music', label: 'Música', Icon: Music },
+    { value: 'food', label: 'Comida', Icon: UtensilsCrossed },
+    { value: 'travel', label: 'Viajes', Icon: Plane },
+    { value: 'fashion', label: 'Moda', Icon: Shirt },
+    { value: 'gaming', label: 'Gaming', Icon: Gamepad2 },
+    { value: 'education', label: 'Educación', Icon: GraduationCap },
 ];
 
 export default function Settings() {
@@ -133,23 +133,26 @@ export default function Settings() {
                     <div className={styles.sectionHeader}>
                         <Eye size={18} />
                         <h2>Tus intereses</h2>
-                        <span className={styles.badge}>Detectados automáticamente</span>
+                        <span className={styles.badge}>Personalizables</span>
                     </div>
                     <p className={styles.sectionDesc}>
                         Basado en tu actividad en Shekael. Si activas la personalización, estos intereses se usan para mostrarte anuncios relevantes.
                     </p>
                     <div className={styles.interestsGrid}>
-                        {INTEREST_CATEGORIES.map(cat => (
-                            <button
-                                key={cat.value}
-                                className={`${styles.interestChip} ${interests.includes(cat.value) ? styles.interestActive : ''}`}
-                                onClick={() => hasConsent && toggleInterest(cat.value)}
-                                disabled={!hasConsent}
-                            >
-                                <span>{cat.emoji}</span>
-                                {cat.label}
-                            </button>
-                        ))}
+                        {INTEREST_CATEGORIES.map(cat => {
+                            const IconComponent = cat.Icon;
+                            return (
+                                <button
+                                    key={cat.value}
+                                    className={`${styles.interestChip} ${interests.includes(cat.value) ? styles.interestActive : ''}`}
+                                    onClick={() => hasConsent && toggleInterest(cat.value)}
+                                    disabled={!hasConsent}
+                                >
+                                    <IconComponent size={14} />
+                                    {cat.label}
+                                </button>
+                            );
+                        })}
                     </div>
                     {hasConsent && (
                         <p className={styles.chipHint}>Puedes editar manualmente tus intereses haciendo clic en ellos</p>
