@@ -220,3 +220,163 @@
     font-size: 0.7rem;
     color: var(--color-text);
 }
+
+/* ─── Tutorial Overlay ─── */
+.tutorialOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+}
+
+.tutorialModal {
+    background: var(--color-surface, #1a1a2e);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 420px;
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--color-border, #2a2a3e);
+}
+
+.tutorialProgress {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.tutorialDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-border, #333);
+    transition: all 0.3s ease;
+}
+
+.tutorialDotActive {
+    background: var(--color-primary, #6366f1);
+    transform: scale(1.2);
+}
+
+.tutorialContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+}
+
+.tutorialIcon {
+    color: var(--color-primary, #6366f1);
+    margin-bottom: 4px;
+}
+
+.tutorialContent h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text, #fff);
+    margin: 0;
+}
+
+.tutorialContent p {
+    font-size: 0.9rem;
+    color: var(--color-text-muted, #a0a0b0);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.tutorialHighlight {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: left;
+    width: 100%;
+}
+
+.tutorialHighlight svg {
+    color: #ef4444;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.tutorialHighlight span {
+    font-size: 0.8rem;
+    color: #fca5a5;
+    line-height: 1.4;
+}
+
+.tutorialActions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.tutorialPrimary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 28px;
+    border-radius: 12px;
+    border: none;
+    background: var(--color-primary, #6366f1);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.tutorialPrimary:hover {
+    opacity: 0.9;
+}
+
+.tutorialSecondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border, #333);
+    background: transparent;
+    color: var(--color-text-muted, #888);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tutorialSecondary:hover {
+    border-color: var(--color-text-muted, #666);
+    color: var(--color-text, #fff);
+}
+
+.warningBox {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 12px;
+    font-size: 0.75rem;
+    color: #fca5a5;
+    text-align: left;
+}
+
+.warningBox svg {
+    color: #ef4444;
+    flex-shrink: 0;
+    margin-top: 1px;
+}

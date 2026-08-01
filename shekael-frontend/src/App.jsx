@@ -38,7 +38,6 @@ import MyQRModal from './components/MyQRModal/MyQRModal';
 import WalletWidget from './components/WalletWidget/WalletWidget';
 
 import LockScreen from './components/LockScreen/LockScreen';
-import SecurityTutorial from './components/SecurityTutorial/SecurityTutorial';
 import useSessionLock from './hooks/useSessionLock';
 
 
@@ -78,9 +77,6 @@ function AppLayout({ children }) {
 
   const { videoMode, qrScannerOpen, setQrScannerOpen, myQRModalOpen, setMyQRModalOpen, chatConversationMode } = useStore();
   const isTheaterMode = videoMode === 'theater';
-  const [showSecurityTutorial, setShowSecurityTutorial] = useState(() => {
-    return !localStorage.getItem('shekael_security_tutorial_seen');
-  });
   const isProfileRoute = location.pathname.startsWith('/profile');
   const isChatRoute = location.pathname.startsWith('/chat');
   const isBusinessRoute = location.pathname.startsWith('/business');
@@ -134,9 +130,6 @@ function AppLayout({ children }) {
 
   return (
     <>
-      {showSecurityTutorial && (
-        <SecurityTutorial onComplete={() => setShowSecurityTutorial(false)} />
-      )}
       {sessionLock.locked && (
         <LockScreen
           onUnlock={() => {
