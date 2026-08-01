@@ -20,7 +20,7 @@
 }
 
 .logo {
-  color: var(--color-primary, #e11d48);
+  color: var(--color-text);
   margin-bottom: 8px;
   text-align: center;
   line-height: 1;
