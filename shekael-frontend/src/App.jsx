@@ -82,6 +82,7 @@ function AppLayout({ children }) {
   const isChatRoute = location.pathname.startsWith('/chat');
   const isBusinessRoute = location.pathname.startsWith('/business');
   const isExplorarRoute = location.pathname.startsWith('/explorar');
+  const isSecurityRoute = location.pathname === '/settings/security';
 
   // Escuchar resize para modo móvil
   useEffect(() => {
@@ -133,9 +134,14 @@ function AppLayout({ children }) {
     <>
       {sessionLock.locked && (
         <LockScreen
+          mode={isSecurityRoute ? 'verify' : 'unlock'}
           onUnlock={() => {
             sessionLock.unlock();
             useStore.getState().addToast('success', 'Sesión reanudada', 'Bienvenido de vuelta.');
+          }}
+          onVerify={(secretKey, publicKey) => {
+            useStore.getState().setRecoveryKey({ secretKey, publicKey });
+            sessionLock.unlock();
           }}
         />
       )}

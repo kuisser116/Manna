@@ -5,18 +5,17 @@ import LockScreen from '../../components/LockScreen/LockScreen';
 import styles from './Security.module.css';
 
 export default function Security() {
-    const { token, user } = useStore();
-    const [verified, setVerified] = useState(false);
-    const [secretKey, setSecretKey] = useState('');
-    const [publicKey, setPublicKey] = useState('');
+    const { token, user, sessionLocked, recoveryKey, setRecoveryKey } = useStore();
+    const [localKey, setLocalKey] = useState(null);
     const [copied, setCopied] = useState(false);
 
     const API_URL = import.meta.env.VITE_API_URL || location.origin;
 
-    const handleVerified = (secret, pub) => {
-        setSecretKey(secret);
-        setPublicKey(pub);
-        setVerified(true);
+    const secretKey = recoveryKey?.secretKey || localKey?.secretKey;
+    const publicKey = recoveryKey?.publicKey || localKey?.publicKey;
+
+    const handleVerified = async (secret, pub) => {
+        setLocalKey({ secretKey: secret, publicKey: pub });
     };
 
     const copyToClipboard = () => {
@@ -55,8 +54,14 @@ Guarda este papel en un lugar seguro.
         URL.revokeObjectURL(url);
     };
 
-    // ─── SI NO VERIFICADO: mostrar LockScreen (mismo que al abrir la app) ───
-    if (!verified) {
+    // Si el AppLayout ya está mostrando el LockScreen (session lock activo),
+    // NO montar otro — solo uno a la vez.
+    if (sessionLocked && !secretKey) {
+        return null;
+    }
+
+    // Sin clave verificada → mostrar el MISMO LockScreen de la app
+    if (!secretKey) {
         return (
             <LockScreen
                 mode="verify"
@@ -88,7 +93,14 @@ Guarda este papel en un lugar seguro.
                     <button className={styles.downloadBtn} onClick={downloadBackup}>
                         <Download size={14} /> Descargar respaldo
                     </button>
-                    <button className={styles.secondaryBtn} onClick={() => window.history.back()}>
+                    <button
+                        className={styles.secondaryBtn}
+                        onClick={() => {
+                            setRecoveryKey(null);
+                            setLocalKey(null);
+                            window.history.back();
+                        }}
+                    >
                         Cerrar
                     </button>
                 </div>

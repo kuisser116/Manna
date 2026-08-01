@@ -9,6 +9,7 @@ import useStore from '../store';
  */
 export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
   const token = useStore(s => s.token);
+  const setSessionLocked = useStore(s => s.setSessionLocked);
   const [locked, setLocked] = useState(false);
   const timerRef = useRef(null);
   const mountedRef = useRef(true);
@@ -25,19 +26,24 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
     }, inactivityTimeoutMs);
   }, [inactivityTimeoutMs]);
 
+  const setLockedState = useCallback((v) => {
+    setLocked(v);
+    setSessionLocked(v);
+  }, [setSessionLocked]);
+
   const unlock = useCallback(() => {
-    setLocked(false);
+    setLockedState(false);
     resetTimer();
-  }, [resetTimer]);
+  }, [setLockedState, resetTimer]);
 
   useEffect(() => {
     mountedRef.current = true;
     if (!token) {
-      setLocked(false);
+      setLockedState(false);
       return;
     }
 
-    setLocked(true);
+    setLockedState(true);
 
     const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
     const handler = () => resetTimer();
@@ -53,10 +59,10 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
   }, [token, resetTimer]);
 
   const lock = useCallback(() => {
-    setLocked(true);
+    setLockedState(true);
     window.dispatchEvent(new CustomEvent('Shekael:lock'));
     // La llave en RAM se limpia automáticamente por el listener en useChatCrypto
-  }, []);
+  }, [setLockedState]);
 
   return { locked, unlock, lock, resetTimer };
 }

@@ -7,6 +7,14 @@ const useStore = create((set, get) => ({
 
   setUser: (user) => set({ user }),
 
+  // Session lock compartido (para que Security no monte un 2do LockScreen)
+  sessionLocked: false,
+  setSessionLocked: (locked) => set({ sessionLocked: locked }),
+
+  // Clave de recuperación verificada (resultado del modo verify)
+  recoveryKey: null,
+  setRecoveryKey: (key) => set({ recoveryKey: key }),
+
   setToken: (token) => {
     if (token) {
       localStorage.setItem('Shekael_token', token);

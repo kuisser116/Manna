@@ -3,7 +3,7 @@ import { getPinStatus, verifyPin as apiVerifyPin, clearPin } from '../../api/aut
 import useChatCrypto from '../../hooks/useChatCrypto';
 import useStore from '../../store';
 import styles from './LockScreen.module.css';
-import logoImg from '../../assets/personaje_1.12.png';
+import ShekaelLogo from '../ShekaelLogo/ShekaelLogo';
 
 /**
  * LockScreen — PIN de seguridad para Shekael.
@@ -241,7 +241,7 @@ export default function LockScreen({ onUnlock, onVerify, mode = 'unlock' }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <img src={logoImg} alt="Shekael" className={styles.logo} />
+        <ShekaelLogo size="lg" className={styles.logo} />
 
         {step === 'loading' && (
           <>
