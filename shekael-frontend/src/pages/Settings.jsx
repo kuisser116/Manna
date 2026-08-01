@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Shield, Brain, MapPin, Eye, DollarSign } from 'lucide-react';
+import { ChevronLeft, Shield, Brain, MapPin, Eye, DollarSign, Key, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Settings.module.css';
 
@@ -190,6 +190,18 @@ export default function Settings() {
                             <option value="55+">55+</option>
                         </select>
                     </div>
+                </section>
+
+                {/* ─── Seguridad: Clave de respaldo ─── */}
+                <section className={styles.section} style={{ cursor: 'pointer' }} onClick={() => navigate('/settings/security')}>
+                    <div className={styles.sectionHeader}>
+                        <Key size={18} />
+                        <h2>Clave de Respaldo</h2>
+                        <ChevronRight size={18} style={{ marginLeft: 'auto', color: 'var(--color-text-muted)' }} />
+                    </div>
+                    <p className={styles.sectionDesc}>
+                        Guarda tu clave privada en papel. Si pierdes tu teléfono, es la única forma de recuperar tu dinero.
+                    </p>
                 </section>
 
                 {/* ─── Privacidad ─── */}

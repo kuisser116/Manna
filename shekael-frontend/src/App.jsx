@@ -26,6 +26,7 @@ import Chat from './pages/Chat/Chat';
 import BusinessProfile from './components/Business/BusinessProfile';
 import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistration';
 import Settings from './pages/Settings';
+import Security from './pages/Settings/Security';
 
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -301,6 +302,11 @@ function App() {
         <Route path="/settings" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><Settings /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/settings/security" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><Security /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
