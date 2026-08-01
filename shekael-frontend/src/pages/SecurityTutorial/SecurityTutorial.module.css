@@ -89,3 +89,15 @@
 }
 .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btnFinish { background: var(--color-success, #22c55e); }
+
+.skipBtn {
+    position: absolute; bottom: 20px;
+    background: none; border: none;
+    color: var(--color-text-muted, #888);
+    font-size: 0.85rem; cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    z-index: 5;
+    transition: color 0.2s ease;
+}
+.skipBtn:hover { color: var(--color-text, #ccc); }

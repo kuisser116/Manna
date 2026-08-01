@@ -196,10 +196,7 @@ export default function Settings() {
                 </section>
 
                 {/* ─── Recuperación de Cuenta ─── */}
-                <section className={styles.section} style={{ cursor: 'pointer' }} onClick={() => {
-                    const hasSeen = localStorage.getItem('shekael_security_tutorial_seen');
-                    navigate(hasSeen ? '/settings/security' : '/security-tutorial');
-                }}>
+                <section className={styles.section} style={{ cursor: 'pointer' }} onClick={() => navigate('/security-tutorial')}>
                     <div className={styles.sectionHeader}>
                         <Key size={18} />
                         <h2>Recuperación de Cuenta</h2>

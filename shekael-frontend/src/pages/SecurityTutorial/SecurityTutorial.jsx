@@ -196,6 +196,10 @@ export default function SecurityTutorial() {
                     {slide === 4 ? 'Ver mi clave' : 'Siguiente'}
                     <ArrowRight size={18} />
                 </button>
+
+                <button className={styles.skipBtn} onClick={() => navigate('/settings/security')}>
+                    Omitir tutorial
+                </button>
             </div>
         </div>
     );
