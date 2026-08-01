@@ -453,30 +453,233 @@ function LandingInner() {
 
       }); // end matchMedia desktop
 
-      // Mobile: simpler animations
+      // Mobile: mismas animaciones GSAP, optimizadas (stagger rápido, offsets cortos)
       mm.add('(max-width: 700px)', () => {
-        const bands = [band1Ref, band2Ref, band3Ref, band4Ref, closingRef];
-        bands.forEach(ref => {
-          const el = ref.current;
-          if (!el) return;
-          gsap.fromTo(el,
-            { opacity: 0, y: 20 },
+
+        // 0. HERO: IDÉNTICO a desktop — logo gigante se encoge, va a esquina,
+        //    contenido aparece con scroll (pin + scrub). Pantalla completa.
+        const splashInner = splashRef.current?.querySelector(`.${styles.splashInner}`);
+        const splashWordmark = splashRef.current?.querySelector(`.${styles.splashWordmark}`);
+        const heroContent = heroRef.current?.querySelector(`.${styles.heroContent}`);
+
+        if (splashInner && splashWordmark && heroContent) {
+          const viewH = window.innerHeight;
+          const isSmall = window.innerWidth < 400;
+
+          // Centrar splashInner vía GSAP (igual que desktop)
+          gsap.set(splashInner, {
+            top: '50%',
+            left: '50%',
+            xPercent: -50,
+            yPercent: -50
+          });
+
+          gsap.set(heroContent, { opacity: 0, y: viewH * 0.6 });
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: heroRef.current,
+              start: 'top top',
+              end: `+=${viewH * 2}`,
+              pin: true,
+              pinSpacing: true,
+              scrub: 0.5
+            }
+          });
+
+          tl
+            // Fase 1: Shekael se encoge centrado (tamaño móvil)
+            .to(splashWordmark, {
+              fontSize: isSmall ? '70px' : '84px',
+              duration: 1,
+              ease: 'none'
+            }, 0)
+            // Fase 2: splashInner va a esquina, wordmark se achica
+            .to(splashInner, {
+              left: '20px',
+              top: '18px',
+              xPercent: 0,
+              yPercent: 0,
+              duration: 1,
+              ease: 'power3.out'
+            })
+            .to(splashWordmark, {
+              fontSize: '36px',
+              duration: 1,
+              ease: 'power3.out'
+            }, '-=1')
+            // Fase 3: contenido aparece
+            .to(heroContent, {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: 'power3.out'
+            }, '-=0.5');
+        }
+
+        // 1. SCRAMBLE TEXT en títulos de sección
+        const scrambleTargets = mainRef.current?.querySelectorAll(`.${styles.scrambleTarget}`);
+        const bandLogos = mainRef.current?.querySelectorAll(`.${styles.bandLogoAnim}`);
+        if (bandLogos?.length) {
+          gsap.set(bandLogos, { autoAlpha: 0, scale: 0.4, rotate: -8 });
+        }
+        if (scrambleTargets?.length) {
+          scrambleTargets.forEach(el => {
+            const originalText = el.textContent || '';
+            const band = el.closest(`.${styles.band}`);
+            const logo = band?.querySelector(`.${styles.bandLogoAnim}`);
+            ScrollTrigger.create({
+              trigger: band || el.parentElement,
+              start: 'top 80%',
+              onEnter: () => {
+                const tl = gsap.timeline();
+                tl.to(el, {
+                  duration: 1.5,
+                  scrambleText: {
+                    text: originalText,
+                    chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                    revealDelay: 0.3,
+                    tweenLength: true,
+                    speed: 0.5
+                  },
+                  ease: 'none'
+                });
+                if (logo) {
+                  tl.to(logo, {
+                    autoAlpha: 1, scale: 1, rotate: 0,
+                    duration: 1.1, ease: 'elastic.out(1, 0.5)'
+                  }, '-=0.7');
+                }
+              },
+              once: true
+            });
+          });
+        }
+
+        // 2. DRAW LINE en economía
+        const econLine = band2Ref.current?.querySelector(`.${styles.econLine}`);
+        if (econLine?.tagName === 'path' || econLine?.tagName === 'svg') {
+          gsap.fromTo(econLine,
+            { drawSVG: '0%' },
             {
-              opacity: 1, y: 0, duration: 0.5, ease: 'power2.out',
-              scrollTrigger: { trigger: el, start: 'top 92%', toggleActions: 'play none none none' }
+              drawSVG: '100%', duration: 1.4, ease: 'power3.inOut',
+              scrollTrigger: {
+                trigger: band2Ref.current,
+                start: 'top 75%',
+                toggleActions: 'play none none none'
+              }
             }
           );
-        });
+        }
 
-        // Fallback de seguridad: si el ScrollTrigger no dispara en móvil
-        // (scroll suave, resize del address bar), forzar visibilidad a los 2s.
-        // Evita que el contenido quede en opacity:0 (invisible) para siempre.
-        const safety = setTimeout(() => {
-          bands.forEach(ref => {
-            if (ref.current) gsap.set(ref.current, { opacity: 1, y: 0, clearProps: 'opacity' });
+        // 3. FEATURES: scatter → assemble (distancia corta para móvil)
+        const featGrid = tagsRef.current;
+        const featItems = featGrid?.querySelectorAll(`.${styles.featItem}`);
+        if (featItems?.length) {
+          requestAnimationFrame(() => {
+            featItems.forEach((el) => {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = 40 + Math.random() * 60;
+              gsap.set(el, {
+                opacity: 0,
+                x: Math.cos(angle) * dist,
+                y: Math.sin(angle) * dist,
+                scale: 0.5,
+                rotation: gsap.utils.random(-20, 20)
+              });
+            });
           });
-        }, 2500);
-        return () => clearTimeout(safety);
+
+          ScrollTrigger.create({
+            trigger: featGrid,
+            start: 'top 85%',
+            onEnter: () => {
+              featItems.forEach((el, i) => {
+                gsap.to(el, {
+                  x: 0, y: 0, opacity: 1, scale: 1, rotation: 0,
+                  duration: 0.9,
+                  delay: i * 0.12,
+                  ease: 'back.out(2.5)',
+                  overwrite: 'auto'
+                });
+              });
+            },
+            once: true
+          });
+        }
+
+        // 4. ECONOMY STEPS (igual que desktop)
+        const econSteps = econStepsRef.current?.querySelectorAll(`.${styles.econStep}, .${styles.econArrow}`);
+        if (econSteps?.length) {
+          gsap.fromTo(econSteps,
+            { opacity: 0, x: -40, rotate: -10 },
+            {
+              opacity: 1, x: 0, rotate: 0,
+              stagger: 0.22, duration: 0.75, ease: 'shekael-bounce',
+              scrollTrigger: {
+                trigger: econStepsRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // 5. FUTURE ITEMS (igual que desktop)
+        const futureItems = futureListRef.current?.querySelectorAll(`.${styles.futureItem}`);
+        if (futureItems?.length) {
+          gsap.fromTo(futureItems,
+            { opacity: 0, x: 60, rotate: 2 },
+            {
+              opacity: 1, x: 0, rotate: 0,
+              stagger: 0.22, duration: 0.85, ease: 'power3.out',
+              scrollTrigger: {
+                trigger: futureListRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // 6. PRINCIPLES (igual que desktop)
+        const principles = principleListRef.current?.querySelectorAll(`.${styles.principleItem}`);
+        if (principles?.length) {
+          gsap.fromTo(principles,
+            { opacity: 0, y: 40, rotateY: -15, transformOrigin: 'left center' },
+            {
+              opacity: 1, y: 0, rotateY: 0,
+              stagger: 0.18, duration: 0.75, ease: 'power3.out',
+              scrollTrigger: {
+                trigger: principleListRef.current,
+                start: 'top 82%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // 7. CLOSING (igual que desktop)
+        const closingInner = closingRef.current?.querySelector(`.${styles.bandInner}`);
+        if (closingInner) {
+          gsap.fromTo(closingInner.children,
+            { opacity: 0, y: 50 },
+            {
+              opacity: 1, y: 0,
+              stagger: 0.22, duration: 0.8, ease: 'back.out(1.7)',
+              scrollTrigger: {
+                trigger: closingRef.current,
+                start: 'top 82%',
+                toggleActions: 'play none none none'
+              }
+            }
+          );
+        }
+
+        // Nota: sin fallback de visibilidad. Los ScrollTriggers disparan
+        // correctamente con el hero pineado (2 viewports de scroll), y un
+        // fallback agresivo haría que los elementos aparezcan prematuramente
+        // ("ya están ahí y solo se acomodan") en lugar de animarse desde cero.
       });
 
     }, mainRef);
