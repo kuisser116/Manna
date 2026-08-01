@@ -10,6 +10,7 @@ import styles from './InFeedAd.module.css';
 // ─────────────────────────────────────────────
 
 const ADSENSE_CLIENT = import.meta.env.VITE_ADSENSE_CLIENT || '';
+const ADSENSE_SLOT = import.meta.env.VITE_ADSENSE_SLOT_FEED || '';
 
 export default function InFeedAd({ variant = 'feed' }) {
   const containerRef = useRef(null);
@@ -41,14 +42,20 @@ export default function InFeedAd({ variant = 'feed' }) {
     <div className={styles.adCard} ref={containerRef} data-ad-test="disabled">
       <div className={styles.adLabel}>Patrocinado</div>
       <div className={styles.adSlot}>
-        <ins
-          className="adsbygoogle"
-          style={{ display: 'block' }}
-          data-ad-client={ADSENSE_CLIENT}
-          data-ad-slot={import.meta.env.VITE_ADSENSE_SLOT_FEED || ''}
-          data-ad-format="auto"
-          data-full-width-responsive="true"
-        />
+        {ADSENSE_SLOT ? (
+          <ins
+            className="adsbygoogle"
+            style={{ display: 'block' }}
+            data-ad-client={ADSENSE_CLIENT}
+            data-ad-slot={ADSENSE_SLOT}
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          />
+        ) : (
+          <div className={styles.adAuto}>
+            {/* Sin slot: Auto Ads de AdSense coloca el anuncio automáticamente */}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -24,3 +24,13 @@
   border-radius: 10px;
   background: var(--color-bg-subtle, #f7f7f7);
 }
+
+.adAuto {
+  width: 100%;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted, #aaa);
+  font-size: 0.8rem;
+}
