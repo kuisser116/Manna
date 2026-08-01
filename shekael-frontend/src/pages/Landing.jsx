@@ -1,4 +1,3 @@
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
@@ -41,6 +40,58 @@ function LandingInner() {
   const { loginWithGoogle } = useAuth();
   const { addToast, themeName, cycleTheme, user } = useStore();
   const [termsVersion, setTermsVersion] = useState(null);
+  const googleBtnRef = useRef(null);
+  const googleRenderedRef = useRef(false);
+  const loginWithGoogleRef = useRef(loginWithGoogle);
+  const addToastRef = useRef(addToast);
+  loginWithGoogleRef.current = loginWithGoogle;
+  addToastRef.current = addToast;
+
+  // ── Botón Google con GSI nativo (montado UNA sola vez, evita re-renders infinitos del wrapper) ──
+  useEffect(() => {
+    if (googleRenderedRef.current || !googleBtnRef.current) return;
+    const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!GOOGLE_CLIENT_ID) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!window.google?.accounts?.id || googleRenderedRef.current) return;
+      googleRenderedRef.current = true;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          try {
+            let recaptchaToken = '';
+            if (typeof grecaptcha !== 'undefined') {
+              try {
+                recaptchaToken = await grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'login' });
+              } catch { /* reCAPTCHA opcional */ }
+            }
+            await loginWithGoogleRef.current(response.credential, recaptchaToken);
+          } catch (err) {
+            addToastRef.current('error', 'Error de Google', err.message || 'No se pudo conectar con Google');
+          }
+        },
+      });
+      try {
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          width: 320,
+        });
+      } catch (e) {
+        console.error('renderButton falló:', e);
+      }
+    };
+    document.head.appendChild(script);
+    return () => { googleRenderedRef.current = false; };
+  }, []);
 
   // Obtener versión actual de términos del backend
   useEffect(() => {
@@ -131,21 +182,6 @@ function LandingInner() {
     void('[Landing] → Redirect to /terminos (no match)');
     navigate('/terminos');
   }, [navigate, user, termsVersion]);
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    addToast('loading', 'Iniciando sesión...');
-    try {
-      let recaptchaToken = '';
-      if (typeof grecaptcha !== 'undefined') {
-        recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'login' });
-      }
-      await loginWithGoogle(credentialResponse.credential, recaptchaToken);
-      // Sin success toast — la redirección al feed + posible LockScreen
-      // hacen más claro el estado real que un toast prematuro
-    } catch (err) {
-      addToast('error', 'Error de Google', err.message);
-    }
-  };
 
   // ─── GSAP: The crazy stuff ───
   useEffect(() => {
@@ -487,16 +523,7 @@ function LandingInner() {
           </p>
 
           <div className={styles.heroCta}>
-            <div className={styles.googleWrap}>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
-                shape="pill"
-                theme="outline"
-                text="continue_with"
-                width={320}
-              />
-            </div>
+            <div className={styles.googleWrap} ref={googleBtnRef} />
           </div>
         </div>
       </section>
@@ -662,14 +689,9 @@ function LandingInner() {
           <h2 className={`${styles.bandTitle} ${styles.bandTitleStacked}`}><span className={styles.bandLogoAnim}><ShekaelLogo size="lg" /></span><span className={styles.scrambleTarget}>te espera</span></h2>
           <p className={styles.closingVision}>La super app de Mexico, hecha para el mundo</p>
           <div className={styles.closingCta}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => addToast('error', 'Error', 'No se pudo conectar con Google')}
-              shape="pill"
-              theme="outline"
-              text="continue_with"
-              width={320}
-            />
+            <a href="#" onClick={(e) => { e.preventDefault(); document.querySelector('.heroSplash, section')?.scrollIntoView({ behavior: 'smooth' }); }}>
+              Empieza ahora
+            </a>
           </div>
         </div>
       </section>
@@ -686,9 +708,5 @@ function LandingInner() {
 }
 
 export default function Landing() {
-  return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <LandingInner />
-    </GoogleOAuthProvider>
-  );
+  return <LandingInner />;
 }

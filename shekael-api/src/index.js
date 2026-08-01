@@ -43,6 +43,7 @@ app.set('trust proxy', 1);
 app.use(helmet({
     contentSecurityPolicy: false, // Desactivado porque el frontend maneja su propio CSP
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false, // Necesario para Google Sign-In (postMessage)
 }));
 
 // ── CORS Bulletproof ──────────────────────────────
