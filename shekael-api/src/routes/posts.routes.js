@@ -7,6 +7,7 @@ import { analyzeContentWithAI } from '../services/moderation.service.js';
 import { createNotification, getPostAuthorId } from '../services/notifications.service.js';
 import { deleteFromR2 } from '../services/ipfs.service.js';
 import { getTopPurchaseIntents } from '../services/purchase-intent.service.js';
+import { getCache, setCache, cacheKey } from '../services/redis.service.js';
 
 const router = Router({ strict: false });
 
@@ -52,6 +53,15 @@ router.get('/feed', authMiddleware, async (req, res) => {
         const currentUserId = req.user.id;
         const supabase = getDB();
         const sortBy = req.query.sort || 'ranked';
+
+        // ── Cache Redis (TTL corto 5s): absorbe picos de carga, el feed
+        // se actualiza solo al cambiar de página o a los 5s. Si Redis
+        // no está, se calcula normal. ──
+        const cacheKeyFeed = cacheKey('feed', currentUserId, page, sortBy);
+        const cached = await getCache(cacheKeyFeed, 5000);
+        if (cached && cached.posts) {
+            return res.json(cached);
+        }
 
         // ── Usar ranking algorítmico SIEMPRE ──
         // (para usuarios nuevos sin señales, el algoritmo cae a cronológico)
@@ -233,6 +243,8 @@ router.get('/feed', authMiddleware, async (req, res) => {
         const unseenCount = formattedPosts.filter(p => !p.seen_at).length;
 
         res.json({ posts: feed, page, hasMore: regularPosts.length === fetchLimit, unseenCount });
+        // Guardar en cache (best-effort, no bloquea la respuesta)
+        setCache(cacheKeyFeed, { posts: feed, page, hasMore: regularPosts.length === fetchLimit, unseenCount }, 5000).catch(() => {});
     } catch (err) {
         console.error('Feed error:', err);
         res.status(500).json({ message: 'Error al cargar el feed' });
