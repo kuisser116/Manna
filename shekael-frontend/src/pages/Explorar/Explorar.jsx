@@ -112,7 +112,7 @@ export default function Explorar() {
             <div class="${styles.bizBubbleHit}">
                 <div class="${styles.bizBubblePin}">
                     <svg viewBox="0 0 44 44" aria-hidden="true">
-                        <path d="M38 20c0 12-16 24-16 24s-16-12-16-24a16 16 0 0 1 32 0z" />
+                        <path d="M38 20 C38 32 24 42 24 42 A2 2 0 0 1 20 42 C20 42 6 32 6 20 A16 16 0 0 1 38 20 Z" />
                     </svg>
                     <div class="${styles.bizBubbleAvatar}">
                         ${biz.avatar_url
