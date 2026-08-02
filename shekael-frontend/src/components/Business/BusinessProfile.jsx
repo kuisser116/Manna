@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useStore from '../../store';
-import { getBusiness, toggleFollowBusiness } from '../../api/businesses.api';
+import { getBusiness, toggleFollowBusiness, updateBusiness } from '../../api/businesses.api';
 import { getBusinessQR } from '../../api/payments.api';
 import PostCard from '../PostCard/PostCard';
 import ProductGrid from './ProductGrid';
@@ -80,13 +80,12 @@ export default function BusinessProfile() {
     }
   }
 
-  // Simular posts del comercio
+  // Posts del comercio: se cargan desde el backend (por ahora vacío si no hay)
   useEffect(() => {
     setPostsLoading(true);
-    setTimeout(() => {
-      setUserPosts([]);
-      setPostsLoading(false);
-    }, 300);
+    // getUserPosts no aplica a comercios: el comercio no publica posts aún
+    setUserPosts([]);
+    setPostsLoading(false);
   }, [activeTab]);
 
   const handleOpenQR = async () => {
@@ -143,10 +142,11 @@ export default function BusinessProfile() {
     setCoverUrl(preview);
     setCoverUploading(true);
     try {
-      // Mock upload
-      await new Promise(r => setTimeout(r, 500));
-      setCoverUrl(preview);
-    } catch {} finally {
+      const formData = new FormData();
+      formData.append('cover', file);
+      const { data } = await updateBusiness(profileId, formData);
+      if (data?.business?.cover_url) setCoverUrl(data.business.cover_url);
+    } catch { setCoverUrl(preview); } finally {
       setCoverUploading(false);
     }
   };
@@ -158,7 +158,12 @@ export default function BusinessProfile() {
     setBiz(prev => prev ? { ...prev, avatarUrl: preview } : prev);
     setAvatarUploading(true);
     try {
-      await new Promise(r => setTimeout(r, 500));
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const { data } = await updateBusiness(profileId, formData);
+      if (data?.business) {
+        setBiz(prev => prev ? { ...prev, ...data.business, avatarUrl: data.business.avatar_url || prev.avatarUrl } : prev);
+      }
     } catch {} finally {
       setAvatarUploading(false);
     }
