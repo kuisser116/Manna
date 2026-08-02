@@ -64,17 +64,17 @@
 }
 
 /* ── QR — centro destacado del sidebar ──
-   Fondo suave del tema + icono en acento: minimalista pero resalta
-   como el elemento principal del nav. */
+   Fondo suave VERDE (--color-success) + icono verde: minimalista pero
+   resalta como el elemento principal del nav (Kuki: nada de rojo). */
 .qrBtn {
-  background: var(--color-primary-soft, rgba(225, 29, 72, 0.12));
-  color: var(--color-primary, #e11d48);
-  box-shadow: inset 0 0 0 1.5px var(--color-primary, #e11d48);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-success, #10b981);
+  box-shadow: inset 0 0 0 1.5px var(--color-success, #10b981);
 }
 
 .qrBtn:hover {
-  background: var(--color-primary-soft, rgba(225, 29, 72, 0.18));
-  color: var(--color-primary, #e11d48);
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-success, #10b981);
   transform: scale(1.1);
 }
 
