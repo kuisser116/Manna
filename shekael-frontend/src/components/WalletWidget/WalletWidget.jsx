@@ -364,6 +364,7 @@ export function WalletWidget({ variant = 'default' }) {
 
                 <motion.button
                     ref={buttonRef}
+                    data-wallet-btn
                     className={`${styles.floatingBtn} ${isExpanded ? styles.active : ''}`}
                     onClick={togglePanel}
                     whileHover={{ scale: 1.05 }}

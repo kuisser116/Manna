@@ -69,9 +69,11 @@ export default function Explorar() {
     const markersRef = useRef([]); // { id, marker, lngLat }
     const bizCacheRef = useRef(new Map());
     const lastCursorRef = useRef(null); // última posición del cursor (re-check hover)
+    const myLocBtnRef = useRef(null); // botón de mi ubicación (se alinea a la wallet)
 
     const [loaded, setLoaded] = useState(false);
     const [places, setPlaces] = useState([]);
+    const [visibleCount, setVisibleCount] = useState(0); // comercios dentro del viewport
 
     // Detalle de comercio (click) — columna izquierda
     const [selectedBiz, setSelectedBiz] = useState(null); // prop del listado
@@ -112,7 +114,7 @@ export default function Explorar() {
             <div class="${styles.bizBubbleHit}">
                 <div class="${styles.bizBubblePin}">
                     <svg viewBox="0 0 44 44" aria-hidden="true">
-                        <path d="M38 20 C38 32 24 42 24 42 A2 2 0 0 1 20 42 C20 42 6 32 6 20 A16 16 0 0 1 38 20 Z" />
+                        <path d="M38 20c0 12-16 24-16 24s-16-12-16-24a16 16 0 0 1 32 0z" />
                     </svg>
                     <div class="${styles.bizBubbleAvatar}">
                         ${biz.avatar_url
@@ -188,6 +190,18 @@ export default function Explorar() {
         }
     }, [clearMarkers, createBusinessMarker]);
 
+    // ─── Contar comercios dentro del viewport actual ───
+    const updateVisibleCount = useCallback(() => {
+        const map = mapRef.current;
+        if (!map || !markersRef.current.length) {
+            setVisibleCount(0);
+            return;
+        }
+        const bounds = map.getBounds();
+        const n = markersRef.current.filter(m => bounds.contains(m.lngLat)).length;
+        setVisibleCount(n);
+    }, []);
+
     // ─── Inicializar mapa (UNA vez) ───
     useEffect(() => {
         // Si ya hay un mapa y su canvas SIGUE conectado al DOM, no recrear
@@ -230,7 +244,9 @@ export default function Explorar() {
                 map.flyTo({ center: [flyToTarget.lng, flyToTarget.lat], zoom: 15, duration: 2000 });
             }
 
-            loadPlaces();
+            loadPlaces().then(() => {
+                updateVisibleCount();
+            });
         });
 
         // Click en zona vacía del mapa → cerrar columna
@@ -266,6 +282,10 @@ export default function Explorar() {
         map.on('moveend', recheckHover);
         map.on('zoomend', recheckHover);
 
+        // Contador de comercios visibles (cambia al mover/zoomear)
+        map.on('moveend', updateVisibleCount);
+        map.on('zoomend', updateVisibleCount);
+
         // Rastrear el cursor (para re-check del hover al detenerse el mapa)
         const onMouseMove = (e) => {
             lastCursorRef.current = { x: e.clientX, y: e.clientY };
@@ -297,6 +317,30 @@ export default function Explorar() {
             startWatching();
         }
     };
+
+    // ─── Alinear el botón de mi ubicación a la izquierda de la wallet ───
+    useEffect(() => {
+        const positionBtn = () => {
+            const walletBtn = document.querySelector('[data-wallet-btn]');
+            const btn = myLocBtnRef.current;
+            if (!walletBtn || !btn) return;
+            const wr = walletBtn.getBoundingClientRect();
+            const br = btn.getBoundingClientRect();
+            // A la izquierda de la wallet + 10px de separación, mismo bottom
+            btn.style.right = `${window.innerWidth - wr.left + 10}px`;
+            btn.style.bottom = `${window.innerHeight - wr.bottom}px`;
+            // Ajuste fino: la wallet está ~5px más abajo que su rect visual
+            void br;
+        };
+        positionBtn();
+        // La wallet puede montarse después / cambiar de ancho (saldo) → re-medir
+        const t = setInterval(positionBtn, 800);
+        window.addEventListener('resize', positionBtn);
+        return () => {
+            clearInterval(t);
+            window.removeEventListener('resize', positionBtn);
+        };
+    }, []);
 
     // ─── Marker de ubicación actual ───
     useEffect(() => {
@@ -352,13 +396,13 @@ export default function Explorar() {
                     )}
                 </div>
 
-                <button className={styles.myLocationBtn} onClick={goToMyLocation} title="Mi ubicación">
+                <button ref={myLocBtnRef} className={styles.myLocationBtn} onClick={goToMyLocation} title="Mi ubicación">
                     <Navigation size={19} />
                 </button>
 
-                {places.length > 0 && (
+                {visibleCount > 0 && (
                     <div className={styles.placeCount}>
-                        {places.length} comercios en esta zona
+                        {visibleCount} {visibleCount === 1 ? 'comercio' : 'comercios'} en esta zona
                     </div>
                 )}
 

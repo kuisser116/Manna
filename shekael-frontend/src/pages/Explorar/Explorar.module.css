@@ -74,11 +74,14 @@
     font-size: 14px;
 }
 
-/* ─── Botón mi ubicación ─── */
+/* ─── Botón mi ubicación ───
+   Se posiciona con JS a la IZQUIERDA del botón flotante de la wallet
+   (10px de separación, mismo bottom). El JS escribe right/bottom inline;
+   aquí solo el estilo visual + posición inicial por si aún no hay wallet. */
 .myLocationBtn {
-    position: absolute;
-    bottom: 34px;
-    right: 18px;
+    position: fixed;
+    bottom: 24px;
+    right: 170px;
     z-index: 10;
     width: 44px;
     height: 44px;
