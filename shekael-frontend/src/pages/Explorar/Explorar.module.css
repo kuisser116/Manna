@@ -88,7 +88,7 @@
     border-radius: 50%;
     border: none;
     background: var(--color-surface);
-    color: var(--color-primary);
+    color: var(--color-text);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -102,24 +102,7 @@
     transform: scale(1.08);
 }
 
-/* ─── Contador ─── */
-.placeCount {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    font-size: 12px;
-    color: var(--color-text-dim);
-    background: var(--color-surface);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-    border: 1px solid var(--color-border);
-    padding: 6px 14px;
-    border-radius: 20px;
-    white-space: nowrap;
-}
-
-/* ═══ Burbuja de comercio (avatar + punta, SIN bordes) ═══
+/* ─── Burbuja de comercio (círculo, SIN punta ni bordes) ───
    El elemento .bizBubble es el marker de mapbox → NO se le pone animación
    ni transición de transform (mapbox lo posiciona con transform inline). */
 .bizBubble {
@@ -148,42 +131,27 @@
     align-items: center;
 }
 
-/* Pin de ubicación — gota con punta REDONDEADA (SVG inline, no clip-path).
-   El SVG permite centrar el avatar contra el CÍRCULO REAL de la forma
-   (centro 22,20 / radio 17 en un viewBox 44x48) y redondear la punta con
-   un arco (A2.5) en vez de un pico agudo. La punta queda en el borde
-   inferior del elemento → el anchor 'bottom' del marker la alinea con la
-   coordenada. */
+/* Pin de ubicación — CÍRCULO simple (sin punta, sin SVG).
+   Solo el círculo del avatar con borde de 2px del color del tema.
+   Como no hay punta, no necesita tono claro fijo → usa las vars del tema. */
 .bizBubblePin {
     position: relative;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.bizBubblePin svg {
-    position: absolute;
-    inset: 0;
-    width: 52px;
-    height: 52px;
-    display: block;
-    filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.22));
-}
-
-.bizBubblePin svg path {
-    /* Tono claro FIJO (gris muy claro, nunca blanco puro) — igual en todos
-       los temas para que las burbujas resalten sobre cualquier mapa. */
-    fill: #f1f2f4;
-}
-
-.bizBubbleHover .bizBubblePin svg {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
+.bizBubbleHover .bizBubblePin {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .bizBubbleAvatar {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -196,7 +164,7 @@
 }
 
 .bizBubbleHover .bizBubbleAvatar {
-    transform: translateX(-50%) scale(1.08);
+    transform: scale(1.08);
 }
 
 .bizBubbleAvatar img {

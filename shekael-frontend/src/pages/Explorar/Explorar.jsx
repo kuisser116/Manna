@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import mapboxgl from 'mapbox-gl';
 import {
-    Store, MapPin, X, Star, Navigation, Phone, Globe, ExternalLink,
+    Store, MapPin, X, Star, LocateFixed, Phone, Globe, ExternalLink,
 } from 'lucide-react';
 import { getBusinesses, getBusiness } from '../../api/businesses.api';
 import useGeolocation from '../../hooks/useGeolocation';
@@ -73,7 +73,6 @@ export default function Explorar() {
 
     const [loaded, setLoaded] = useState(false);
     const [places, setPlaces] = useState([]);
-    const [visibleCount, setVisibleCount] = useState(0); // comercios dentro del viewport
 
     // Detalle de comercio (click) — columna izquierda
     const [selectedBiz, setSelectedBiz] = useState(null); // prop del listado
@@ -113,9 +112,6 @@ export default function Explorar() {
         el.innerHTML = `
             <div class="${styles.bizBubbleHit}">
                 <div class="${styles.bizBubblePin}">
-                    <svg viewBox="0 0 44 44" aria-hidden="true">
-                        <path d="M38 20c0 12-16 24-16 24s-16-12-16-24a16 16 0 0 1 32 0z" />
-                    </svg>
                     <div class="${styles.bizBubbleAvatar}">
                         ${biz.avatar_url
                             ? `<img src="${biz.avatar_url}" alt="" onerror="this.style.display='none'" />`
@@ -129,7 +125,7 @@ export default function Explorar() {
             </div>
         `;
 
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
             .setLngLat([biz.location_lng, biz.location_lat])
             .addTo(map);
 
@@ -190,18 +186,6 @@ export default function Explorar() {
         }
     }, [clearMarkers, createBusinessMarker]);
 
-    // ─── Contar comercios dentro del viewport actual ───
-    const updateVisibleCount = useCallback(() => {
-        const map = mapRef.current;
-        if (!map || !markersRef.current.length) {
-            setVisibleCount(0);
-            return;
-        }
-        const bounds = map.getBounds();
-        const n = markersRef.current.filter(m => bounds.contains(m.lngLat)).length;
-        setVisibleCount(n);
-    }, []);
-
     // ─── Inicializar mapa (UNA vez) ───
     useEffect(() => {
         // Si ya hay un mapa y su canvas SIGUE conectado al DOM, no recrear
@@ -244,9 +228,7 @@ export default function Explorar() {
                 map.flyTo({ center: [flyToTarget.lng, flyToTarget.lat], zoom: 15, duration: 2000 });
             }
 
-            loadPlaces().then(() => {
-                updateVisibleCount();
-            });
+            loadPlaces();
         });
 
         // Click en zona vacía del mapa → cerrar columna
@@ -281,10 +263,6 @@ export default function Explorar() {
         };
         map.on('moveend', recheckHover);
         map.on('zoomend', recheckHover);
-
-        // Contador de comercios visibles (cambia al mover/zoomear)
-        map.on('moveend', updateVisibleCount);
-        map.on('zoomend', updateVisibleCount);
 
         // Rastrear el cursor (para re-check del hover al detenerse el mapa)
         const onMouseMove = (e) => {
@@ -397,14 +375,10 @@ export default function Explorar() {
                 </div>
 
                 <button ref={myLocBtnRef} className={styles.myLocationBtn} onClick={goToMyLocation} title="Mi ubicación">
-                    <Navigation size={19} />
+                    <LocateFixed size={19} />
                 </button>
 
-                {visibleCount > 0 && (
-                    <div className={styles.placeCount}>
-                        {visibleCount} {visibleCount === 1 ? 'comercio' : 'comercios'} en esta zona
-                    </div>
-                )}
+                {/* Contador de comercios eliminado por decisión de Kuki */}
 
                 {/* ── Columna izquierda: detalle de comercio ── */}
                 <AnimatePresence>
