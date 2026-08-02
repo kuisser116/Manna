@@ -18,6 +18,7 @@
   --color-primary: #e11d48; /* Rojo Tequila / Rose */
   --color-primary-dark: #9f1239;
   --color-badge: var(--color-primary);
+  --color-qr: #10b981; /* Acento del QR en el sidebar — combina con el tema */
   --color-text: #111111;
   --color-text-secondary: #555555;
   --color-text-muted: #6b7280;
@@ -69,6 +70,7 @@
   --color-surface-3: #495e4f;
   --color-primary: #e11d48;
   --color-badge: #83c092;
+  --color-qr: #83c092;
   --color-text: #d3c6aa;
   --color-text-secondary: #a7b5a0;
   --color-text-muted: #85987a;
@@ -90,6 +92,7 @@
   --color-surface-2: #1a2340;
   --color-surface-3: #24305a;
   --color-primary: #e11d48;
+  --color-qr: #60a5fa;
   --color-text: #e4e6f0;
   --color-text-secondary: #a0a8c0;
   --color-text-muted: #8088a5;
@@ -111,6 +114,7 @@
   --color-surface-2: #282840;
   --color-surface-3: #363650;
   --color-primary: #e11d48;
+  --color-qr: #a6e3a1;
   --color-text: #cdd6f4;
   --color-text-secondary: #a6adc8;
   --color-text-muted: #7f85a3;
@@ -132,6 +136,7 @@
   --color-surface-2: #24253a;
   --color-surface-3: #2e2f45;
   --color-primary: #e11d48;
+  --color-qr: #7aa2f7;
   --color-text: #a3b5d8;
   --color-text-secondary: #7e8cb2;
   --color-text-muted: #62709a;
@@ -153,6 +158,7 @@
   --color-surface-2: #202024;
   --color-surface-3: #27272a;
   --color-primary: #e11d48;
+  --color-qr: #10b981;
   --color-text: #f4f4f5;
   --color-text-secondary: #a1a1aa;
   --color-text-muted: #8f8f99;
@@ -175,6 +181,7 @@
   --color-surface-3: #4D5960;
   --color-primary: #e11d48;
   --color-badge: #83c092;
+  --color-qr: #83c092;
   --color-text: #D3C6AA;
   --color-text-secondary: #9DA9A0;
   --color-text-muted: #859289;

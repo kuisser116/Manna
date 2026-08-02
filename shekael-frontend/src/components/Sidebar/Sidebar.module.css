@@ -64,17 +64,18 @@
 }
 
 /* ── QR — centro destacado del sidebar ──
-   Fondo suave VERDE (--color-success) + icono verde: minimalista pero
-   resalta como el elemento principal del nav (Kuki: nada de rojo). */
+   Color propio del tema (--color-qr): verde en light/everforest/dark,
+   azul en navy/tokyo-night, menta en catppuccin. Fondo suave derivado
+   con color-mix + fallback rgba verde. Nada de rojo. */
 .qrBtn {
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--color-success, #10b981);
-  box-shadow: inset 0 0 0 1.5px var(--color-success, #10b981);
+  background: color-mix(in srgb, var(--color-qr, #10b981) 14%, transparent);
+  color: var(--color-qr, #10b981);
+  box-shadow: inset 0 0 0 1.5px var(--color-qr, #10b981);
 }
 
 .qrBtn:hover {
-  background: rgba(16, 185, 129, 0.2);
-  color: var(--color-success, #10b981);
+  background: color-mix(in srgb, var(--color-qr, #10b981) 22%, transparent);
+  color: var(--color-qr, #10b981);
   transform: scale(1.1);
 }
 
