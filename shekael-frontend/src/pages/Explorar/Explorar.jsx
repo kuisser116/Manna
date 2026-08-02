@@ -30,6 +30,21 @@ const BIZ_CATEGORY_ICONS = {
 
 const bizIcon = (cat) => BIZ_CATEGORY_ICONS[cat] || '🏪';
 
+// Mapa activo a nivel de módulo: si Vite hace HMR (recarga en caliente) al
+// editar este archivo, `hot.dispose` corre ANTES de que el módulo nuevo
+// monte y destruye el mapa viejo. Sin esto, React re-monta el componente
+// pero el canvas de mapbox queda huérfano → mapa gigante/negro hasta
+// recargar la página completa.
+let activeMap = null;
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        if (activeMap) {
+            activeMap.remove();
+            activeMap = null;
+        }
+    });
+}
+
 /**
  * Explorar — mapa de comercios.
  *
@@ -175,7 +190,16 @@ export default function Explorar() {
 
     // ─── Inicializar mapa (UNA vez) ───
     useEffect(() => {
-        if (mapRef.current || !mapContainerRef.current) return;
+        // Si ya hay un mapa y su canvas SIGUE conectado al DOM, no recrear
+        // (protege contra doble-montaje de React). Si el canvas quedó
+        // huérfano (HMR), descartar el mapa viejo y crear uno nuevo.
+        if (mapRef.current) {
+            const canvas = mapRef.current.getCanvas();
+            if (canvas && canvas.isConnected) return;
+            mapRef.current.remove();
+            mapRef.current = null;
+        }
+        if (!mapContainerRef.current) return;
 
         const map = new mapboxgl.Map({
             container: mapContainerRef.current,
@@ -183,6 +207,7 @@ export default function Explorar() {
             center: [-99.1332, 19.4326],
             zoom: 12,
         });
+        activeMap = map;
 
         map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
@@ -255,6 +280,7 @@ export default function Explorar() {
                 mapRef.current.remove();
                 mapRef.current = null;
             }
+            if (activeMap === map) activeMap = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
