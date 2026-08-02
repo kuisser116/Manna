@@ -176,11 +176,11 @@
 
 .bizBubbleAvatar {
     position: absolute;
-    top: 7px;
+    top: 5px;
     left: 50%;
     transform: translateX(-50%);
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     background: var(--color-surface-2);
     overflow: hidden;
