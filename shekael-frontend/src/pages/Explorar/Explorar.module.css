@@ -137,16 +137,27 @@
     z-index: 5;
 }
 
-/* Pin de ubicación — forma de teardrop con la punta integrada abajo
-   (como el icono de ubicación). El clip-path recorta el círculo + cola;
+/* Wrapper del pin + tooltip: el tooltip absolute se ancla a este (no al
+   marker), así `calc(100% + 10px)` queda arriba del pin aunque el marker
+   sea el elemento posicionado por mapbox. */
+.bizBubbleHit {
+    position: relative;
+    width: max-content;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Pin de ubicación — teardrop con cola CORTA y redondeada (círculo grande
+   arriba, punta a solo ~10px del círculo). El clip-path recorta la forma;
    la punta queda EXACTAMENTE en el centro inferior del elemento, así el
    anchor 'bottom' del marker alinea la punta con la coordenada. */
 .bizBubblePin {
     position: relative;
     width: 44px;
-    height: 56px;
+    height: 48px;
     background: var(--color-surface);
-    clip-path: path('M22 56 C22 56 3 38 3 21 C3 9.5 11.5 2 22 2 C32.5 2 41 9.5 41 21 C41 38 22 56 22 56 Z');
+    clip-path: path('M22 48 C22 48 7 40 7 24 C7 12.5 13.5 5.5 22 5.5 C30.5 5.5 37 12.5 37 24 C37 40 22 48 22 48 Z');
 }
 
 .bizBubbleAvatar {
@@ -154,8 +165,8 @@
     top: 4px;
     left: 50%;
     transform: translateX(-50%);
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background: var(--color-surface-2);
     overflow: hidden;
@@ -177,7 +188,7 @@
 }
 
 .bizBubbleEmoji {
-    font-size: 19px;
+    font-size: 15px;
     line-height: 1;
 }
 

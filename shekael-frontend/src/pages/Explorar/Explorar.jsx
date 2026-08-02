@@ -53,6 +53,7 @@ export default function Explorar() {
     const mapRef = useRef(null);
     const markersRef = useRef([]); // { id, marker, lngLat }
     const bizCacheRef = useRef(new Map());
+    const lastCursorRef = useRef(null); // última posición del cursor (re-check hover)
 
     const [loaded, setLoaded] = useState(false);
     const [places, setPlaces] = useState([]);
@@ -93,15 +94,17 @@ export default function Explorar() {
         const el = document.createElement('div');
         el.className = styles.bizBubble;
         el.innerHTML = `
-            <div class="${styles.bizTooltip}">
-                <strong>${biz.name}</strong>
-                <span>${biz.category || 'Comercio'}</span>
-            </div>
-            <div class="${styles.bizBubblePin}">
-                <div class="${styles.bizBubbleAvatar}">
-                    ${biz.avatar_url
-                        ? `<img src="${biz.avatar_url}" alt="" onerror="this.style.display='none'" />`
-                        : `<span class="${styles.bizBubbleEmoji}">${bizIcon(biz.category)}</span>`}
+            <div class="${styles.bizBubbleHit}">
+                <div class="${styles.bizBubblePin}">
+                    <div class="${styles.bizBubbleAvatar}">
+                        ${biz.avatar_url
+                            ? `<img src="${biz.avatar_url}" alt="" onerror="this.style.display='none'" />`
+                            : `<span class="${styles.bizBubbleEmoji}">${bizIcon(biz.category)}</span>`}
+                    </div>
+                </div>
+                <div class="${styles.bizTooltip}">
+                    <strong>${biz.name}</strong>
+                    <span>${biz.category || 'Comercio'}</span>
                 </div>
             </div>
         `;
@@ -111,11 +114,16 @@ export default function Explorar() {
             .addTo(map);
 
         // Hover: solo si el mapa está quieto y el cursor está REALMENTE sobre
-        // la burbuja (el tooltip tiene pointer-events:none → no roba el hover)
+        // el rect de la burbuja (el tooltip tiene pointer-events:none → no
+        // roba el hover). Se usa el rect del marker (no elementFromPoint)
+        // porque el clip-path del pin recorta la forma visual, no el área
+        // de interacción del marker.
         el.addEventListener('mouseenter', (e) => {
             if (map.isMoving() || map.isZooming() || map.isEasing()) return;
-            const topEl = document.elementFromPoint(e.clientX, e.clientY);
-            if (topEl !== el && !el.contains(topEl)) return;
+            const r = el.getBoundingClientRect();
+            const inside = e.clientX >= r.left && e.clientX <= r.right
+                && e.clientY >= r.top && e.clientY <= r.bottom;
+            if (!inside) return;
             el.classList.add(styles.bizBubbleHover);
         });
         el.addEventListener('mouseleave', () => {
@@ -212,8 +220,33 @@ export default function Explorar() {
         map.on('movestart', clearHover);
         map.on('zoomstart', clearHover);
 
+        // Al DETENERSE el mapa, si el cursor quedó sobre una burbuja
+        // reactivar su hover (el mouseenter no se vuelve a disparar solo
+        // porque el cursor ya está dentro del elemento).
+        const recheckHover = () => {
+            const m = mapRef.current;
+            if (!m) return;
+            const c = lastCursorRef.current;
+            if (!c) return;
+            const topEl = document.elementFromPoint(c.x, c.y);
+            if (!topEl) return;
+            const bubble = topEl.closest('.' + styles.bizBubble);
+            if (bubble && !m.isMoving() && !m.isZooming() && !m.isEasing()) {
+                bubble.classList.add(styles.bizBubbleHover);
+            }
+        };
+        map.on('moveend', recheckHover);
+        map.on('zoomend', recheckHover);
+
+        // Rastrear el cursor (para re-check del hover al detenerse el mapa)
+        const onMouseMove = (e) => {
+            lastCursorRef.current = { x: e.clientX, y: e.clientY };
+        };
+        window.addEventListener('mousemove', onMouseMove);
+
         return () => {
             ro.disconnect();
+            window.removeEventListener('mousemove', onMouseMove);
             clearMarkers();
             if (mapRef.current) {
                 mapRef.current.remove();
