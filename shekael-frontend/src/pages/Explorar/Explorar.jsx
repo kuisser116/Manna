@@ -97,12 +97,13 @@ export default function Explorar() {
                 <strong>${biz.name}</strong>
                 <span>${biz.category || 'Comercio'}</span>
             </div>
-            <div class="${styles.bizBubbleAvatar}">
-                ${biz.avatar_url
-                    ? `<img src="${biz.avatar_url}" alt="" onerror="this.style.display='none'" />`
-                    : `<span class="${styles.bizBubbleEmoji}">${bizIcon(biz.category)}</span>`}
+            <div class="${styles.bizBubblePin}">
+                <div class="${styles.bizBubbleAvatar}">
+                    ${biz.avatar_url
+                        ? `<img src="${biz.avatar_url}" alt="" onerror="this.style.display='none'" />`
+                        : `<span class="${styles.bizBubbleEmoji}">${bizIcon(biz.category)}</span>`}
+                </div>
             </div>
-            <div class="${styles.bizBubbleTail}"></div>
         `;
 
         const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
