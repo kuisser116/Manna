@@ -1,0 +1,19 @@
+{
+  "note": "Comercios de PRUEBA creados el 2026-08-01 para verificar el mapa (Explorar). Eliminar TODOS en produccion cuando Kuki lo apruebe. El comercio 1063ebf9 (Taqueria Prueba Willy) fue desactivado (is_active=false) el mismo dia.",
+  "owner": "a788d984-af6c-4d07-9f28-ba49d2f3e86b (usuario test 1681897@gmail.com)",
+  "password_comun": "prueba-mapa-2026",
+  "businesses": [
+    { "id": "6a0c0e24-5183-4ee8-a25e-ecea5fe0296c", "name": "Taquería El Fogón (PRUEBA)", "category": "Comida y Bebida" },
+    { "id": "453faaaf-8254-4733-8c5e-148d6d63bbe5", "name": "Café La Ventana (PRUEBA)", "category": "Comida y Bebida" },
+    { "id": "6f779b98-25d7-4465-9e9e-bb7c16317534", "name": "Librería Página Uno (PRUEBA)", "category": "Arte y Cultura" },
+    { "id": "004e7293-8617-4490-8375-745bf73f49be", "name": "Gimnasio Fuerza (PRUEBA)", "category": "Salud y Bienestar" },
+    { "id": "49691b84-94c1-43f8-90af-41afaba4fb41", "name": "Taller Don Toño (PRUEBA)", "category": "Taller Mecánico" },
+    { "id": "71094b0c-7ed1-455c-9ea6-5b41f1388a86", "name": "Ropa Urban Loop (PRUEBA)", "category": "Moda y Accesorios" },
+    { "id": "db9b2e95-0230-47be-ae41-9e1fe39e14b7", "name": "Farmacia San Ángel (PRUEBA)", "category": "Salud y Bienestar" }
+  ],
+  "products_extra": [
+    "Taquería (6a0c0e24): 3 productos (tacos, quesadilla, torta)",
+    "Café (453faaaf): 3 productos (espresso, latte, croissant)"
+  ],
+  "como_eliminar": "DELETE /api/businesses/:id con token del owner (desactiva, is_active=false) — o borrar las filas directo en Supabase."
+}

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Send, Eye, MessageSquare, Trash2 } from 'lucide-react';
 import SupportButton from '../SupportButton/SupportButton';
 import Avatar from '../Avatar/Avatar';
+import CreatorAd from '../CreatorAd/CreatorAd';
 import useStore from '../../store';
 import styles from './TextDetailLayout.module.css';
 
@@ -131,6 +132,11 @@ export function TextDetailLayout({
                                 )}
                             </div>
                         </div>}
+
+                        {/* Anuncio en contenido del creador (70% creador / 15% usuario / 15% app) */}
+                        {!isOwner && (
+                            <CreatorAd postId={id} creatorId={author_id} />
+                        )}
                     </div>
 
                     <div className={styles.divider} />

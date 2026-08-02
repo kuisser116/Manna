@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Send, ArrowLeft, ZoomIn, Eye, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import SupportButton from '../SupportButton/SupportButton';
+import CreatorAd from '../CreatorAd/CreatorAd';
 import ImageModal from '../ImageModal/ImageModal';
 import Avatar from '../Avatar/Avatar';
 import { cleanTitle, isValidCID } from '../../utils/stringUtils';
@@ -227,6 +228,11 @@ export function ImageDetailLayout({
                         )}
 
                         <div className={styles.divider} />
+
+                        {/* Anuncio en contenido del creador (70% creador / 15% usuario / 15% app) */}
+                        {!isOwner && (
+                            <CreatorAd postId={post.id} creatorId={post.author_id} />
+                        )}
                     </div>
 
                     {/* Comentarios */}

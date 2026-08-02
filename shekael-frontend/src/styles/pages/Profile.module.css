@@ -779,3 +779,172 @@
 
 .profileAboutText { color: var(--color-text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.5rem; }
 .profileAboutMuted { color: var(--color-text-muted); font-size: 0.78rem; line-height: 1.4; margin-bottom: 1.25rem; }
+
+/* ── QR Modal del comercio ── */
+.qrOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2100;
+    padding: 20px;
+}
+
+.qrModal {
+    background: var(--color-surface);
+    width: 100%;
+    max-width: 380px;
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(128, 128, 128, 0.15);
+    text-align: center;
+}
+
+.qrClose {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: rgba(128, 128, 128, 0.12);
+    border: none;
+    color: var(--color-text);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.qrClose:hover {
+    background: rgba(128, 128, 128, 0.25);
+}
+
+.qrHeader {
+    margin-bottom: 20px;
+}
+
+.qrIcon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 10px;
+    border-radius: 14px;
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--color-success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qrHeader h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 2px;
+}
+
+.qrHeader p {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.qrLoading {
+    display: flex;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.qrSpinner {
+    animation: qrSpin 1s linear infinite;
+    color: var(--color-text-muted);
+}
+
+@keyframes qrSpin {
+    to { transform: rotate(360deg); }
+}
+
+.qrImageWrap {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    display: inline-block;
+    margin-bottom: 14px;
+    border: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.qrImage {
+    width: 220px;
+    height: 220px;
+    display: block;
+}
+
+.qrHint {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    margin-bottom: 18px;
+}
+
+.qrActions {
+    display: flex;
+    gap: 10px;
+}
+
+.qrActionPrimary {
+    flex: 1;
+    padding: 12px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.qrActionPrimary:hover {
+    opacity: 0.88;
+}
+
+.qrActionSecondary {
+    flex: 1;
+    padding: 12px;
+    background: rgba(128, 128, 128, 0.1);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    color: var(--color-text);
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.qrActionSecondary:hover {
+    background: rgba(128, 128, 128, 0.2);
+}
+
+@media (max-width: 480px) {
+    .qrModal {
+        padding: 24px 18px 18px;
+    }
+
+    .qrImage {
+        width: 190px;
+        height: 190px;
+    }
+}

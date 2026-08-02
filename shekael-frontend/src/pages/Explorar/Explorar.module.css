@@ -1,460 +1,680 @@
+/* ═══ Explorar — REESCRITO desde cero (mapa simple y robusto) ═══
+   - Barra superior OSCURA (contrasta con el header claro)
+   - Columna pegada justo debajo de la barra (sin espacios)
+   - Burbujas: marker nativo por comercio, anclado a su coordenada.
+     Sin clusters, sin números, sin animaciones de división, sin hover
+     card flotante. El tooltip vive DENTRO del marker (pointer-events:none)
+     → hover fantasma imposible. */
+
 .page {
-  position: relative;
-  height: 100vh;
-  width: 100%;
-  overflow: hidden;
+    position: relative;
+    height: calc(100vh - var(--topbar-height, 70px));
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-/* ─── Nav flotante ─── */
+/* ─── Barra superior (OSCURA, en flujo, pegada a los bordes) ─── */
 .nav {
-  position: fixed;
-  top: 82px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  display: flex;
-  gap: 4px;
-  padding: 6px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--color-surface, #1a1a2e) 70%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border, #333);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 12px;
+    background: #17171c;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 40;
 }
 
 .navTab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary, #999);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
 }
 
 .navTab:hover {
-  background: var(--color-surface-2, #2a2a3e);
-  color: var(--color-text, #fff);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .navTabActive {
-  background: color-mix(in srgb, var(--color-primary, #e11d48) 20%, transparent);
-  color: var(--color-text, #fff);
+    background: rgba(225, 29, 72, 0.22);
+    color: #ffffff;
 }
 
-.badge {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--color-surface-3, #3a3a4e);
-  color: var(--color-text-dim, #666);
-  white-space: nowrap;
+.navTabActive:hover {
+    background: rgba(225, 29, 72, 0.3);
+}
+
+/* ─── Contenedor del mapa (la columna vive aquí, pegada a la barra) ─── */
+.mapWrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+.mapContainer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.mapContainer :global(.mapboxgl-ctrl-logo) {
+    display: none !important;
+}
+
+.loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--color-text-dim);
+    background: var(--color-surface);
+    z-index: 5;
+}
+
+.loading p {
+    margin: 0;
+    font-size: 14px;
 }
 
 /* ─── Botón mi ubicación ─── */
 .myLocationBtn {
-  position: fixed;
-  bottom: 100px;
-  right: 20px;
-  z-index: 10;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-surface, #1a1a2e);
-  color: var(--color-primary, #e11d48);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--color-border, #333);
-  transition: transform 0.2s;
+    position: absolute;
+    bottom: 34px;
+    right: 18px;
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-surface);
+    color: var(--color-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
+    border: 1px solid var(--color-border);
+    transition: transform 0.2s;
 }
 
 .myLocationBtn:hover {
-  transform: scale(1.1);
-}
-
-/* ─── Mapa ─── */
-.mapContainer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-.mapContainer :global(.mapboxgl-ctrl-logo) {
-  display: none !important;
-}
-
-.loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-dim);
-  gap: 8px;
-  background: var(--color-surface);
-  z-index: 5;
-}
-
-.loading p {
-  margin: 0;
-  font-size: 14px;
-}
-
-/* ─── Marker individual ─── */
-.marker {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  transform: translate(-50%, -100%);
-}
-
-.markerDot {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--color-text, #fff);
-  border: 3px solid var(--color-surface, #1a1a2e);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3),
-              0 0 0 1px var(--color-border, #333);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.marker:hover .markerDot {
-  transform: scale(1.25);
-}
-
-.markerLabel {
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text, #fff);
-  background: var(--color-surface, #1a1a2e);
-  padding: 5px 12px;
-  border-radius: 20px;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--color-border, #333);
-  display: none;
-  position: relative;
-}
-
-.markerLabel::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 8px;
-  height: 8px;
-  background: var(--color-surface, #1a1a2e);
-  border-right: 1px solid var(--color-border, #333);
-  border-bottom: 1px solid var(--color-border, #333);
-}
-
-.marker:hover .markerLabel {
-  display: block;
-}
-
-/* ─── Cluster ─── */
-.cluster {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--color-primary, #e11d48) 70%, transparent);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  border: 2px solid var(--color-primary, #e11d48);
-  box-shadow: 0 3px 10px rgba(225, 29, 72, 0.3);
-  transform: translate(-50%, -50%);
-  transition: transform 0.2s;
-}
-
-.cluster:hover {
-  transform: translate(-50%, -50%) scale(1.15);
-}
-
-/* ─── User location marker ─── */
-.userMarker {
-  cursor: default;
-}
-
-.userDot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #4285F4;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
-}
-
-.userPulse {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(66, 133, 244, 0.2);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
-}
-
-/* ─── Tooltip ─── */
-.tooltip {
-  position: fixed;
-  z-index: 100;
-  background: var(--color-surface, #1a1a2e);
-  border: 1px solid var(--color-border, #333);
-  border-radius: 12px;
-  padding: 12px 16px;
-  min-width: 180px;
-  max-width: 250px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  pointer-events: auto;
-}
-
-.tooltipName {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-text, #fff);
-  margin-bottom: 4px;
-}
-
-.tooltipCat {
-  font-size: 12px;
-  color: var(--color-text-secondary, #999);
-  margin-bottom: 2px;
-}
-
-.tooltipZone {
-  font-size: 11px;
-  color: var(--color-text-dim, #666);
-  margin-bottom: 4px;
-}
-
-.tooltipHint {
-  font-size: 10px;
-  color: var(--color-primary, #e11d48);
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-/* ─── Sidebar ─── */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 360px;
-  max-width: 90vw;
-  z-index: 20;
-  background: var(--color-surface, #1a1a2e);
-  border-right: 1px solid var(--color-border, #333);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: slideIn 0.2s ease-out;
-}
-
-@keyframes slideIn {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
-}
-
-.sidebarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border, #333);
-  flex-shrink: 0;
-}
-
-.sidebarHeader h2 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--color-text, #fff);
-}
-
-.sidebarClose {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary, #999);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.sidebarClose:hover {
-  background: var(--color-surface-2, #2a2a3e);
-  color: var(--color-text, #fff);
-}
-
-.sidebarBody {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px;
-}
-
-.sidebarSection {
-  margin-bottom: 24px;
-}
-
-.sidebarSection h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary, #999);
-  margin: 0 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sidebarTag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: var(--color-surface-2, #2a2a3e);
-  font-size: 13px;
-  color: var(--color-text, #fff);
-  margin-bottom: 8px;
-}
-
-.sidebarAddr, .sidebarZone {
-  font-size: 13px;
-  color: var(--color-text-secondary, #999);
-  margin: 4px 0;
-}
-
-.sidebarEmpty {
-  text-align: center;
-  color: var(--color-text-dim, #666);
-  font-size: 14px;
-  padding: 20px;
-}
-
-/* ─── Review cards ─── */
-.reviewCard {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--color-surface-2, #2a2a3e);
-  margin-bottom: 8px;
-}
-
-.reviewStars {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 4px;
-}
-
-.starFilled {
-  color: #f5b342;
-  font-size: 14px;
-}
-
-.starEmpty {
-  color: var(--color-border, #333);
-  font-size: 14px;
-}
-
-.reviewComment {
-  font-size: 13px;
-  color: var(--color-text-secondary, #999);
-  margin: 0;
-  line-height: 1.4;
-}
-
-/* ─── Post cards ─── */
-.postCard {
-  display: flex;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-bottom: 4px;
-}
-
-.postCard:hover {
-  background: var(--color-surface-2, #2a2a3e);
-}
-
-.postPreview {
-  font-size: 24px;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface-2, #2a2a3e);
-  border-radius: 8px;
-}
-
-.postInfo {
-  flex: 1;
-  min-width: 0;
-}
-
-.postContent {
-  font-size: 13px;
-  color: var(--color-text, #fff);
-  margin: 0 0 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.postDate {
-  font-size: 11px;
-  color: var(--color-text-dim, #666);
+    transform: scale(1.08);
 }
 
 /* ─── Contador ─── */
 .placeCount {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  font-size: 12px;
-  color: var(--color-text-dim, #666);
-  background: color-mix(in srgb, var(--color-surface, #1a1a2e) 70%, transparent);
-  backdrop-filter: blur(8px);
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--color-border, #333);
-  white-space: nowrap;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-size: 12px;
+    color: var(--color-text-dim);
+    background: var(--color-surface);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--color-border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+/* ═══ Burbuja de comercio (avatar + punta, SIN bordes) ═══
+   El elemento .bizBubble es el marker de mapbox → NO se le pone animación
+   ni transición de transform (mapbox lo posiciona con transform inline). */
+.bizBubble {
+    cursor: pointer;
+    /* SIN position: aquí — mapbox-gl.css le pone absolute al marker.
+       Un position:relative aquí pisaría el absolute y las burbujas caerían
+       al flujo normal, apilándose unas sobre otras (bug visto en el mapa). */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
+    transition: filter 0.2s ease;
+}
+
+.bizBubbleHover {
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
+    z-index: 5;
+}
+
+.bizBubbleAvatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bizBubbleHover .bizBubbleAvatar {
+    transform: scale(1.1);
+}
+
+.bizBubbleAvatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.bizBubbleEmoji {
+    font-size: 21px;
+    line-height: 1;
+}
+
+/* Punta inferior — indica la ubicación exacta */
+.bizBubbleTail {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    background: var(--color-primary);
+    margin-top: -1px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ═══ Burbuja de lugar (venue) ═══ */
+.venueBubble {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.25));
+    transition: filter 0.2s ease;
+}
+
+.venueBubbleHover {
+    filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.35));
+    z-index: 5;
+}
+
+.venueBubbleDot {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.venueBubbleHover .venueBubbleDot {
+    transform: scale(1.1);
+}
+
+/* ═══ Tooltip (DENTRO del marker, pointer-events:none) ═══
+   No captura eventos: el hover depende únicamente del marker → sin
+   hover fantasma. Al salir del círculo desaparece, punto. */
+.bizTooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--color-surface);
+    border-radius: 10px;
+    padding: 7px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+    z-index: 8;
+}
+
+.bizTooltip strong {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--color-text);
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bizTooltip span {
+    font-size: 10.5px;
+    color: var(--color-text-secondary);
+}
+
+.bizBubbleHover .bizTooltip,
+.venueBubbleHover .bizTooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ═══ Marker de ubicación actual ═══ */
+.userMarker {
+    cursor: default;
+}
+
+.userDot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4285F4;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
+}
+
+.userPulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(66, 133, 244, 0.2);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* ═══ Columna izquierda (comercio/lugar) — pegada a la barra ═══
+   top:0 dentro de .mapWrap (que empieza justo debajo de la barra) →
+   la columna toca la barra por arriba y el fondo por abajo. Sin huecos. */
+.bizPanel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 372px;
+    max-width: 92vw;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    border-radius: 0;
+    overflow: hidden;
+    z-index: 30;
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.16);
+}
+
+.bizPanelInner {
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.bizPanelLoading {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--color-text-dim);
+    font-size: 13px;
+}
+
+.bizPanelCover {
+    width: 100%;
+    height: 120px;
+    overflow: hidden;
+    position: relative;
+}
+
+.bizPanelCover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bizPanelBody {
+    padding: 18px 16px 24px;
+    position: relative;
+}
+
+.bizPanelClose {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    backdrop-filter: blur(6px);
+    transition: background 0.2s;
+}
+
+.bizPanelClose:hover {
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.bizPanelHead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding-right: 36px;
+}
+
+.bizPanelAvatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--color-primary);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface-2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+.bizPanelAvatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bizPanelTitleRow {
+    min-width: 0;
+}
+
+.bizPanelName {
+    font-size: 19px;
+    font-weight: 800;
+    margin: 0 0 2px;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.bizPanelCat {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    padding: 3px 10px;
+    border-radius: 999px;
+}
+
+.bizPanelStats {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 12px;
+}
+
+.bizPanelStat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    color: var(--color-text-secondary);
+}
+
+.bizPanelStat strong {
+    color: var(--color-text);
+}
+
+.bizPanelInfoRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-bottom: 7px;
+    line-height: 1.45;
+}
+
+.bizPanelInfoRow svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--color-text-dim);
+}
+
+.bizPanelInfoRow a {
+    color: var(--color-primary);
+    word-break: break-all;
+}
+
+.bizPanelSection {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+}
+
+.bizPanelSection h3 {
+    font-size: 13.5px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    color: var(--color-text);
+}
+
+.bizPanelDesc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.bizPanelProducts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bizPanelProduct {
+    display: flex;
+    gap: 10px;
+    background: var(--color-surface-2);
+    border-radius: 12px;
+    padding: 8px;
+}
+
+.bizPanelProductImg {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.bizPanelProductImg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bizPanelProductInfo {
+    min-width: 0;
+    flex: 1;
+}
+
+.bizPanelProductInfo strong {
+    font-size: 13px;
+    color: var(--color-text);
+}
+
+.bizPanelProductInfo p {
+    font-size: 12px;
+    color: var(--color-text-dim);
+    margin: 2px 0 4px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.bizPanelProductPrice {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-success);
+}
+
+.bizPanelReview {
+    margin-bottom: 10px;
+}
+
+.bizPanelReviewStars {
+    display: flex;
+    gap: 1px;
+    margin-bottom: 3px;
+}
+
+.bizPanelReview p {
+    font-size: 12.5px;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.45;
+}
+
+.starFilled {
+    color: #f59e0b;
+}
+
+.starEmpty {
+    color: var(--color-border);
+}
+
+.bizPanelActions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.bizPanelPrimary {
+    flex: 1.4;
+    padding: 12px 14px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.bizPanelPrimary:hover {
+    opacity: 0.88;
+}
+
+.bizPanelSecondary {
+    flex: 1;
+    padding: 12px 14px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.bizPanelSecondary:hover {
+    background: var(--color-surface-3);
+}
+
+/* Venue posts dentro del panel */
+.venuePostCard {
+    display: flex;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 4px;
+}
+
+.venuePostCard:hover {
+    background: var(--color-surface-2);
+}
+
+.venuePostPreview {
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface-2);
+    border-radius: 8px;
+}
+
+.venuePostInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.venuePostContent {
+    font-size: 13px;
+    color: var(--color-text);
+    margin: 0 0 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.venuePostDate {
+    font-size: 11px;
+    color: var(--color-text-dim);
+}
+
+.bizPanelEmpty {
+    text-align: center;
+    color: var(--color-text-dim);
+    font-size: 13px;
+    padding: 20px 0;
+}
+
+/* ─── Responsive: móvil → columna a pantalla completa ─── */
+@media (max-width: 560px) {
+    .bizPanel {
+        width: 100%;
+        max-width: none;
+        border-right: none;
+    }
+
+    .navTab {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
 }

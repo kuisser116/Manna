@@ -4,13 +4,15 @@ import { AnimatePresence } from 'framer-motion';
 import {
   UserPlus, UserCheck, Camera, QrCode,
   LayoutGrid, Eye, MessageCircle, Share, Flag,
-  Copy, Check, ImagePlus, CalendarDays, Settings, Store, MapPin, Star, BarChart3
+  Copy, Check, ImagePlus, CalendarDays, Settings, Store, MapPin, Star, BarChart3,
+  Printer, Download, X, Loader2
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import useStore from '../../store';
 import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../../api/users.api';
 import { getBusiness, toggleFollowBusiness, updateBusinessPrivacy } from '../../api/businesses.api';
+import { getBusinessQR } from '../../api/payments.api';
 import { getUserPosts } from '../../api/posts.api';
 import PostCard from '../PostCard/PostCard';
 import ProductGrid from './ProductGrid';
@@ -56,6 +58,9 @@ export default function BusinessProfile() {
   const [copied, setCopied] = useState(false);
   const [showProducts, setShowProducts] = useState(true);
   const [showReviews, setShowReviews] = useState(true);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrData, setQrData] = useState(null);
+  const [qrLoading, setQrLoading] = useState(false);
   const isOwner = currentUser && biz?.isOwner;
 
   useEffect(() => {
@@ -87,6 +92,46 @@ export default function BusinessProfile() {
       setPostsLoading(false);
     }, 300);
   }, [activeTab]);
+
+  const handleOpenQR = async () => {
+    setQrOpen(true);
+    setQrLoading(true);
+    setQrData(null);
+    try {
+      const { data } = await getBusinessQR(profileId);
+      setQrData(data);
+    } catch (e) {
+      setQrData(null);
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const handlePrintQR = () => {
+    if (!qrData?.qrUrl) return;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(`<html><head><title>QR ${biz.name}</title></head><body style="text-align:center;font-family:system-ui,sans-serif;padding:40px;background:#fff;color:#111"><h2 style="margin-bottom:24px">${biz.name}</h2><img src="${qrData.qrUrl}" style="width:320px;height:320px;display:block;margin:0 auto"/><p style="color:#555;margin-top:20px">Escanea para pagar en ${biz.name}</p></body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  };
+
+  const handleDownloadQR = async () => {
+    if (!qrData?.qrUrl) return;
+    try {
+      const resp = await fetch(qrData.qrUrl);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qr-${biz.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (_) {}
+  };
 
   const handleCopyWallet = () => {
     if (!biz?.stellarPublicKey) return;
@@ -285,6 +330,15 @@ export default function BusinessProfile() {
                       {copied ? <Check size={12} /> : <Copy size={12} />}
                     </div>
                   )}
+                  {isOwner && (
+                    <div
+                      className={`${profileStyles.chip} ${profileStyles.chipClickable}`}
+                      onClick={handleOpenQR}
+                      title="Mi QR para imprimir"
+                    >
+                      <QrCode size={12} /> Mi QR
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -392,6 +446,59 @@ export default function BusinessProfile() {
             onClose={() => setIsSettingsOpen(false)}
             onDelete={() => navigate('/profile')}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Modal QR del comercio (imprimir / descargar) */}
+      <AnimatePresence>
+        {qrOpen && (
+          <div className={profileStyles.qrOverlay} onClick={() => setQrOpen(false)}>
+            <div className={profileStyles.qrModal} onClick={(e) => e.stopPropagation()}>
+              <button
+                className={profileStyles.qrClose}
+                onClick={() => setQrOpen(false)}
+                aria-label="Cerrar"
+              >
+                <X size={20} />
+              </button>
+              <div className={profileStyles.qrHeader}>
+                <div className={profileStyles.qrIcon}><QrCode size={22} /></div>
+                <h3>{biz.name}</h3>
+                <p>QR de pago del comercio</p>
+              </div>
+
+              {qrLoading && (
+                <div className={profileStyles.qrLoading}>
+                  <Loader2 size={28} className={profileStyles.qrSpinner} />
+                </div>
+              )}
+
+              {!qrLoading && qrData && (
+                <>
+                  <div className={profileStyles.qrImageWrap}>
+                    <img src={qrData.qrUrl} alt={`QR de ${biz.name}`} className={profileStyles.qrImage} />
+                  </div>
+                  <p className={profileStyles.qrHint}>
+                    Imprímelo y colócalo en tu negocio. Tus clientes lo escanean para pagarte.
+                  </p>
+                  <div className={profileStyles.qrActions}>
+                    <button className={profileStyles.qrActionPrimary} onClick={handlePrintQR}>
+                      <Printer size={16} /> Imprimir
+                    </button>
+                    <button className={profileStyles.qrActionSecondary} onClick={handleDownloadQR}>
+                      <Download size={16} /> Descargar
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {!qrLoading && !qrData && (
+                <p className={profileStyles.qrHint}>
+                  No se pudo generar el QR. Verifica que el comercio tenga una llave Stellar configurada.
+                </p>
+              )}
+            </div>
+          </div>
         )}
       </AnimatePresence>
     </div>

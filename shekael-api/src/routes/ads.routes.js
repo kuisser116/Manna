@@ -5,12 +5,39 @@ import getDB from '../database/db.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { sendPayment } from '../services/stellar.service.js';
+import { convertToUSDC } from '../services/price.service.js';
 
 const router = Router({ strict: false });
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const POOL_CONFIG_PATH = path.join(__dirname, '../../data/pool-config.json');
 
-// ─── Pool Config Helpers ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// MODELO OFICIAL (Kuki, 01-Ago-2026) — REPARTO POR TIEMPO DE VISTA
+//
+//  - Anuncio en contenido del creador:  70% creador / 15% usuario / 15% app
+//  - Anuncio en feed (sin creador):     80% app / 20% usuario
+//  - La impresión SOLO cuenta para el usuario si se vio el tiempo mínimo:
+//      · feed / post de texto o imagen: 10 segundos
+//      · video / preroll:               30 segundos
+//  - Si NO cumple el tiempo, la impresión se registra igual pero
+//    su valor completo se lo queda Shekael (no el usuario).
+//  - Sin botones de interacción: nada incentivado (seguro con Google).
+//  - Cada anuncio cuenta UNA vez por usuario al mes (anti-repetición).
+//  - Tope anti-farm: 100 impresiones válidas por usuario al día.
+// ═══════════════════════════════════════════════════════════
+const SPLITS = {
+    creatorContent: { creator: 0.70, user: 0.15, app: 0.15 },
+    feed: { app: 0.80, user: 0.20 }
+};
+const MIN_CLAIM_MXN = 20;
+const WATCH_THRESHOLDS = { feed: 10, preroll: 30, rewarded: 30 };
+const MAX_ADS_PER_DAY = 100;
+
+function getCurrentMonth() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
 function getPoolConfig() {
     try {
@@ -18,8 +45,21 @@ function getPoolConfig() {
             return JSON.parse(fs.readFileSync(POOL_CONFIG_PATH, 'utf-8'));
         }
     } catch (_) {}
-    // Default: un pool vacío con estimado de $0.05 MXN por view
-    return { month: getCurrentMonth(), totalPoolMxn: 0, userPoolMxn: 0, perViewMxn: 0.05, isSettled: false };
+    return defaultPoolConfig();
+}
+
+function defaultPoolConfig() {
+    return {
+        month: getCurrentMonth(),
+        totalPoolMxn: 0,
+        totalImpressions: 0,
+        validImpressions: 0,
+        perViewMxn: 0.05,
+        isSettled: false,
+        splits: SPLITS,
+        updatedAt: null,
+        settledAt: null
+    };
 }
 
 function savePoolConfig(config) {
@@ -28,75 +68,139 @@ function savePoolConfig(config) {
     fs.writeFileSync(POOL_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
 }
 
-function getCurrentMonth() {
+function monthStartISO() {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    d.setDate(1); d.setHours(0, 0, 0, 0);
+    return d.toISOString();
 }
 
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// GET /ads/next — Siguiente anuncio no visto para este usuario
+// (rotación: un anuncio cuenta 1 vez por usuario al mes)
+// ═══════════════════════════════════════════════════════════
+router.get('/next', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const clientSeen = (req.query.seen || '').split(',').filter(Boolean);
+
+        // Ads ya vistos por este usuario este mes (desde la DB)
+        const { data: seenRows } = await supabase
+            .from('ad_impressions')
+            .select('ad_id')
+            .eq('user_id', userId)
+            .not('ad_id', 'is', null)
+            .gte('created_at', monthStartISO());
+
+        const seenSet = new Set([...clientSeen, ...(seenRows || []).map(r => r.ad_id)]);
+
+        const now = new Date().toISOString();
+        const { data: ads, error } = await supabase
+            .from('ads')
+            .select('*')
+            .eq('status', 'approved')
+            .lte('start_date', now)
+            .or(`end_date.is.null,end_date.gte.${now}`)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        // Rotación: primero los no vistos; si todos vistos, null
+        const unseen = (ads || []).filter(a => !seenSet.has(a.id));
+        const available = unseen.length > 0 ? unseen : [];
+
+        if (available.length === 0) {
+            return res.json({ ad: null, remaining: 0 });
+        }
+
+        // Alternar: tomar uno pseudoaleatorio entre los no vistos
+        const ad = available[Math.floor(Math.random() * available.length)];
+
+        res.json({
+            ad: {
+                id: ad.id,
+                title: ad.title,
+                description: ad.description,
+                media_url: ad.media_url,
+                media_type: ad.media_type,
+                cta_label: ad.cta_label,
+                cta_url: ad.cta_url,
+                alt_text: ad.alt_text,
+                promo_text: ad.promo_text,
+                promo_code: ad.promo_code
+            },
+            remaining: available.length - 1
+        });
+    } catch (error) {
+        console.error('Error fetching next ad:', error.message);
+        res.status(500).json({ message: 'Error al obtener anuncio' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
 // GET /ads/pool — Estado del pool mensual
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 router.get('/pool', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
         const userId = req.user.id;
         const pool = getPoolConfig();
-        const month = getCurrentMonth();
 
-        // Total de impresiones este mes
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-
-        const { count: totalImpressions, error: countError } = await supabase
+        const { count: totalImpressions } = await supabase
             .from('ad_impressions')
             .select('*', { count: 'exact', head: true })
-            .gte('created_at', monthStart.toISOString());
+            .gte('created_at', monthStartISO());
 
-        if (countError) throw countError;
+        const { count: validImpressions } = await supabase
+            .from('ad_impressions')
+            .select('*', { count: 'exact', head: true })
+            .eq('valid', true)
+            .gte('created_at', monthStartISO());
 
-        // Impresiones del usuario este mes
         const { count: userImpressions } = await supabase
             .from('ad_impressions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('created_at', monthStart.toISOString());
+            .gte('created_at', monthStartISO());
 
-        // Cálculo de earnings
+        const { count: userValid } = await supabase
+            .from('ad_impressions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('valid', true)
+            .gte('created_at', monthStartISO());
+
         let estimatedEarnings = 0;
-        let actualEarnings = 0;
-
-        if (pool.isSettled && totalImpressions > 0) {
-            // Pool cerrado: cálculo exacto
-            actualEarnings = userImpressions * pool.perViewMxn;
-            estimatedEarnings = actualEarnings;
-        } else if (totalImpressions > 0 && pool.totalPoolMxn > 0) {
-            // Pool abierto: estimación basada en el pool actual
-            const currentPerView = pool.userPoolMxn / totalImpressions;
-            estimatedEarnings = userImpressions * currentPerView;
-        } else {
-            // Sin pool: estimación basada en tasa default
-            estimatedEarnings = userImpressions * pool.perViewMxn;
+        if (totalImpressions > 0 && pool.totalPoolMxn > 0) {
+            const perView = pool.totalPoolMxn / totalImpressions;
+            estimatedEarnings = (userValid || 0) * perView * SPLITS.feed.user;
+        } else if (userValid > 0) {
+            estimatedEarnings = userValid * pool.perViewMxn * SPLITS.feed.user;
         }
 
         res.json({
-            month,
+            month: pool.month,
             pool: {
                 totalPoolMxn: pool.totalPoolMxn,
-                userPoolMxn: pool.userPoolMxn,
                 perViewMxn: pool.perViewMxn,
-                isSettled: pool.isSettled
+                isSettled: pool.isSettled,
+                splits: pool.splits,
+                minClaimMxn: MIN_CLAIM_MXN
             },
             impressions: {
                 total: totalImpressions || 0,
+                valid: validImpressions || 0,
                 yours: userImpressions || 0,
-                yourShare: totalImpressions > 0 ? ((userImpressions || 0) / totalImpressions) * 100 : 0
+                yoursValid: userValid || 0,
+                yourShare: (validImpressions || 0) > 0 ? ((userValid || 0) / validImpressions) * 100 : 0
             },
             earnings: {
                 estimated: Math.round(estimatedEarnings * 100) / 100,
-                actual: Math.round(actualEarnings * 100) / 100,
+                actual: 0,
                 isEstimated: !pool.isSettled
-            }
+            },
+            watchThresholds: WATCH_THRESHOLDS,
+            dailyLimit: MAX_ADS_PER_DAY
         });
     } catch (error) {
         console.error('Error fetching pool:', error.message);
@@ -104,66 +208,107 @@ router.get('/pool', authMiddleware, async (req, res) => {
     }
 });
 
-// ─────────────────────────────────────
-// POST /ads/set-pool — Admin: Definir pool del mes
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// POST /ads/set-pool — Admin: definir pool del mes (lo que entró a Shekael)
+// ═══════════════════════════════════════════════════════════
 router.post('/set-pool', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
-        const { totalPoolMxn, userSharePct = 50, creatorSharePct = 40, isSettled = false } = req.body;
+        const { totalPoolMxn, isSettled = false } = req.body;
 
         if (!totalPoolMxn || totalPoolMxn <= 0) {
             return res.status(400).json({ message: 'El pool total debe ser mayor a 0' });
         }
 
         const month = getCurrentMonth();
-        const userPoolMxn = totalPoolMxn * (userSharePct / 100);
-
-        // Total de impresiones del mes
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-
         const { count: totalImpressions } = await supabase
             .from('ad_impressions')
             .select('*', { count: 'exact', head: true })
-            .gte('created_at', monthStart.toISOString());
+            .gte('created_at', monthStartISO());
 
-        const perViewMxn = totalImpressions > 0 ? userPoolMxn / totalImpressions : 0;
+        const { count: validImpressions } = await supabase
+            .from('ad_impressions')
+            .select('*', { count: 'exact', head: true })
+            .eq('valid', true)
+            .gte('created_at', monthStartISO());
+
+        // El per-view se calcula sobre TODAS las impresiones registradas.
+        // Las no válidas: su valor completo se lo queda Shekael.
+        const perViewMxn = totalImpressions > 0 ? totalPoolMxn / totalImpressions : 0;
 
         const pool = {
             month,
             totalPoolMxn,
-            userPoolMxn,
-            creatorPoolMxn: totalPoolMxn * (creatorSharePct / 100),
             totalImpressions: totalImpressions || 0,
+            validImpressions: validImpressions || 0,
             perViewMxn: Math.round(perViewMxn * 10000) / 10000,
             isSettled,
-            userSharePct,
-            creatorSharePct,
-            updatedAt: new Date().toISOString()
+            splits: SPLITS,
+            updatedAt: new Date().toISOString(),
+            settledAt: isSettled ? new Date().toISOString() : null
         };
 
-        if (isSettled) pool.settledAt = new Date().toISOString();
+        // ── CIERRE DE MES: 70% a creadores por impresiones VÁLIDAS ──
+        if (isSettled && validImpressions > 0) {
+            const { data: byCreator } = await supabase
+                .from('ad_impressions')
+                .select('creator_id')
+                .eq('valid', true)
+                .not('creator_id', 'is', null)
+                .gte('created_at', monthStartISO());
+
+            const creatorCounts = {};
+            for (const imp of (byCreator || [])) {
+                creatorCounts[imp.creator_id] = (creatorCounts[imp.creator_id] || 0) + 1;
+            }
+
+            for (const [creatorId, count] of Object.entries(creatorCounts)) {
+                const creatorEarn = Math.round(count * perViewMxn * SPLITS.creatorContent.creator * 100) / 100;
+                if (creatorEarn <= 0) continue;
+                const { data: existing } = await supabase
+                    .from('ad_earnings')
+                    .select('id, balance, total_earned')
+                    .eq('user_id', creatorId)
+                    .single();
+                if (existing) {
+                    await supabase
+                        .from('ad_earnings')
+                        .update({
+                            balance: Math.round((parseFloat(existing.balance || 0) + creatorEarn) * 100) / 100,
+                            total_earned: Math.round((parseFloat(existing.total_earned || 0) + creatorEarn) * 100) / 100
+                        })
+                        .eq('user_id', creatorId);
+                } else {
+                    await supabase
+                        .from('ad_earnings')
+                        .insert({ user_id: creatorId, balance: creatorEarn, total_earned: creatorEarn, total_withdrawn: 0 });
+                }
+                console.log(`[Pool] Creador ${creatorId}: +$${creatorEarn.toFixed(2)} MXN (${count} impresiones válidas)`);
+            }
+        }
 
         savePoolConfig(pool);
 
-        res.json({ success: true, pool, message: `Pool de ${month} actualizado: $${perViewMxn.toFixed(4)} MXN por impresión` });
+        res.json({
+            success: true,
+            pool,
+            message: `Pool de ${month} actualizado: $${perViewMxn.toFixed(4)} MXN por impresión (${validImpressions} válidas de ${totalImpressions})${isSettled ? ' — pool CERRADO y creadores pagados (70%)' : ''}`
+        });
     } catch (error) {
         console.error('Error setting pool:', error.message);
         res.status(500).json({ message: 'Error al configurar el pool' });
     }
 });
 
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 // GET /ads/earnings — Saldo de ganancias del usuario
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 router.get('/earnings', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
         const userId = req.user.id;
         const pool = getPoolConfig();
-        const month = getCurrentMonth();
+        const now = new Date();
 
         const { data, error } = await supabase
             .from('ad_earnings')
@@ -178,15 +323,12 @@ router.get('/earnings', authMiddleware, async (req, res) => {
                 .select()
                 .single();
             if (insertError) throw insertError;
-            return res.json({ earnings: newData });
+            return res.json({ earnings: { ...newData, can_claim_monthly: true, monthly_impressions: 0 } });
         }
         if (error) throw error;
 
-        // Calcular si puede retirar este mes
-        const now = new Date();
         let canClaimMonthly = true;
         let nextClaimDate = null;
-
         if (data.last_monthly_claim) {
             const lastClaim = new Date(data.last_monthly_claim);
             const monthsDiff = (now.getFullYear() - lastClaim.getFullYear()) * 12 + (now.getMonth() - lastClaim.getMonth());
@@ -197,28 +339,31 @@ router.get('/earnings', authMiddleware, async (req, res) => {
             }
         }
 
-        // Impresiones del usuario este mes (para mostrar earnings estimados)
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-
-        const { count: userImpressions } = await supabase
+        // Válidas del mes: feed 20% + contenido creador 15%
+        const { data: impressions } = await supabase
             .from('ad_impressions')
-            .select('*', { count: 'exact', head: true })
+            .select('creator_id')
             .eq('user_id', userId)
-            .gte('created_at', monthStart.toISOString());
+            .eq('valid', true)
+            .gte('created_at', monthStartISO());
 
-        const monthlyEarnings = userImpressions * pool.perViewMxn;
+        const feedCount = (impressions || []).filter(i => !i.creator_id).length;
+        const creatorCount = (impressions || []).length - feedCount;
+        const monthlyEarnings = (feedCount * SPLITS.feed.user + creatorCount * SPLITS.creatorContent.user) * pool.perViewMxn;
 
         res.json({
             earnings: {
                 ...data,
-                balance: Math.round(monthlyEarnings * 100) / 100, // Balance es lo del pool
+                balance: Math.round(monthlyEarnings * 100) / 100,
                 can_claim_monthly: canClaimMonthly,
                 next_claim_date: nextClaimDate,
-                monthly_impressions: userImpressions || 0,
+                monthly_impressions: (impressions || []).length,
+                feed_impressions: feedCount,
+                creator_content_impressions: creatorCount,
                 per_view_rate: pool.perViewMxn,
-                pool_settled: pool.isSettled
+                pool_settled: pool.isSettled,
+                min_claim_mxn: MIN_CLAIM_MXN,
+                watch_thresholds: WATCH_THRESHOLDS
             }
         });
     } catch (error) {
@@ -227,73 +372,47 @@ router.get('/earnings', authMiddleware, async (req, res) => {
     }
 });
 
-// ─────────────────────────────────────
-// POST /ads/impression — Registrar vista de anuncio
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// POST /ads/impression — Registrar impresión por TIEMPO DE VISTA
+// ═══════════════════════════════════════════════════════════
 router.post('/impression', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
         const userId = req.user.id;
-        const { ad_type = 'feed', source = 'feed', creator_id = null, focus_duration = 0, engagement = {} } = req.body;
+        const { ad_type = 'feed', source = 'feed', creator_id = null, watch_seconds = 0, ad_id = null } = req.body;
 
-        if (!['feed', 'preroll', 'rewarded'].includes(ad_type)) {
+        if (!WATCH_THRESHOLDS[ad_type]) {
             return res.status(400).json({ message: 'Tipo de anuncio inválido' });
         }
 
-        // Engagement bonus: la interacción real con el anuncio multiplica la recompensa.
-        // Esto hace que los anunciantes paguen por tráfico CON interacción (no solo vistas).
-        const engagementScore = Math.min(
-            (engagement.liked ? 1 : 0) +
-            (engagement.commented ? 2 : 0) +
-            (engagement.saved ? 1.5 : 0) +
-            (engagement.shares || 0) * 2 +
-            (engagement.visitedProfile ? 1 : 0),
-            5
-        );
-        // Multiplicador: 1x base + hasta +0.5x por engagement alto
-        const engagementMultiplier = 1 + (engagementScore / 5) * 0.5;
-
-        // Rate limiting: 20 ads/hr
-        const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+        // Tope anti-farm: 100 impresiones por usuario al día
+        const dayAgo = new Date(Date.now() - 86400000).toISOString();
         const { count, error: countError } = await supabase
             .from('ad_impressions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('created_at', oneHourAgo);
-
+            .gte('created_at', dayAgo);
         if (countError) throw countError;
-        if (count >= 20) {
-            return res.status(429).json({
-                message: 'Has alcanzado el límite de anuncios por hora. Vuelve pronto.',
-                retryAfter: 3600
-            });
+        if (count >= MAX_ADS_PER_DAY) {
+            return res.status(429).json({ message: 'Has alcanzado el límite diario de anuncios (100). Vuelve mañana.' });
         }
 
-        // Validar: necesita al menos 5 segundos en foco
-        if (focus_duration < 5) {
-            return res.status(400).json({ message: 'El anuncio debe verse al menos 5 segundos para contar', completed: false });
-        }
+        const threshold = WATCH_THRESHOLDS[ad_type];
+        const valid = watch_seconds >= threshold;
 
-        // Registrar impresión SIN asignar monto aún — se calcula al cerrar el pool.
-        // Nota: engagement_score se persiste si la columna existe (ALTER manual en Supabase).
         const impressionPayload = {
             user_id: userId,
             ad_type,
             source,
-            amount: 0, // Pendiente — se actualiza cuando se cierra el pool
+            amount: 0,
             creator_id: creator_id || null,
-            verified: true,
-            focus_duration,
+            verified: valid,
+            valid,
+            watch_seconds: Math.min(watch_seconds, 3600),
+            ad_id: ad_id || null,
             completed: true,
             ip_hash: req.ip ? req.ip.split('.').slice(0, 2).join('.') : null
         };
-        // engagement_score solo si la columna ya fue creada en Supabase
-        const colCheck = await supabase.from('ad_impressions').select('engagement_score').limit(1);
-        if (!colCheck.error) {
-            impressionPayload.engagement_score = engagementScore;
-        } else {
-            console.warn('[Ads] engagement_score column no existe — se omite (ALTER manual pendiente)');
-        }
 
         const { data: impression, error: impError } = await supabase
             .from('ad_impressions')
@@ -301,44 +420,72 @@ router.post('/impression', authMiddleware, async (req, res) => {
             .select()
             .single();
 
+        if (impError && (impError.message?.includes('valid') || impError.message?.includes('ad_id') || impError.message?.includes('watch_seconds'))) {
+            // Columnas nuevas aún no existen: insertar sin ellas (fallback)
+            delete impressionPayload.valid;
+            delete impressionPayload.ad_id;
+            delete impressionPayload.watch_seconds;
+            const { data: retry, error: retryErr } = await supabase
+                .from('ad_impressions')
+                .insert(impressionPayload)
+                .select()
+                .single();
+            if (retryErr) throw retryErr;
+            return finalizeImpression(res, retry, creator_id, valid);
+        }
         if (impError) throw impError;
 
-        // Obtener pool config para mostrar estimación
-        const pool = getPoolConfig();
-        const baseRate = pool.perViewMxn || 0.05;
-        const estimatedAmount = baseRate * engagementMultiplier;
-
-        res.json({
-            success: true,
-            rewarded: Math.round(estimatedAmount * 100) / 100,
-            engagement_multiplier: engagementMultiplier,
-            isEstimated: !pool.isSettled,
-            impression_id: impression.id,
-            note: pool.isSettled
-                ? `Ganaste $${estimatedAmount.toFixed(4)} MXN (pool cerrado${engagementMultiplier > 1 ? ' +' + Math.round((engagementMultiplier - 1) * 100) + '% por interacción' : ''})`
-                : `Estimado ~$${estimatedAmount.toFixed(4)} MXN (pool en cálculo — se ajusta al cerrar el mes)`
-        });
-
+        return finalizeImpression(res, impression, creator_id, valid);
     } catch (error) {
         console.error('Error recording impression:', error.message);
         res.status(500).json({ message: 'Error al registrar impresión' });
     }
 });
 
-// ─────────────────────────────────────
-// POST /ads/claim-monthly — Retiro mensual de ganancias
-// ─────────────────────────────────────
+function finalizeImpression(res, impression, creatorId, valid) {
+    const pool = getPoolConfig();
+    const userShare = valid ? (creatorId ? SPLITS.creatorContent.user : SPLITS.feed.user) : 0;
+    const estimatedAmount = pool.perViewMxn * userShare;
+
+    if (!valid) {
+        return res.json({
+            success: true,
+            valid: false,
+            rewarded: 0,
+            note: 'Esta impresión no cumplió el tiempo mínimo de vista, así que su valor se lo queda Shekael. Mira el anuncio unos segundos más para que cuente a tu favor.'
+        });
+    }
+
+    const parts = creatorId
+        ? ['70% para el creador', '15% para ti']
+        : ['20% para ti'];
+
+    res.json({
+        success: true,
+        valid: true,
+        rewarded: Math.round(estimatedAmount * 100) / 100,
+        user_share_pct: Math.round(userShare * 100),
+        isEstimated: !pool.isSettled,
+        impression_id: impression.id,
+        note: pool.isSettled
+            ? `Ganaste $${estimatedAmount.toFixed(4)} MXN (${parts.join(' · ')})`
+            : `Estimado ~$${estimatedAmount.toFixed(4)} MXN (${parts.join(' · ')}) — se ajusta al cerrar el mes`
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// POST /ads/claim-monthly — Retiro mensual con PAGO USDC REAL
+// (solo impresiones VÁLIDAS cuentan para el usuario)
+// ═══════════════════════════════════════════════════════════
 router.post('/claim-monthly', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
         const userId = req.user.id;
         const pool = getPoolConfig();
-        const month = getCurrentMonth();
 
-        // Verificar que el pool esté cerrado/settled
         if (!pool.isSettled) {
             return res.status(400).json({
-                message: `El pool de ${month} aún no está cerrado. Espera a que Kuki cierre el mes para calcular las ganancias reales.`
+                message: `El pool de ${pool.month} aún no está cerrado. Espera a que se cierre el mes para calcular las ganancias reales.`
             });
         }
 
@@ -347,10 +494,8 @@ router.post('/claim-monthly', authMiddleware, async (req, res) => {
             .select('*')
             .eq('user_id', userId)
             .single();
-
         if (error) throw error;
 
-        // Verificar que no haya retirado este mes
         if (earnings.last_monthly_claim) {
             const lastClaim = new Date(earnings.last_monthly_claim);
             const now = new Date();
@@ -358,60 +503,93 @@ router.post('/claim-monthly', authMiddleware, async (req, res) => {
             if (monthsDiff < 1) {
                 const nextDate = new Date(lastClaim);
                 nextDate.setMonth(nextDate.getMonth() + 1);
-                return res.status(400).json({
-                    message: 'Ya retiraste este mes. Vuelve el mes que viene.',
-                    nextClaimDate: nextDate
-                });
+                return res.status(400).json({ message: 'Ya retiraste este mes. Vuelve el mes que viene.', nextClaimDate: nextDate });
             }
         }
 
-        // Calcular ganancias reales del usuario basadas en el pool
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-
-        const { count: userImpressions } = await supabase
+        const { data: impressions } = await supabase
             .from('ad_impressions')
-            .select('*', { count: 'exact', head: true })
+            .select('creator_id')
             .eq('user_id', userId)
-            .gte('created_at', monthStart.toISOString());
+            .eq('valid', true)
+            .gte('created_at', monthStartISO());
 
-        const totalEarned = userImpressions * pool.perViewMxn;
+        const feedCount = (impressions || []).filter(i => !i.creator_id).length;
+        const creatorCount = (impressions || []).length - feedCount;
+        const totalEarned = Math.round((feedCount * SPLITS.feed.user + creatorCount * SPLITS.creatorContent.user) * pool.perViewMxn * 100) / 100;
 
         if (totalEarned <= 0) {
             return res.status(400).json({ message: 'No tienes ganancias para retirar este mes' });
         }
 
-        // Marcar como retirado
-        const { error: updateError } = await supabase
+        if (totalEarned < MIN_CLAIM_MXN) {
+            return res.status(400).json({
+                message: `Mínimo de retiro: $${MIN_CLAIM_MXN} MXN. Llevas $${totalEarned.toFixed(2)} MXN este mes.`,
+                earned: totalEarned,
+                minRequired: MIN_CLAIM_MXN
+            });
+        }
+
+        const { data: user } = await supabase
+            .from('users')
+            .select('stellar_public_key')
+            .eq('id', userId)
+            .single();
+
+        if (!user?.stellar_public_key) {
+            return res.status(400).json({ message: 'No tienes billetera Stellar configurada' });
+        }
+
+        const masterSecret = process.env.MANNA_DEV_WALLET_SECRET || process.env.BONUS_WALLET_SECRET;
+        if (!masterSecret) {
+            return res.status(500).json({ message: 'Wallet maestra no configurada (MANNA_DEV_WALLET_SECRET)' });
+        }
+
+        const amountUSDC = parseFloat(await convertToUSDC(totalEarned));
+        if (amountUSDC <= 0) {
+            return res.status(500).json({ message: 'Error al convertir a USDC' });
+        }
+
+        let txHash;
+        try {
+            txHash = await sendPayment({
+                fromSecretKey: masterSecret,
+                toPublicKey: user.stellar_public_key,
+                amount: String(amountUSDC.toFixed(7)),
+                memo: `Shekael:claim:${userId.slice(0, 10)}`
+            });
+        } catch (stellarErr) {
+            console.error('[Claim] Stellar payment failed:', stellarErr.message);
+            return res.status(500).json({ message: 'Error al enviar USDC. Intenta de nuevo.', error: stellarErr.message });
+        }
+
+        await supabase
             .from('ad_earnings')
             .update({
                 balance: 0,
-                total_withdrawn: parseFloat(earnings.total_withdrawn || 0) + totalEarned,
-                total_earned: parseFloat(earnings.total_earned || 0) + totalEarned,
+                total_withdrawn: Math.round((parseFloat(earnings.total_withdrawn || 0) + totalEarned) * 100) / 100,
+                total_earned: Math.round((parseFloat(earnings.total_earned || 0) + totalEarned) * 100) / 100,
                 last_monthly_claim: new Date().toISOString()
             })
             .eq('user_id', userId);
 
-        if (updateError) throw updateError;
-
         res.json({
             success: true,
-            claimed: Math.round(totalEarned * 100) / 100,
-            impressions: userImpressions,
-            perViewRate: pool.perViewMxn,
-            message: `Se añadieron $${totalEarned.toFixed(2)} MXN a tu wallet (${userImpressions} impresiones × $${pool.perViewMxn.toFixed(4)})`
+            claimed: totalEarned,
+            claimedUSDC: amountUSDC.toFixed(4),
+            txHash,
+            impressions: { feed: feedCount, creatorContent: creatorCount },
+            message: `$${totalEarned.toFixed(2)} MXN (${amountUSDC.toFixed(4)} USDC) enviados a tu wallet Stellar. Llega en ~5 segundos.`
         });
-
     } catch (error) {
         console.error('Error claiming monthly:', error.message);
         res.status(500).json({ message: 'Error al procesar retiro mensual' });
     }
 });
 
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 // GET /ads/history — Historial de anuncios vistos
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 router.get('/history', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
@@ -426,7 +604,6 @@ router.get('/history', authMiddleware, async (req, res) => {
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
-
         if (error) throw error;
 
         const { count } = await supabase
@@ -441,9 +618,9 @@ router.get('/history', authMiddleware, async (req, res) => {
     }
 });
 
-// ─────────────────────────────────────
-// GET /ads/stats — Estadísticas del día/semana
-// ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// GET /ads/stats — Estadísticas del día/semana (solo válidas)
+// ═══════════════════════════════════════════════════════════
 router.get('/stats', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
@@ -452,33 +629,42 @@ router.get('/stats', authMiddleware, async (req, res) => {
 
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
-
-        const { data: todayData } = await supabase
-            .from('ad_impressions')
-            .select('amount')
-            .eq('user_id', userId)
-            .gte('created_at', todayStart.toISOString());
-
         const weekStart = new Date();
         weekStart.setDate(weekStart.getDate() - weekStart.getDay());
         weekStart.setHours(0, 0, 0, 0);
 
+        const { data: todayData } = await supabase
+            .from('ad_impressions')
+            .select('creator_id')
+            .eq('user_id', userId)
+            .eq('valid', true)
+            .gte('created_at', todayStart.toISOString());
+
         const { data: weekData } = await supabase
             .from('ad_impressions')
-            .select('amount')
+            .select('creator_id')
             .eq('user_id', userId)
+            .eq('valid', true)
             .gte('created_at', weekStart.toISOString());
 
+        const calcEarned = (rows) => {
+            const feed = (rows || []).filter(i => !i.creator_id).length;
+            const creator = (rows || []).length - feed;
+            return Math.round((feed * SPLITS.feed.user + creator * SPLITS.creatorContent.user) * pool.perViewMxn * 100) / 100;
+        };
+
         const todayCount = todayData?.length || 0;
-        const weekCount = weekData?.length || 0;
 
         res.json({
-            today: { earned: todayCount * pool.perViewMxn, count: todayCount },
-            week: { earned: weekCount * pool.perViewMxn, count: weekCount },
-            dailyLimit: 20,
-            dailyRemaining: Math.max(0, 20 - todayCount),
+            today: { earned: calcEarned(todayData), count: todayCount },
+            week: { earned: calcEarned(weekData), count: weekData?.length || 0 },
+            dailyLimit: MAX_ADS_PER_DAY,
+            dailyRemaining: Math.max(0, MAX_ADS_PER_DAY - todayCount),
             perViewMxn: pool.perViewMxn,
-            poolSettled: pool.isSettled
+            poolSettled: pool.isSettled,
+            splits: pool.splits,
+            minClaimMxn: MIN_CLAIM_MXN,
+            watchThresholds: WATCH_THRESHOLDS
         });
     } catch (error) {
         console.error('Error fetching stats:', error.message);

@@ -278,3 +278,11 @@
 }
 
 .deleteBtn:hover { background: #dc2626; }
+
+.spinner {
+    animation: bizSpin 0.9s linear infinite;
+}
+
+@keyframes bizSpin {
+    to { transform: rotate(360deg); }
+}

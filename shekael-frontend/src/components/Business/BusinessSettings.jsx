@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, Lock, Trash2, Eye, EyeOff, Save, AlertTriangle } from 'lucide-react';
+import { X, Lock, Trash2, Eye, EyeOff, Save, AlertTriangle, Loader2 } from 'lucide-react';
 import styles from './BusinessSettings.module.css';
+import { verifyBusinessPassword, updateBusinessPassword } from '../../api/businesses.api';
 
 export default function BusinessSettings({
   business,
@@ -11,34 +12,32 @@ export default function BusinessSettings({
   showProducts,
   showReviews,
 }) {
-  const [deleteStep, setDeleteStep] = useState(null); // null | 'pin' | 'password' | 'confirm'
-  const [pin, setPin] = useState('');
+  const [deleteStep, setDeleteStep] = useState(null); // null | 'password' | 'confirm'
   const [password, setPassword] = useState('');
-  const [pinError, setPinError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [changePassword, setChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [passwordChanged, setPasswordChanged] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
-  const handleDeleteStart = () => setDeleteStep('pin');
-  const handleCancelDelete = () => { setDeleteStep(null); setPin(''); setPassword(''); setPinError(''); setPasswordError(''); };
+  const handleDeleteStart = () => setDeleteStep('password');
+  const handleCancelDelete = () => { setDeleteStep(null); setPassword(''); setPasswordError(''); };
 
-  const handlePinSubmit = () => {
-    if (pin === '1234') { // mock: PIN correcto
-      setPinError('');
-      setDeleteStep('password');
-    } else {
-      setPinError('PIN incorrecto');
-    }
-  };
-
-  const handlePasswordSubmit = () => {
-    if (password === 'comercio123') { // mock
+  const handlePasswordSubmit = async () => {
+    if (!business?.id) return;
+    setVerifying(true);
+    setPasswordError('');
+    try {
+      await verifyBusinessPassword(business.id, password);
       setPasswordError('');
       setDeleteStep('confirm');
-    } else {
-      setPasswordError('Contraseña incorrecta');
+    } catch (err) {
+      setPasswordError(err?.response?.data?.message || 'Contraseña incorrecta');
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -47,9 +46,23 @@ export default function BusinessSettings({
     onClose?.();
   };
 
-  const handleChangePassword = () => {
-    setPasswordChanged(true);
-    setTimeout(() => setPasswordChanged(false), 2000);
+  const handleChangePassword = async () => {
+    if (!business?.id) return;
+    setSavingPassword(true);
+    try {
+      await updateBusinessPassword(business.id, {
+        currentPassword: currentPassword || undefined,
+        newPassword,
+      });
+      setPasswordChanged(true);
+      setNewPassword('');
+      setCurrentPassword('');
+      setTimeout(() => setPasswordChanged(false), 2500);
+    } catch (err) {
+      setPasswordError(err?.response?.data?.message || 'Error al cambiar la contraseña');
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -88,19 +101,28 @@ export default function BusinessSettings({
                 <div className={styles.passwordChange}>
                   <div className={styles.field}>
                     <input
+                      type="password"
+                      placeholder="Contraseña actual"
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <input
                       type="text"
-                      placeholder="Nueva contraseña"
+                      placeholder="Nueva contraseña (mín. 6)"
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                     />
                     <button
                       className={styles.primaryBtn}
                       onClick={handleChangePassword}
-                      disabled={newPassword.length < 6}
+                      disabled={newPassword.length < 6 || savingPassword}
                     >
-                      <Save size={14} /> Guardar
+                      {savingPassword ? <Loader2 size={14} className={styles.spinner} /> : <Save size={14} />} Guardar
                     </button>
                   </div>
+                  {passwordError && <span className={styles.error}>{passwordError}</span>}
                   {passwordChanged && <span className={styles.success}>Contraseña actualizada</span>}
                 </div>
               )}
@@ -109,7 +131,7 @@ export default function BusinessSettings({
             {/* Delete */}
             <div className={styles.section}>
               <h3>Zona peligrosa</h3>
-              <p className={styles.dangerNote}>Esta acción requiere doble verificación: PIN + contraseña del comercio.</p>
+              <p className={styles.dangerNote}>Esta acción requiere la contraseña del comercio.</p>
               <button className={styles.dangerBtn} onClick={handleDeleteStart}>
                 <Trash2 size={16} /> Eliminar comercio
               </button>
@@ -143,7 +165,7 @@ export default function BusinessSettings({
               <div className={styles.verifyStep}>
                 <Lock size={32} />
                 <h3>Contraseña del comercio</h3>
-                <p className={styles.verifyText}>Ingresa la contraseña de este comercio</p>
+                <p className={styles.verifyText}>Ingresa la contraseña de este comercio para confirmar</p>
                 <div className={styles.passwordField}>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -160,7 +182,9 @@ export default function BusinessSettings({
                 {passwordError && <span className={styles.error}>{passwordError}</span>}
                 <div className={styles.verifyActions}>
                   <button className={styles.secondaryBtn} onClick={handleCancelDelete}>Cancelar</button>
-                  <button className={styles.primaryBtn} onClick={handlePasswordSubmit}>Verificar</button>
+                  <button className={styles.primaryBtn} onClick={handlePasswordSubmit} disabled={verifying}>
+                    {verifying ? <Loader2 size={16} className={styles.spinner} /> : null} Verificar
+                  </button>
                 </div>
               </div>
             )}

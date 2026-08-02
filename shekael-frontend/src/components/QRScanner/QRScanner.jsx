@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QrCode, X, Check, ArrowRight, ShieldCheck, Zap, Camera, RefreshCw } from 'lucide-react';
-import { payQR } from '../../api/transactions.api.js';
+import { QrCode, X, Check, ArrowRight, ShieldCheck, Zap, Camera, RefreshCw, Store, Gift, Wallet, BadgeCheck } from 'lucide-react';
+import { payQR, getRegionalFund } from '../../api/transactions.api.js';
 import { mxnToUsdc } from '../../api/price.api.js';
 import { Html5Qrcode } from 'html5-qrcode';
 import useStore from '../../store';
@@ -12,11 +12,15 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
     const [scanData, setScanData] = useState(null);
     const [amount, setAmount] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     const [cameras, setCameras] = useState([]);
     const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
     const [scannerInstance, setScannerInstance] = useState(null);
     const [isScannerReady, setIsScannerReady] = useState(false);
+
+    // Fondo regional: el descuento SOLO se muestra si hay fondos reales
+    const [fundBalance, setFundBalance] = useState(0);
+    const [fundChecked, setFundChecked] = useState(false);
 
     const { addToast } = useStore();
 
@@ -42,6 +46,25 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
         }
     };
 
+    // Verificar el fondo regional cuando se confirma un pago a comercio
+    useEffect(() => {
+        if (step !== 'confirm' || !scanData?.isVerified || fundChecked) return;
+        getRegionalFund()
+            .then(d => {
+                setFundBalance(parseFloat(d?.total) || 0);
+                setFundChecked(true);
+            })
+            .catch(() => {
+                setFundBalance(0);
+                setFundChecked(true);
+            });
+    }, [step, scanData, fundChecked]);
+
+    const rawAmount = parseFloat(amount || 0) || 0;
+    const discount = rawAmount * 0.05;
+    const canDiscount = scanData?.isVerified && fundChecked && fundBalance >= discount && discount > 0;
+    const totalToPay = canDiscount ? rawAmount - discount : rawAmount;
+
     // Iniciar el escáner con control total
     useEffect(() => {
         if (isOpen && !defaultPublicKey && step === 'scan') {
@@ -51,53 +74,55 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
             const startScanner = async () => {
                 try {
                     const devices = await Html5Qrcode.getCameras();
-                    if (devices && devices.length > 0) {
-                        setCameras(devices);
-                        
-                        // Intentar encontrar la cámara trasera primero
-                        const backCameraIndex = devices.findIndex(d => 
-                            d.label.toLowerCase().includes('back') || 
-                            d.label.toLowerCase().includes('trasera') ||
-                            d.label.toLowerCase().includes('environment')
-                        );
-                        
-                        const targetIndex = backCameraIndex !== -1 ? backCameraIndex : 0;
-                        setCurrentCameraIndex(targetIndex);
+                    setCameras(devices);
 
-                        await html5QrCode.start(
-                            devices[targetIndex].id,
-                            {
-                                fps: 15,
-                                qrbox: { width: 250, height: 250 },
-                                aspectRatio: 1.0
-                            },
-                            (decodedText) => {
-                                // Formato: shekael://pay/{bizId}?dest={pubkey}&amount=X
-                                if (decodedText.startsWith('shekael://')) {
-                                    try {
-                                        const url = new URL(decodedText);
-                                        const bizId = url.pathname.split('/').pop();
-                                        const pubKey = url.searchParams.get('dest');
-                                        const qrAmount = url.searchParams.get('amount');
-                                        fetchBusinessInfo(bizId, pubKey, qrAmount, setScanData, setAmount, html5QrCode, setStep);
-                                    } catch {}
-                                } else if (decodedText.startsWith('G') && decodedText.length === 56) {
-                                    setScanData({
-                                        publicKey: decodedText,
-                                        businessName: 'Usuario Escaneado',
-                                        isVerified: false
-                                    });
-                                    html5QrCode.stop().then(() => {
-                                        setStep('confirm');
-                                    });
-                                }
-                            },
-                            (errorMessage) => {
-                                // Errores de escaneo silenciosos
-                            }
-                        );
-                        setIsScannerReady(true);
+                    if (devices.length === 0) {
+                        addToast('error', 'Cámara', 'No se encontró ninguna cámara. Usa el QR desde tu celular o ingresa el código manualmente.');
+                        return;
                     }
+
+                    const backCameraIndex = devices.findIndex(d =>
+                        d.label.toLowerCase().includes('back') ||
+                        d.label.toLowerCase().includes('trasera') ||
+                        d.label.toLowerCase().includes('environment')
+                    );
+
+                    const targetIndex = backCameraIndex !== -1 ? backCameraIndex : 0;
+                    setCurrentCameraIndex(targetIndex);
+
+                    await html5QrCode.start(
+                        devices[targetIndex].id,
+                        {
+                            fps: 15,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0
+                        },
+                        (decodedText) => {
+                            // Formato: shekael://pay/{bizId}?dest={pubkey}&amount=X
+                            if (decodedText.startsWith('shekael://')) {
+                                try {
+                                    const url = new URL(decodedText);
+                                    const bizId = url.pathname.split('/').pop();
+                                    const pubKey = url.searchParams.get('dest');
+                                    const qrAmount = url.searchParams.get('amount');
+                                    fetchBusinessInfo(bizId, pubKey, qrAmount, setScanData, setAmount, html5QrCode, setStep);
+                                } catch {}
+                            } else if (decodedText.startsWith('G') && decodedText.length === 56) {
+                                setScanData({
+                                    publicKey: decodedText,
+                                    businessName: 'Usuario Shekael',
+                                    isVerified: false
+                                });
+                                html5QrCode.stop().then(() => {
+                                    setStep('confirm');
+                                });
+                            }
+                        },
+                        (errorMessage) => {
+                            // Errores de escaneo silenciosos
+                        }
+                    );
+                    setIsScannerReady(true);
                 } catch (err) {
                     console.error("Error starting scanner:", err);
                     addToast('error', 'Cámara', 'No se pudo acceder a la cámara. Asegúrate de dar permisos.');
@@ -123,12 +148,12 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
 
     const switchCamera = async () => {
         if (!scannerInstance || !cameras.length) return;
-        
+
         try {
             await scannerInstance.stop();
             const nextIndex = (currentCameraIndex + 1) % cameras.length;
             setCurrentCameraIndex(nextIndex);
-            
+
             await scannerInstance.start(
                 cameras[nextIndex].id,
                 {
@@ -148,7 +173,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     } else if (decodedText.startsWith('G') && decodedText.length === 56) {
                         setScanData({
                             publicKey: decodedText,
-                            businessName: 'Usuario Escaneado',
+                            businessName: 'Usuario Shekael',
                             isVerified: false
                         });
                         scannerInstance.stop().then(() => {
@@ -161,14 +186,10 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
             console.error("Error switching camera:", err);
         }
     };
-;
-
-    // La funcionalidad de escáner real iría aquí.
-    // Para el demo web, el paso de datos se hace directo desde el componente Profile.jsx
 
     const handlePay = async () => {
         if (!amount || parseFloat(amount) <= 0 || loading) return;
-        
+
         setLoading(true);
 
         // --- WebAuthn Biometric Protection ---
@@ -178,7 +199,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                 if (available) {
                     const challenge = new Uint8Array(32);
                     window.crypto.getRandomValues(challenge);
-                    
+
                     await navigator.credentials.create({
                         publicKey: {
                             challenge,
@@ -204,7 +225,6 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
         } catch (err) {
             setLoading(false);
             console.error('WebAuthn Cancelled/Failed:', err);
-            // Solo mostramos error si no fue cancelación manual (opcional, por ahora mostramos el aviso de protección)
             addToast('error', 'Seguridad Shekael', 'Validación biométrica cancelada o no disponible. Tu dinero está seguro.');
             return;
         }
@@ -213,11 +233,9 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
         try {
             const usdcAmount = await mxnToUsdc(amount);
             const { data } = await payQR(scanData.publicKey, String(usdcAmount), 'USDC');
-            
+
             if (data.success) {
                 setStep('success');
-                // IMPORTANTE: envolvemos el callback externo en try/catch independiente 
-                // para que si falla la recarga del balance no se muestre el modal de error de pago
                 try {
                     if (onPaymentSuccess) onPaymentSuccess();
                 } catch (e) {
@@ -245,28 +263,34 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
         setScanData(null);
         setAmount('');
         setIsScannerReady(false);
+        setFundBalance(0);
+        setFundChecked(false);
         onClose();
     };
 
     if (!isOpen) return null;
 
+    const isBusiness = !!scanData?.isVerified;
+    const amountStr = amount || '0';
+    const fmt = (n) => n.toFixed(2);
+
     return (
         <AnimatePresence>
-            <motion.div 
+            <motion.div
                 className={styles.overlay}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={reset}
             >
-                <motion.div 
+                <motion.div
                     className={styles.modal}
                     initial={{ scale: 0.9, y: 20 }}
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.9, y: 20 }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <button className={styles.closeBtn} onClick={reset}>
+                    <button className={styles.closeBtn} onClick={reset} aria-label="Cerrar">
                         <X size={24} />
                     </button>
 
@@ -284,7 +308,7 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                             <div className={styles.scanFooter}>
                                 <h2 className={styles.title}>Escanear Pago</h2>
                                 <p className={styles.desc}>Apunta al QR de otro usuario o negocio.</p>
-                                
+
                                 <div className={styles.hint}>
                                     <ShieldCheck size={14} className={styles.hintIcon} />
                                     <span>Pagos seguros y sin comisiones</span>
@@ -294,21 +318,25 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     )}
 
                     {step === 'confirm' && (
-                        <div className={styles.stepContent}>
-                            <div className={styles.merchantInfo}>
-                                <div className={styles.avatar}>
-                                    <ShieldCheck size={24} color="#22c55e" />
+                        <div className={`${styles.stepContent} ${styles.paddedStep}`}>
+                            <div className={styles.confirmHeader}>
+                                <div className={`${styles.avatar} ${isBusiness ? styles.avatarBusiness : ''}`}>
+                                    {isBusiness ? <Store size={24} /> : <Wallet size={24} />}
                                 </div>
                                 <h3 className={styles.merchantName}>{scanData.businessName}</h3>
-                                {scanData.isVerified && <span className={styles.verifiedTag}>Comercio Verificado</span>}
+                                <p className={styles.merchantSub}>
+                                    {isBusiness ? 'Comercio verificado' : 'Pago entre usuarios'}
+                                </p>
+                                {isBusiness && <span className={styles.verifiedTag}><BadgeCheck size={12} /> Comercio Verificado</span>}
                             </div>
 
                             <div className={styles.amountInputWrapper}>
                                 <span className={styles.currency}>$</span>
-                                <input 
+                                <input
                                     className={styles.amountInput}
-                                    type="number" 
-                                    placeholder="0" 
+                                    type="number"
+                                    inputMode="decimal"
+                                    placeholder="0"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
                                     autoFocus
@@ -316,32 +344,47 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                                 <span className={styles.currencyCode}>MXN</span>
                             </div>
 
-                            {scanData.isVerified && (
-                                <motion.div 
-                                    className={styles.benefitCard}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                >
-                                    <div className={styles.benefitIcon}>🎁</div>
-                                    <div className={styles.benefitText}>
-                                        <strong>-5% de Descuento Regional</strong>
-                                        <p>Cortesía de Shekael</p>
+                            {isBusiness && (
+                                canDiscount ? (
+                                    <motion.div
+                                        className={styles.benefitCard}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                    >
+                                        <div className={styles.benefitIcon}><Gift size={18} /></div>
+                                        <div className={styles.benefitText}>
+                                            <strong>5% de descuento regional</strong>
+                                            <p>Cortesía de Shekael</p>
+                                        </div>
+                                        <div className={styles.benefitAmount}>-${fmt(discount)}</div>
+                                    </motion.div>
+                                ) : (
+                                    <div className={styles.noDiscountNote}>
+                                        <Zap size={14} />
+                                        <span>{fundChecked && fundBalance < discount ? 'Descuento no disponible: fondo regional insuficiente' : 'Verificando descuento...'}</span>
                                     </div>
-                                    <div className={styles.benefitAmount}>
-                                        -${(parseFloat(amount || 0) * 0.05).toFixed(4)}
-                                    </div>
-                                </motion.div>
+                                )
                             )}
 
                             <div className={styles.summary}>
                                 <div className={styles.summaryRow}>
+                                    <span>Monto</span>
+                                    <span>${fmt(rawAmount)} MXN</span>
+                                </div>
+                                {canDiscount && (
+                                    <div className={styles.summaryRow}>
+                                        <span>Descuento regional (5%)</span>
+                                        <span className={styles.discountValue}>-${fmt(discount)} MXN</span>
+                                    </div>
+                                )}
+                                <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
                                     <span>Total a pagar</span>
-                                    <span>${(parseFloat(amount || 0) * (scanData.isVerified ? 0.95 : 1.0)).toFixed(2)} MXN</span>
+                                    <span>${fmt(totalToPay)} MXN</span>
                                 </div>
                             </div>
 
-                            <button 
-                                className={styles.payBtn} 
+                            <button
+                                className={styles.payBtn}
                                 onClick={handlePay}
                                 disabled={loading || !amount}
                             >
@@ -353,21 +396,29 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     )}
 
                     {step === 'success' && (
-                        <div className={styles.stepContent}>
+                        <div className={`${styles.stepContent} ${styles.paddedStep}`}>
                             <div className={styles.successIcon}>
                                 <Check size={48} color="#fff" />
                             </div>
-                            <h2 className={styles.title}>¡Pago Exitoso!</h2>
-                            <p className={styles.desc}>Has enviado los fondos a <strong>{scanData.businessName}</strong>.</p>
-                            
+                            <h2 className={styles.title}>Pago Exitoso</h2>
+                            <p className={styles.desc}>
+                                Has enviado los fondos a <strong>{scanData.businessName}</strong>.
+                            </p>
+
                             <div className={styles.receipt}>
                                 <div className={styles.receiptRow}>
                                     <span>Pagado</span>
-                                    <span>${(parseFloat(amount || 0) * 0.95).toFixed(2)} MXN</span>
+                                    <span>${fmt(totalToPay)} MXN</span>
                                 </div>
-                                <div className={styles.receiptRow}>
-                                    <span>Subsidio Regional</span>
-                                    <span>${(parseFloat(amount || 0) * 0.05).toFixed(2)} MXN</span>
+                                {canDiscount && (
+                                    <div className={styles.receiptRow}>
+                                        <span>Descuento regional</span>
+                                        <span className={styles.discountValue}>-${fmt(discount)} MXN</span>
+                                    </div>
+                                )}
+                                <div className={`${styles.receiptRow} ${styles.receiptTotal}`}>
+                                    <span>Total enviado</span>
+                                    <span>${fmt(totalToPay)} MXN</span>
                                 </div>
                             </div>
 
@@ -378,8 +429,6 @@ export default function QRScanner({ isOpen, onClose, onPaymentSuccess, defaultPu
                     )}
                 </motion.div>
             </motion.div>
-
-
         </AnimatePresence>
     );
 }

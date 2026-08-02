@@ -1,14 +1,14 @@
-.adSlot {
+.creatorAd {
     background: var(--color-surface);
     border: 1px dashed var(--color-border);
     border-radius: 10px;
     padding: 12px 16px;
-    margin: 10px 0;
+    margin: 12px 0;
     position: relative;
     transition: border-color 0.2s;
 }
 
-.adSlot:hover {
+.creatorAd:hover {
     border-color: var(--color-text-dim);
 }
 
@@ -22,13 +22,7 @@
 }
 
 .adContent {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-}
-
-.adText {
-    flex: 1;
+    margin-bottom: 4px;
 }
 
 .adTitle {
@@ -43,6 +37,39 @@
     color: var(--color-text-muted);
     margin: 4px 0 0;
     line-height: 1.4;
+}
+
+.adMedia {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-top: 8px;
+    display: block;
+}
+
+.adCta {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.adCta:hover {
+    opacity: 0.85;
+}
+
+.adPromo {
+    font-size: 12px;
+    color: var(--color-primary);
+    margin: 6px 0 0;
+    font-weight: 500;
 }
 
 .adFooter {

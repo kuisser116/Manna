@@ -105,9 +105,41 @@ export async function isWalletActive(publicKey) {
 }
 
 // Enviar pago en Stellar
+// Fondear una cuenta con XLM nativo desde una wallet maestra (mainnet).
+// Las cuentas nuevas en Stellar necesitan XLM como reserva mínima para activarse.
+export async function fundAccountWithXlm(fromSecretKey, toPublicKey, amount = 2) {
+  if (!fromSecretKey || fromSecretKey === 'enc-placeholder') {
+    throw new Error('Clave secreta no válida para esta wallet de sistema');
+  }
+  const sourceKeypair = StellarSdk.Keypair.fromSecret(fromSecretKey);
+  const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
+
+  const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
+    fee: StellarSdk.BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(StellarSdk.Operation.payment({
+      destination: toPublicKey,
+      asset: StellarSdk.Asset.native(),
+      amount: String(amount),
+    }))
+    .setTimeout(30)
+    .build();
+
+  transaction.sign(sourceKeypair);
+  const result = await server.submitTransaction(transaction);
+  return result.hash;
+}
+
 export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCode = STABLECOIN_CODE, memo = 'Shekael' }) {
     if (!fromSecretKey || fromSecretKey === 'enc-placeholder') {
         throw new Error('Clave secreta no válida para esta wallet de sistema');
+    }
+
+    // El memo de Stellar tiene máximo 28 bytes (UTF-8); truncar si excede
+    let memoText = memo;
+    if (memoText && Buffer.byteLength(memoText, 'utf8') > 28) {
+        memoText = Buffer.from(memoText, 'utf8').subarray(0, 28).toString('utf8');
     }
 
     const sourceKeypair = StellarSdk.Keypair.fromSecret(fromSecretKey);
@@ -140,7 +172,7 @@ export async function sendPayment({ fromSecretKey, toPublicKey, amount, assetCod
                 amount: String(parseFloat(amount).toFixed(7)),
             })
         )
-        .addMemo(StellarSdk.Memo.text(memo.slice(0, 28)))
+        .addMemo(StellarSdk.Memo.text(memoText.slice(0, 28)))
         .setTimeout(30)
         .build();
 

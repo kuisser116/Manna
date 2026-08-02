@@ -20,7 +20,7 @@ export async function getAdEarnings() {
  * @param {string|null} params.creator_id
  * @param {number} params.focus_duration - segundos que el usuario tuvo el anuncio en foco
  */
-export async function recordAdImpression({ ad_type = 'feed', source = 'feed', creator_id = null, focus_duration = 0 }) {
+export async function recordAdImpression({ ad_type = 'feed', source = 'feed', creator_id = null, watch_seconds = 0, ad_id = null }) {
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_URL}/ads/impression`, {
         method: 'POST',
@@ -28,7 +28,15 @@ export async function recordAdImpression({ ad_type = 'feed', source = 'feed', cr
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ ad_type, source, creator_id, focus_duration })
+        body: JSON.stringify({ ad_type, source, creator_id, watch_seconds, ad_id })
+    });
+    return res.json();
+}
+
+export async function getNextAd(seen = '') {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/ads/next?seen=${encodeURIComponent(seen)}`, {
+        headers: { Authorization: `Bearer ${token}` }
     });
     return res.json();
 }

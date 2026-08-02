@@ -136,14 +136,16 @@ router.post('/pay', authMiddleware, async (req, res) => {
         if (senderError) console.error('Error fetching sender:', senderError);
         if (!sender) return res.status(404).json({ message: 'Usuario emisor no encontrado en la base de datos' });
 
-        // 2. Verificar si el destinatario es un comercio verificado
+        // 2. Verificar si el destinatario es un comercio VERIFICADO (negocio activo)
+        //    El descuento del 5% es SOLO para comercios; pagos usuario→usuario NUNCA.
         const { data: merchant } = await supabase
-            .from('users')
-            .select('is_verified_merchant, business_name')
+            .from('businesses')
+            .select('id, name')
             .eq('stellar_public_key', toPublicKey)
+            .eq('is_active', true)
             .single();
 
-        const isDiscountApplicable = merchant?.is_verified_merchant;
+        const isDiscountApplicable = !!merchant;
         
         // 2.1 Calcular subsidio y validar fondo regional
         let discountFactor = 1.00;
@@ -190,7 +192,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
             toPublicKey,
             amount: userAmount,
             assetCode,
-            memo: isDiscountApplicable ? `Shekael Pay: ${merchant.business_name}` : 'Shekael Transfer'
+            memo: isDiscountApplicable ? `Shekael:${merchant.name}` : 'Shekael Transfer'
         });
 
         // 4. Registrar transacción en DB
@@ -221,7 +223,7 @@ router.post('/pay', authMiddleware, async (req, res) => {
             amountSent: userAmount,
             subsidy: fundSubsidizedAmount,
             subsidyMessage,
-            businessName: merchant?.business_name || 'Usuario'
+            businessName: merchant?.name || 'Usuario'
         });
     } catch (err) {
         if (err.code === 'WALLET_NOT_ACTIVE') {

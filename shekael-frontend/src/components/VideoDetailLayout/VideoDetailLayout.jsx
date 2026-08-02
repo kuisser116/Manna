@@ -5,6 +5,7 @@ import { Heart, Send, ArrowLeft, ChevronDown, ChevronUp, Eye, Trash2, Tag } from
 import { useNavigate } from 'react-router-dom';
 import SmartVideoPlayer from '../SmartVideoPlayer/SmartVideoPlayer';
 import SupportButton from '../SupportButton/SupportButton';
+import CreatorAd from '../CreatorAd/CreatorAd';
 import VideoThumbnailCard from '../VideoThumbnailCard/VideoThumbnailCard';
 import Avatar from '../Avatar/Avatar';
 import useStore from '../../store';
@@ -46,6 +47,7 @@ export function VideoDetailLayout({
     hideActions = false,
 }) {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
     // Empieza en `true` para evitar el flash de apertura al cargar
     const [needsCollapse, setNeedsCollapse] = useState(true);
     // `ready` controla si ya medimos el contenido (para evitar la animación de cierre inicial)
@@ -148,6 +150,8 @@ export function VideoDetailLayout({
                             onViewValid={registerView}
                             isDetail={true}
                             postId={id}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => setIsPlaying(false)}
                         />
                     </div>
                 </div>
@@ -248,6 +252,11 @@ export function VideoDetailLayout({
 
                         {/* Divider */}
                         <div className={styles.divider} />
+
+                        {/* Anuncio en contenido del creador (70% creador / 15% usuario / 15% app) */}
+                        {!isOwner && (
+                            <CreatorAd postId={post.id} creatorId={post.author_id} adType="preroll" isPlaying={isPlaying} />
+                        )}
                     </div>
 
                     {/* ── Sección de comentarios ── */}

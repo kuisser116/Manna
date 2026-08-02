@@ -322,3 +322,96 @@
     gap: 16px;
   }
 }
+
+/* ── Pantalla de éxito / wallet del comercio ── */
+.successCard {
+    text-align: center;
+    padding: 32px 24px;
+}
+
+.successIcon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.successTitle {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.successSubtitle {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 22px;
+}
+
+.walletCard {
+    background: rgba(128, 128, 128, 0.07);
+    border: 1px solid rgba(128, 128, 128, 0.15);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 22px;
+    text-align: left;
+}
+
+.walletHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    color: var(--color-text);
+}
+
+.walletAddress {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    padding: 10px 12px;
+    word-break: break-all;
+    margin-bottom: 12px;
+}
+
+.walletNote {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+.walletNote p {
+    flex: 1;
+}
+
+.badge {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-top: 1px;
+}
+
+.badgeOk {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.badgeWait {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}

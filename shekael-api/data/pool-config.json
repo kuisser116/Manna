@@ -1,12 +1,13 @@
 {
-  "month": "2026-07",
+  "month": "2026-08",
   "totalPoolMxn": 0,
-  "userPoolMxn": 0,
-  "creatorPoolMxn": 0,
   "totalImpressions": 0,
   "perViewMxn": 0.05,
   "isSettled": false,
-  "userSharePct": 50,
-  "creatorSharePct": 40,
-  "updatedAt": "2026-07-23T00:00:00.000Z"
+  "splits": {
+    "creatorContent": { "creator": 0.7, "user": 0.15, "app": 0.15 },
+    "feed": { "app": 0.8, "user": 0.2 }
+  },
+  "updatedAt": null,
+  "settledAt": null
 }

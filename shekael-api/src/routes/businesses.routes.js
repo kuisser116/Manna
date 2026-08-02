@@ -3,9 +3,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 import authMiddleware from '../middleware/authMiddleware.js';
 import getDB from '../database/db.js';
 import { uploadToR2, generateFilename } from '../services/ipfs.service.js';
+import { createWallet, fundWithFriendbot, ensureTrustline, fundAccountWithXlm } from '../services/stellar.service.js';
+import { encryptAll } from '../services/crypto.service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -46,6 +49,33 @@ async function uploadImage(file, prefix, userId) {
   fs.writeFileSync(path.join(uploadsDir, localFilename), file.buffer);
   const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`;
   return `${baseUrl}/uploads/${localFilename}`;
+}
+
+// Activar la billetera del comercio: se le crea una cuenta Stellar SEPARADA
+// de la del dueño, se fondea con XLM (activación) y se le agrega la trustline USDC.
+// En testnet se usa Friendbot (gratis); en mainnet se fondea desde la wallet maestra.
+async function activateBusinessWallet() {
+  const keypair = createWallet();
+  const secretKey = keypair.secret();
+  const publicKey = keypair.publicKey();
+
+  const isTestnet = (process.env.STELLAR_HORIZON_URL || '').includes('testnet');
+
+  try {
+    if (isTestnet) {
+      await fundWithFriendbot(publicKey);
+    } else {
+      const masterSecret = process.env.MANNA_DEV_WALLET_SECRET || process.env.BONUS_WALLET_SECRET;
+      if (!masterSecret) throw new Error('No hay wallet maestra para fondear en mainnet');
+      await fundAccountWithXlm(masterSecret, publicKey, 2); // 2 XLM = reserva base + trustline
+    }
+    // La trustline USDC solo se puede crear si la cuenta ya existe y está fondeada
+    await ensureTrustline(secretKey);
+    return { publicKey, secretKey, activated: true };
+  } catch (err) {
+    console.warn('[Business] No se pudo activar la billetera:', err.message);
+    return { publicKey, secretKey, activated: false };
+  }
 }
 
 // ─── Obtener comercios cercanos ─────────────────────────────
@@ -176,35 +206,60 @@ router.post('/', authMiddleware, upload.fields([
     // Hash simple de la contraseña (para operaciones sensibles del comercio)
     let passwordHash = null;
     if (password) {
-      const { createHash } = await import('crypto');
       passwordHash = createHash('sha256').update(password).digest('hex');
     }
 
-    const { data, error } = await supabase
+    // Crear billetera Stellar SEPARADA del dueño (el comercio lleva sus propias cuentas)
+    const { publicKey, secretKey, activated } = await activateBusinessWallet();
+    const encSecret = encryptAll(userId, secretKey, publicKey);
+
+    const insertPayload = {
+      owner_id: userId,
+      name,
+      category,
+      description,
+      address,
+      location_lat: lat ? parseFloat(lat) : null,
+      location_lng: lng ? parseFloat(lng) : null,
+      phone,
+      website,
+      stellar_public_key: publicKey,
+      avatar_url: avatarUrl,
+      cover_url: coverUrl,
+      password_hash: passwordHash,
+      stellar_secret_key_encrypted: encSecret,
+    };
+
+    let { data, error } = await supabase
       .from('businesses')
-      .insert({
-        owner_id: userId,
-        name,
-        category,
-        description,
-        address,
-        location_lat: lat ? parseFloat(lat) : null,
-        location_lng: lng ? parseFloat(lng) : null,
-        phone,
-        website,
-        stellar_public_key: stellarPublicKey,
-        avatar_url: avatarUrl,
-        cover_url: coverUrl,
-        password_hash: passwordHash,
-      })
+      .insert(insertPayload)
       .select()
       .single();
+
+    // Si la columna stellar_secret_key_encrypted aún no existe en la DB,
+    // reintentar sin ella (la billetera sigue creada y activa).
+    if (error && /stellar_secret_key_encrypted/i.test(error.message)) {
+      console.warn('[Business] Columna stellar_secret_key_encrypted no existe, insertando sin ella.');
+      delete insertPayload.stellar_secret_key_encrypted;
+      ({ data, error } = await supabase
+        .from('businesses')
+        .insert(insertPayload)
+        .select()
+        .single());
+    }
 
     if (error) throw error;
 
     res.status(201).json({
-      message: 'Comercio registrado exitosamente',
+      message: activated
+        ? 'Comercio registrado exitosamente. Su cuenta Stellar fue activada.'
+        : 'Comercio registrado exitosamente. La cuenta Stellar está pendiente de activación.',
       business: { ...data, avatarUrl: data.avatar_url, coverUrl: data.cover_url },
+      wallet: {
+        publicKey,
+        activated,
+        note: 'Cuenta Stellar separada del dueño. Sin bono de bienvenida.',
+      },
     });
   } catch (err) {
     console.error('Error creating business:', err);
@@ -271,6 +326,81 @@ router.put('/:id', authMiddleware, upload.fields([
 });
 
 // ─── Eliminar comercio ──────────────────────────────────
+// ─── Verificar contraseña del comercio (dueño) ──────────────
+router.post('/:id/verify-password', authMiddleware, async (req, res) => {
+  try {
+    const supabase = getDB();
+    const userId = req.user.id;
+    const bizId = req.params.id;
+    const { password } = req.body;
+
+    if (!password) return res.status(400).json({ message: 'Contraseña requerida' });
+
+    const { data: biz } = await supabase
+      .from('businesses')
+      .select('owner_id, password_hash')
+      .eq('id', bizId)
+      .single();
+
+    if (!biz) return res.status(404).json({ message: 'Comercio no encontrado' });
+    if (biz.owner_id !== userId) return res.status(403).json({ message: 'No eres el dueño' });
+
+    if (!biz.password_hash) return res.status(400).json({ message: 'Este comercio no tiene contraseña configurada' });
+
+    const hash = createHash('sha256').update(password).digest('hex');
+    if (hash !== biz.password_hash) {
+      return res.status(401).json({ message: 'Contraseña incorrecta' });
+    }
+
+    res.json({ valid: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al verificar contraseña' });
+  }
+});
+
+// ─── Cambiar contraseña del comercio (dueño) ────────────────
+router.put('/:id/password', authMiddleware, async (req, res) => {
+  try {
+    const supabase = getDB();
+    const userId = req.user.id;
+    const bizId = req.params.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'La nueva contraseña debe tener mínimo 6 caracteres' });
+    }
+
+    const { data: biz } = await supabase
+      .from('businesses')
+      .select('owner_id, password_hash')
+      .eq('id', bizId)
+      .single();
+
+    if (!biz) return res.status(404).json({ message: 'Comercio no encontrado' });
+    if (biz.owner_id !== userId) return res.status(403).json({ message: 'No eres el dueño' });
+
+    // Si ya existe contraseña, exigir la actual para cambiarla
+    if (biz.password_hash) {
+      if (!currentPassword) return res.status(400).json({ message: 'Contraseña actual requerida' });
+      const currentHash = createHash('sha256').update(currentPassword).digest('hex');
+      if (currentHash !== biz.password_hash) {
+        return res.status(401).json({ message: 'Contraseña actual incorrecta' });
+      }
+    }
+
+    const newHash = createHash('sha256').update(newPassword).digest('hex');
+    const { error } = await supabase
+      .from('businesses')
+      .update({ password_hash: newHash })
+      .eq('id', bizId);
+    if (error) throw error;
+
+    res.json({ message: 'Contraseña actualizada' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al cambiar la contraseña' });
+  }
+});
+
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const supabase = getDB();

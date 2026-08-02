@@ -33,6 +33,9 @@ export const updateBusiness = (id, formData) =>
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 export const deleteBusiness = (id) => bizAPI.delete(`/businesses/${id}`);
+export const verifyBusinessPassword = (id, password) => bizAPI.post(`/businesses/${id}/verify-password`, { password });
+export const updateBusinessPassword = (id, { currentPassword, newPassword }) =>
+  bizAPI.put(`/businesses/${id}/password`, { currentPassword, newPassword });
 
 export const getProducts = (bizId) => bizAPI.get(`/businesses/${bizId}/products`);
 export const createProduct = (bizId, formData) =>

@@ -35,6 +35,8 @@ export default function BusinessRegistration() {
     confirmPassword: '',
   });
   const [errors, setErrors] = useState({});
+  const [created, setCreated] = useState(null); // { business, wallet } tras crear
+  const [submitting, setSubmitting] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
   const fileInputRef = useRef(null);
@@ -77,6 +79,8 @@ export default function BusinessRegistration() {
 
   const handleSubmit = async () => {
     try {
+      setSubmitting(true);
+      setErrors({});
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('description', form.description);
@@ -89,14 +93,57 @@ export default function BusinessRegistration() {
       if (form.banner) formData.append('cover', form.banner);
 
       const { data } = await createBusiness(formData);
-      navigate(`/business/${data.business.id}`);
+      setCreated({ business: data.business, wallet: data.wallet });
     } catch (err) {
       console.error('Error creating business:', err);
       setErrors({ submit: 'Error al registrar el comercio. Intenta de nuevo.' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const goToBusiness = () => {
+    if (created?.business?.id) navigate(`/business/${created.business.id}`);
+  };
+
   const handleCancel = () => navigate(-1);
+
+  if (created) {
+    const { business, wallet } = created;
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.successCard}>
+            <div className={styles.successIcon}><Check size={36} /></div>
+            <h2 className={styles.successTitle}>¡Comercio creado!</h2>
+            <p className={styles.successSubtitle}>
+              {wallet?.activated
+                ? 'Tu comercio ya tiene su propia cuenta Stellar activada y lista para recibir pagos.'
+                : 'Tu comercio se creó. La cuenta Stellar quedó pendiente de activación.'}
+            </p>
+
+            <div className={styles.walletCard}>
+              <div className={styles.walletHeader}>
+                <Store size={18} />
+                <span>Cuenta Stellar del comercio</span>
+              </div>
+              <p className={styles.walletAddress}>{wallet?.publicKey || '—'}</p>
+              <div className={styles.walletNote}>
+                <span className={`${styles.badge} ${wallet?.activated ? styles.badgeOk : styles.badgeWait}`}>
+                  {wallet?.activated ? 'Activada' : 'Por activar'}
+                </span>
+                <p>Esta cuenta es <strong>independiente</strong> de la de tu usuario personal: los pagos del comercio van a esta dirección y no se mezclan con tu cuenta. No incluye bono de bienvenida.</p>
+              </div>
+            </div>
+
+            <button className={`${styles.navBtn} ${styles.submitBtn}`} onClick={goToBusiness}>
+              Ir a mi comercio <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -220,7 +267,7 @@ export default function BusinessRegistration() {
             <div className={styles.stepContent}>
               <div className={styles.securityInfo}>
                 <Lock size={20} />
-                <p>Esta contraseña se usará para proteger tu comercio. La necesitarás junto con tu PIN para eliminar el comercio.</p>
+                <p>Esta contraseña se usará para proteger tu comercio. La necesitarás para eliminarlo o cambiar su configuración sensible.</p>
               </div>
               <div className={styles.field}>
                 <label>Contraseña del comercio</label>
