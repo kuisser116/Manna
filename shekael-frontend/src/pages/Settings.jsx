@@ -31,17 +31,16 @@ export default function Settings() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState(null);
 
-    // ── Perfil: nombre de usuario (único), nombre visible, bio ──
-    const [displayName, setDisplayName] = useState(user?.displayName || user?.display_name || '');
-    const [username, setUsernameInput] = useState(user?.username || '');
+    // ── Perfil: nombre de usuario (único en Shekael = visible) ──
+    const [username, setUsernameInput] = useState(user?.username || user?.displayName || user?.display_name || '');
     const [bio, setBio] = useState(user?.bio || '');
     const [usernameStatus, setUsernameStatus] = useState(null); // null | 'checking' | 'available' | 'taken'
     const [savingProfile, setSavingProfile] = useState(false);
     const [profileMsg, setProfileMsg] = useState(null);
 
     useEffect(() => {
-        setDisplayName(user?.displayName || user?.display_name || '');
-        setUsernameInput(user?.username || '');
+        const current = user?.username || user?.displayName || user?.display_name || '';
+        setUsernameInput(current);
         setBio(user?.bio || '');
     }, [user?.id]);
 
@@ -107,10 +106,11 @@ export default function Settings() {
 
     // ── Verificar disponibilidad del username (único en Shekael) ──
     async function handleUsernameCheck(value) {
-        const clean = (value || '').trim().replace(/^@/, '').toLowerCase();
+        // Mismo normalize que el backend: minúsculas y espacios → _
+        const clean = (value || '').trim().replace(/^@/, '').toLowerCase().replace(/\s+/g, '_');
         setUsernameInput(clean);
         if (!clean) { setUsernameStatus(null); return; }
-        if (clean === (user?.username || '').toLowerCase()) { setUsernameStatus('available'); return; }
+        if (clean === (user?.username || user?.displayName || user?.display_name || '').toLowerCase().replace(/\s+/g, '_')) { setUsernameStatus('available'); return; }
         setUsernameStatus('checking');
         try {
             const { data } = await checkUsername(clean);
@@ -120,13 +120,19 @@ export default function Settings() {
         }
     }
 
-    // ── Guardar perfil (nombre, username único, bio) ──
+    // ── Guardar perfil (username único = visible, bio) ──
     async function handleSaveProfile() {
         setSavingProfile(true);
         setProfileMsg(null);
         try {
-            const cleanUsername = (username || '').trim().replace(/^@/, '').toLowerCase();
-            if (cleanUsername && cleanUsername !== (user?.username || '').toLowerCase()) {
+            const cleanUsername = (username || '').trim().replace(/^@/, '').toLowerCase().replace(/\s+/g, '_');
+            if (!cleanUsername) {
+                setProfileMsg({ type: 'error', text: 'El nombre de usuario no puede estar vacío.' });
+                setSavingProfile(false);
+                return;
+            }
+            const currentName = (user?.username || user?.displayName || user?.display_name || '').toLowerCase().replace(/\s+/g, '_');
+            if (cleanUsername !== currentName) {
                 const { data } = await checkUsername(cleanUsername);
                 if (!data?.available) {
                     setProfileMsg({ type: 'error', text: 'Ese nombre de usuario ya está en uso. Prueba otro.' });
@@ -136,11 +142,12 @@ export default function Settings() {
                 }
                 await setUsername(cleanUsername);
             }
-            await updateProfile({ displayName: displayName.trim(), bio: bio.trim() });
+            // El username único ES el nombre visible
+            await updateProfile({ displayName: cleanUsername, bio: bio.trim() });
             setUser({
                 ...user,
-                displayName: displayName.trim(),
-                username: cleanUsername || user?.username,
+                displayName: cleanUsername,
+                username: cleanUsername,
                 bio: bio.trim(),
             });
             setProfileMsg({ type: 'success', text: 'Perfil actualizado correctamente.' });
@@ -165,7 +172,7 @@ export default function Settings() {
             </div>
 
             <div className={styles.content}>
-                {/* ─── Perfil: nombre de usuario único, nombre visible, bio ─── */}
+                {/* ─── Perfil: nombre de usuario único (visible) + bio ─── */}
                 <section className={styles.section}>
                     <div className={styles.sectionHeader}>
                         <UserRound size={18} />
@@ -173,7 +180,7 @@ export default function Settings() {
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label>Nombre de usuario (único en Shekael)</label>
+                        <label>Nombre de usuario (único en Shekael — es el que ven los demás)</label>
                         <div className={styles.usernameRow}>
                             <span className={styles.usernameAt}>@</span>
                             <input
@@ -190,18 +197,6 @@ export default function Settings() {
                         </div>
                         {usernameStatus === 'available' && <p className={styles.hintOk}>Disponible — puedes usarlo.</p>}
                         {usernameStatus === 'taken' && <p className={styles.hintErr}>Ese nombre ya está en uso.</p>}
-                    </div>
-
-                    <div className={styles.inputGroup}>
-                        <label>Nombre visible</label>
-                        <input
-                            type="text"
-                            placeholder="Tu nombre"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            className={styles.input}
-                            maxLength={50}
-                        />
                     </div>
 
                     <div className={styles.inputGroup}>
