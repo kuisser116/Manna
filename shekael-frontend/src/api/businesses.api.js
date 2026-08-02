@@ -28,10 +28,14 @@ export const createBusiness = (formData) =>
   bizAPI.post('/businesses', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-export const updateBusiness = (id, formData) =>
-  bizAPI.put(`/businesses/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+export const updateBusiness = (id, data) => {
+  const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+  return bizAPI.put(`/businesses/${id}`, data, {
+    headers: isFormData
+      ? { 'Content-Type': 'multipart/form-data' }
+      : { 'Content-Type': 'application/json' },
   });
+};
 export const deleteBusiness = (id) => bizAPI.delete(`/businesses/${id}`);
 export const verifyBusinessPassword = (id, password) => bizAPI.post(`/businesses/${id}/verify-password`, { password });
 export const updateBusinessPassword = (id, { currentPassword, newPassword }) =>
@@ -48,5 +52,6 @@ export const createReview = (bizId, data) => bizAPI.post(`/businesses/${bizId}/r
 export const toggleFollowBusiness = (bizId) => bizAPI.post(`/businesses/${bizId}/follow`);
 
 export const updateBusinessPrivacy = (bizId, data) => bizAPI.put(`/businesses/${bizId}/privacy`, data);
+export const checkBusinessName = (name) => bizAPI.get('/businesses/check-name', { params: { name } });
 
 export default bizAPI;

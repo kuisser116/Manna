@@ -1,17 +1,27 @@
 import { useState } from 'react';
-import { X, Lock, Trash2, Eye, EyeOff, Save, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, Lock, Trash2, Eye, EyeOff, Save, AlertTriangle, Loader2, Check } from 'lucide-react';
 import styles from './BusinessSettings.module.css';
-import { verifyBusinessPassword, updateBusinessPassword } from '../../api/businesses.api';
+import { verifyBusinessPassword, updateBusinessPassword, updateBusiness, checkBusinessName, updateBusinessPrivacy } from '../../api/businesses.api';
 
 export default function BusinessSettings({
   business,
   onClose,
   onDelete,
-  onToggleProducts,
-  onToggleReviews,
-  showProducts,
-  showReviews,
+  onSaved,
 }) {
+  // ── Editar perfil del comercio ──
+  const [name, setName] = useState(business?.name || '');
+  const [description, setDescription] = useState(business?.description || '');
+  const [email, setEmail] = useState(business?.email || '');
+  const [nameStatus, setNameStatus] = useState(null); // null | 'checking' | 'available' | 'taken'
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState(null);
+
+  // ── Privacidad ──
+  const [showProducts, setShowProducts] = useState(business?.show_products !== false);
+  const [showReviews, setShowReviews] = useState(business?.show_reviews !== false);
+
+  // ── Contraseña ──
   const [deleteStep, setDeleteStep] = useState(null); // null | 'password' | 'confirm'
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -65,27 +75,127 @@ export default function BusinessSettings({
     }
   };
 
+  // ── Verificar disponibilidad del nombre del comercio (único en Shekael) ──
+  const handleNameChange = async (e) => {
+    const val = e.target.value;
+    setName(val);
+    if (!val || val.toLowerCase() === (business?.name || '').toLowerCase()) {
+      setNameStatus(null);
+      return;
+    }
+    if (val.trim().length < 2) { setNameStatus('taken'); return; }
+    setNameStatus('checking');
+    try {
+      const { data } = await checkBusinessName(val.trim());
+      setNameStatus(data?.available ? 'available' : 'taken');
+    } catch {
+      setNameStatus(null);
+    }
+  };
+
+  // ── Guardar perfil del comercio ──
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    setProfileMsg(null);
+    try {
+      const formData = new FormData();
+      formData.append('name', name.trim());
+      if (description !== undefined) formData.append('description', description.trim());
+      if (email !== undefined) formData.append('email', email.trim());
+      const { data } = await updateBusiness(business.id, formData);
+      setProfileMsg({ type: 'success', text: 'Comercio actualizado correctamente.' });
+      onSaved?.(data.business);
+    } catch (err) {
+      setProfileMsg({ type: 'error', text: err?.response?.data?.message || 'Error al guardar' });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleToggleProducts = async () => {
+    const next = !showProducts;
+    setShowProducts(next);
+    try {
+      const { data } = await updateBusinessPrivacy(business.id, { showProducts: next });
+      if (data?.business) onSaved?.(data.business);
+    } catch { setShowProducts(!next); }
+  };
+
+  const handleToggleReviews = async () => {
+    const next = !showReviews;
+    setShowReviews(next);
+    try {
+      const { data } = await updateBusinessPrivacy(business.id, { showReviews: next });
+      if (data?.business) onSaved?.(data.business);
+    } catch { setShowReviews(!next); }
+  };
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2>Administrar comercio</h2>
+          <h2>Configuración del comercio</h2>
           <button className={styles.closeBtn} onClick={onClose}><X size={18} /></button>
         </div>
 
         {!deleteStep ? (
           <div className={styles.body}>
+            {/* Perfil del comercio */}
+            <div className={styles.section}>
+              <h3>Perfil</h3>
+              <div className={styles.field}>
+                <label>Nombre del comercio (único en Shekael)</label>
+                <div className={styles.nameRow}>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={handleNameChange}
+                    maxLength={60}
+                    placeholder="Nombre del comercio"
+                  />
+                  {nameStatus === 'checking' && <Loader2 size={16} className={styles.spinner} />}
+                  {nameStatus === 'available' && <Check size={16} style={{ color: 'var(--color-success)' }} />}
+                  {nameStatus === 'taken' && <span className={styles.error}>Nombre en uso o inválido</span>}
+                </div>
+              </div>
+              <div className={styles.field}>
+                <label>Descripción</label>
+                <textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={3}
+                  maxLength={300}
+                  placeholder="Describe tu comercio..."
+                  className={styles.textarea}
+                />
+              </div>
+              <div className={styles.field}>
+                <label>Correo de contacto</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  maxLength={120}
+                  placeholder="contacto@comercio.com"
+                />
+              </div>
+              <button className={styles.primaryBtn} onClick={handleSaveProfile} disabled={savingProfile || nameStatus === 'taken'}>
+                {savingProfile ? <Loader2 size={14} className={styles.spinner} /> : <Save size={14} />} Guardar cambios
+              </button>
+              {profileMsg && <span className={profileMsg.type === 'success' ? styles.success : styles.error}>{profileMsg.text}</span>}
+            </div>
+
             {/* Privacy toggles */}
             <div className={styles.section}>
               <h3>Privacidad</h3>
               <label className={styles.toggle}>
                 <span>Mostrar sección de productos</span>
-                <input type="checkbox" checked={showProducts} onChange={onToggleProducts} />
+                <input type="checkbox" checked={showProducts} onChange={handleToggleProducts} />
                 <span className={styles.toggleSlider} />
               </label>
               <label className={styles.toggle}>
                 <span>Mostrar sección de reseñas</span>
-                <input type="checkbox" checked={showReviews} onChange={onToggleReviews} />
+                <input type="checkbox" checked={showReviews} onChange={handleToggleReviews} />
                 <span className={styles.toggleSlider} />
               </label>
             </div>
@@ -139,28 +249,6 @@ export default function BusinessSettings({
           </div>
         ) : (
           <div className={styles.body}>
-            {deleteStep === 'pin' && (
-              <div className={styles.verifyStep}>
-                <Lock size={32} />
-                <h3>Verificación de seguridad</h3>
-                <p className={styles.verifyText}>Ingresa tu PIN para continuar</p>
-                <input
-                  type="password"
-                  maxLength={4}
-                  placeholder="PIN"
-                  value={pin}
-                  onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-                  className={pinError ? styles.inputError : ''}
-                  autoFocus
-                />
-                {pinError && <span className={styles.error}>{pinError}</span>}
-                <div className={styles.verifyActions}>
-                  <button className={styles.secondaryBtn} onClick={handleCancelDelete}>Cancelar</button>
-                  <button className={styles.primaryBtn} onClick={handlePinSubmit}>Verificar</button>
-                </div>
-              </div>
-            )}
-
             {deleteStep === 'password' && (
               <div className={styles.verifyStep}>
                 <Lock size={32} />

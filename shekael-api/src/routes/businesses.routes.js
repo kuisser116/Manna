@@ -79,6 +79,22 @@ async function activateBusinessWallet() {
 }
 
 // ─── Obtener comercios cercanos ─────────────────────────────
+router.get('/check-name', authMiddleware, async (req, res) => {
+  try {
+    const supabase = getDB();
+    const name = String(req.query.name || '').trim();
+    if (!name) return res.json({ available: false });
+    const { data } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('name', name)
+      .maybeSingle();
+    res.json({ available: !data });
+  } catch {
+    res.status(500).json({ message: 'Error al verificar nombre' });
+  }
+});
+
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const supabase = getDB();
@@ -163,6 +179,9 @@ router.get('/:id', authMiddleware, async (req, res) => {
         category: biz.category,
         description: biz.description,
         address: biz.address,
+        phone: biz.phone,
+        email: biz.email,
+        website: biz.website,
         location_lat: biz.location_lat,
         location_lng: biz.location_lng,
         avatar_url: biz.avatar_url,
@@ -307,10 +326,29 @@ router.put('/:id', authMiddleware, upload.fields([
     }
 
     const updates = {};
-    const fields = ['name', 'category', 'description', 'address', 'phone', 'website', 'stellar_public_key'];
+    const fields = ['name', 'category', 'description', 'address', 'phone', 'website', 'email', 'stellar_public_key'];
     fields.forEach(f => {
       if (req.body[f] !== undefined) updates[f] = req.body[f];
     });
+
+    // Nombre del comercio único en Shekael (como el username de usuarios)
+    if (req.body.name !== undefined) {
+      const cleanName = String(req.body.name).trim();
+      if (cleanName.length < 2 || cleanName.length > 60) {
+        return res.status(400).json({ message: 'El nombre debe tener entre 2 y 60 caracteres' });
+      }
+      const { data: dup } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('name', cleanName)
+        .neq('id', bizId)
+        .maybeSingle();
+      if (dup) {
+        return res.status(400).json({ message: 'Ya existe un comercio con ese nombre. Prueba otro.' });
+      }
+      updates.name = cleanName;
+    }
+
     if (req.body.lat !== undefined) updates.location_lat = parseFloat(req.body.lat);
     if (req.body.lng !== undefined) updates.location_lng = parseFloat(req.body.lng);
 
@@ -631,10 +669,15 @@ router.put('/:id/privacy', authMiddleware, async (req, res) => {
     if (showProducts !== undefined) updates.show_products = showProducts;
     if (showReviews !== undefined) updates.show_reviews = showReviews;
 
-    const { error } = await supabase.from('businesses').update(updates).eq('id', bizId);
+    const { data: updated, error } = await supabase
+      .from('businesses')
+      .update(updates)
+      .eq('id', bizId)
+      .select()
+      .single();
     if (error) throw error;
 
-    res.json({ message: 'Privacidad actualizada' });
+    res.json({ message: 'Privacidad actualizada', business: updated });
   } catch (err) {
     res.status(500).json({ message: 'Error al actualizar privacidad' });
   }

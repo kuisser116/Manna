@@ -8,12 +8,9 @@ import {
   Printer, Download, X, Loader2
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import ProfileEditModal from '../ProfileEditModal/ProfileEditModal';
 import useStore from '../../store';
-import { getUserProfile, updateAvatar, updateProfile, updateCover } from '../../api/users.api';
-import { getBusiness, toggleFollowBusiness, updateBusinessPrivacy } from '../../api/businesses.api';
+import { getBusiness, toggleFollowBusiness } from '../../api/businesses.api';
 import { getBusinessQR } from '../../api/payments.api';
-import { getUserPosts } from '../../api/posts.api';
 import PostCard from '../PostCard/PostCard';
 import ProductGrid from './ProductGrid';
 import ReviewsSection from './ReviewsSection';
@@ -40,7 +37,7 @@ export default function BusinessProfile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
   const navigate = useNavigate();
-  const { user: currentUser, privacy } = useStore();
+  const { user: currentUser } = useStore();
 
   const [biz, setBiz] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +50,6 @@ export default function BusinessProfile() {
   const coverInputRef = useRef(null);
   const avatarInputRef = useRef(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showProducts, setShowProducts] = useState(true);
@@ -168,10 +164,6 @@ export default function BusinessProfile() {
     }
   };
 
-  const handleProfileUpdate = async ({ displayName, bio }) => {
-    setBiz(prev => prev ? { ...prev, name: displayName || prev.name, description: bio !== undefined ? bio : prev.description } : prev);
-  };
-
   if (loading || !biz) {
     return (
       <div className={profileStyles.layout} style={{ '--pattern-url': `url(${bgPatternUrl})` }}>
@@ -274,14 +266,8 @@ export default function BusinessProfile() {
                       <button className={profileStyles.editBtn} onClick={() => navigate('/studio')} title="Shekael Studio">
                         <BarChart3 size={18} />
                       </button>
-                      <button className={profileStyles.editBtn} onClick={() => setIsProfileModalOpen(true)} title="Editar perfil">
+                      <button className={profileStyles.editBtn} onClick={() => setIsSettingsOpen(true)} title="Configuración">
                         <Settings size={18} />
-                      </button>
-                      <button className={profileStyles.editBtn} onClick={() => setIsPrivacyModalOpen(true)} title="Privacidad">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
                       </button>
                     </>
                   ) : (
@@ -404,42 +390,6 @@ export default function BusinessProfile() {
       </main>
 
       <AnimatePresence>
-        {isProfileModalOpen && (
-          <ProfileEditModal
-            user={{
-              displayName: biz.name,
-              bio: biz.description,
-              avatarUrl: biz.avatarUrl,
-            }}
-            isOpen={isProfileModalOpen}
-            onClose={() => setIsProfileModalOpen(false)}
-            onSave={handleProfileUpdate}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isPrivacyModalOpen && (
-          <PrivacyModal
-            isOpen={isPrivacyModalOpen}
-            onClose={() => setIsPrivacyModalOpen(false)}
-            showProducts={showProducts}
-            showReviews={showReviews}
-            onToggleProducts={async () => {
-              const next = !showProducts;
-              setShowProducts(next);
-              try { await updateBusinessPrivacy(profileId, { showProducts: next }); } catch (e) { setShowProducts(!next); }
-            }}
-            onToggleReviews={async () => {
-              const next = !showReviews;
-              setShowReviews(next);
-              try { await updateBusinessPrivacy(profileId, { showReviews: next }); } catch (e) { setShowReviews(!next); }
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {isSettingsOpen && (
           <BusinessSettings
             business={biz}
@@ -505,98 +455,3 @@ export default function BusinessProfile() {
   );
 }
 
-function PrivacyModal({ isOpen, onClose, showProducts, showReviews, onToggleProducts, onToggleReviews }) {
-  const { t } = useTranslation();
-  const { privacy, setPrivacy } = useStore();
-
-  if (!isOpen) return null;
-
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  const toggle = (key) => {
-    setPrivacy({ [key]: !privacy[key] });
-  };
-
-  return (
-    <div className={profileStyles.modalOverlay} onClick={handleOverlayClick}>
-      <div className={profileStyles.modalContent}>
-        <div className={profileStyles.modalHeader}>
-          <h2>Privacidad</h2>
-          <button className={profileStyles.modalClose} onClick={onClose}>✕</button>
-        </div>
-        <div className={profileStyles.modalBody}>
-          <p className={profileStyles.profileAboutText}>
-            Controla qué información se muestra en tu perfil público.
-          </p>
-          <p className={profileStyles.profileAboutMuted}>
-            Los mensajes directos siempre están cifrados E2EE y nadie puede leerlos, ni Shekael.
-          </p>
-          <div className={profileStyles.privacySection}>
-            <PrivacyToggle
-              label="Mostrar correo electrónico"
-              desc="Si está apagado, otros usuarios verán @usuario en lugar de tu correo"
-              enabled={privacy.showEmail}
-              onToggle={() => toggle('showEmail')}
-            />
-            <PrivacyToggle
-              label="Mostrar llave Stellar"
-              enabled={privacy.showStellarKey !== false}
-              onToggle={() => toggle('showStellarKey')}
-            />
-            <PrivacyToggle
-              label="Mostrar estadísticas"
-              desc="Seguidores, siguiendo y conteo de publicaciones"
-              enabled={privacy.showStats !== false}
-              onToggle={() => toggle('showStats')}
-            />
-            <PrivacyToggle
-              label="Mostrar biografía"
-              desc="Tu bio se muestra en tu perfil público"
-              enabled={privacy.showBio !== false}
-              onToggle={() => toggle('showBio')}
-            />
-            {showProducts !== undefined && (
-              <PrivacyToggle
-              label="Mostrar productos"
-              desc="Controla si la sección de productos aparece en tu perfil"
-              enabled={showProducts}
-              onToggle={onToggleProducts}
-            />
-            )}
-            {showReviews !== undefined && (
-              <PrivacyToggle
-              label="Mostrar reseñas"
-              desc="Controla si la sección de reseñas aparece en tu perfil"
-              enabled={showReviews}
-              onToggle={onToggleReviews}
-            />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PrivacyToggle({ label, desc, enabled, onToggle }) {
-  return (
-    <div className={profileStyles.privacyItem}>
-      <div style={{ flex: 1 }}>
-        <strong>{label}</strong>
-        <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2, lineHeight: 1.4 }}>
-          {desc}
-        </p>
-      </div>
-      <button
-        className={`${profileStyles.toggleSwitch} ${enabled ? profileStyles.toggleOn : ''}`}
-        onClick={onToggle}
-        role="switch"
-        aria-checked={enabled}
-      >
-        <span className={profileStyles.toggleKnob} />
-      </button>
-    </div>
-  );
-}
