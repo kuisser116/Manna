@@ -21,41 +21,22 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 6px;
     padding: 9px 12px;
-    background: #17171c;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    /* --color-bg es más oscuro que --color-surface en TODOS los temas →
+       la barra se distingue del header (surface) y además sigue al tema */
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
     z-index: 40;
 }
 
-.navTab {
+.navTitle {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    border-radius: 999px;
-    border: none;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.62);
+    gap: 7px;
     font-size: 13.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.18s;
-    white-space: nowrap;
-}
-
-.navTab:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.navTabActive {
-    background: rgba(225, 29, 72, 0.22);
-    color: #ffffff;
-}
-
-.navTabActive:hover {
-    background: rgba(225, 29, 72, 0.3);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--color-text);
 }
 
 /* ─── Contenedor del mapa (la columna vive aquí, pegada a la barra) ─── */
@@ -193,42 +174,6 @@
     transform: rotate(45deg);
     background: var(--color-primary);
     margin-top: -1px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-/* ═══ Burbuja de lugar (venue) ═══ */
-.venueBubble {
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: max-content;
-    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.25));
-    transition: filter 0.2s ease;
-}
-
-.venueBubbleHover {
-    filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.35));
-    z-index: 5;
-}
-
-.venueBubbleDot {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: var(--color-surface);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.venueBubbleHover .venueBubbleDot {
-    transform: scale(1.1);
-}
-
 /* ═══ Tooltip (DENTRO del marker, pointer-events:none) ═══
    No captura eventos: el hover depende únicamente del marker → sin
    hover fantasma. Al salir del círculo desaparece, punto. */
@@ -266,8 +211,7 @@
     color: var(--color-text-secondary);
 }
 
-.bizBubbleHover .bizTooltip,
-.venueBubbleHover .bizTooltip {
+.bizBubbleHover .bizTooltip {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
@@ -611,55 +555,6 @@
 .bizPanelSecondary:hover {
     background: var(--color-surface-3);
 }
-
-/* Venue posts dentro del panel */
-.venuePostCard {
-    display: flex;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-bottom: 4px;
-}
-
-.venuePostCard:hover {
-    background: var(--color-surface-2);
-}
-
-.venuePostPreview {
-    font-size: 20px;
-    flex-shrink: 0;
-    width: 34px;
-    height: 34px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-surface-2);
-    border-radius: 8px;
-}
-
-.venuePostInfo {
-    flex: 1;
-    min-width: 0;
-}
-
-.venuePostContent {
-    font-size: 13px;
-    color: var(--color-text);
-    margin: 0 0 2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.venuePostDate {
-    font-size: 11px;
-    color: var(--color-text-dim);
-}
-
-.bizPanelEmpty {
-    text-align: center;
     color: var(--color-text-dim);
     font-size: 13px;
     padding: 20px 0;
@@ -673,8 +568,4 @@
         border-right: none;
     }
 
-    .navTab {
-        padding: 8px 14px;
-        font-size: 13px;
-    }
 }

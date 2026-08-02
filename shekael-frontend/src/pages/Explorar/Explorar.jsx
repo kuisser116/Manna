@@ -7,21 +7,11 @@ import {
     Store, MapPin, X, Star, Navigation, Phone, Globe, ExternalLink,
 } from 'lucide-react';
 import { getBusinesses, getBusiness } from '../../api/businesses.api';
-import { getNearbyVenues, getVenue } from '../../api/venues.api';
 import useGeolocation from '../../hooks/useGeolocation';
 import styles from './Explorar.module.css';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAP_STYLE = 'mapbox://styles/kuisser/cmroeipik008m01qtdmk9ho18';
-
-const CATEGORY_ICONS = {
-    restaurant: '🍽️',
-    cafe: '☕',
-    park: '🌳',
-    museum: '🏛️',
-    store: '🛍️',
-    default: '📍',
-};
 
 const BIZ_CATEGORY_ICONS = {
     'Comida y Bebida': '🍽️',
@@ -41,16 +31,16 @@ const BIZ_CATEGORY_ICONS = {
 const bizIcon = (cat) => BIZ_CATEGORY_ICONS[cat] || '🏪';
 
 /**
- * Explorar — mapa de comercios y lugares.
+ * Explorar — mapa de comercios.
  *
  * Diseño deliberadamente SIMPLE:
- * - Un marker mapboxgl.Marker por comercio/lugar, creado UNA sola vez al cargar
- *   los datos. mapbox se encarga de anclarlo a su coordenada y moverlo con el
- *   mapa: las burbujas NUNCA se re-crean, se re-renderizan ni se animan durante
- *   gestos → no pueden parpadear, duplicarse ni "moverse solas".
- * - Sin supercluster, sin diff de marcadores, sin live render en zoom.
+ * - Un marker mapboxgl.Marker por comercio, creado UNA sola vez al cargar los
+ *   datos. mapbox lo ancla a su coordenada y lo mueve con el mapa: las burbujas
+ *   NUNCA se re-crean, se re-renderizan ni se animan durante gestos → no pueden
+ *   parpadear, duplicarse ni "moverse solas".
+ * - Sin clusters, sin supercluster, sin diff de marcadores, sin live render.
  * - Hover: tooltip CSS dentro del propio elemento del marker (pointer-events:
- *   none) → imposible el "hover fantasma" (no hay tarjeta flotante separada).
+ *   none) → imposible el "hover fantasma".
  * - Click en burbuja → columna izquierda pegada justo debajo de la barra.
  * - Click en el mapa (zona vacía) → cierra la columna.
  */
@@ -65,19 +55,12 @@ export default function Explorar() {
     const bizCacheRef = useRef(new Map());
 
     const [loaded, setLoaded] = useState(false);
-    const [activeTab, setActiveTab] = useState('comercios');
     const [places, setPlaces] = useState([]);
 
     // Detalle de comercio (click) — columna izquierda
     const [selectedBiz, setSelectedBiz] = useState(null); // prop del listado
     const [bizDetail, setBizDetail] = useState(null);
     const [bizLoading, setBizLoading] = useState(false);
-
-    // Venue (tab Lugares) — panel lateral
-    const [venueDetail, setVenueDetail] = useState(null);
-    const [venuePosts, setVenuePosts] = useState([]);
-    const [venueReviews, setVenueReviews] = useState([]);
-    const [showVenue, setShowVenue] = useState(false);
 
     const { location: userLoc, startWatching, isWatching } = useGeolocation({ autostart: false });
 
@@ -140,7 +123,6 @@ export default function Explorar() {
 
         el.addEventListener('click', (e) => {
             e.stopPropagation();
-            setShowVenue(false);
             setSelectedBiz({
                 id: biz.id,
                 name: biz.name,
@@ -163,80 +145,21 @@ export default function Explorar() {
         });
     }, [ensureDetail]);
 
-    // ─── Crear un marker de venue ───
-    const createVenueMarker = useCallback((map, v) => {
-        const el = document.createElement('div');
-        el.className = styles.venueBubble;
-        el.innerHTML = `
-            <div class="${styles.bizTooltip}">
-                <strong>${v.name}</strong>
-                <span>${v.category || 'Lugar'}</span>
-            </div>
-            <div class="${styles.venueBubbleDot}">${CATEGORY_ICONS[v.category] || CATEGORY_ICONS.default}</div>
-        `;
-
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-            .setLngLat([v.lng, v.lat])
-            .addTo(map);
-
-        el.addEventListener('mouseenter', (e) => {
-            if (map.isMoving() || map.isZooming() || map.isEasing()) return;
-            const topEl = document.elementFromPoint(e.clientX, e.clientY);
-            if (topEl !== el && !el.contains(topEl)) return;
-            el.classList.add(styles.bizBubbleHover);
-        });
-        el.addEventListener('mouseleave', () => {
-            el.classList.remove(styles.bizBubbleHover);
-        });
-
-        el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            setSelectedBiz(null);
-            setBizDetail(null);
-            handleVenueClick(v.id);
-        });
-
-        markersRef.current.push({ id: 'venue-' + v.id, marker, lngLat: [v.lng, v.lat] });
-    }, []);
-
-    // ─── Cargar datos del tab activo y crear TODOS los markers ───
-    const loadPlaces = useCallback(async (tab) => {
+    // ─── Cargar comercios y crear TODOS los markers ───
+    const loadPlaces = useCallback(async () => {
         const map = mapRef.current;
         if (!map) return;
         try {
             clearMarkers();
-
-            if (tab === 'comercios') {
-                const { data } = await getBusinesses();
-                const businesses = (data?.businesses || [])
-                    .filter(b => b.location_lat && b.location_lng);
-                businesses.forEach(b => createBusinessMarker(map, b));
-                setPlaces(businesses);
-            } else if (tab === 'lugares') {
-                let venues = [];
-                if (userLoc) {
-                    const { venues: v } = await getNearbyVenues(userLoc.lat, userLoc.lng, 0.5);
-                    venues = v || [];
-                }
-                venues.forEach(v => createVenueMarker(map, v));
-                setPlaces(venues);
-            }
+            const { data } = await getBusinesses();
+            const businesses = (data?.businesses || [])
+                .filter(b => b.location_lat && b.location_lng);
+            businesses.forEach(b => createBusinessMarker(map, b));
+            setPlaces(businesses);
         } catch (err) {
             console.error('Error loading places:', err);
         }
-    }, [userLoc, clearMarkers, createBusinessMarker, createVenueMarker]);
-
-    const handleVenueClick = useCallback(async (id) => {
-        try {
-            const detail = await getVenue(id);
-            setVenueDetail(detail.venue);
-            setVenuePosts(detail.posts || []);
-            setVenueReviews(detail.reviews || []);
-            setShowVenue(true);
-        } catch (err) {
-            console.error('Error loading venue detail:', err);
-        }
-    }, []);
+    }, [clearMarkers, createBusinessMarker]);
 
     // ─── Inicializar mapa (UNA vez) ───
     useEffect(() => {
@@ -270,14 +193,13 @@ export default function Explorar() {
                 map.flyTo({ center: [flyToTarget.lng, flyToTarget.lat], zoom: 15, duration: 2000 });
             }
 
-            loadPlaces(activeTab);
+            loadPlaces();
         });
 
-        // Click en zona vacía del mapa → cerrar columna/panel
+        // Click en zona vacía del mapa → cerrar columna
         map.on('click', () => {
             setSelectedBiz(null);
             setBizDetail(null);
-            setShowVenue(false);
         });
 
         // Mover/zoomear → quitar hover visual de las burbujas (por si el
@@ -299,19 +221,6 @@ export default function Explorar() {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // ─── Cambiar tab ───
-    const handleTabChange = (tab) => {
-        if (tab === activeTab) return;
-        setActiveTab(tab);
-        setSelectedBiz(null);
-        setBizDetail(null);
-        setShowVenue(false);
-        loadPlaces(tab);
-        if (tab === 'lugares' && !isWatching) {
-            startWatching();
-        }
-    };
 
     // ─── Ir a mi ubicación ───
     const goToMyLocation = () => {
@@ -342,10 +251,6 @@ export default function Explorar() {
         new mapboxgl.Marker({ element: el, anchor: 'center' })
             .setLngLat([userLoc.lng, userLoc.lat])
             .addTo(map);
-
-        if (activeTab === 'lugares') {
-            loadPlaces('lugares');
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userLoc]);
 
@@ -365,20 +270,12 @@ export default function Explorar() {
 
     return (
         <div className={styles.page}>
-            {/* Barra superior OSCURA (contrasta con el header claro de la app) */}
+            {/* Barra superior: usa variables del tema (--color-bg es más oscuro
+                que --color-surface → se distingue del header en cualquier tema) */}
             <nav className={styles.nav}>
-                <button
-                    className={`${styles.navTab} ${activeTab === 'comercios' ? styles.navTabActive : ''}`}
-                    onClick={() => handleTabChange('comercios')}
-                >
+                <span className={styles.navTitle}>
                     <Store size={17} /> Comercios
-                </button>
-                <button
-                    className={`${styles.navTab} ${activeTab === 'lugares' ? styles.navTabActive : ''}`}
-                    onClick={() => handleTabChange('lugares')}
-                >
-                    <MapPin size={17} /> Lugares
-                </button>
+                </span>
             </nav>
 
             {/* Contenedor del mapa: la columna vive DENTRO, pegada a la barra */}
@@ -398,7 +295,7 @@ export default function Explorar() {
 
                 {places.length > 0 && (
                     <div className={styles.placeCount}>
-                        {places.length} {activeTab === 'comercios' ? 'comercios' : 'lugares'} en esta zona
+                        {places.length} comercios en esta zona
                     </div>
                 )}
 
@@ -546,87 +443,6 @@ export default function Explorar() {
                         </motion.aside>
                     )}
                 </AnimatePresence>
-
-                {/* ── Panel de lugar (venue) ── */}
-                {showVenue && venueDetail && (
-                    <aside className={styles.bizPanel}>
-                        <div className={styles.bizPanelInner}>
-                            <div className={styles.bizPanelBody}>
-                                <button
-                                    className={styles.bizPanelClose}
-                                    onClick={() => setShowVenue(false)}
-                                    aria-label="Cerrar"
-                                >
-                                    <X size={20} />
-                                </button>
-
-                                <div className={styles.bizPanelHead}>
-                                    <div className={styles.bizPanelAvatar}>
-                                        <span style={{ fontSize: 24 }}>
-                                            {CATEGORY_ICONS[venueDetail.category] || CATEGORY_ICONS.default}
-                                        </span>
-                                    </div>
-                                    <div className={styles.bizPanelTitleRow}>
-                                        <h2 className={styles.bizPanelName}>{venueDetail.name}</h2>
-                                        <span className={styles.bizPanelCat}>{venueDetail.category}</span>
-                                    </div>
-                                </div>
-
-                                {venueDetail.address && (
-                                    <div className={styles.bizPanelInfoRow}>
-                                        <MapPin size={15} />
-                                        <span>{venueDetail.address}</span>
-                                    </div>
-                                )}
-
-                                {venueReviews.length > 0 && (
-                                    <div className={styles.bizPanelSection}>
-                                        <h3>Reseñas ({venueReviews.length})</h3>
-                                        {venueReviews.slice(0, 5).map(r => (
-                                            <div key={r.id} className={styles.bizPanelReview}>
-                                                <div className={styles.bizPanelReviewStars}>
-                                                    {Array.from({ length: 5 }, (_, i) => (
-                                                        <span key={i} className={i < r.rating ? styles.starFilled : styles.starEmpty}>★</span>
-                                                    ))}
-                                                </div>
-                                                {r.comment && <p>{r.comment}</p>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {venuePosts.length > 0 && (
-                                    <div className={styles.bizPanelSection}>
-                                        <h3>Posts ({venuePosts.length})</h3>
-                                        {venuePosts.slice(0, 10).map(p => (
-                                            <div
-                                                key={p.id}
-                                                className={styles.venuePostCard}
-                                                onClick={() => navigate(`/post/${p.id}`)}
-                                            >
-                                                <div className={styles.venuePostPreview}>
-                                                    {p.type === 'image' ? '📷' : p.type === 'video' ? '🎬' : '📝'}
-                                                </div>
-                                                <div className={styles.venuePostInfo}>
-                                                    <p className={styles.venuePostContent}>
-                                                        {p.content?.substring(0, 60)}{p.content?.length > 60 ? '...' : ''}
-                                                    </p>
-                                                    <span className={styles.venuePostDate}>
-                                                        {new Date(p.created_at).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {venuePosts.length === 0 && venueReviews.length === 0 && (
-                                    <p className={styles.bizPanelEmpty}>No hay posts o reseñas aún para este lugar</p>
-                                )}
-                            </div>
-                        </div>
-                    </aside>
-                )}
             </div>
         </div>
     );
