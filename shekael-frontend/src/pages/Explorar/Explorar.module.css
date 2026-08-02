@@ -154,14 +154,14 @@
 .bizBubblePin {
     position: relative;
     width: 44px;
-    height: 50px;
+    height: 44px;
 }
 
 .bizBubblePin svg {
     position: absolute;
     inset: 0;
     width: 44px;
-    height: 50px;
+    height: 44px;
     display: block;
     filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.22));
 }
@@ -176,7 +176,7 @@
 
 .bizBubbleAvatar {
     position: absolute;
-    top: 6px;
+    top: 7px;
     left: 50%;
     transform: translateX(-50%);
     width: 26px;
