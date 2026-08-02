@@ -37,9 +37,19 @@ export function Sidebar({ collapsed = false, hidden = false, isMobile = false, o
                     <PlusSquare size={24} strokeWidth={2} />
                 </button>
 
-                {/* QR Button — visible en todas las pantallas */}
+                {/* Mapa — Explorar comercios con burbujas */}
                 <button
                     className={styles.iconBtn}
+                    title={t('sidebar.explore', 'Explorar')}
+                    data-label={t('sidebar.explore', 'Explorar')}
+                    onClick={() => handleNav('/explorar')}
+                >
+                    <MapPin size={24} strokeWidth={2} />
+                </button>
+
+                {/* QR Button — visible en todas las pantallas (centro destacado) */}
+                <button
+                    className={`${styles.iconBtn} ${styles.qrBtn}`}
                     onClick={() => {
                         if (isMobile && onClose) onClose();
                         setQrScannerOpen(true);
@@ -49,16 +59,6 @@ export function Sidebar({ collapsed = false, hidden = false, isMobile = false, o
                     data-label={t('sidebar.qr', 'Mi QR')}
                 >
                     <QrCode size={24} strokeWidth={2} />
-                </button>
-
-                {/* Mapa — Explorar comercios con burbujas */}
-                <button
-                    className={styles.iconBtn}
-                    title={t('sidebar.explore', 'Explorar')}
-                    data-label={t('sidebar.explore', 'Explorar')}
-                    onClick={() => handleNav('/explorar')}
-                >
-                    <MapPin size={24} strokeWidth={2} />
                 </button>
 
                 {/* Chat */}
