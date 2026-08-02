@@ -153,21 +153,23 @@
    coordenada. */
 .bizBubblePin {
     position: relative;
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
 }
 
 .bizBubblePin svg {
     position: absolute;
     inset: 0;
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     display: block;
     filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.22));
 }
 
 .bizBubblePin svg path {
-    fill: var(--color-surface);
+    /* Tono claro FIJO (gris muy claro, nunca blanco puro) — igual en todos
+       los temas para que las burbujas resalten sobre cualquier mapa. */
+    fill: #f1f2f4;
 }
 
 .bizBubbleHover .bizBubblePin svg {
