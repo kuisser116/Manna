@@ -128,12 +128,9 @@
     flex-direction: column;
     align-items: center;
     width: max-content;
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
-    transition: filter 0.2s ease;
 }
 
 .bizBubbleHover {
-    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
     z-index: 5;
 }
 
@@ -148,16 +145,33 @@
     align-items: center;
 }
 
-/* Pin de ubicación — teardrop con cola CORTA y redondeada (círculo grande
-   arriba, punta a solo ~10px del círculo). El clip-path recorta la forma;
-   la punta queda EXACTAMENTE en el centro inferior del elemento, así el
-   anchor 'bottom' del marker alinea la punta con la coordenada. */
+/* Pin de ubicación — gota con punta REDONDEADA (SVG inline, no clip-path).
+   El SVG permite centrar el avatar contra el CÍRCULO REAL de la forma
+   (centro 22,20 / radio 17 en un viewBox 44x48) y redondear la punta con
+   un arco (A2.5) en vez de un pico agudo. La punta queda en el borde
+   inferior del elemento → el anchor 'bottom' del marker la alinea con la
+   coordenada. */
 .bizBubblePin {
     position: relative;
     width: 44px;
     height: 48px;
-    background: var(--color-surface);
-    clip-path: path('M22 48 C22 48 7 40 7 24 C7 12.5 13.5 5.5 22 5.5 C30.5 5.5 37 12.5 37 24 C37 40 22 48 22 48 Z');
+}
+
+.bizBubblePin svg {
+    position: absolute;
+    inset: 0;
+    width: 44px;
+    height: 48px;
+    display: block;
+    filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.22));
+}
+
+.bizBubblePin svg path {
+    fill: var(--color-surface);
+}
+
+.bizBubbleHover .bizBubblePin svg {
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
 }
 
 .bizBubbleAvatar {
