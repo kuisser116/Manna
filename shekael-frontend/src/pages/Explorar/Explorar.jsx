@@ -96,8 +96,8 @@ export default function Explorar() {
         el.innerHTML = `
             <div class="${styles.bizBubbleHit}">
                 <div class="${styles.bizBubblePin}">
-                    <svg viewBox="0 0 44 48" aria-hidden="true">
-                        <path d="M22 2 C30.5 2 37 9 37 17 C37 28 32.5 34.5 28 42 A6 6 0 0 1 16 42 C11.5 34.5 7 28 7 17 C7 9 13.5 2 22 2 Z" />
+                    <svg viewBox="0 0 44 50" aria-hidden="true">
+                        <path d="M22 1 A18 18 0 1 1 22 37 C24 37 26.8 36.8 27 38 C27.3 40.3 24.3 45.5 23.5 48.5 A1.5 1.5 0 0 1 20.5 48.5 C19.7 45.5 16.7 40.3 17 38 C17.2 36.8 20 37 22 37 A18 18 0 1 1 22 1 Z" />
                     </svg>
                     <div class="${styles.bizBubbleAvatar}">
                         ${biz.avatar_url
