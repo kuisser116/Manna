@@ -2067,3 +2067,13 @@
 }
 
 
+
+/* ── Secciones de conversaciones (Clientes/Comercios vs Contactos) ── */
+.convSectionLabel {
+  padding: 10px 16px 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}

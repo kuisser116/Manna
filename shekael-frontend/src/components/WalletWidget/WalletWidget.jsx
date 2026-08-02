@@ -20,7 +20,7 @@ try {
 }
 
 export function WalletWidget({ variant = 'default' }) {
-    const { balance, currency, user, token, balanceLoading, walletNotFunded } = useStore();
+    const { balance, currency, user, token, balanceLoading, walletNotFunded, activeProfile } = useStore();
     const { fetchBalance } = useWallet();
     const { earnings: adEarnings, stats: adStats, pool, loading: adLoading, claimMonthly, canClaimMonthly, perViewRate, poolSettled, monthlyImpressions } = useAdEarnings();
     const [isExpanded, setIsExpanded] = useState(false);
@@ -66,11 +66,11 @@ export function WalletWidget({ variant = 'default' }) {
     const contentRef = useRef(null);
     const buttonRef = useRef(null);
 
-    // Auto‑cargar saldo al montar y cuando cambie el usuario (login)
+    // Auto‑cargar saldo al montar y cuando cambie el usuario o el perfil activo
     useEffect(() => {
         fetchBalance();
-    }, [user?.stellarPublicKey]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps — solo queremos que corra al montar / login
+    }, [user?.stellarPublicKey, activeProfile?.type, activeProfile?.business?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps — solo queremos que corra al montar / login / cambio de perfil
 
     // ── Slide up reveal (como hero de Landing) ──
     const animateIn = useCallback(() => {
@@ -133,9 +133,13 @@ export function WalletWidget({ variant = 'default' }) {
         }
     }, [isExpanded, animateIn, animateOut, shouldRender]);
 
+    const isBizMode = activeProfile?.type === 'business';
+    const activePubKey = isBizMode
+        ? (activeProfile.business?.stellarPublicKey || activeProfile.business?.stellar_public_key)
+        : user?.stellarPublicKey;
     const usdcAmount = parseFloat(balance || "0");
-    const shortKey = user?.stellarPublicKey
-        ? `${user.stellarPublicKey.slice(0, 5)}...${user.stellarPublicKey.slice(-4)}`
+    const shortKey = activePubKey
+        ? `${activePubKey.slice(0, 5)}...${activePubKey.slice(-4)}`
         : '';
 
     // ── Click outside handler ──
@@ -175,7 +179,7 @@ export function WalletWidget({ variant = 'default' }) {
                     <div className={styles.iconWrap}>
                         <Wallet size={16} />
                     </div>
-                    <span className={styles.label}>Billetera</span>
+                    <span className={styles.label}>{isBizMode ? `Billetera · ${activeProfile.business?.name || 'Comercio'}` : 'Billetera'}</span>
                 </div>
                 <button
                     className={styles.refreshBtn}

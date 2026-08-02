@@ -65,6 +65,91 @@ router.post('/requests/:id/block', authMiddleware, async (req, res) => {
 
 // ── Conversaciones ──
 
+// POST /chats/business/start — Cliente inicia conversación con un COMERCIO.
+// La conversación se marca con group_name='biz:<businessId>' para separarla
+// del chat personal (clientes vs contactos). Sin solicitud de amistad:
+// el dueño la recibe directo en su sección "Comercios".
+router.post('/business/start', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const { businessId } = req.body;
+
+        if (!businessId) return res.status(400).json({ message: 'businessId requerido' });
+
+        const { data: biz, error: bizErr } = await supabase
+            .from('businesses')
+            .select('id, name, owner_id, avatar_url, is_active')
+            .eq('id', businessId)
+            .maybeSingle();
+        if (bizErr) throw bizErr;
+        if (!biz) return res.status(404).json({ message: 'Comercio no encontrado' });
+        if (!biz.is_active) return res.status(400).json({ message: 'Este comercio está desactivado' });
+        if (biz.owner_id === userId) {
+            return res.status(400).json({ message: 'Eres el dueño de este comercio' });
+        }
+
+        const bizTag = `biz:${biz.id}`;
+
+        // ¿Ya existe conversación con el comercio entre estos dos?
+        const { data: myConvs } = await supabase
+            .from('conversation_participants')
+            .select('conversation_id')
+            .eq('user_id', userId)
+            .eq('accepted', true);
+        const myConvIds = myConvs?.map(c => c.conversation_id) || [];
+
+        if (myConvIds.length > 0) {
+            const { data: tagged } = await supabase
+                .from('conversations')
+                .select('id')
+                .in('id', myConvIds)
+                .eq('group_name', bizTag)
+                .limit(1);
+            if (tagged?.length > 0) {
+                // Asegurar que el dueño también participa
+                const { data: ownerPart } = await supabase
+                    .from('conversation_participants')
+                    .select('id')
+                    .eq('conversation_id', tagged[0].id)
+                    .eq('user_id', biz.owner_id);
+                if (ownerPart?.length > 0) {
+                    return res.json({ conversationId: tagged[0].id, business: { id: biz.id, name: biz.name, avatarUrl: biz.avatar_url } });
+                }
+            }
+        }
+
+        // Crear conversación marcada como de comercio
+        const conversationId = (await import('uuid')).v4();
+        const now = new Date().toISOString();
+
+        const { error: convErr } = await supabase
+            .from('conversations')
+            .insert({
+                id: conversationId,
+                created_at: now,
+                updated_at: now,
+                is_group: false,
+                group_name: bizTag,
+                group_created_by: biz.owner_id,
+            });
+        if (convErr) throw convErr;
+
+        const { error: partErr } = await supabase
+            .from('conversation_participants')
+            .insert([
+                { conversation_id: conversationId, user_id: userId, accepted: true, joined_at: now },
+                { conversation_id: conversationId, user_id: biz.owner_id, accepted: true, joined_at: now },
+            ]);
+        if (partErr) throw partErr;
+
+        res.status(201).json({ conversationId, business: { id: biz.id, name: biz.name, avatarUrl: biz.avatar_url } });
+    } catch (err) {
+        console.error('[Business Chat Start Error]:', err);
+        res.status(500).json({ message: err.message || 'Error al iniciar chat con el comercio' });
+    }
+});
+
 // GET /chats/conversations — Listar conversaciones activas
 router.get('/conversations', authMiddleware, async (req, res) => {
     try {
@@ -75,7 +160,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
             .from('conversation_participants')
             .select(`
                 conversation_id, last_read_at, is_pinned, nickname, custom_bg_url,
-                conversation:conversations (id, updated_at)
+                conversation:conversations (id, updated_at, group_name)
             `)
             .eq('user_id', userId)
             .eq('accepted', true)
@@ -96,6 +181,22 @@ router.get('/conversations', authMiddleware, async (req, res) => {
             `)
             .in('conversation_id', convIds)
             .neq('user_id', userId);
+
+        // Nombres de comercios para conversaciones biz:<id>
+        const bizTagMap = {};
+        for (const p of participants) {
+          const g = p.conversation?.group_name || '';
+          if (g.startsWith('biz:')) bizTagMap[g.slice(4)] = true;
+        }
+        const bizIds = Object.keys(bizTagMap);
+        let businessNames = {};
+        if (bizIds.length > 0) {
+          const { data: bizRows } = await supabase
+            .from('businesses')
+            .select('id, name, avatar_url')
+            .in('id', bizIds);
+          (bizRows || []).forEach(b => { businessNames[b.id] = b; });
+        }
 
         // Último mensaje de cada conversación
         const { data: lastMessages } = await supabase
@@ -166,6 +267,9 @@ router.get('/conversations', authMiddleware, async (req, res) => {
             if (other?.custom_bg_url) {
                 otherUser.custom_bg_url = other.custom_bg_url;
             }
+            const groupName = p.conversation?.group_name || '';
+            const isBusinessChat = groupName.startsWith('biz:');
+            const businessId = isBusinessChat ? groupName.slice(4) : null;
             return {
                 id: p.conversation_id,
                 updatedAt: p.conversation?.updated_at,
@@ -176,7 +280,11 @@ router.get('/conversations', authMiddleware, async (req, res) => {
                 isPinned: !!p.is_pinned,
                 pinnedAt: p.pinned_at,
                 myNickname: p.nickname,
-                customBgUrl: p.custom_bg_url
+                customBgUrl: p.custom_bg_url,
+                isBusinessChat,
+                businessId,
+                businessName: isBusinessChat ? businessNames[businessId]?.name : null,
+                businessAvatarUrl: isBusinessChat ? businessNames[businessId]?.avatar_url : null
             };
         });
 

@@ -18,6 +18,7 @@ export const blockRequester = (requestId) => chatAPI.post(`/chats/requests/${req
 
 // Conversaciones
 export const getConversations = () => chatAPI.get('/chats/conversations');
+export const startBusinessChat = (businessId) => chatAPI.post('/chats/business/start', { businessId });
 
 // Mensajes
 export const getMessages = (conversationId, page = 0) => chatAPI.get(`/chats/${conversationId}/messages?page=${page}&limit=200`);

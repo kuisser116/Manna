@@ -1203,7 +1203,9 @@ export default function Chat() {
   // ── Ir a perfil ──
   const handleGoToProfile = () => {
     setShowChatMenu(false);
-    if (activeConv?.otherUser?.id) {
+    if (activeConv?.isBusinessChat && activeConv.businessId) {
+      navigate(`/business/${activeConv.businessId}`);
+    } else if (activeConv?.otherUser?.id) {
       navigate(`/profile/${activeConv.otherUser.id}`);
     }
   };
@@ -1517,53 +1519,72 @@ export default function Chat() {
               {convFilter === 'unread' ? 'No hay chats no leídos' : 'Sin conversaciones'}
             </div>
           ) : (
-            filteredConversations.map(conv => {
-              const displayName = conv.myNickname || conv.otherUser?.display_name || 'Usuario';
-              return (
-                <div
-                  key={conv.id}
-                  className={`${styles.convItem} ${activeConv?.id === conv.id ? styles.activeConv : ''} ${conv.isPinned ? styles.pinnedConv : ''} ${hasUnread(conv) ? styles.unreadConv : ''}`}
-                  onClick={() => selectConversation(conv)}
-                >
-                  <div className={styles.avatarSmall}>
-                    {conv.otherUser?.avatar_url ? (
-                      <img src={conv.otherUser.avatar_url} alt="" />
-                    ) : (
-                      <div className={styles.avatarPlaceholder}>
-                        {displayName[0] || '?'}
-                      </div>
-                    )}
-                    {hasUnread(conv) && (
-                      <span className={styles.unreadBadge}>
-                        {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
-                      </span>
-                    )}
-                  </div>
-                  <div className={styles.convInfo}>
-                    <span className={styles.convName}>
-                      {displayName}
-                    </span>
-                    <span className={`${styles.convPreview} ${hasUnread(conv) ? styles.convPreviewUnread : ''}`}>
-                      {conv.lastMessage?.decrypted
-                        ? conv.lastMessage.decrypted.substring(0, 40)
-                        : conv.lastMessage?.message_type === 'image' ? 'Foto'
-                        : conv.lastMessage?.message_type === 'audio' ? 'Audio'
-                        : conv.lastMessage?.message_type === 'file' ? 'Archivo'
-                        : 'Mensaje'}
-                    </span>
-                  </div>
-                  <button
-                    className={styles.pinBtn}
-                    onClick={(e) => { e.stopPropagation(); handlePinConv(conv.id); }}
-                    title={conv.isPinned ? 'Desfijar' : 'Fijar'}
+            (() => {
+              // Separar conversaciones: contactos personales vs clientes del comercio
+              const personal = filteredConversations.filter(c => !c.isBusinessChat);
+              const business = filteredConversations.filter(c => c.isBusinessChat);
+              const renderItem = (conv) => {
+                const displayName = conv.myNickname || conv.otherUser?.display_name || 'Usuario';
+                return (
+                  <div
+                    key={conv.id}
+                    className={`${styles.convItem} ${activeConv?.id === conv.id ? styles.activeConv : ''} ${conv.isPinned ? styles.pinnedConv : ''} ${hasUnread(conv) ? styles.unreadConv : ''}`}
+                    onClick={() => selectConversation(conv)}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={conv.isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
-                    </svg>
-                  </button>
-                </div>
+                    <div className={styles.avatarSmall}>
+                      {conv.otherUser?.avatar_url ? (
+                        <img src={conv.otherUser.avatar_url} alt="" />
+                      ) : (
+                        <div className={styles.avatarPlaceholder}>
+                          {displayName[0] || '?'}
+                        </div>
+                      )}
+                      {hasUnread(conv) && (
+                        <span className={styles.unreadBadge}>
+                          {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.convInfo}>
+                      <span className={styles.convName}>
+                        {displayName}
+                      </span>
+                      <span className={`${styles.convPreview} ${hasUnread(conv) ? styles.convPreviewUnread : ''}`}>
+                        {conv.lastMessage?.decrypted
+                          ? conv.lastMessage.decrypted.substring(0, 40)
+                          : conv.lastMessage?.message_type === 'image' ? 'Foto'
+                          : conv.lastMessage?.message_type === 'audio' ? 'Audio'
+                          : conv.lastMessage?.message_type === 'file' ? 'Archivo'
+                          : 'Mensaje'}
+                      </span>
+                    </div>
+                    <button
+                      className={styles.pinBtn}
+                      onClick={(e) => { e.stopPropagation(); handlePinConv(conv.id); }}
+                      title={conv.isPinned ? 'Desfijar' : 'Fijar'}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={conv.isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                );
+              };
+              return (
+                <>
+                  {business.length > 0 && (
+                    <>
+                      <div className={styles.convSectionLabel}>Clientes · Comercios</div>
+                      {business.map(renderItem)}
+                    </>
+                  )}
+                  {personal.length > 0 && business.length > 0 && (
+                    <div className={styles.convSectionLabel}>Contactos</div>
+                  )}
+                  {personal.map(renderItem)}
+                </>
               );
-            })
+            })()
           )}
         </div>
       </div>

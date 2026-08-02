@@ -655,6 +655,7 @@
 
   .info {
     padding-top: 8px;
+    min-width: 0;
   }
 
   .avatarFrame {
@@ -947,4 +948,52 @@
         width: 190px;
         height: 190px;
     }
+}
+
+/* ── Tablets horizontales / pantallas medianas: avatar alineado ── */
+@media (min-width: 621px) and (max-width: 860px) {
+  .avatarArea {
+    gap: 20px;
+    padding: 28px 20px 12px;
+  }
+
+  .avatarFrame {
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+  }
+
+  .info {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .nameRow {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .name {
+    font-size: 1.9rem;
+    word-break: break-word;
+  }
+
+  .msgBtn {
+    margin-left: 0;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+
+  .statsRow {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+
+  .chips {
+    flex-wrap: wrap;
+  }
+
+  .postList {
+    padding: 20px 16px;
+  }
 }

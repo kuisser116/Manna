@@ -20,6 +20,35 @@ const router = Router({ strict: false });
 router.get('/balance', authMiddleware, async (req, res) => {
     try {
         const supabase = getDB();
+        const { businessId } = req.query;
+
+        // Balance de un COMERCIO (solo el dueño lo puede consultar)
+        if (businessId) {
+            const { data: biz } = await supabase
+                .from('businesses')
+                .select('owner_id, stellar_public_key, name')
+                .eq('id', businessId)
+                .single();
+            if (!biz) return res.status(404).json({ message: 'Comercio no encontrado' });
+            if (biz.owner_id !== req.user.id) {
+                return res.status(403).json({ message: 'No eres el dueño de este comercio' });
+            }
+            if (!biz.stellar_public_key) return res.status(400).json({ message: 'El comercio no tiene wallet configurada' });
+            const balanceData = await getBalance(biz.stellar_public_key);
+            return res.json({
+                balance: balanceData.balance,
+                usdc: balanceData.usdc,
+                xlm: balanceData.xlm,
+                mxnBalance: balanceData.mxnBalance,
+                currency: balanceData.currency,
+                usdcActive: balanceData.usdcActive,
+                notFunded: balanceData.notFunded,
+                publicKey: biz.stellar_public_key,
+                businessName: biz.name,
+                businessId,
+            });
+        }
+
         const { data: user, error } = await supabase
             .from('users')
             .select('stellar_public_key, wallet_activated')

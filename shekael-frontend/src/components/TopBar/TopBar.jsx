@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
 import { searchGlobal } from "../../api/search.api";
+import { getMyBusinesses } from "../../api/businesses.api";
 import Avatar from "../Avatar/Avatar";
 import NotificationsDropdown from "../NotificationsDropdown/NotificationsDropdown";
 import ShekaelLogo from "../ShekaelLogo/ShekaelLogo";
@@ -25,10 +26,12 @@ const FILTERS = [
 
 export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) {
   const { t } = useTranslation();
-  const { user, setMyQRModalOpen, themeName, cycleTheme, activeFilter, setActiveFilter } = useStore();
+  const { user, setMyQRModalOpen, themeName, cycleTheme, activeFilter, setActiveFilter, setActiveProfile } = useStore();
   const { logout } = useAuth();
   const [query, setQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [myBusinesses, setMyBusinesses] = useState([]);
+  const [myBizLoading, setMyBizLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +67,28 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Cargar mis comercios al abrir el menú del usuario
+  useEffect(() => {
+    if (!showUserMenu || !user) return;
+    setMyBizLoading(true);
+    getMyBusinesses()
+      .then(res => setMyBusinesses(res.data?.businesses || []))
+      .catch(() => setMyBusinesses([]))
+      .finally(() => setMyBizLoading(false));
+  }, [showUserMenu, user]);
+
+  const handleGoProfile = () => {
+    setActiveProfile({ type: 'user' });
+    setShowUserMenu(false);
+    navigate('/profile');
+  };
+
+  const handleGoBusiness = (biz) => {
+    setActiveProfile({ type: 'business', business: biz });
+    setShowUserMenu(false);
+    navigate(`/business/${biz.id}`);
+  };
 
   const isMusicRoute = location.pathname === '/music';
 
@@ -228,10 +253,33 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                 <Link
                   to="/profile"
                   className={styles.userMenuItem}
-                  onClick={() => setShowUserMenu(false)}
+                  onClick={handleGoProfile}
                 >
                   Mi perfil
                 </Link>
+
+                {/* Mis comercios */}
+                {myBusinesses.length > 0 && (
+                  <>
+                    <div className={styles.userMenuSection}>Mis comercios</div>
+                    {myBusinesses.map(biz => (
+                      <button
+                        key={biz.id}
+                        className={styles.userMenuItem}
+                        onClick={() => handleGoBusiness(biz)}
+                      >
+                        <Avatar avatarUrl={biz.avatar_url} name={biz.name} size={22} />
+                        <span className={styles.userMenuBizName}>{biz.name}</span>
+                        {!biz.is_active && <span className={styles.userMenuBizOff}>inactivo</span>}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {myBizLoading && (
+                  <div className={styles.userMenuItem} style={{ color: 'var(--color-text-muted)' }}>
+                    Cargando comercios...
+                  </div>
+                )}
                 <button
                   className={styles.userMenuItem}
                   onClick={() => {

@@ -100,7 +100,7 @@ export async function acceptMessageRequest(requestId, userId) {
 
   await supabase.from('conversations').insert({
     id: convId, created_at: now, updated_at: now,
-    is_group: false, created_by: userId,
+    is_group: false, group_created_by: userId,
   });
 
   await supabase.from('conversation_participants').insert([
@@ -281,9 +281,8 @@ export async function createGroup({ name, description, memberIds }, userId) {
 
   await supabase.from('conversations').insert({
     id: convId, created_at: now, updated_at: now,
-    is_group: true, created_by: userId,
+    is_group: true, group_created_by: userId,
     group_name: name, group_description: description || '',
-    invite_code: code,
   });
 
   await supabase.from('conversation_participants').insert(

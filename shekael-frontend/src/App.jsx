@@ -26,6 +26,7 @@ import Explorar from './pages/Explorar/Explorar';
 import Chat from './pages/Chat/Chat';
 import BusinessProfile from './components/Business/BusinessProfile';
 import BusinessRegistration from './pages/BusinessRegistration/BusinessRegistration';
+import BusinessSettingsPage from './pages/BusinessSettingsPage/BusinessSettingsPage';
 import Settings from './pages/Settings';
 import Security from './pages/Settings/Security';
 import SecurityTutorial from './pages/SecurityTutorial/SecurityTutorial';
@@ -291,6 +292,11 @@ function App() {
         <Route path="/business/:id" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><BusinessProfile /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/business/:id/configuracion" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><BusinessSettingsPage /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/explorar" element={

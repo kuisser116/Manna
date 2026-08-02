@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import {
-  UserPlus, UserCheck, Camera, QrCode,
+import {  UserPlus, UserCheck, Camera, QrCode,
   LayoutGrid, Eye, MessageCircle, Share, Flag,
   Copy, Check, ImagePlus, CalendarDays, Settings, Store, MapPin, Star, BarChart3,
   Printer, Download, X, Loader2
@@ -11,10 +10,10 @@ import { useTranslation } from 'react-i18next';
 import useStore from '../../store';
 import { getBusiness, toggleFollowBusiness, updateBusiness } from '../../api/businesses.api';
 import { getBusinessQR } from '../../api/payments.api';
+import { startBusinessChat } from '../../api/chats.api';
 import PostCard from '../PostCard/PostCard';
 import ProductGrid from './ProductGrid';
 import ReviewsSection from './ReviewsSection';
-import BusinessSettings from './BusinessSettings';
 import profileStyles from '../../styles/pages/Profile.module.css';
 import bgPatternUrl from '../../assets/patterns/profile-bg-pattern.svg';
 
@@ -37,7 +36,7 @@ export default function BusinessProfile() {
   const { t } = useTranslation();
   const { id: profileId } = useParams();
   const navigate = useNavigate();
-  const { user: currentUser } = useStore();
+  const { user: currentUser, setActiveProfile, addToast } = useStore();
 
   const [biz, setBiz] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +49,6 @@ export default function BusinessProfile() {
   const coverInputRef = useRef(null);
   const avatarInputRef = useRef(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showProducts, setShowProducts] = useState(true);
   const [showReviews, setShowReviews] = useState(true);
@@ -58,6 +56,27 @@ export default function BusinessProfile() {
   const [qrData, setQrData] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
   const isOwner = currentUser && biz?.isOwner;
+
+  // Entrar en modo comercio si es mi comercio (la wallet cambia a la del comercio)
+  useEffect(() => {
+    if (biz?.isOwner) {
+      setActiveProfile({ type: 'business', business: biz });
+    }
+    return () => {
+      // Al salir del perfil de un comercio propio, volver al perfil personal
+      setActiveProfile({ type: 'user' });
+    };
+  }, [biz?.id, biz?.isOwner]);
+
+  const handleContact = async () => {
+    if (!biz?.id) return;
+    try {
+      const { data } = await startBusinessChat(biz.id);
+      navigate('/chat', { state: { openConversationId: data.conversationId } });
+    } catch (err) {
+      addToast('error', 'No se pudo iniciar el chat', err?.response?.data?.message || 'Intenta de nuevo');
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -271,12 +290,12 @@ export default function BusinessProfile() {
                       <button className={profileStyles.editBtn} onClick={() => navigate('/studio')} title="Shekael Studio">
                         <BarChart3 size={18} />
                       </button>
-                      <button className={profileStyles.editBtn} onClick={() => setIsSettingsOpen(true)} title="Configuración">
+                      <button className={profileStyles.editBtn} onClick={() => navigate(`/business/${biz.id}/configuracion`)} title="Configuración">
                         <Settings size={18} />
                       </button>
                     </>
                   ) : (
-                    <button className={profileStyles.msgBtn} title="Enviar mensaje">
+                    <button className={profileStyles.msgBtn} onClick={handleContact} title="Enviar mensaje">
                       <MessageCircle size={16} /> Contactar
                     </button>
                   )}
@@ -321,13 +340,13 @@ export default function BusinessProfile() {
                       {copied ? <Check size={12} /> : <Copy size={12} />}
                     </div>
                   )}
-                  {isOwner && (
+                  {biz.stellarPublicKey && (
                     <div
                       className={`${profileStyles.chip} ${profileStyles.chipClickable}`}
                       onClick={handleOpenQR}
-                      title="Mi QR para imprimir"
+                      title="QR de pago del comercio — escanea para pagar"
                     >
-                      <QrCode size={12} /> Mi QR
+                      <QrCode size={12} /> {isOwner ? 'Mi QR' : 'QR de pago'}
                     </div>
                   )}
                 </div>
@@ -394,16 +413,6 @@ export default function BusinessProfile() {
         </div>
       </main>
 
-      <AnimatePresence>
-        {isSettingsOpen && (
-          <BusinessSettings
-            business={biz}
-            onClose={() => setIsSettingsOpen(false)}
-            onDelete={() => navigate('/profile')}
-          />
-        )}
-      </AnimatePresence>
-
       {/* Modal QR del comercio (imprimir / descargar) */}
       <AnimatePresence>
         {qrOpen && (
@@ -434,15 +443,25 @@ export default function BusinessProfile() {
                     <img src={qrData.qrUrl} alt={`QR de ${biz.name}`} className={profileStyles.qrImage} />
                   </div>
                   <p className={profileStyles.qrHint}>
-                    Imprímelo y colócalo en tu negocio. Tus clientes lo escanean para pagarte.
+                    {isOwner
+                      ? 'Imprímelo y colócalo en tu negocio. Tus clientes lo escanean para pagarte.'
+                      : 'Escanea para pagar en este comercio a distancia o compártelo.'}
                   </p>
                   <div className={profileStyles.qrActions}>
-                    <button className={profileStyles.qrActionPrimary} onClick={handlePrintQR}>
-                      <Printer size={16} /> Imprimir
-                    </button>
-                    <button className={profileStyles.qrActionSecondary} onClick={handleDownloadQR}>
-                      <Download size={16} /> Descargar
-                    </button>
+                    {isOwner ? (
+                      <>
+                        <button className={profileStyles.qrActionPrimary} onClick={handlePrintQR}>
+                          <Printer size={16} /> Imprimir
+                        </button>
+                        <button className={profileStyles.qrActionSecondary} onClick={handleDownloadQR}>
+                          <Download size={16} /> Descargar
+                        </button>
+                      </>
+                    ) : (
+                      <button className={profileStyles.qrActionPrimary} onClick={() => setQrOpen(false)}>
+                        <Check size={16} /> Listo
+                      </button>
+                    )}
                   </div>
                 </>
               )}

@@ -95,6 +95,27 @@ router.get('/check-name', authMiddleware, async (req, res) => {
   }
 });
 
+
+// GET /businesses/mine — Comercios del usuario actual (activos e inactivos)
+router.get('/mine', authMiddleware, async (req, res) => {
+  try {
+    const supabase = getDB();
+    const userId = req.user.id;
+
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('id, name, category, avatar_url, cover_url, is_active, created_at, stellar_public_key')
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ businesses: data || [] });
+  } catch (err) {
+    console.error('Error fetching my businesses:', err);
+    res.status(500).json({ message: 'Error al obtener tus comercios' });
+  }
+});
+
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const supabase = getDB();
@@ -226,6 +247,22 @@ router.post('/', authMiddleware, upload.fields([
 
     if (!name || !category) {
       return res.status(400).json({ message: 'Nombre y categoría son requeridos' });
+    }
+
+    // Límite de comercios activos por usuario (evita abuso: cada comercio activa
+    // una cuenta Stellar con XLM de la wallet maestra)
+    const maxBiz = parseInt(process.env.MAX_BUSINESSES_PER_USER || '1', 10);
+    const { data: existingBiz } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('owner_id', userId)
+      .eq('is_active', true);
+    if ((existingBiz?.length || 0) >= maxBiz) {
+      return res.status(400).json({
+        message: maxBiz <= 1
+          ? 'Ya tienes un comercio registrado. Por ahora solo se permite 1 comercio por persona.'
+          : `Ya tienes ${maxBiz} comercios registrados. Por ahora ese es el límite.`
+      });
     }
 
     // Subir imágenes si vienen
@@ -470,15 +507,19 @@ router.put('/:id/password', authMiddleware, async (req, res) => {
   }
 });
 
+// Desactivar comercio — verificación doble: contraseña del comercio + PIN de la cuenta.
+// NUNCA borra físicamente: is_active=false para poder reactivarlo (seguridad anti-hackeo).
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const supabase = getDB();
     const userId = req.user.id;
     const bizId = req.params.id;
+    const { password, pinHash } = req.body || {};
 
+    // Verificar propiedad
     const { data: existing } = await supabase
       .from('businesses')
-      .select('owner_id')
+      .select('owner_id, password_hash')
       .eq('id', bizId)
       .single();
 
@@ -487,16 +528,76 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'No eres el dueño de este comercio' });
     }
 
+    // 1) Contraseña del comercio
+    if (!password) return res.status(400).json({ message: 'Contraseña del comercio requerida' });
+    if (!existing.password_hash) return res.status(400).json({ message: 'Este comercio no tiene contraseña configurada' });
+    const passHash = createHash('sha256').update(password).digest('hex');
+    if (passHash !== existing.password_hash) {
+      return res.status(401).json({ message: 'Contraseña del comercio incorrecta' });
+    }
+
+    // 2) PIN de la cuenta del dueño (verificación fuerte)
+    if (!pinHash) return res.status(400).json({ message: 'PIN de tu cuenta requerido' });
+    const { data: owner } = await supabase
+      .from('users')
+      .select('pin_hash')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!owner?.pin_hash) return res.status(400).json({ message: 'Configura un PIN en Seguridad antes de desactivar tu comercio' });
+    if (owner.pin_hash !== pinHash) {
+      return res.status(401).json({ message: 'PIN de la cuenta incorrecto' });
+    }
+
     const { error } = await supabase
       .from('businesses')
       .update({ is_active: false })
       .eq('id', bizId);
 
     if (error) throw error;
-    res.json({ message: 'Comercio desactivado' });
+    res.json({ message: 'Comercio desactivado. Puedes reactivarlo en cualquier momento desde Configuración.' });
   } catch (err) {
     console.error('Error deleting business:', err);
-    res.status(500).json({ message: 'Error al eliminar el comercio' });
+    res.status(500).json({ message: 'Error al desactivar el comercio' });
+  }
+});
+
+// ─── Reactivar comercio (dueño, con contraseña del comercio) ──
+router.post('/:id/reactivate', authMiddleware, async (req, res) => {
+  try {
+    const supabase = getDB();
+    const userId = req.user.id;
+    const bizId = req.params.id;
+    const { password } = req.body || {};
+
+    const { data: existing } = await supabase
+      .from('businesses')
+      .select('owner_id, password_hash, is_active')
+      .eq('id', bizId)
+      .single();
+
+    if (!existing) return res.status(404).json({ message: 'Comercio no encontrado' });
+    if (existing.owner_id !== userId) {
+      return res.status(403).json({ message: 'No eres el dueño de este comercio' });
+    }
+    if (existing.is_active) return res.json({ message: 'El comercio ya está activo' });
+
+    if (!password) return res.status(400).json({ message: 'Contraseña del comercio requerida' });
+    if (!existing.password_hash) return res.status(400).json({ message: 'Este comercio no tiene contraseña configurada' });
+    const passHash = createHash('sha256').update(password).digest('hex');
+    if (passHash !== existing.password_hash) {
+      return res.status(401).json({ message: 'Contraseña del comercio incorrecta' });
+    }
+
+    const { error } = await supabase
+      .from('businesses')
+      .update({ is_active: true })
+      .eq('id', bizId);
+
+    if (error) throw error;
+    res.json({ message: 'Comercio reactivado correctamente.' });
+  } catch (err) {
+    console.error('Error reactivating business:', err);
+    res.status(500).json({ message: 'Error al reactivar el comercio' });
   }
 });
 

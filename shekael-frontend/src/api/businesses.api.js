@@ -23,7 +23,9 @@ bizAPI.interceptors.response.use(
 );
 
 export const getBusinesses = (params) => bizAPI.get('/businesses', { params });
+export const getMyBusinesses = () => bizAPI.get('/businesses/mine');
 export const getBusiness = (id) => bizAPI.get(`/businesses/${id}`);
+export const reactivateBusiness = (id, password) => bizAPI.post(`/businesses/${id}/reactivate`, { password });
 export const createBusiness = (formData) =>
   bizAPI.post('/businesses', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -36,7 +38,7 @@ export const updateBusiness = (id, data) => {
       : { 'Content-Type': 'application/json' },
   });
 };
-export const deleteBusiness = (id) => bizAPI.delete(`/businesses/${id}`);
+export const deleteBusiness = (id, data = {}) => bizAPI.delete(`/businesses/${id}`, { data });
 export const verifyBusinessPassword = (id, password) => bizAPI.post(`/businesses/${id}/verify-password`, { password });
 export const updateBusinessPassword = (id, { currentPassword, newPassword }) =>
   bizAPI.put(`/businesses/${id}/password`, { currentPassword, newPassword });

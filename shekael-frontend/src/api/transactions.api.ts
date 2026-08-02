@@ -12,7 +12,7 @@ transAPI.interceptors.request.use((config) => {
 });
 
 export const sendSupport = (data) => transAPI.post('/transactions/support', data);
-export const getWalletBalance = () => transAPI.get('/wallet/balance');
+export const getWalletBalance = (businessId) => transAPI.get('/wallet/balance', { params: businessId ? { businessId } : {} });
 export const getRegionalFund = () => transAPI.get('/regional-fund/balance');
 export const getRegionalCauses = () => transAPI.get('/regional-fund/balance');
 export const updateUserState = (state) => transAPI.post('/regional-fund/update-state', { state });

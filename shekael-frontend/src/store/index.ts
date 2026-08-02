@@ -7,6 +7,11 @@ const useStore = create((set, get) => ({
 
   setUser: (user) => set({ user }),
 
+  // Perfil activo: 'user' (perfil personal) o { type:'business', business }
+  // Al entrar a un comercio propio, la wallet muestra la del comercio.
+  activeProfile: { type: 'user' },
+  setActiveProfile: (profile) => set({ activeProfile: profile }),
+
   // Session lock compartido (para que Security no monte un 2do LockScreen)
   sessionLocked: false,
   setSessionLocked: (locked) => set({ sessionLocked: locked }),
