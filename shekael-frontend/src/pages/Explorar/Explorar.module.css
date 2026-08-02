@@ -166,13 +166,13 @@
     line-height: 1;
 }
 
-/* Punta inferior — indica la ubicación exacta (gris neutro del tema, separada 6px) */
+/* Punta inferior — color de la superficie del tema (blanca en light, del tema en oscuros), separada 6px */
 .bizBubbleTail {
     width: 10px;
     height: 10px;
     border-radius: 2px;
     transform: rotate(45deg);
-    background: var(--color-text-secondary);
+    background: var(--color-surface);
     margin-top: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
