@@ -286,6 +286,20 @@ router.post('/', authMiddleware, upload.fields([
 
     if (error) throw error;
 
+    // Notificación al dueño: comercio registrado (click → /business/:id)
+    try {
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        actor_id: userId,
+        // El id del comercio va codificado en type (post_id tiene FK a posts)
+        type: 'business_registered:' + data.id,
+        post_id: null,
+        is_read: false,
+      });
+    } catch (nErr) {
+      console.warn('[Business] No se pudo crear notificación:', nErr.message);
+    }
+
     res.status(201).json({
       message: activated
         ? 'Comercio registrado exitosamente. Su cuenta Stellar fue activada.'

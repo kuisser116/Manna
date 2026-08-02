@@ -1,8 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBusiness } from '../../api/businesses.api';
-import { ChevronLeft, ChevronRight, Check, MapPin, Upload, Store, Lock, Eye } from 'lucide-react';
+import { createNotification } from '../../api/notifications.api';
+import useStore from '../../store';
+import { ChevronLeft, ChevronRight, Check, MapPin, Upload, Store, Lock, Eye, Loader2 } from 'lucide-react';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import mapboxgl from 'mapbox-gl';
 import styles from './BusinessRegistration.module.css';
+
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+const MAP_STYLE = 'mapbox://styles/kuisser/cmroeipik008m01qtdmk9ho18';
 
 const CATEGORIES = [
   'Comida y Bebida',
@@ -23,6 +30,7 @@ const STEPS = ['Datos', 'Apariencia', 'Ubicación', 'Seguridad', 'Resumen'];
 
 export default function BusinessRegistration() {
   const navigate = useNavigate();
+  const { addToast } = useStore();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     name: '',
@@ -41,6 +49,51 @@ export default function BusinessRegistration() {
   const [bannerPreview, setBannerPreview] = useState(null);
   const fileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+
+  // Mapa Mapbox para seleccionar ubicación (paso 2)
+  useEffect(() => {
+    if (step !== 2) return;
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: MAP_STYLE,
+      center: [form.location.lng, form.location.lat],
+      zoom: 12,
+    });
+    mapRef.current = map;
+
+    const onMapClick = (e) => {
+      const { lng, lat } = e.lngLat;
+      update('location', { ...form.location, lat, lng });
+      if (markerRef.current) markerRef.current.setLngLat([lng, lat]);
+      else markerRef.current = new mapboxgl.Marker({ color: '#e11d48' }).setLngLat([lng, lat]).addTo(map);
+    };
+
+    map.on('click', onMapClick);
+
+    return () => {
+      map.off('click', onMapClick);
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, [step]);
+
+  // Centrar marker inicial al entrar al paso
+  useEffect(() => {
+    if (step !== 2 || !mapRef.current) return;
+    if (markerRef.current) {
+      markerRef.current.setLngLat([form.location.lng, form.location.lat]);
+    } else {
+      markerRef.current = new mapboxgl.Marker({ color: '#e11d48' })
+        .setLngLat([form.location.lng, form.location.lat])
+        .addTo(mapRef.current);
+    }
+  }, [step]);
 
   const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -81,6 +134,13 @@ export default function BusinessRegistration() {
     try {
       setSubmitting(true);
       setErrors({});
+
+      // Notificación: registrando (aparece en la campana del header)
+      try {
+        await createNotification({ type: 'business_registering' });
+        window.dispatchEvent(new Event('shekael:notif-refresh'));
+      } catch (_) {}
+
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('description', form.description);
@@ -92,11 +152,17 @@ export default function BusinessRegistration() {
       if (form.avatar) formData.append('avatar', form.avatar);
       if (form.banner) formData.append('cover', form.banner);
 
+      // Navegar al feed de inmediato; la creación continúa en segundo plano
+      navigate('/feed');
+
       const { data } = await createBusiness(formData);
       setCreated({ business: data.business, wallet: data.wallet });
+      // La notificación 'business_registered' la crea el backend con el id del comercio
+      addToast('success', 'Comercio registrado', `¡${data.business.name} ya está en Shekael! Revisa la campana de notificaciones para verlo.`);
+      window.dispatchEvent(new Event('shekael:notif-refresh'));
     } catch (err) {
       console.error('Error creating business:', err);
-      setErrors({ submit: 'Error al registrar el comercio. Intenta de nuevo.' });
+      addToast('error', 'No se pudo registrar', err?.response?.data?.message || 'Error al registrar el comercio. Intenta de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -250,10 +316,14 @@ export default function BusinessRegistration() {
                   onChange={e => update('location', { ...form.location, address: e.target.value })}
                 />
               </div>
-              <div className={styles.mapPlaceholder}>
-                <MapPin size={32} />
-                <p>Selecciona la ubicación en el mapa</p>
-                <p className={styles.mapHint}>(Integración con mapa aquí — Leaflet)</p>
+              <div className={styles.field}>
+                <label>Selecciona la ubicación en el mapa</label>
+                <div className={styles.mapWrap}>
+                  <div ref={mapContainerRef} className={styles.mapBox} />
+                  <div className={styles.mapMarkerHint}>
+                    <MapPin size={14} /> Haz clic en el mapa para colocar tu comercio
+                  </div>
+                </div>
                 <div className={styles.coords}>
                   <span>Lat: {form.location.lat.toFixed(4)}</span>
                   <span>Lng: {form.location.lng.toFixed(4)}</span>
@@ -322,8 +392,9 @@ export default function BusinessRegistration() {
           {step < STEPS.length - 1 ? (
             <button className={styles.navBtn} onClick={next}>Siguiente <ChevronRight size={18} /></button>
           ) : (
-            <button className={`${styles.navBtn} ${styles.submitBtn}`} onClick={handleSubmit}>
-              <Check size={18} /> Crear comercio
+            <button className={`${styles.navBtn} ${styles.submitBtn}`} onClick={handleSubmit} disabled={submitting}>
+              {submitting ? <Loader2 size={18} className={styles.spin} /> : <Check size={18} />}
+              {submitting ? 'Registrando...' : 'Crear comercio'}
             </button>
           )}
         </div>

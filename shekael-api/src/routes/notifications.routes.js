@@ -107,4 +107,34 @@ router.put('/read-all', authMiddleware, async (req, res) => {
     }
 });
 
+
+// POST / — Crear notificación propia (feedback de procesos en curso, ej. registro de comercio)
+router.post('/', authMiddleware, async (req, res) => {
+    try {
+        const supabase = getDB();
+        const userId = req.user.id;
+        const { type, post_id } = req.body;
+
+        if (!type) return res.status(400).json({ message: 'type es requerido' });
+
+        const { data, error } = await supabase
+            .from('notifications')
+            .insert({
+                user_id: userId,
+                actor_id: userId,
+                type,
+                post_id: post_id || null,
+                is_read: false,
+            })
+            .select()
+            .single();
+        if (error) throw error;
+
+        res.status(201).json({ notification: data });
+    } catch (err) {
+        console.error('Create notification error:', err);
+        res.status(500).json({ message: 'Error al crear notificación' });
+    }
+});
+
 export default router;

@@ -19,10 +19,12 @@
 }
 
 .title {
-  font-family: var(--font-display, 'Caesar Dressing');
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: 28px;
+  font-weight: 800;
   margin: 0;
   color: var(--color-text, #fff);
+  letter-spacing: -0.3px;
 }
 
 .subtitle {
@@ -98,7 +100,7 @@
   border: 1px solid var(--color-border, #2a2a3e);
   border-radius: 20px;
   padding: 32px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .stepContent {
@@ -183,16 +185,39 @@
 }
 
 /* Map */
-.mapPlaceholder {
-  background: var(--color-surface-2, #2a2a3e);
-  border-radius: 12px;
-  padding: 32px;
+.mapWrap {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-border, #333);
+}
+
+.mapBox {
+  width: 100%;
+  height: 280px;
+}
+
+.mapMarkerHint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  color: var(--color-text-dim, #666);
-  text-align: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.mapMarkerHint svg {
+  color: var(--color-primary, #e11d48);
 }
 
 .mapHint { font-size: 11px; }
@@ -298,6 +323,19 @@
 }
 
 .submitBtn:hover { background: var(--color-primary-dark, #9f1239); }
+
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.spin {
+  animation: bizRegSpin 0.9s linear infinite;
+}
+
+@keyframes bizRegSpin {
+  to { transform: rotate(360deg); }
+}
 
 @media (max-width: 700px) {
   .page {

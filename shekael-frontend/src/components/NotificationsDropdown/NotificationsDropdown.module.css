@@ -127,6 +127,11 @@
     font-weight: 600;
 }
 
+.systemText {
+    font-weight: 600;
+    color: var(--color-primary, #e11d48);
+}
+
 .time {
     font-size: 0.7rem;
     color: var(--color-text-muted);

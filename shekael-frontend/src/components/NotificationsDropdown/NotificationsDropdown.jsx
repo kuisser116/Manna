@@ -24,10 +24,20 @@ export function NotificationsDropdown() {
     useEffect(() => {
         if (user) {
             fetchUnreadCount();
-            const interval = setInterval(fetchUnreadCount, 30000);
+            const interval = setInterval(fetchUnreadCount, 10000);
             return () => clearInterval(interval);
         }
     }, [user]);
+
+    // Refresco inmediato cuando la app lo pide (ej. proceso de registro de comercio)
+    useEffect(() => {
+        const handleRefresh = () => {
+            fetchUnreadCount();
+            fetchNotifications(0);
+        };
+        window.addEventListener('shekael:notif-refresh', handleRefresh);
+        return () => window.removeEventListener('shekael:notif-refresh', handleRefresh);
+    }, []);
 
     // Al abrir: cargar notis + auto-marcar todo como leído
     useEffect(() => {
@@ -85,7 +95,11 @@ export function NotificationsDropdown() {
     };
 
     const handleNotificationClick = (notif) => {
-        if (notif.type === 'message' && notif.post_id) {
+        const type = notif.type || '';
+        if (type.startsWith('business_registered:')) {
+            const bizId = type.split(':')[1];
+            if (bizId) navigate(`/business/${bizId}`);
+        } else if (type === 'message' && notif.post_id) {
             navigate(`/chat?conv=${notif.post_id}`);
         } else if (notif.post_id) {
             navigate(`/post/${notif.post_id}`);
@@ -110,7 +124,11 @@ export function NotificationsDropdown() {
             case 'ad_rejected': return 'ha revisado tu campaña y no ha podido ser aprobada';
             case 'ad_approved': return 'ha aprobado tu campaña publicitaria';
             case 'ad_pending_review': return 'ha enviado una nueva campaña para revisión';
-            default: return 'ha interactuado con tu contenido';
+            case 'business_registered': return 'Comercio registrado correctamente — da click para ver';
+            case 'business_registering': return 'Registrando comercio, por favor espera...';
+            default:
+                if (type && type.startsWith('business_registered:')) return 'Comercio registrado correctamente — da click para ver';
+                return 'ha interactuado con tu contenido';
         }
     };
 
@@ -147,7 +165,13 @@ export function NotificationsDropdown() {
                                 <Avatar avatarUrl={notif.actor_avatar} name={notif.actor_name} size={40} />
                                 <div className={styles.content}>
                                     <p>
-                                        <strong>{notif.actor_name}</strong> {getNotificationText(notif.type)}.
+                                        {notif.type === 'business_registered' || notif.type === 'business_registering' || (notif.type && notif.type.startsWith('business_registered:')) ? (
+                                            <span className={styles.systemText}>{getNotificationText(notif.type)}</span>
+                                        ) : (
+                                            <>
+                                                <strong>{notif.actor_name}</strong> {getNotificationText(notif.type)}.
+                                            </>
+                                        )}
                                     </p>
                                     <span className={styles.time}>
                                         {new Date(notif.created_at).toLocaleDateString()} {new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}

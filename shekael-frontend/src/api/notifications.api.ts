@@ -26,6 +26,7 @@ export const getNotifications = (page = 0) => notifAPI.get(`/notifications?page=
 export const getUnreadNotificationsCount = () => notifAPI.get('/notifications/unread-count');
 export const markNotificationAsRead = (id) => notifAPI.put(`/notifications/${id}/read`);
 export const markAllNotificationsAsRead = () => notifAPI.put('/notifications/read-all');
+export const createNotification = (data) => notifAPI.post('/notifications', data);
 
 export default notifAPI;
 
