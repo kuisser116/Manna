@@ -155,7 +155,24 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
     res.json({
       business: {
-        ...biz,
+        // Seguridad: NUNCA enviar stellar_secret_key_encrypted ni campos
+        // privados de la fila; solo lo que necesita el perfil público.
+        id: biz.id,
+        owner_id: biz.owner_id,
+        name: biz.name,
+        category: biz.category,
+        description: biz.description,
+        address: biz.address,
+        location_lat: biz.location_lat,
+        location_lng: biz.location_lng,
+        avatar_url: biz.avatar_url,
+        cover_url: biz.cover_url,
+        stellar_public_key: biz.stellar_public_key,
+        is_active: biz.is_active,
+        created_at: biz.created_at,
+        updated_at: biz.updated_at,
+        show_products: biz.show_products,
+        show_reviews: biz.show_reviews,
         avatarUrl: biz.avatar_url,
         coverUrl: biz.cover_url,
         stellarPublicKey: biz.stellar_public_key,

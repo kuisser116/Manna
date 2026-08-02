@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Shield, Brain, MapPin, Eye, DollarSign, Key, ChevronRight, Laptop, Church, Dumbbell, Palette, Music, UtensilsCrossed, Plane, Shirt, Gamepad2, GraduationCap } from 'lucide-react';
+import { ChevronLeft, Shield, Brain, MapPin, Eye, DollarSign, Key, ChevronRight, Laptop, Church, Dumbbell, Palette, Music, UtensilsCrossed, Plane, Shirt, Gamepad2, GraduationCap, UserRound, AtSign, Check, X, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Settings.module.css';
+import useStore from '../store';
+import { updateProfile, checkUsername, setUsername } from '../api/users.api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -21,12 +23,27 @@ const INTEREST_CATEGORIES = [
 export default function Settings() {
     const navigate = useNavigate();
     const [token] = useState(() => localStorage.getItem('Shekael_token'));
+    const { user, setUser, privacy, setPrivacy } = useStore();
     const [hasConsent, setHasConsent] = useState(false);
     const [interests, setInterests] = useState([]);
     const [ageRange, setAgeRange] = useState('');
     const [region, setRegion] = useState('');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState(null);
+
+    // ── Perfil: nombre de usuario (único), nombre visible, bio ──
+    const [displayName, setDisplayName] = useState(user?.displayName || user?.display_name || '');
+    const [username, setUsernameInput] = useState(user?.username || '');
+    const [bio, setBio] = useState(user?.bio || '');
+    const [usernameStatus, setUsernameStatus] = useState(null); // null | 'checking' | 'available' | 'taken'
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [profileMsg, setProfileMsg] = useState(null);
+
+    useEffect(() => {
+        setDisplayName(user?.displayName || user?.display_name || '');
+        setUsernameInput(user?.username || '');
+        setBio(user?.bio || '');
+    }, [user?.id]);
 
     useEffect(() => {
         loadProfile();
@@ -88,6 +105,56 @@ export default function Settings() {
         );
     }
 
+    // ── Verificar disponibilidad del username (único en Shekael) ──
+    async function handleUsernameCheck(value) {
+        const clean = (value || '').trim().replace(/^@/, '').toLowerCase();
+        setUsernameInput(clean);
+        if (!clean) { setUsernameStatus(null); return; }
+        if (clean === (user?.username || '').toLowerCase()) { setUsernameStatus('available'); return; }
+        setUsernameStatus('checking');
+        try {
+            const { data } = await checkUsername(clean);
+            setUsernameStatus(data?.available ? 'available' : 'taken');
+        } catch {
+            setUsernameStatus(null);
+        }
+    }
+
+    // ── Guardar perfil (nombre, username único, bio) ──
+    async function handleSaveProfile() {
+        setSavingProfile(true);
+        setProfileMsg(null);
+        try {
+            const cleanUsername = (username || '').trim().replace(/^@/, '').toLowerCase();
+            if (cleanUsername && cleanUsername !== (user?.username || '').toLowerCase()) {
+                const { data } = await checkUsername(cleanUsername);
+                if (!data?.available) {
+                    setProfileMsg({ type: 'error', text: 'Ese nombre de usuario ya está en uso. Prueba otro.' });
+                    setUsernameStatus('taken');
+                    setSavingProfile(false);
+                    return;
+                }
+                await setUsername(cleanUsername);
+            }
+            await updateProfile({ displayName: displayName.trim(), bio: bio.trim() });
+            setUser({
+                ...user,
+                displayName: displayName.trim(),
+                username: cleanUsername || user?.username,
+                bio: bio.trim(),
+            });
+            setProfileMsg({ type: 'success', text: 'Perfil actualizado correctamente.' });
+            setUsernameStatus('available');
+        } catch (err) {
+            setProfileMsg({ type: 'error', text: 'Error al guardar: ' + (err.response?.data?.message || err.message) });
+        }
+        setSavingProfile(false);
+    }
+
+    function togglePrivacy(key) {
+        setPrivacy({ [key]: !privacy[key] });
+    }
+
     return (
         <div className={styles.page}>
             <div className={styles.header}>
@@ -98,6 +165,71 @@ export default function Settings() {
             </div>
 
             <div className={styles.content}>
+                {/* ─── Perfil: nombre de usuario único, nombre visible, bio ─── */}
+                <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                        <UserRound size={18} />
+                        <h2>Perfil</h2>
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label>Nombre de usuario (único en Shekael)</label>
+                        <div className={styles.usernameRow}>
+                            <span className={styles.usernameAt}>@</span>
+                            <input
+                                type="text"
+                                placeholder="usuario"
+                                value={username}
+                                onChange={(e) => handleUsernameCheck(e.target.value)}
+                                className={styles.input}
+                                maxLength={30}
+                            />
+                            {usernameStatus === 'checking' && <Loader2 size={16} className={styles.spin} style={{ color: 'var(--color-text-muted)' }} />}
+                            {usernameStatus === 'available' && <Check size={16} style={{ color: 'var(--color-success)' }} />}
+                            {usernameStatus === 'taken' && <X size={16} style={{ color: 'var(--color-danger)' }} />}
+                        </div>
+                        {usernameStatus === 'available' && <p className={styles.hintOk}>Disponible — puedes usarlo.</p>}
+                        {usernameStatus === 'taken' && <p className={styles.hintErr}>Ese nombre ya está en uso.</p>}
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label>Nombre visible</label>
+                        <input
+                            type="text"
+                            placeholder="Tu nombre"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            className={styles.input}
+                            maxLength={50}
+                        />
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label>Descripción</label>
+                        <textarea
+                            placeholder="Cuéntale al mundo quién eres..."
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                            className={`${styles.input} ${styles.bioInput}`}
+                            rows={3}
+                            maxLength={300}
+                        />
+                    </div>
+
+                    <button
+                        className={styles.saveBtn}
+                        onClick={handleSaveProfile}
+                        disabled={savingProfile || usernameStatus === 'taken'}
+                    >
+                        {savingProfile ? 'Guardando...' : 'Guardar perfil'}
+                    </button>
+                    {profileMsg && (
+                        <div className={`${styles.message} ${styles[profileMsg.type]}`}>
+                            {profileMsg.text}
+                        </div>
+                    )}
+                </section>
+
                 {/* ─── Personalización de anuncios ─── */}
                 <section className={styles.section}>
                     <div className={styles.sectionHeader}>
@@ -214,6 +346,70 @@ export default function Settings() {
                         <h2>Privacidad</h2>
                     </div>
                     <p className={styles.sectionDesc}>
+                        Controla qué información se muestra en tu perfil público.
+                    </p>
+
+                    <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                            <strong>Mostrar correo electrónico</strong>
+                            <p>Si está apagado, otros usuarios verán @usuario en lugar de tu correo.</p>
+                        </div>
+                        <label className={styles.switch}>
+                            <input
+                                type="checkbox"
+                                checked={privacy.showEmail !== false}
+                                onChange={() => togglePrivacy('showEmail')}
+                            />
+                            <span className={styles.slider}></span>
+                        </label>
+                    </div>
+
+                    <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                            <strong>Mostrar llave Stellar</strong>
+                            <p>Tu dirección pública para recibir pagos.</p>
+                        </div>
+                        <label className={styles.switch}>
+                            <input
+                                type="checkbox"
+                                checked={privacy.showStellarKey !== false}
+                                onChange={() => togglePrivacy('showStellarKey')}
+                            />
+                            <span className={styles.slider}></span>
+                        </label>
+                    </div>
+
+                    <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                            <strong>Mostrar estadísticas</strong>
+                            <p>Seguidores, siguiendo y conteo de publicaciones.</p>
+                        </div>
+                        <label className={styles.switch}>
+                            <input
+                                type="checkbox"
+                                checked={privacy.showStats !== false}
+                                onChange={() => togglePrivacy('showStats')}
+                            />
+                            <span className={styles.slider}></span>
+                        </label>
+                    </div>
+
+                    <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                            <strong>Mostrar bio</strong>
+                            <p>Tu bio se muestra en tu perfil público.</p>
+                        </div>
+                        <label className={styles.switch}>
+                            <input
+                                type="checkbox"
+                                checked={privacy.showBio !== false}
+                                onChange={() => togglePrivacy('showBio')}
+                            />
+                            <span className={styles.slider}></span>
+                        </label>
+                    </div>
+
+                    <p className={styles.sectionDesc} style={{ marginTop: 12 }}>
                         Shekael no vende tus datos personales. La personalización de anuncios es 
                         completamente opcional. Tus intereses se detectan automáticamente de tu 
                         actividad en la plataforma y nunca se comparten con terceros.

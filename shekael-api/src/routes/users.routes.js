@@ -73,6 +73,23 @@ router.get('/:id', authMiddleware, async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
+        // Seguridad: email y public_key (respaldo cifrado) SOLO para el dueño
+        const isOwn = String(targetUserId) === String(currentUserId);
+        const publicUser = {
+            id: user.id,
+            display_name: user.display_name,
+            username: user.username ?? null,
+            bio: user.bio ?? '',
+            stellar_public_key: user.stellar_public_key ?? null,
+            avatar_url: user.avatar_url ?? null,
+            cover_url: user.cover_url ?? null,
+            created_at: user.created_at ?? null,
+        };
+        if (isOwn) {
+            publicUser.email = user.email ?? null;
+            publicUser.public_key = user.public_key ?? null;
+        }
+
         const { data: followRecord } = await supabase
             .from('followers')
             .select('*')
@@ -98,12 +115,12 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
         res.json({
             user: {
-                ...user,
-                displayName: user.display_name,
-                stellarPublicKey: user.stellar_public_key,
+                ...publicUser,
+                displayName: publicUser.display_name,
+                stellarPublicKey: publicUser.stellar_public_key,
                 reputationLevel: user.reputation_level,
-                avatarUrl: user.avatar_url,
-                coverUrl: user.cover_url || null,
+                avatarUrl: publicUser.avatar_url,
+                coverUrl: publicUser.cover_url || null,
                 followersCount: userFollowers ? userFollowers.length : 0,
                 followingCount: userFollowing ? userFollowing.length : 0,
                 postsCount: userPosts ? userPosts.length : 0
