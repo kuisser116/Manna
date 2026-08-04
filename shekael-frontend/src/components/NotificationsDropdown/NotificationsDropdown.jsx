@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Video, Image as ImageIcon, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,8 @@ export function NotificationsDropdown() {
     const [loading, setLoading] = useState(false);
     
     const dropdownRef = useRef(null);
+    const bellRef = useRef(null);
+    const [anchorPos, setAnchorPos] = useState(null);
     const { user, uploads } = useStore();
     const navigate = useNavigate();
 
@@ -56,10 +59,27 @@ export function NotificationsDropdown() {
         }
     }, [isOpen]);
 
+    // Al abrir: medir posicion del boton para anclar el dropdown (portal al body)
+    useEffect(() => {
+        if (isOpen) {
+            const r = bellRef.current?.getBoundingClientRect();
+            if (r) {
+                setAnchorPos({
+                    top: r.bottom + 8,
+                    right: Math.max(8, window.innerWidth - r.right),
+                });
+            }
+        } else {
+            setAnchorPos(null);
+        }
+    }, [isOpen]);
+
     // Cerrar al hacer clic fuera
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            const inDropdown = dropdownRef.current && dropdownRef.current.contains(event.target);
+            const inBell = bellRef.current && bellRef.current.contains(event.target);
+            if (!inDropdown && !inBell) {
                 setIsOpen(false);
             }
         };
@@ -133,8 +153,9 @@ export function NotificationsDropdown() {
     };
 
     return (
-        <div className={styles.container} ref={dropdownRef}>
+        <div className={styles.container}>
             <button
+                ref={bellRef}
                 className={styles.bellBtn}
                 aria-label={t('notifications.title')}
                 onClick={() => setIsOpen(!isOpen)}
@@ -148,8 +169,12 @@ export function NotificationsDropdown() {
                 )}
             </button>
 
-            {isOpen && (
-                <div className={styles.dropdown}>
+            {isOpen && anchorPos && createPortal(
+                <div
+                    className={styles.dropdown}
+                    style={{ top: anchorPos.top, right: anchorPos.right }}
+                    ref={dropdownRef}
+                >
                     <div className={styles.header}>
                         <h4>{t('notifications.title')}</h4>
                     </div>
@@ -221,7 +246,8 @@ export function NotificationsDropdown() {
                             </button>
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
