@@ -137,15 +137,33 @@ export function useChatCrypto() {
   // Unlock (migración): descifrar private_key con PIN viejo (libsodium, formato anterior)
   const unlockWithPin = useCallback(async (encryptedPrivateKeyB64, pin) => {
     const sodium = await ensureSodium();
-    const key = sodium.crypto_generichash(
-      sodium.crypto_secretbox_KEYBYTES,
-      sodium.from_string(pin)
-    );
-    const data = sodium.from_base64(encryptedPrivateKeyB64);
-    const nonce = data.slice(0, sodium.crypto_secretbox_NONCEBYTES);
-    const ct = data.slice(sodium.crypto_secretbox_NONCEBYTES);
-    const plaintext = sodium.crypto_secretbox_open_easy(ct, nonce, key);
-    return sodium.to_string(plaintext); // Devuelve privateKey en base64
+    // Validar que el valor sea base64 URL-safe válido ANTES de tocar libsodium.
+    // Si no lo es (formato hex "iv:enc", base64 estándar con =/+/, null, etc.)
+    // from_base64 lanzaría "Incomplete input" — error crudo que se mostraba en pantalla.
+    if (typeof encryptedPrivateKeyB64 !== 'string' || encryptedPrivateKeyB64.length < 4 || !/^[A-Za-z0-9_-]+$/.test(encryptedPrivateKeyB64)) {
+      throw new Error('Tus llaves de chat están en un formato no compatible. Ve a "Olvidé mi PIN" para recuperarlas.');
+    }
+    try {
+      const key = sodium.crypto_generichash(
+        sodium.crypto_secretbox_KEYBYTES,
+        sodium.from_string(pin)
+      );
+      const data = sodium.from_base64(encryptedPrivateKeyB64);
+      const nonce = data.slice(0, sodium.crypto_secretbox_NONCEBYTES);
+      const ct = data.slice(sodium.crypto_secretbox_NONCEBYTES);
+      const plaintext = sodium.crypto_secretbox_open_easy(ct, nonce, key);
+      if (!plaintext) {
+        // open_easy devuelve null si el MAC no coincide (PIN equivocado / llaves dañadas)
+        throw new Error('No se pudieron descifrar tus llaves de chat con este PIN. Verifica tu PIN o usa "Olvidé mi PIN".');
+      }
+      return sodium.to_string(plaintext); // Devuelve privateKey en base64
+    } catch (e) {
+      // Cualquier error de libsodium se traduce a mensaje entendible (nunca errores crudos)
+      if (e.message && (e.message.includes('formato no compatible') || e.message.includes('No se pudieron descifrar'))) {
+        throw e;
+      }
+      throw new Error('No se pudieron descifrar tus llaves de chat. Usa "Olvidé mi PIN" para recuperarlas.');
+    }
   }, [ensureSodium]);
 
   return {

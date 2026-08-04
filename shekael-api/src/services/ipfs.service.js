@@ -43,10 +43,30 @@ export async function uploadToR2(fileBuffer, filename, mimeType) {
     await client.send(command);
 
     const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL;
-    if (publicUrl) {
-        return `${publicUrl.replace(/\/$/, '')}/${filename}`;
+    if (!publicUrl) {
+        throw new Error('CLOUDFLARE_R2_PUBLIC_URL no configurado');
     }
-    return `r2://${filename}`;
+    const url = `${publicUrl.replace(/\/$/, '')}/${filename}`;
+
+    // Verificar que la URL pública realmente sirve el objeto (Public Access del bucket).
+    // Si el bucket no tiene Public Access habilitado, R2 responde 403 al GET/HEAD
+    // y las imágenes se ven rotas. En ese caso borramos el objeto huérfano y lanzamos
+    // error para que el caller caiga a su fallback local (todos lo tienen).
+    // Cuando Kuki habilite Public Access en Cloudflare, esto se auto-cura y R2 vuelve a usarse.
+    try {
+        const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
+        if (!res.ok) {
+            try { await client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: filename })); } catch { /* best effort */ }
+            throw new Error(`R2 público no accesible (HTTP ${res.status})`);
+        }
+    } catch (err) {
+        if (err.message?.startsWith('R2 público')) throw err;
+        // HEAD falló (red/timeout/etc.) — no podemos garantizar URLs públicas usables
+        try { await client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: filename })); } catch { /* best effort */ }
+        throw new Error('R2 público no verificable');
+    }
+
+    return url;
 }
 
 /**

@@ -44,6 +44,7 @@ app.use(helmet({
     contentSecurityPolicy: false, // Desactivado porque el frontend maneja su propio CSP
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false, // Necesario para Google Sign-In (postMessage)
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Permitir que el frontend (:5173) cargue imágenes de /uploads (:3001) — el default 'same-origin' las bloquea
 }));
 
 // ── CORS Bulletproof ──────────────────────────────

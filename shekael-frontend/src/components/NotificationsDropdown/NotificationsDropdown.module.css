@@ -128,8 +128,13 @@
 }
 
 .systemText {
-    font-weight: 600;
+    font-weight: 800;
     color: var(--color-primary, #e11d48);
+    background: color-mix(in srgb, var(--color-primary, #e11d48) 10%, transparent);
+    padding: 2px 8px;
+    border-radius: 999px;
+    display: inline-block;
+    margin: 1px 0;
 }
 
 .time {

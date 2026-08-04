@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, Bell, Menu, ArrowLeft, QrCode, Palette, Store, BookOpen } from "lucide-react";
+import { Search, Bell, Menu, ArrowLeft, QrCode, Palette, Store, BookOpen, ChevronDown } from "lucide-react";
+import gsap from "gsap";
 import { useTranslation } from "react-i18next";
 import useStore from "../../store";
 import useAuth from "../../hooks/useAuth";
@@ -32,6 +33,8 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [myBusinesses, setMyBusinesses] = useState([]);
   const [myBizLoading, setMyBizLoading] = useState(false);
+  const [bizOpen, setBizOpen] = useState(false);
+  const bizListRef = useRef(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,6 +85,38 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
     setActiveProfile({ type: 'user' });
     setShowUserMenu(false);
     navigate('/profile');
+  };
+
+  const toggleBiz = () => {
+    const el = bizListRef.current;
+    if (!el) return;
+    if (!bizOpen) {
+      // Abrir: altura + opacidad + stagger de items (estilo wallet, con GSAP)
+      setBizOpen(true);
+      gsap.set(el, { height: 0, opacity: 0 });
+      gsap.to(el, {
+        height: "auto",
+        opacity: 1,
+        duration: 0.35,
+        ease: "power2.out",
+        onStart: () => {
+          gsap.fromTo(
+            el.children,
+            { y: 10, opacity: 0 },
+            { y: 0, opacity: 1, stagger: 0.05, duration: 0.3, ease: "power2.out", overwrite: "auto" }
+          );
+        },
+      });
+    } else {
+      // Cerrar
+      gsap.to(el, {
+        height: 0,
+        opacity: 0,
+        duration: 0.25,
+        ease: "power2.in",
+        onComplete: () => setBizOpen(false),
+      });
+    }
   };
 
   const handleGoBusiness = (biz) => {
@@ -258,21 +293,37 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                   Mi perfil
                 </Link>
 
-                {/* Mis comercios */}
+                {/* Mis comercios — lista desplegable con animación GSAP */}
                 {myBusinesses.length > 0 && (
                   <>
-                    <div className={styles.userMenuSection}>Mis comercios</div>
-                    {myBusinesses.map(biz => (
-                      <button
-                        key={biz.id}
-                        className={styles.userMenuItem}
-                        onClick={() => handleGoBusiness(biz)}
-                      >
-                        <Avatar avatarUrl={biz.avatar_url} name={biz.name} size={22} />
-                        <span className={styles.userMenuBizName}>{biz.name}</span>
-                        {!biz.is_active && <span className={styles.userMenuBizOff}>inactivo</span>}
-                      </button>
-                    ))}
+                    <button
+                      type="button"
+                      className={styles.userMenuBizToggle}
+                      onClick={toggleBiz}
+                    >
+                      <span>Mis comercios</span>
+                      <ChevronDown
+                        size={14}
+                        className={`${styles.bizChevron} ${bizOpen ? styles.bizChevronOpen : ""}`}
+                      />
+                    </button>
+                    <div
+                      ref={bizListRef}
+                      className={styles.bizList}
+                      style={!bizOpen ? { height: 0, opacity: 0, overflow: "hidden" } : undefined}
+                    >
+                      {myBusinesses.map(biz => (
+                        <button
+                          key={biz.id}
+                          className={styles.userMenuItem}
+                          onClick={() => handleGoBusiness(biz)}
+                        >
+                          <Avatar avatarUrl={biz.avatar_url} name={biz.name} size={22} />
+                          <span className={styles.userMenuBizName}>{biz.name}</span>
+                          {!biz.is_active && <span className={styles.userMenuBizOff}>inactivo</span>}
+                        </button>
+                      ))}
+                    </div>
                   </>
                 )}
                 {myBizLoading && (
@@ -280,15 +331,17 @@ export function TopBar({ onToggleSidebar, sidebarWidth = 0, isMobile = false }) 
                     Cargando comercios...
                   </div>
                 )}
-                <button
-                  className={styles.userMenuItem}
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    navigate('/business/register');
-                  }}
-                >
-                  <Store size={16} /> Registrar comercio
-                </button>
+                {!myBizLoading && !myBusinesses.some(b => b.is_active) && (
+                  <button
+                    className={styles.userMenuItem}
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/business/register');
+                    }}
+                  >
+                    <Store size={16} /> Registrar comercio
+                  </button>
+                )}
                 {user?.is_admin && (
                   <Link
                     to="/admin/control-center"

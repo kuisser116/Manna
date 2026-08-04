@@ -773,8 +773,62 @@
   }
 
   .postText {
-}
-  font-size: 0.95rem;
+    font-size: 0.95rem;
+  }
+
+  /* ── Fix responsivo móvil: texto, stats, tabs y contenido ── */
+  .profileCard {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .info {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .nameRow {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .name {
+    font-size: 1.72rem;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
+
+  .handle {
+    overflow-wrap: anywhere;
+  }
+
+  .metaLine {
+    overflow-wrap: anywhere;
+  }
+
+  .statsRow {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding: 0 14px;
+    font-size: 0.8rem;
+  }
+
+  .postList {
+    padding: 16px;
+  }
 }
 
 

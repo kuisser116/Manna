@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {  UserPlus, UserCheck, Camera, QrCode,
-  LayoutGrid, Eye, MessageCircle, Share, Flag,
+  LayoutGrid, Eye, MessageCircle, Share, Flag, Video, Image as ImageIcon, FileText,
   Copy, Check, ImagePlus, CalendarDays, Settings, Store, MapPin, Star, BarChart3,
   Printer, Download, X, Loader2
 } from 'lucide-react';
@@ -207,17 +207,17 @@ export default function BusinessProfile() {
   const tabs = [
     { id: 'posts', label: t('profile.tabs.all', 'All'), icon: <LayoutGrid size={14} /> },
     ...(showProducts ? [{ id: 'productos', label: 'Productos', icon: <Store size={14} /> }] : []),
-    { id: 'videos', label: t('profile.tabs.videos', 'Videos'), icon: <Icons.Heart /> },
-    { id: 'images', label: t('profile.tabs.images', 'Images'), icon: <Icons.Bookmark /> },
-    { id: 'text', label: t('profile.tabs.text', 'Text'), icon: <LayoutGrid size={14} /> },
+    { id: 'videos', label: t('profile.tabs.videos', 'Videos'), icon: <Video size={14} /> },
+    { id: 'images', label: t('profile.tabs.images', 'Images'), icon: <ImageIcon size={14} /> },
+    { id: 'text', label: t('profile.tabs.text', 'Text'), icon: <FileText size={14} /> },
     ...(showReviews ? [{ id: 'reseñas', label: 'Reseñas', icon: <Star size={14} /> }] : []),
   ];
 
   const emptyStates = {
     posts: { icon: <Icons.Grid size={24} />, text: t('profile.noPosts', 'No posts yet in this profile.') },
-    videos: { icon: <Icons.Heart size={24} />, text: t('profile.noVideos', 'No videos found here yet.') },
-    images: { icon: <Icons.Bookmark size={24} />, text: t('profile.noImages', 'No images have been shared yet.') },
-    text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'This text section is still empty.') },
+    videos: { icon: <Video size={24} />, text: t('profile.noVideos', 'No videos found here yet.') },
+    images: { icon: <ImageIcon size={24} />, text: t('profile.noImages', 'No images have been shared yet.') },
+    text: { icon: <FileText size={24} />, text: t('profile.noText', 'This text section is still empty.') },
   };
 
   return (
@@ -227,9 +227,9 @@ export default function BusinessProfile() {
           {/* Cover */}
           <div
             className={profileStyles.cover}
-            style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+            style={(coverUrl || biz?.coverUrl) ? { backgroundImage: `url(${coverUrl || biz?.coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
           >
-            {!coverUrl && (
+            {!(coverUrl || biz?.coverUrl) && (
               <div className={profileStyles.coverGlow}>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Store size={64} opacity={0.08} />

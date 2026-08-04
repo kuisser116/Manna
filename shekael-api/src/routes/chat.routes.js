@@ -159,7 +159,15 @@ router.post('/setup', authMiddleware, async (req, res) => {
             .maybeSingle();
 
         if (userError) throw userError;
-        if (!user || user.pin_hash !== pinHash) {
+        if (!user) {
+            return res.status(401).json({ message: 'Usuario no encontrado' });
+        }
+
+        // PRIMER SETUP: si el usuario aún no tiene PIN (registro nuevo vía Google,
+        // pin_hash NULL), se permite crear las llaves y se guarda el pin_hash junto
+        // con ellas. Si ya tiene PIN, debe coincidir — protege contra sobreescritura
+        // de llaves con un PIN equivocado.
+        if (user.pin_hash && user.pin_hash !== pinHash) {
             return res.status(401).json({ message: 'PIN incorrecto' });
         }
 
@@ -176,10 +184,13 @@ router.post('/setup', authMiddleware, async (req, res) => {
         const chatKey = deriveChatKey(stellarSecretKey);
         const encryptedPrivateKey = encryptWithChatKey(privateKey, chatKey);
 
-        // Guardar
+        // Guardar (primer setup: también persiste el pin_hash)
         const { error } = await supabase
             .from('users')
-            .update({ encrypted_private_key: encryptedPrivateKey })
+            .update({
+                encrypted_private_key: encryptedPrivateKey,
+                pin_hash: pinHash,
+            })
             .eq('id', req.user.id);
 
         if (error) throw error;

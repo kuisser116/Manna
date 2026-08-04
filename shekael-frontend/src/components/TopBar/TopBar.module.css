@@ -301,6 +301,44 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Toggle desplegable de Mis comercios (accordion con GSAP) */
+.userMenuBizToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.userMenuBizToggle:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.bizChevron {
+  transition: transform 0.25s ease;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.bizChevronOpen {
+  transform: rotate(180deg);
+}
+
+.bizList {
+  overflow: hidden;
+}
+
 .userMenuBizName {
   flex: 1;
   text-align: left;

@@ -5,7 +5,7 @@ import {
   ArrowLeft, ExternalLink, FileText, Users,
   UserPlus, UserCheck, Camera, QrCode,
   LayoutGrid, Eye, MessageCircle, Share, Flag,
-  Copy, Check, ImagePlus, CalendarDays, Settings, BarChart3, Key
+  Copy, Check, ImagePlus, CalendarDays, Settings, BarChart3, Key, Video, Image as ImageIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProfileEditModal from '../components/ProfileEditModal/ProfileEditModal';
@@ -287,16 +287,16 @@ export default function Profile() {
 
   const tabs = [
     { id: 'posts', label: t('profile.tabs.all', 'All'), icon: <LayoutGrid size={14} /> },
-    { id: 'videos', label: t('profile.tabs.videos', 'Videos'), icon: <Icons.Heart /> },
-    { id: 'images', label: t('profile.tabs.images', 'Images'), icon: <Icons.Bookmark /> },
-    { id: 'text', label: t('profile.tabs.text', 'Text'), icon: <LayoutGrid size={14} /> },
+    { id: 'videos', label: t('profile.tabs.videos', 'Videos'), icon: <Video size={14} /> },
+    { id: 'images', label: t('profile.tabs.images', 'Images'), icon: <ImageIcon size={14} /> },
+    { id: 'text', label: t('profile.tabs.text', 'Text'), icon: <FileText size={14} /> },
   ];
 
   const emptyStates = {
     posts: { icon: <Icons.Grid size={24} />, text: t('profile.noPosts', 'No posts yet in this profile.') },
-    videos: { icon: <Icons.Heart size={24} />, text: t('profile.noVideos', 'No videos found here yet.') },
-    images: { icon: <Icons.Bookmark size={24} />, text: t('profile.noImages', 'No images have been shared yet.') },
-    text: { icon: <LayoutGrid size={24} />, text: t('profile.noText', 'This text section is still empty.') },
+    videos: { icon: <Video size={24} />, text: t('profile.noVideos', 'No videos found here yet.') },
+    images: { icon: <ImageIcon size={24} />, text: t('profile.noImages', 'No images have been shared yet.') },
+    text: { icon: <FileText size={24} />, text: t('profile.noText', 'This text section is still empty.') },
   };
 
   const hue = 200;
