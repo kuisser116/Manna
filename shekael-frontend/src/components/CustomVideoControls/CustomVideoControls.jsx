@@ -19,6 +19,7 @@ function CustomVideoControls({
     onFullscreen,
     isFullscreen,
     videoMode,
+    showSignal = 0,
 }) {
     const { setVideoMode } = useStore();
     const [isDragging, setIsDragging] = useState(false);
@@ -101,6 +102,13 @@ function CustomVideoControls({
             hideControls();
         }
     }, [controlsVisible]);
+
+    // Señal del padre (tap en el video): mostrar controles al instante
+    useEffect(() => {
+        if (showSignal > 0) {
+            showControls();
+        }
+    }, [showSignal]);
 
     useEffect(() => {
         const handleClickOutside = (e) => {

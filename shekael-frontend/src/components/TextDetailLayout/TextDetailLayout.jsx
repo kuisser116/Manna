@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Send, Eye, MessageSquare, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Heart, Eye, MessageSquare, Trash2 } from 'lucide-react';
 import SupportButton from '../SupportButton/SupportButton';
 import Avatar from '../Avatar/Avatar';
+import CommentsSection from '../CommentsSection/CommentsSection';
 import CreatorAd from '../CreatorAd/CreatorAd';
 import useStore from '../../store';
 import styles from './TextDetailLayout.module.css';
@@ -38,6 +39,10 @@ export function TextDetailLayout({
     onLike,
     onDelete,
     hideActions = false,
+    commentsTotal = 0,
+    commentsHasMore = false,
+    commentsLoadingMore = false,
+    onLoadMoreComments,
 }) {
     const { user } = useStore();
     const isOwner = user?.id === post.author_id;
@@ -141,57 +146,20 @@ export function TextDetailLayout({
 
                     <div className={styles.divider} />
 
-                    {/* Comentarios */}
-                    <section className={styles.commentsSection}>
-                        <h2 className={styles.commentsTitle}>
-                            Respuestas
-                        </h2>
-
-                        <form className={styles.commentForm} onSubmit={onSubmitComment}>
-                            <input
-                                type="text"
-                                className={styles.commentInput}
-                                placeholder="Escribe tu respuesta..."
-                                value={commentText}
-                                onChange={(e) => onCommentChange(e.target.value)}
-                                disabled={isSubmitting}
-                            />
-                            <button
-                                type="submit"
-                                className={styles.sendBtn}
-                                disabled={!commentText.trim() || isSubmitting}
-                            >
-                                <Send size={16} />
-                            </button>
-                        </form>
-
-                        <div className={styles.commentsList}>
-                            <AnimatePresence>
-                                {comments.length === 0 ? (
-                                    <p className={styles.emptyComments}>
-                                        Sin respuestas aún. ¡Sé el primero!
-                                    </p>
-                                ) : (
-                                    comments.map((comment) => (
-                                        <motion.div
-                                            key={comment.id}
-                                            className={styles.commentItem}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                        >
-                                            <Avatar avatarUrl={comment.avatar_url} name={comment.display_name} size="sm" />
-                                            <div className={styles.commentContent}>
-                                                <span className={styles.commentName}>
-                                                    {comment.display_name}
-                                                </span>
-                                                <p className={styles.commentText}>{comment.content}</p>
-                                            </div>
-                                        </motion.div>
-                                    ))
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </section>
+                    {/* Comentarios (desplegable + paginada) */}
+                    <CommentsSection
+                        comments={comments}
+                        total={commentsTotal || comments.length}
+                        commentText={commentText}
+                        onCommentChange={onCommentChange}
+                        onSubmitComment={onSubmitComment}
+                        isSubmitting={isSubmitting}
+                        onLoadMore={onLoadMoreComments}
+                        hasMore={commentsHasMore}
+                        loadingMore={commentsLoadingMore}
+                        title="Respuestas"
+                        emptyText="Sin respuestas aún. ¡Sé el primero!"
+                    />
                 </main>
 
                 {/* ── Columna Lateral ── */}

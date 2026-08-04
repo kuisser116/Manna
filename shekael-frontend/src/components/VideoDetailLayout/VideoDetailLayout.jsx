@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Send, ArrowLeft, ChevronDown, ChevronUp, Eye, Trash2, Tag } from 'lucide-react';
+import { Heart, ArrowLeft, ChevronDown, ChevronUp, Eye, Trash2, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SmartVideoPlayer from '../SmartVideoPlayer/SmartVideoPlayer';
 import SupportButton from '../SupportButton/SupportButton';
 import CreatorAd from '../CreatorAd/CreatorAd';
 import VideoThumbnailCard from '../VideoThumbnailCard/VideoThumbnailCard';
 import Avatar from '../Avatar/Avatar';
+import CommentsSection from '../CommentsSection/CommentsSection';
 import useStore from '../../store';
 import { cleanTitle } from '../../utils/stringUtils';
 import styles from './VideoDetailLayout.module.css';
@@ -45,6 +45,10 @@ export function VideoDetailLayout({
     registerView,
     onDelete,
     hideActions = false,
+    commentsTotal = 0,
+    commentsHasMore = false,
+    commentsLoadingMore = false,
+    onLoadMoreComments,
 }) {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -259,57 +263,18 @@ export function VideoDetailLayout({
                         )}
                     </div>
 
-                    {/* ── Sección de comentarios ── */}
-                    <section className={styles.commentsSection}>
-                        <h2 className={styles.commentsTitle}>
-                            {comments.length} {comments.length === 1 ? 'Comentario' : 'Comentarios'}
-                        </h2>
-
-                        <form className={styles.commentForm} onSubmit={onSubmitComment}>
-                            <input
-                                type="text"
-                                className={styles.commentInput}
-                                placeholder="Agrega un comentario..."
-                                value={commentText}
-                                onChange={(e) => onCommentChange(e.target.value)}
-                                disabled={isSubmitting}
-                            />
-                            <button
-                                type="submit"
-                                className={styles.sendBtn}
-                                disabled={!commentText.trim() || isSubmitting}
-                            >
-                                <Send size={16} />
-                            </button>
-                        </form>
-
-                        <div className={styles.commentsList}>
-                            <AnimatePresence>
-                                {comments.length === 0 ? (
-                                    <p className={styles.emptyComments}>
-                                        Sin comentarios aún. ¡Sé el primero en responder!
-                                    </p>
-                                ) : (
-                                    comments.map((comment) => (
-                                        <motion.div
-                                            key={comment.id}
-                                            className={styles.commentItem}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                        >
-                                            <Avatar avatarUrl={comment.avatar_url} name={comment.display_name} size="sm" />
-                                            <div className={styles.commentContent}>
-                                                <span className={styles.commentName}>
-                                                    {comment.display_name}
-                                                </span>
-                                                <p className={styles.commentText}>{comment.content}</p>
-                                            </div>
-                                        </motion.div>
-                                    ))
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </section>
+                    {/* ── Sección de comentarios (desplegable + paginada) ── */}
+                    <CommentsSection
+                        comments={comments}
+                        total={commentsTotal || comments.length}
+                        commentText={commentText}
+                        onCommentChange={onCommentChange}
+                        onSubmitComment={onSubmitComment}
+                        isSubmitting={isSubmitting}
+                        onLoadMore={onLoadMoreComments}
+                        hasMore={commentsHasMore}
+                        loadingMore={commentsLoadingMore}
+                    />
                 </main>
 
                 {/* ── Columna de videos recomendados ── */}

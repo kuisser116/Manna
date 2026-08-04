@@ -106,9 +106,15 @@
     border-radius: var(--border-radius);
     overflow: hidden;
     display: flex;
+    align-items: center;
     justify-content: center;
     aspect-ratio: 16 / 9;
     max-width: 100%;
+}
+
+/* Video vertical (9:16): liberar la relación 16:9 para que no se recorte */
+.playerWrapper:has(.verticalVideo) {
+    aspect-ratio: auto;
 }
 
 .theater .playerWrapper {

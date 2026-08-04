@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPostDetail, createComment, getFeed } from '../api/posts.api';
+import { getPostDetail, createComment, getPostComments, getFeed } from '../api/posts.api';
 import { likePostCounter, unlikePost } from '../api/quests.api';
 
 import VideoDetailLayout from '../components/VideoDetailLayout/VideoDetailLayout';
@@ -38,6 +38,10 @@ export default function PostDetail() {
   // ── SHEKAEL POST ──
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentsTotal, setCommentsTotal] = useState(0);
+  const [commentsHasMore, setCommentsHasMore] = useState(false);
+  const [commentsPage, setCommentsPage] = useState(0);
+  const [commentsLoadingMore, setCommentsLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,6 +62,9 @@ export default function PostDetail() {
         const { data } = await getPostDetail(id);
         setPost(data.post);
         setComments(data.comments || []);
+        setCommentsTotal(data.post?.comments_count || data.comments?.length || 0);
+        setCommentsHasMore((data.post?.comments_count || 0) > (data.comments?.length || 0));
+        setCommentsPage(0);
         setIsLiked(data.post?.has_liked || false);
         setLikesCount(data.post?.likes_count || 0);
       } catch (err) {
@@ -123,11 +130,30 @@ export default function PostDetail() {
     try {
       const { data } = await createComment(id, commentText);
       setComments(prev => [...prev, data.comment]);
+      setCommentsTotal(prev => prev + 1);
       setCommentText('');
       addToast('success', 'Comentario enviado');
     } catch {
       addToast('error', 'Error', 'No se pudo enviar el comentario');
     } finally { setIsSubmitting(false); }
+  };
+
+  const loadMoreComments = async () => {
+    if (commentsLoadingMore) return;
+    setCommentsLoadingMore(true);
+    try {
+      const nextPage = commentsPage + 1;
+      const { data } = await getPostComments(id, nextPage);
+      setComments(prev => {
+        const existing = new Set(prev.map(c => c.id));
+        const fresh = (data.comments || []).filter(c => !existing.has(c.id));
+        return [...prev, ...fresh];
+      });
+      setCommentsHasMore(data.hasMore);
+      setCommentsPage(data.page);
+    } catch {
+      addToast('error', 'Error', 'No se pudieron cargar los comentarios');
+    } finally { setCommentsLoadingMore(false); }
   };
 
   const confirmDelete = async () => {
@@ -174,7 +200,9 @@ export default function PostDetail() {
       onCommentChange={setCommentText} onSubmitComment={handleSubmitComment}
       isSubmitting={isSubmitting} recommendedPosts={recommendedPosts}
       likesCount={likesCount} isLiked={isLiked} onLike={handleLike}
-      onBack={() => navigate(-1)} registerView={registerView} onDelete={handleDeletePost} />;
+      onBack={() => navigate(-1)} registerView={registerView} onDelete={handleDeletePost}
+      commentsTotal={commentsTotal} commentsHasMore={commentsHasMore}
+      commentsLoadingMore={commentsLoadingMore} onLoadMoreComments={loadMoreComments} />;
   }
 
   if (post.type === 'image') {
@@ -182,12 +210,16 @@ export default function PostDetail() {
       onCommentChange={setCommentText} onSubmitComment={handleSubmitComment}
       isSubmitting={isSubmitting} recommendedPosts={recommendedImagePosts}
       likesCount={likesCount} isLiked={isLiked} onLike={handleLike}
-      onBack={() => navigate(-1)} onDelete={handleDeletePost} />;
+      onBack={() => navigate(-1)} onDelete={handleDeletePost}
+      commentsTotal={commentsTotal} commentsHasMore={commentsHasMore}
+      commentsLoadingMore={commentsLoadingMore} onLoadMoreComments={loadMoreComments} />;
   }
 
   return <TextDetailLayout post={post} comments={comments} commentText={commentText}
     onCommentChange={setCommentText} onSubmitComment={handleSubmitComment}
     isSubmitting={isSubmitting} recommendedPosts={recommendedTextPosts}
     likesCount={likesCount} isLiked={isLiked} onLike={handleLike}
-    onDelete={handleDeletePost} />;
+    onDelete={handleDeletePost}
+    commentsTotal={commentsTotal} commentsHasMore={commentsHasMore}
+    commentsLoadingMore={commentsLoadingMore} onLoadMoreComments={loadMoreComments} />;
 }

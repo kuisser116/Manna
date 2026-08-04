@@ -177,6 +177,15 @@ export function NotificationsDropdown() {
                 >
                     <div className={styles.header}>
                         <h4>{t('notifications.title')}</h4>
+                        <button
+                            className={styles.viewAllBtn}
+                            onClick={() => {
+                                setIsOpen(false);
+                                navigate('/notifications');
+                            }}
+                        >
+                            Ver todas
+                        </button>
                     </div>
 
                     <div className={styles.list}>

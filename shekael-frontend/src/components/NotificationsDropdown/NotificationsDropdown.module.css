@@ -87,11 +87,28 @@
 }
 
 .header h4 {
-    margin: 0;
+    font-family: var(--font-display);
     font-size: 0.95rem;
-    color: var(--color-text);
     font-weight: 700;
+    margin: 0;
+    color: var(--color-text);
+}
+
+.viewAllBtn {
+    background: transparent;
+    border: none;
+    color: var(--color-primary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 999px;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.15s ease;
+}
+
+.viewAllBtn:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 

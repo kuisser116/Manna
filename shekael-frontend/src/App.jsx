@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy/Privacy';
 import PostDetail from './pages/PostDetail';
+import Notifications from './pages/Notifications';
 import ControlCenter from './pages/ControlCenter/ControlCenter';
 import AdminPostApproval from './pages/AdminPostApproval/AdminPostApproval';
 import TutorialOnboarding from './pages/TutorialOnboarding/TutorialOnboarding';
@@ -263,6 +264,11 @@ function App() {
         <Route path="/post/:id" element={
           <ProtectedRoute authLoading={authLoading}>
             <AppLayout><PostDetail /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/notifications" element={
+          <ProtectedRoute authLoading={authLoading}>
+            <AppLayout><Notifications /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/studio" element={

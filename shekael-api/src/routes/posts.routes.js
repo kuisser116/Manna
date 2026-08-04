@@ -654,7 +654,13 @@ router.get('/:postId', authMiddleware, async (req, res) => {
                 author:users!post_comments_author_id_fkey (display_name, stellar_public_key, avatar_url)
             `)
             .eq('post_id', postId)
-            .order('created_at', { ascending: true });
+            .order('created_at', { ascending: true })
+            .range(0, 9); // primeros 10 — el resto se pagina con GET /posts/:id/comments
+
+        const { count: commentsTotal } = await supabase
+            .from('post_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', postId);
 
         const formattedPost = {
             ...post,
@@ -662,7 +668,7 @@ router.get('/:postId', authMiddleware, async (req, res) => {
             stellar_public_key: post.author.stellar_public_key,
             avatar_url: post.author.avatar_url,
             has_liked: post.post_likes && post.post_likes.some(l => l.user_id === currentUserId),
-            comments_count: comments ? comments.length : 0
+            comments_count: commentsTotal || 0
         };
 
         const formattedComments = (comments || []).map(c => ({
@@ -676,6 +682,47 @@ router.get('/:postId', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Post detail error:', err);
         res.status(500).json({ message: 'Error al obtener el post' });
+    }
+});
+
+// GET /posts/:postId/comments — Comentarios paginados (para post con muchos)
+router.get('/:postId/comments', authMiddleware, async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const page = parseInt(req.query.page) || 0;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = page * limit;
+
+        const supabase = getDB();
+        const { data: comments, error } = await supabase
+            .from('post_comments')
+            .select(`
+                *,
+                author:users!post_comments_author_id_fkey (display_name, stellar_public_key, avatar_url)
+            `)
+            .eq('post_id', postId)
+            .order('created_at', { ascending: true })
+            .range(offset, offset + limit - 1);
+
+        if (error) return res.status(500).json({ message: 'Error al obtener comentarios' });
+
+        const { count } = await supabase
+            .from('post_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('post_id', postId);
+
+        const formatted = (comments || []).map(c => ({
+            ...c,
+            display_name: c.author.display_name,
+            stellar_public_key: c.author.stellar_public_key,
+            avatar_url: c.author.avatar_url
+        }));
+
+        const total = count || 0;
+        res.json({ comments: formatted, page, hasMore: offset + formatted.length < total, total });
+    } catch (err) {
+        console.error('Comments paginated error:', err);
+        res.status(500).json({ message: 'Error al obtener comentarios' });
     }
 });
 

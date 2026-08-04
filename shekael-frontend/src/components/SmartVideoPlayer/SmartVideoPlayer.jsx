@@ -35,6 +35,7 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
     const [volume, setVolume] = useState(1);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [controlsSignal, setControlsSignal] = useState(0);
     const { pingHeartbeat } = useQuests();
     const lastTimeRef = useRef(0);
     const accumulatedSecondsRef = useRef(0);
@@ -287,6 +288,9 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
         if (e.target.closest('[class*="volumeSlider"]')) return;
         if (e.target.closest('[class*="speedMenu"]')) return;
         if (e.target.closest('[class*="controlsContainer"]')) return;
+        // Mostrar la barra de controles al tocar/hacer clic (importante en móvil,
+        // donde no hay mousemove para reactivarla tras los 3s de auto-ocultar)
+        setControlsSignal(s => s + 1);
         handlePlayPause();
     };
 
@@ -295,6 +299,12 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
             className={`${styles.videoContainer} ${isVertical ? styles.verticalVideo : ''} ${videoMode === 'theater' ? styles.theater : ''}`}
             style={{ pointerEvents: isDetail ? 'auto' : 'none' }}
             onClick={isDetail ? handleVideoClick : undefined}
+            onTouchEnd={isDetail ? (e) => {
+                // Mostrar controles en cualquier toque (móvil: no hay mousemove)
+                if (e.target.closest('[class*="controlButton"]')) return;
+                if (e.target.closest('[class*="progressBar"]')) return;
+                setControlsSignal(s => s + 1);
+            } : undefined}
         >
             {useHlsFallback && (
                 <div className={styles.statusBadge} style={{ background: 'rgba(224, 36, 94, 0.2)', border: '1px solid #e0245e' }}>
@@ -351,6 +361,7 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
                     onFullscreen={handleFullscreen}
                     isFullscreen={isFullscreen}
                     videoMode={videoMode}
+                    showSignal={controlsSignal}
                 />
             )}
         </div>

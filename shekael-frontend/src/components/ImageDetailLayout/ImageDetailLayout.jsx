@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Send, ArrowLeft, ZoomIn, Eye, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Heart, ArrowLeft, ZoomIn, Eye, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import SupportButton from '../SupportButton/SupportButton';
 import CreatorAd from '../CreatorAd/CreatorAd';
 import ImageModal from '../ImageModal/ImageModal';
 import Avatar from '../Avatar/Avatar';
+import CommentsSection from '../CommentsSection/CommentsSection';
 import { cleanTitle, isValidCID } from '../../utils/stringUtils';
 import useStore from '../../store';
 import styles from './ImageDetailLayout.module.css';
@@ -71,6 +72,10 @@ export function ImageDetailLayout({
     onBack,
     onDelete,
     hideActions = false,
+    commentsTotal = 0,
+    commentsHasMore = false,
+    commentsLoadingMore = false,
+    onLoadMoreComments,
 }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -235,57 +240,18 @@ export function ImageDetailLayout({
                         )}
                     </div>
 
-                    {/* Comentarios */}
-                    <section className={styles.commentsSection}>
-                        <h2 className={styles.commentsTitle}>
-                            {comments.length} {comments.length === 1 ? 'Comentario' : 'Comentarios'}
-                        </h2>
-
-                        <form className={styles.commentForm} onSubmit={onSubmitComment}>
-                            <input
-                                type="text"
-                                className={styles.commentInput}
-                                placeholder="Agrega un comentario..."
-                                value={commentText}
-                                onChange={(e) => onCommentChange(e.target.value)}
-                                disabled={isSubmitting}
-                            />
-                            <button
-                                type="submit"
-                                className={styles.sendBtn}
-                                disabled={!commentText.trim() || isSubmitting}
-                            >
-                                <Send size={16} />
-                            </button>
-                        </form>
-
-                        <div className={styles.commentsList}>
-                            <AnimatePresence>
-                                {comments.length === 0 ? (
-                                    <p className={styles.emptyComments}>
-                                        Sin comentarios aún. ¡Sé el primero en responder!
-                                    </p>
-                                ) : (
-                                    comments.map((comment) => (
-                                        <motion.div
-                                            key={comment.id}
-                                            className={styles.commentItem}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                        >
-                                            <Avatar avatarUrl={comment.avatar_url} name={comment.display_name} size="sm" />
-                                            <div className={styles.commentContent}>
-                                                <span className={styles.commentName}>
-                                                    {comment.display_name}
-                                                </span>
-                                                <p className={styles.commentText}>{comment.content}</p>
-                                            </div>
-                                        </motion.div>
-                                    ))
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </section>
+                    {/* Comentarios (desplegable + paginada) */}
+                    <CommentsSection
+                        comments={comments}
+                        total={commentsTotal || comments.length}
+                        commentText={commentText}
+                        onCommentChange={onCommentChange}
+                        onSubmitComment={onSubmitComment}
+                        isSubmitting={isSubmitting}
+                        onLoadMore={onLoadMoreComments}
+                        hasMore={commentsHasMore}
+                        loadingMore={commentsLoadingMore}
+                    />
                 </main>
 
                 {/* ── Columna de imágenes recomendadas ── */}
