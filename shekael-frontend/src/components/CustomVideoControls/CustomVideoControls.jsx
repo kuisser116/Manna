@@ -23,12 +23,13 @@ function CustomVideoControls({
 }) {
     const { setVideoMode } = useStore();
     const [isDragging, setIsDragging] = useState(false);
-    const [showVolumeSlider, setShowVolumeSlider] = useState(false);
     const [showSpeedMenu, setShowSpeedMenu] = useState(false);
     const [hoverTime, setHoverTime] = useState(0);
     // Oculta al inicio: los controles solo aparecen al tocar/hacer clic en el
     // video (showSignal) y se ocultan 3s después si no hay interacción
     const [controlsVisible, setControlsVisible] = useState(false);
+    // Mouse sobre los controles mismos → se quedan visibles (como YouTube)
+    const [isHoveringControls, setIsHoveringControls] = useState(false);
 
     const progressBarRef = useRef(null);
     const volumeControlRef = useRef(null);
@@ -87,23 +88,38 @@ function CustomVideoControls({
     };
 
     const showControls = () => {
+        // NO toca el timer: el efecto [controlsVisible, isHoveringControls]
+        // se encarga de agendar/cancelar el auto-ocultado. Antes aquí se
+        // limpiaba el timeout en cada mousemove → los controles nunca se
+        // ocultaban.
         setControlsVisible(true);
+    };
+
+    const scheduleHide = () => {
         if (hideTimeoutRef.current) {
             clearTimeout(hideTimeoutRef.current);
         }
-    };
-
-    const hideControls = () => {
         hideTimeoutRef.current = setTimeout(() => {
             setControlsVisible(false);
         }, 3000);
     };
 
     useEffect(() => {
-        if (controlsVisible) {
-            hideControls();
+        if (controlsVisible && !isHoveringControls) {
+            // Visible y el mouse NO está sobre los controles → ocultar en 3s
+            scheduleHide();
         }
-    }, [controlsVisible]);
+        if (controlsVisible && isHoveringControls && hideTimeoutRef.current) {
+            // Mouse sobre los controles → cancelar el ocultado
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
+        return () => {
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+            }
+        };
+    }, [controlsVisible, isHoveringControls]);
 
     // Señal del padre (tap en el video): mostrar controles al instante
     useEffect(() => {
@@ -159,8 +175,18 @@ function CustomVideoControls({
     return (
         <div
             className={`${styles.controlsContainer} ${controlsVisible ? styles.visible : ''}`}
-            onMouseMove={() => showControls()}
-            onMouseLeave={() => setControlsVisible(false)}
+            onMouseMove={() => {
+                // Mostrar si está oculto; si ya está visible, NO tocar el
+                // timer (el efecto agenda el ocultado a los 3s)
+                if (!controlsVisible) showControls();
+            }}
+            onMouseEnter={() => setIsHoveringControls(true)}
+            onMouseLeave={() => setIsHoveringControls(false)}
+            onTouchEnd={() => {
+                // Móvil: cada toque en los controles extiende el tiempo
+                showControls();
+                scheduleHide();
+            }}
         >
             <div
                 ref={progressBarRef}
@@ -199,14 +225,13 @@ function CustomVideoControls({
                         <button
                             className={styles.controlButton}
                             onClick={onMuteToggle}
-                            onMouseEnter={() => setShowVolumeSlider(true)}
                             aria-label={isMuted ? 'Activar sonido' : 'Silenciar'}
                         >
                             {getVolumeIcon()}
                         </button>
                         <input
                             type="range"
-                            className={`${styles.volumeSlider} ${showVolumeSlider ? styles.visible : ''}`}
+                            className={styles.volumeSlider}
                             min="0"
                             max="1"
                             step="0.01"

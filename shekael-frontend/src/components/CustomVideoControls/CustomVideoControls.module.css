@@ -143,30 +143,47 @@
     position: relative;
 }
 
+/* Barra de volumen: sin la caja/track por defecto del navegador — solo una
+   línea fina visible con thumb redondo (estilo YouTube) */
 .volumeSlider {
-    width: 0;
-    opacity: 0;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    width: 70px;
     height: 4px;
+    -webkit-appearance: none;
     appearance: none;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
     cursor: pointer;
+    transition: opacity 0.2s ease;
+    outline: none;
+}
+
+.volumeSlider::-webkit-slider-runnable-track {
+    background: transparent;
+    height: 4px;
+    border-radius: 2px;
 }
 
 .volumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
     appearance: none;
     width: 12px;
     height: 12px;
     background: #fff;
     border-radius: 50%;
     cursor: pointer;
+    margin-top: -4px;
     transition: background 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .volumeSlider::-webkit-slider-thumb:hover {
     background: var(--color-primary);
+}
+
+.volumeSlider::-moz-range-track {
+    background: rgba(255, 255, 255, 0.25);
+    height: 4px;
+    border-radius: 2px;
 }
 
 .volumeSlider::-moz-range-thumb {
@@ -183,9 +200,8 @@
     background: var(--color-primary);
 }
 
-.volumeControl:hover .volumeSlider.visible {
-    width: 80px;
-    opacity: 1;
+.volumeSlider:hover {
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .timeDisplay {
@@ -289,10 +305,6 @@
 
     .timeDisplay {
         font-size: 12px;
-    }
-
-    .volumeControl:hover .volumeSlider.visible {
-        width: 60px;
     }
 }
 
