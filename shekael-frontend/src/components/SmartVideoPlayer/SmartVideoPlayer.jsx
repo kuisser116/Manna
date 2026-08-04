@@ -302,12 +302,6 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
                 </div>
             )}
 
-            {process.env.NODE_ENV === 'development' && !useHlsFallback && (
-                <div className={styles.statusBadge}>
-                    Estado: <strong>{status}</strong>
-                </div>
-            )}
-
             {(isRaw || useHlsFallback) && r2Url && (
                 <video
                     ref={videoRef}
