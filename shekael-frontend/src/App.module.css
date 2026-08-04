@@ -5,7 +5,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    min-height: 100dvh;
     background: var(--color-bg, #fff);
     gap: 16px;
 }
@@ -21,13 +21,13 @@
 
 /* ── Main Content Area ── */
 .appContent {
-    min-height: calc(100vh - var(--topbar-height, 70px));
+    min-height: calc(100dvh - var(--topbar-height, 70px));
     background: var(--color-bg, #fff);
 }
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
     .appContent {
-        min-height: 100vh;
+        min-height: 100dvh;
     }
 }

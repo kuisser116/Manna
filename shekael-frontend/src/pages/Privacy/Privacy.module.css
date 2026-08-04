@@ -2,7 +2,7 @@
   max-width: 780px;
   margin: 0 auto;
   padding: 48px 24px 80px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--color-bg, #fafafa);
   color: var(--color-text, #111);
 }

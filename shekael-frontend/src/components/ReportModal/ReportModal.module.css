@@ -3,7 +3,7 @@
     top: 0;
     left: 0;
     width: 100vw;
-    height: calc(100vh - var(--topbar-height, 70px));
+    height: calc(100dvh - var(--topbar-height, 70px));
     background: var(--color-overlay);
     display: flex;
     align-items: center;

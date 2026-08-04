@@ -1,5 +1,5 @@
 .page {
-  min-height: calc(100vh - 70px);
+  min-height: calc(100dvh - 70px);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -169,7 +169,7 @@
   top: 70px;
   right: 0;
   width: min(380px, 30vw);
-  height: calc(100vh - 70px);
+  height: calc(100dvh - 70px);
   background: var(--color-surface);
   border-left: 1px solid var(--color-border);
   z-index: 50;
@@ -187,7 +187,7 @@
   .panel { width: 100%; max-width: 380px; }
 }
 @media (max-width: 600px) {
-  .panel { width: 100%; max-width: 100%; top: 0; height: 100vh; }
+  .panel { width: 100%; max-width: 100%; top: 0; height: 100dvh; }
 }
 
 .panelArtWrap {

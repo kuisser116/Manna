@@ -1,6 +1,6 @@
 /* ── Contenedor principal ── */
 .page {
-    min-height: 100vh;
+    min-height: 100dvh;
     background: var(--color-bg);
     padding-bottom: clamp(40px, 8vh, 80px);
 }
@@ -449,7 +449,7 @@
     gap: 14px;
     position: sticky;
     top: clamp(80px, 12vh, 106px);
-    max-height: calc(100vh - 120px);
+    max-height: calc(100dvh - 120px);
     overflow-y: auto;
     scrollbar-width: none;
 }

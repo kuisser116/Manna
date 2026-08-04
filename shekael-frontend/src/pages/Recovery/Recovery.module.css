@@ -2,7 +2,7 @@
     max-width: 480px;
     margin: 0 auto;
     padding: 24px 16px;
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;

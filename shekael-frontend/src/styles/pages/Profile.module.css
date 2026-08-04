@@ -2,7 +2,7 @@
 
 .layout {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   overflow: hidden;
   margin-top: -70px;

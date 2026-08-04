@@ -3,7 +3,7 @@
   max-width: 1000px;
   margin: 0 auto;
   color: var(--color-text);
-  min-height: calc(100vh - 56px);
+  min-height: calc(100dvh - 56px);
   background-color: var(--color-bg);
 }
 

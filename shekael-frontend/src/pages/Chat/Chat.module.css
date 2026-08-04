@@ -4,7 +4,7 @@
 
 .layout {
   display: flex;
-  height: calc(100vh - var(--topbar-height, 70px));
+  height: calc(100dvh - var(--topbar-height, 70px));
   overflow: hidden;
   position: relative;
   width: 100%;
@@ -1726,7 +1726,7 @@
   .layout {
     flex-direction: column;
     height: auto;
-    min-height: calc(100vh - var(--topbar-height, 70px));
+    min-height: calc(100dvh - var(--topbar-height, 70px));
   }
 
   .sidePanel {

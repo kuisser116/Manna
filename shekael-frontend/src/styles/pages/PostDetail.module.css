@@ -1,6 +1,6 @@
 .layout {
     display: flex;
-    min-height: 100vh;
+    min-height: 100dvh;
     width: 100%;
     background: var(--color-bg);
 }
@@ -193,7 +193,7 @@
     flex-shrink: 0;
     position: sticky;
     top: 56px;
-    height: calc(100vh - 56px);
+    height: calc(100dvh - 56px);
     overflow-y: auto;
     background: var(--color-surface);
     border-left: 1px solid var(--color-border);
