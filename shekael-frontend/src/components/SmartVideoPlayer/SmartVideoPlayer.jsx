@@ -193,8 +193,47 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
         };
     }, []);
 
-    const handlePlay = () => { setIsPlaying(true); if (onPlay) onPlay(); };
-    const handlePause = () => setIsPlaying(false);
+    const wakeLockRef = useRef(null);
+
+    // Mantener la pantalla del teléfono encendida mientras el video reproduce
+    const requestWakeLock = async () => {
+        try {
+            if (navigator.wakeLock?.request) {
+                wakeLockRef.current = await navigator.wakeLock.request('screen');
+            }
+        } catch { /* sin soporte o denegado: no pasa nada */ }
+    };
+
+    const releaseWakeLock = () => {
+        try {
+            wakeLockRef.current?.release?.();
+        } catch { /* noop */ }
+        wakeLockRef.current = null;
+    };
+
+    const handlePlay = () => {
+        setIsPlaying(true);
+        if (onPlay) onPlay();
+        window.dispatchEvent(new CustomEvent('shekael:video-play'));
+        requestWakeLock();
+    };
+    const handlePause = () => {
+        setIsPlaying(false);
+        window.dispatchEvent(new CustomEvent('shekael:video-pause'));
+        releaseWakeLock();
+    };
+
+    const handleEndedEvent = (e) => {
+        // Al terminar cuenta como pausa (no mantener el bloqueo activo)
+        window.dispatchEvent(new CustomEvent('shekael:video-pause'));
+        releaseWakeLock();
+        if (onEnded) onEnded(e);
+    };
+
+    // Limpiar wake lock al desmontar
+    useEffect(() => {
+        return () => releaseWakeLock();
+    }, []);
     const handleSeeked = () => {
         if (videoRef.current) lastTimeRef.current = videoRef.current.currentTime;
     };
@@ -324,7 +363,7 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
                     onLoadedMetadata={handleLoadedMetadata}
                     onTimeUpdate={handleTimeUpdate}
                     onVolumeChange={() => setVolume(videoRef.current.volume)}
-                    onEnded={onEnded}
+                    onEnded={handleEndedEvent}
                     controlsList="nodownload noplaybackrate"
                 />
             )}
@@ -340,7 +379,7 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
                     onLoadedMetadata={handleLoadedMetadata}
                     onTimeUpdate={handleTimeUpdate}
                     onVolumeChange={() => setVolume(videoRef.current.volume)}
-                    onEnded={onEnded}
+                    onEnded={handleEndedEvent}
                     controlsList="nodownload noplaybackrate"
                     crossOrigin="anonymous"
                 />

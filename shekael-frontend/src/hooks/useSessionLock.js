@@ -13,10 +13,14 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
   const [locked, setLocked] = useState(false);
   const timerRef = useRef(null);
   const mountedRef = useRef(true);
+  // Mientras haya un video reproduciéndose NO se agenda el bloqueo
+  const videoPlayingRef = useRef(false);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!mountedRef.current) return;
+    // Video reproduciendo → la pantalla no se bloquea
+    if (videoPlayingRef.current) return;
 
     timerRef.current = setTimeout(() => {
       if (mountedRef.current) {
@@ -51,10 +55,28 @@ export function useSessionLock({ inactivityTimeoutMs = 5 * 60 * 1000 } = {}) {
     events.forEach(e => window.addEventListener(e, handler, { passive: true }));
     resetTimer();
 
+    // Eventos de reproducción de video: mientras un video se reproduce,
+    // se cancela el timer de inactividad (no bloquear la pantalla)
+    const onVideoPlay = () => {
+      videoPlayingRef.current = true;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    const onVideoPause = () => {
+      videoPlayingRef.current = false;
+      resetTimer();
+    };
+    window.addEventListener('shekael:video-play', onVideoPlay);
+    window.addEventListener('shekael:video-pause', onVideoPause);
+
     return () => {
       mountedRef.current = false;
       if (timerRef.current) clearTimeout(timerRef.current);
       events.forEach(e => window.removeEventListener(e, handler));
+      window.removeEventListener('shekael:video-play', onVideoPlay);
+      window.removeEventListener('shekael:video-pause', onVideoPause);
     };
   }, [token, resetTimer]);
 
