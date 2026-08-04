@@ -26,7 +26,9 @@ function CustomVideoControls({
     const [showVolumeSlider, setShowVolumeSlider] = useState(false);
     const [showSpeedMenu, setShowSpeedMenu] = useState(false);
     const [hoverTime, setHoverTime] = useState(0);
-    const [controlsVisible, setControlsVisible] = useState(true);
+    // Oculta al inicio: los controles solo aparecen al tocar/hacer clic en el
+    // video (showSignal) y se ocultan 3s después si no hay interacción
+    const [controlsVisible, setControlsVisible] = useState(false);
 
     const progressBarRef = useRef(null);
     const volumeControlRef = useRef(null);

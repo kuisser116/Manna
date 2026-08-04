@@ -141,6 +141,14 @@ export function VideoDetailLayout({
         .filter((p) => p.type === 'video' && p.id !== id)
         .slice(0, 8);
 
+    // Siguiente video (autoplay al terminar): el primero de los recomendados
+    const nextVideo = filteredRecommended[0];
+    const handleEnded = () => {
+        if (nextVideo) {
+            navigate(`/post/${nextVideo.id}`, { replace: true });
+        }
+    };
+
     return (
         <div className={`${styles.page} ${styles[videoMode]}`}>
 
@@ -156,6 +164,7 @@ export function VideoDetailLayout({
                             postId={id}
                             onPlay={() => setIsPlaying(true)}
                             onPause={() => setIsPlaying(false)}
+                            onEnded={handleEnded}
                         />
                     </div>
                 </div>

@@ -304,4 +304,22 @@
     .volumeSlider {
         display: none;
     }
+
+    .controlButton {
+        padding: 4px;
+    }
+
+    .controlButton svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .speedButton {
+        font-size: 12px;
+        min-width: 34px;
+    }
+
+    .controlsContainer {
+        padding: 6px 10px 10px;
+    }
 }

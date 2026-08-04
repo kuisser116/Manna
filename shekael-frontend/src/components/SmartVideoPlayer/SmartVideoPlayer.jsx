@@ -22,7 +22,7 @@ import styles from './SmartVideoPlayer.module.css';
  *   onPlay?: () => void
  *   isDetail?: boolean
  */
-export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail = true, postId, creatorId = null }) {
+export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail = true, postId, creatorId = null, onEnded }) {
     const { videoMode } = useStore();
     const videoRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -324,6 +324,7 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
                     onLoadedMetadata={handleLoadedMetadata}
                     onTimeUpdate={handleTimeUpdate}
                     onVolumeChange={() => setVolume(videoRef.current.volume)}
+                    onEnded={onEnded}
                     controlsList="nodownload noplaybackrate"
                 />
             )}
@@ -339,6 +340,7 @@ export function SmartVideoPlayer({ videoData = {}, onPlay, onViewValid, isDetail
                     onLoadedMetadata={handleLoadedMetadata}
                     onTimeUpdate={handleTimeUpdate}
                     onVolumeChange={() => setVolume(videoRef.current.volume)}
+                    onEnded={onEnded}
                     controlsList="nodownload noplaybackrate"
                     crossOrigin="anonymous"
                 />
