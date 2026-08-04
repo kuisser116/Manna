@@ -237,6 +237,18 @@ const useStore = create((set, get) => ({
     toasts: state.toasts.filter(t => t.id !== id)
   })),
 
+  // â”€â”€ Subidas en curso (imagen/video) — para el dropdown de notificaciones â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  uploads: [],
+  addUpload: (kind) => set((state) => ({
+    uploads: [...state.uploads.filter(u => u.kind !== kind), { id: Date.now(), kind, progress: 0, status: 'uploading' }]
+  })),
+  updateUpload: (kind, patch) => set((state) => ({
+    uploads: state.uploads.map(u => u.kind === kind ? { ...u, ...patch } : u)
+  })),
+  removeUpload: (kind) => set((state) => ({
+    uploads: state.uploads.filter(u => u.kind !== kind)
+  })),
+
   // â”€â”€ Confirm Toast (con acciones Si/No) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   confirmToast: null,
   showConfirm: (title, message, onConfirm, options = {}) => set({

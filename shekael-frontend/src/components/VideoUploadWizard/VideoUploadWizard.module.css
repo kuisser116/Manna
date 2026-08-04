@@ -83,6 +83,21 @@
     background: var(--color-success, #2EBD6A);
 }
 
+/* Pantallas chicas: solo iconos en los pasos (el texto se cortaba) */
+@media (max-width: 560px) {
+    .stepLabel {
+        display: none;
+    }
+
+    .stepItem {
+        gap: 4px;
+    }
+
+    .stepLine {
+        margin: 0 3px;
+    }
+}
+
 /* ── Panel ──────────────────────────────────────────────── */
 .panel {
     padding: 28px 24px;

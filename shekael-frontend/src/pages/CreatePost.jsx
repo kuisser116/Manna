@@ -24,6 +24,7 @@ export default function CreatePost() {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
   // Location
@@ -61,26 +62,38 @@ export default function CreatePost() {
     setImageFile(file);
   };
 
-  const uploadImage = async () => {
+  const uploadImage = () => new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append('image', imageFile);
     if (content.trim()) formData.append('caption', content.trim());
-    const res = await fetch(`${API_URL}/upload/image`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.reason || errData.message || 'Error al subir imagen');
-    }
-    return res.json();
-  };
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/upload/image`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        useStore.getState().updateUpload('image', { progress: pct });
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch { reject(new Error('Error al procesar la respuesta')); }
+      } else {
+        let msg = 'Error al subir imagen';
+        try { const d = JSON.parse(xhr.responseText); msg = d.reason || d.message || msg; } catch {}
+        reject(new Error(msg));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Error de conexión'));
+    xhr.send(formData);
+  });
 
   const handleVideoPublish = async ({ videoFile, thumbnailFile, title, description, tags, visibility, scheduledAt }) => {
-    addToast('loading', 'Preparando video...');
+    setUploading(true);
+    useStore.getState().addUpload('video');
+    navigate('/feed');
     try {
-      addToast('loading', 'Subiendo video...');
       const formData = new FormData();
       formData.append('video', videoFile);
       if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
@@ -92,6 +105,12 @@ export default function CreatePost() {
 
       const response = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            useStore.getState().updateUpload('video', { progress: pct });
+          }
+        };
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             try { resolve(JSON.parse(xhr.responseText)); }
@@ -109,10 +128,15 @@ export default function CreatePost() {
         xhr.send(formData);
       });
 
+      useStore.getState().updateUpload('video', { progress: 100, status: 'done' });
       addToast('success', 'Video publicado!');
-      setTimeout(() => navigate('/feed'), 2000);
+      setTimeout(() => useStore.getState().removeUpload('video'), 4000);
     } catch (err) {
+      useStore.getState().updateUpload('video', { status: 'error' });
       addToast('error', 'Error al subir video', err.message);
+      setTimeout(() => useStore.getState().removeUpload('video'), 4000);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -127,13 +151,20 @@ export default function CreatePost() {
       return;
     }
     if (type === 'image') {
+      setUploading(true);
+      useStore.getState().addUpload('image');
+      navigate('/feed');
       try {
-        addToast('loading', 'Subiendo imagen...');
-        const result = await uploadImage();
+        await uploadImage();
+        useStore.getState().updateUpload('image', { progress: 100, status: 'done' });
         addToast('success', 'Imagen publicada!');
-        setTimeout(() => navigate('/feed'), 2000);
+        setTimeout(() => useStore.getState().removeUpload('image'), 4000);
       } catch (err) {
+        useStore.getState().updateUpload('image', { status: 'error' });
         addToast('error', 'Error al subir imagen', err.message);
+        setTimeout(() => useStore.getState().removeUpload('image'), 4000);
+      } finally {
+        setUploading(false);
       }
     } else {
       try {
@@ -224,7 +255,13 @@ export default function CreatePost() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={2}
+                  maxLength={280}
                 />
+                <div className={styles.charCount}>
+                  <span className={content.length > 252 ? styles.charWarn : ''}>
+                    {content.length}/280
+                  </span>
+                </div>
               </div>
             )}
 
@@ -233,6 +270,7 @@ export default function CreatePost() {
               <VideoUploadWizard
                 onPublish={handleVideoPublish}
                 onCancel={() => setType('micro-text')}
+                uploading={uploading}
               />
             )}
 
@@ -321,9 +359,9 @@ export default function CreatePost() {
             {/* Submit */}
             {type !== 'video' && (
               <div className={styles.submitRow}>
-                <button type="submit" className={styles.submitBtn}>
+                <button type="submit" className={styles.submitBtn} disabled={uploading}>
                   <Send size={16} />
-                  Publicar
+                  {uploading ? 'Subiendo…' : 'Publicar'}
                 </button>
               </div>
             )}

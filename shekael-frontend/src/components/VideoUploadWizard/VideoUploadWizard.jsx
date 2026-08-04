@@ -48,7 +48,7 @@ const DEFAULT_FORM = {
  *   onPublish({ videoFile, thumbnailFile, title, description, tags, visibility, scheduledAt })
  *   onCancel()
  */
-export default function VideoUploadWizard({ onPublish, onCancel }) {
+export default function VideoUploadWizard({ onPublish, onCancel, uploading = false }) {
     const [step, setStep] = useState(1);
     const [form, setForm] = useState(DEFAULT_FORM);
     const videoInputRef = useRef(null);
@@ -172,9 +172,9 @@ export default function VideoUploadWizard({ onPublish, onCancel }) {
                         type="button"
                         className={styles.btnPublish}
                         onClick={handlePublish}
-                        disabled={!form.videoFile || !form.title.trim()}
+                        disabled={!form.videoFile || !form.title.trim() || uploading}
                     >
-                        Publicar
+                        {uploading ? 'Subiendo…' : 'Publicar'}
                         <CheckCircle2 size={16} />
                     </button>
                 )}
@@ -272,8 +272,7 @@ function StepElementos({ form, videoInputRef, onVideoSelect, onRemoveVideo }) {
                 <label className={styles.uploadZone} style={{ minHeight: '180px' }}>
                     <Upload size={28} />
                     <span>Haz clic o arrastra tu video aquí</span>
-                    <span className={styles.uploadHint}>MP4 o WebM · Máximo 50 MB</span>
-                    <span className={styles.uploadBadge}>Streaming Livepeer · Almacenaje R2</span>
+                    <span className={styles.uploadHint}>MP4 o WebM</span>
                     <input
                         ref={videoInputRef}
                         type="file"
@@ -315,7 +314,6 @@ function StepComprobacion({ form }) {
 
             <div className={styles.infoBox}>
                 🔒 Al publicar, el video se guarda en <strong>R2</strong> y se registra su autoría en <strong>Stellar</strong>.
-                Cuando supere las 50 vistas se transcodificará automáticamente vía <strong>Livepeer</strong> (HLS).
             </div>
         </div>
     );

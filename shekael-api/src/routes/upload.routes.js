@@ -3,6 +3,7 @@ import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { uploadToR2 } from '../services/ipfs.service.js';
 import { analyzeContentWithAI } from '../services/moderation.service.js';
+import { delCache, cacheKey } from '../services/redis.service.js';
 import getDB from '../database/db.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -53,6 +54,11 @@ router.post('/image', authMiddleware, upload.single('image'), async (req, res) =
         }).select().single();
 
         if (error) throw error;
+
+        // Invalidar cache del feed del autor (páginas recientes, todos los sorts)
+        for (let p = 0; p < 3; p++) {
+            await Promise.all(['ranked', 'supported'].map(s => delCache(cacheKey('feed', req.user.id, p, s)).catch(() => {})));
+        }
 
         res.status(201).json({ post, fileUrl });
     } catch (err) {
@@ -125,6 +131,11 @@ router.post('/video', authMiddleware, upload.fields([{ name: 'video', maxCount: 
         });
 
         if (insertError) throw insertError;
+
+        // Invalidar cache del feed del autor (páginas recientes, todos los sorts)
+        for (let p = 0; p < 3; p++) {
+            await Promise.all(['ranked', 'supported'].map(s => delCache(cacheKey('feed', req.user.id, p, s)).catch(() => {})));
+        }
 
         res.status(201).json({ postId, fileUrl, thumbnailUrl, message: 'Video subido como MP4 directo' });
     } catch (err) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, Video, Image as ImageIcon, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getNotifications, getUnreadNotificationsCount, markAllNotificationsAsRead } from '../../api/notifications.api';
 import Avatar from '../Avatar/Avatar';
@@ -17,7 +17,7 @@ export function NotificationsDropdown() {
     const [loading, setLoading] = useState(false);
     
     const dropdownRef = useRef(null);
-    const { user } = useStore();
+    const { user, uploads } = useStore();
     const navigate = useNavigate();
 
     // Polling de contador de no leídas
@@ -140,6 +140,9 @@ export function NotificationsDropdown() {
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <Bell size={20} />
+                {uploads.some(u => u.status === 'uploading') && (
+                    <span className={styles.uploadBadge} />
+                )}
                 {unreadCount > 0 && (
                     <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>
                 )}
@@ -152,6 +155,38 @@ export function NotificationsDropdown() {
                     </div>
 
                     <div className={styles.list}>
+                        {uploads.length > 0 && (
+                            <div className={styles.uploadsBlock}>
+                                {uploads.map((u) => {
+                                    const done = u.status === 'done';
+                                    const failed = u.status === 'error';
+                                    const Icon = u.kind === 'video' ? Video : ImageIcon;
+                                    return (
+                                        <div key={u.id} className={`${styles.uploadItem} ${done ? styles.uploadItemDone : ''} ${failed ? styles.uploadItemError : ''}`}>
+                                            <Icon size={16} className={styles.uploadIcon} />
+                                            <div className={styles.uploadInfo}>
+                                                <span className={styles.uploadLabel}>
+                                                    {done
+                                                        ? (u.kind === 'video' ? 'Video publicado' : 'Imagen publicada')
+                                                        : failed
+                                                            ? 'Subida fallida'
+                                                            : (u.kind === 'video' ? 'Video subiendo' : 'Imagen subiendo')}
+                                                </span>
+                                                {!done && !failed && (
+                                                    <div className={styles.uploadTrack}>
+                                                        <div className={styles.uploadFill} style={{ width: `${u.progress}%` }} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className={styles.uploadPct}>
+                                                {done ? <CheckCircle2 size={14} /> : failed ? <AlertTriangle size={14} /> : `${u.progress}%`}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
                         {notifications.length === 0 && !loading && (
                             <div className={styles.empty}>{t('notifications.noNotifications')}</div>
                         )}

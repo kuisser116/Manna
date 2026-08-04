@@ -84,6 +84,7 @@ function AppLayout({ children }) {
   const isChatRoute = location.pathname.startsWith('/chat');
   const isBusinessRoute = location.pathname.startsWith('/business');
   const isExplorarRoute = location.pathname.startsWith('/explorar');
+  const isCreateRoute = location.pathname === '/create';
   const isSecurityRoute = location.pathname === '/settings/security';
 
   // Escuchar resize para modo móvil
@@ -166,7 +167,7 @@ function AppLayout({ children }) {
         }}
       >
         {children}
-        {!isChatRoute && <WalletWidget variant="floating" />}
+        {!isChatRoute && !isCreateRoute && <WalletWidget variant="floating" />}
       </div>
       <CommentModal />
       <ToastContainer />
