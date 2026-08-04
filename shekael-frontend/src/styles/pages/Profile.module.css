@@ -631,7 +631,7 @@
 
 @media (max-width: 960px) {
   .layout {
-    padding: 14px 12px 22px;
+    padding: var(--topbar-height) 12px 22px;
   }
 
   .layout::before {
