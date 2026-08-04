@@ -35,6 +35,9 @@ function CustomVideoControls({
     const volumeControlRef = useRef(null);
     const speedMenuRef = useRef(null);
     const hideTimeoutRef = useRef(null);
+    // Ref síncrono para el drag táctil (el setState es async y el touchmove
+    // real puede llegar antes del re-render)
+    const draggingRef = useRef(false);
 
     const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -47,11 +50,36 @@ function CustomVideoControls({
     const handleProgressClick = (e) => {
         if (!progressBarRef.current || !duration) return;
         e.stopPropagation();
-
         const rect = progressBarRef.current.getBoundingClientRect();
         const percent = (e.clientX - rect.left) / rect.width;
         const newTime = Math.max(0, Math.min(percent * duration, duration));
         onSeek(newTime);
+    };
+
+    // Seek táctil: soporte nativo touch (drag con el dedo en móvil)
+    const seekFromClientX = (clientX) => {
+        if (!progressBarRef.current || !duration) return;
+        const rect = progressBarRef.current.getBoundingClientRect();
+        const percent = (clientX - rect.left) / rect.width;
+        const newTime = Math.max(0, Math.min(percent * duration, duration));
+        onSeek(newTime);
+    };
+
+    const handleProgressTouchStart = (e) => {
+        e.stopPropagation();
+        draggingRef.current = true;
+        setIsDragging(true);
+        seekFromClientX(e.touches[0].clientX);
+    };
+
+    const handleProgressTouchMove = (e) => {
+        if (!draggingRef.current) return;
+        seekFromClientX(e.touches[0].clientX);
+    };
+
+    const handleProgressTouchEnd = () => {
+        draggingRef.current = false;
+        setIsDragging(false);
     };
 
     const handleProgressDrag = (e) => {
@@ -196,6 +224,9 @@ function CustomVideoControls({
                 onMouseMove={(e) => {
                     handleProgressHover(e);
                 }}
+                onTouchStart={handleProgressTouchStart}
+                onTouchMove={handleProgressTouchMove}
+                onTouchEnd={handleProgressTouchEnd}
             >
                 <div
                     className={styles.progressFill}

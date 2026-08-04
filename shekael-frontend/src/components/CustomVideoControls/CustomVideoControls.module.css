@@ -26,6 +26,8 @@
     position: relative;
     transition: height 0.2s ease;
     z-index: 30;
+    /* En móvil: el toque en la barra NO debe scrollear la página */
+    touch-action: none;
 }
 
 .progressBar:hover {

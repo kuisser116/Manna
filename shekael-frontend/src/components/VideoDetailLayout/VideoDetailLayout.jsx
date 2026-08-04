@@ -52,6 +52,7 @@ export function VideoDetailLayout({
 }) {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const navigate = useNavigate();
     // Empieza en `true` para evitar el flash de apertura al cargar
     const [needsCollapse, setNeedsCollapse] = useState(true);
     // `ready` controla si ya medimos el contenido (para evitar la animación de cierre inicial)
